@@ -159,13 +159,13 @@ export const KitchenPage = () => {
     <div className="min-h-screen bg-background" data-testid="kds-page">
       <header className="h-14 border-b border-border px-6 flex items-center justify-between bg-card">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate('/table')}>
+          <Button variant="ghost" size="icon" onClick={() => navigate('/venue/home')}>
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <h1 className="text-xl font-bold tracking-tight">SPETAP</h1>
           <span className="text-sm text-muted-foreground">KDS — Kitchen Display</span>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-4">
           <div className="flex rounded-lg border border-border overflow-hidden">
             <button onClick={() => setDestination('kitchen')}
               className={`px-4 py-1.5 text-sm font-medium transition-all ${destination === 'kitchen' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'}`}
@@ -178,8 +178,14 @@ export const KitchenPage = () => {
               <Beer className="h-4 w-4 inline mr-1" /> Bar
             </button>
           </div>
+          <div className="h-5 w-px bg-border" />
           <ThemeToggle />
-          <Button variant="ghost" size="icon" onClick={() => navigate('/venue/home')}>
+          <div className="h-5 w-px bg-border" />
+          <Button variant="ghost" size="icon" onClick={() => navigate('/venue/home')} data-testid="home-btn">
+            <Home className="h-4 w-4" />
+          </Button>
+          <div className="h-5 w-px bg-border" />
+          <Button variant="ghost" size="icon" onClick={() => { localStorage.removeItem('spetap_token'); navigate('/login'); }} data-testid="logout-btn">
             <LogOut className="h-4 w-4" />
           </Button>
         </div>
