@@ -222,6 +222,24 @@ export const PulseBarPage = () => {
         </div>
       )}
 
+      {/* Blocked Wristband RED Screen */}
+      {scanResult?.blocked && !confirmingIdentity && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-red-950/90 backdrop-blur-sm" data-testid="blocked-screen">
+          <div className="bg-destructive/10 border-4 border-destructive rounded-3xl p-12 max-w-lg w-full mx-4 text-center">
+            <div className="w-24 h-24 rounded-full bg-destructive/20 flex items-center justify-center mx-auto mb-8">
+              <X className="h-16 w-16 text-destructive" />
+            </div>
+            <h2 className="text-4xl font-bold text-destructive mb-4">BLOCKED</h2>
+            <p className="text-xl text-destructive/80 mb-2">This wristband has been blocked</p>
+            <p className="text-destructive/60 mb-8">Reason: Lost wristband. Please contact management.</p>
+            <Button variant="outline" size="lg" className="border-destructive/50 text-destructive hover:bg-destructive/10"
+              onClick={() => setScanResult(null)} data-testid="dismiss-blocked-btn">
+              Dismiss
+            </Button>
+          </div>
+        </div>
+      )}
+
       <main className="w-full px-8 py-8">
         <div className="grid grid-cols-12 gap-8">
           {/* Left: Scanner + Active tabs */}
