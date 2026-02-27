@@ -261,14 +261,15 @@ async def list_sessions(
 
 @router.get("/session/{session_id}")
 async def get_session(session_id: str, user: dict = Depends(require_auth)):
-    """B1 — Get tab details with items."""
+    """B1 — Get tab details with items and guest photo."""
     pool = get_postgres_pool()
+    db = get_mongo_db()
     sid = uuid.UUID(session_id)
 
     async with pool.acquire() as conn:
         session = await conn.fetchrow(
             """SELECT id, venue_id, status, session_type, total, subtotal,
-                      opened_at, closed_at, meta
+                      opened_at, closed_at, meta, guest_id
                FROM tap_sessions WHERE id = $1""",
             sid,
         )
@@ -286,10 +287,23 @@ async def get_session(session_id: str, user: dict = Depends(require_auth)):
 
     raw_meta = session["meta"]
     meta = _parse_meta(raw_meta)
+
+    # Fetch guest photo from MongoDB if guest_id exists
+    guest_photo = None
+    guest_id_str = str(session["guest_id"]) if session["guest_id"] else None
+    if guest_id_str:
+        guest_doc = await db.venue_guests.find_one(
+            {"id": guest_id_str}, {"_id": 0, "photo": 1, "name": 1}
+        )
+        if guest_doc:
+            guest_photo = guest_doc.get("photo")
+
     return {
         "id": str(session["id"]),
         "venue_id": str(session["venue_id"]),
         "guest_name": meta.get("guest_name", "Guest"),
+        "guest_id": guest_id_str,
+        "guest_photo": guest_photo,
         "tab_number": meta.get("tab_number"),
         "status": session["status"],
         "session_type": session["session_type"],
@@ -297,6 +311,8 @@ async def get_session(session_id: str, user: dict = Depends(require_auth)):
         "subtotal": float(session["subtotal"]),
         "opened_at": session["opened_at"].isoformat() if session["opened_at"] else None,
         "closed_at": session["closed_at"].isoformat() if session["closed_at"] else None,
+        "id_verified": meta.get("id_verified", False),
+        "id_verified_at": meta.get("id_verified_at"),
         "items": [
             {
                 "id": str(it["id"]),
