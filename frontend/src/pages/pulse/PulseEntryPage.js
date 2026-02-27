@@ -384,7 +384,15 @@ export const PulseEntryPage = () => {
             <div className="border-t border-border pt-10">
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-2xl font-semibold">Guests Today</h3>
-                <p className="text-base text-muted-foreground">{todayEntries.length} entries</p>
+                <p className="text-base text-muted-foreground">{(() => {
+                  const unique = {};
+                  todayEntries.forEach(e => {
+                    if (!unique[e.guest_id] || new Date(e.created_at) > new Date(unique[e.guest_id].created_at)) {
+                      unique[e.guest_id] = e;
+                    }
+                  });
+                  return Object.keys(unique).length;
+                })()} guests</p>
               </div>
               {todayEntries.length === 0 ? (
                 <div className="flex items-center justify-center py-20 text-muted-foreground">
@@ -392,13 +400,28 @@ export const PulseEntryPage = () => {
                 </div>
               ) : (
                 <div className="space-y-2">
-                  {todayEntries.map((entry) => (
-                    <div key={entry.entry_id}
+                  {(() => {
+                    // Dedupe: one row per guest, latest action only
+                    const unique = {};
+                    todayEntries.forEach(e => {
+                      if (!unique[e.guest_id] || new Date(e.created_at) > new Date(unique[e.guest_id].created_at)) {
+                        unique[e.guest_id] = e;
+                      }
+                    });
+                    return Object.values(unique);
+                  })().map((entry) => {
+                    const statusLabel = entry.decision === 'allowed' ? 'Inside'
+                      : entry.decision === 'exit' ? 'Exited'
+                      : entry.decision === 'denied' ? 'Denied' : entry.decision;
+                    const statusClass = entry.decision === 'allowed' ? 'bg-green-500/10 text-green-600'
+                      : entry.decision === 'exit' ? 'bg-blue-500/10 text-blue-500'
+                      : 'bg-destructive/10 text-destructive';
+
+                    return (
+                    <div key={entry.guest_id}
                       className="flex items-center gap-4 px-4 py-3 rounded-lg hover:bg-muted/50 transition-colors cursor-pointer"
-                      onClick={() => {
-                        handleSelectExisting(entry.guest_id);
-                      }}
-                      data-testid={`entry-row-${entry.entry_id}`}>
+                      onClick={() => handleSelectExisting(entry.guest_id)}
+                      data-testid={`entry-row-${entry.guest_id}`}>
                       {entry.guest_photo ? (
                         <img src={entry.guest_photo} alt="" className="w-10 h-10 rounded-full object-cover" />
                       ) : (
@@ -409,15 +432,11 @@ export const PulseEntryPage = () => {
                       <div className="flex-1 min-w-0">
                         <p className="font-medium truncate">{entry.guest_name}</p>
                         <p className="text-xs text-muted-foreground">
-                          {entry.entry_type?.replace(/_/g, ' ')} — {new Date(entry.created_at).toLocaleTimeString()}
+                          {new Date(entry.created_at).toLocaleTimeString()}
                         </p>
                       </div>
-                      <span className={`px-2 py-1 rounded text-xs font-medium ${
-                        entry.decision === 'allowed'
-                          ? 'bg-green-500/10 text-green-600'
-                          : 'bg-destructive/10 text-destructive'
-                      }`}>
-                        {entry.decision}
+                      <span className={`px-2 py-1 rounded text-xs font-medium ${statusClass}`}>
+                        {statusLabel}
                       </span>
                       <button
                         onClick={(e) => handleViewHistory(entry.guest_id, e)}
@@ -428,7 +447,10 @@ export const PulseEntryPage = () => {
                         <ChevronRight className="h-4 w-4" />
                       </button>
                     </div>
-                  ))}
+                    );
+                  })}
+                </div>
+              )}
                 </div>
               )}
             </div>
