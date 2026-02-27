@@ -40,6 +40,15 @@ export const venueAPI = {
   getEvents: (venueId, date) => api.get(`/venue/${venueId}/events`, { params: { date } }),
   createEvent: (venueId, fd) => api.post(`/venue/${venueId}/events`, fd),
   getEventDates: (venueId, month) => api.get(`/venue/${venueId}/events/dates`, { params: { month } }),
+  // Event guests (temporal presence)
+  getEventGuests: (venueId, eventId) => api.get(`/venue/${venueId}/events/${eventId}/guests`),
+  addGuestToEvent: (venueId, eventId, fd) => api.post(`/venue/${venueId}/events/${eventId}/guests`, fd),
+  removeGuestFromEvent: (venueId, eventId, guestId) => api.delete(`/venue/${venueId}/events/${eventId}/guests/${guestId}`),
+  endEvent: (venueId, eventId) => api.post(`/venue/${venueId}/events/${eventId}/end`),
+  // Event staff (per-event with snapshot)
+  getEventStaff: (venueId, eventId) => api.get(`/venue/${venueId}/events/${eventId}/staff`),
+  assignStaffToEvent: (venueId, eventId, fd) => api.post(`/venue/${venueId}/events/${eventId}/staff`, fd),
+  removeStaffFromEvent: (venueId, eventId, staffId) => api.delete(`/venue/${venueId}/events/${eventId}/staff/${staffId}`),
 };
 
 // Pulse
