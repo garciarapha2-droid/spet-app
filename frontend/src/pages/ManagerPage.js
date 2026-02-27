@@ -156,26 +156,63 @@ function OverviewSection({ onNavigate }) {
         </div>
       </div>
 
-      {/* Guest Funnel */}
+      {/* Guest Funnel — clickable drill-down */}
       <div className="bg-card border border-border rounded-xl p-5 mb-6">
-        <h3 className="text-sm font-semibold mb-3">Guest Funnel (Today)</h3>
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-sm font-semibold">Guest Funnel (Today)</h3>
+          <button onClick={() => onNavigate && onNavigate('tables-server')} className="text-xs text-primary hover:underline" data-testid="goto-tables-server">View Tables by Server</button>
+        </div>
         <div className="flex items-center gap-2">
           {[
-            { label: 'Entries', val: charts.guest_funnel.entries },
-            { label: 'Allowed', val: charts.guest_funnel.allowed },
-            { label: 'Tabs Opened', val: charts.guest_funnel.tabs_opened },
-            { label: 'Tabs Closed', val: charts.guest_funnel.tabs_closed },
+            { label: 'Entries', val: charts.guest_funnel.entries, stage: 'entries' },
+            { label: 'Allowed', val: charts.guest_funnel.allowed, stage: 'allowed' },
+            { label: 'Tabs Opened', val: charts.guest_funnel.tabs_opened, stage: 'tabs_open' },
+            { label: 'Tabs Closed', val: charts.guest_funnel.tabs_closed, stage: 'tabs_closed' },
           ].map((step, i, arr) => (
             <React.Fragment key={i}>
-              <div className="flex-1 text-center p-3 bg-muted/40 rounded-lg">
+              <button onClick={() => openFunnelDrilldown(step.stage)}
+                className="flex-1 text-center p-3 bg-muted/40 rounded-lg cursor-pointer hover:bg-primary/10 hover:ring-1 hover:ring-primary/30 transition-all"
+                data-testid={`funnel-${step.stage}`}>
                 <p className="text-2xl font-bold">{step.val}</p>
                 <p className="text-xs text-muted-foreground">{step.label}</p>
-              </div>
+                <Eye className="h-3 w-3 mx-auto mt-1 text-primary opacity-50" />
+              </button>
               {i < arr.length - 1 && <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />}
             </React.Fragment>
           ))}
         </div>
       </div>
+
+      {/* Funnel Drill-down Modal */}
+      {funnelModal && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center" onClick={() => setFunnelModal(null)} data-testid="funnel-modal">
+          <div className="bg-card border border-border rounded-xl p-5 w-full max-w-lg max-h-[70vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-bold capitalize">{funnelModal.replace('_', ' ')} — Detail</h3>
+              <Button variant="ghost" size="sm" onClick={() => setFunnelModal(null)}><X className="h-4 w-4" /></Button>
+            </div>
+            {funnelLoading ? <p className="text-sm text-muted-foreground animate-pulse">Loading...</p> : (
+              <div className="space-y-1">
+                {funnelData.length === 0 ? <p className="text-sm text-muted-foreground">No records</p> : funnelData.map((item, i) => (
+                  <div key={i} className="flex items-center justify-between p-2.5 rounded-lg border border-border/50 hover:bg-muted/20">
+                    <div className="flex items-center gap-3">
+                      <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">{item.name?.[0] || '?'}</div>
+                      <div>
+                        <p className="text-sm font-medium">{item.name}</p>
+                        <p className="text-xs text-muted-foreground">{item.tab_number ? `#${item.tab_number}` : item.entry_type || ''} {item.server_name ? `— ${item.server_name}` : ''}</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      {item.total !== undefined && <span className="text-sm font-bold text-green-500">${item.total.toFixed(2)}</span>}
+                      {item.decision && <span className={`text-xs px-2 py-0.5 rounded-full ${item.decision === 'allowed' ? 'bg-green-500/10 text-green-600' : 'bg-red-500/10 text-red-600'}`}>{item.decision}</span>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Alerts */}
       {alerts.length > 0 && (
