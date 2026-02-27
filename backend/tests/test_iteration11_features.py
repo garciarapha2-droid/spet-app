@@ -36,8 +36,7 @@ def api_client(auth_token):
     """Authenticated session"""
     session = requests.Session()
     session.headers.update({
-        "Authorization": f"Bearer {auth_token}",
-        "Content-Type": "application/json"
+        "Authorization": f"Bearer {auth_token}"
     })
     return session
 
