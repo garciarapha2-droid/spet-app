@@ -14,6 +14,7 @@ import { Button } from '../../components/ui/button';
 const VENUE_ID = () => localStorage.getItem('active_venue_id') || '40a24e04-75b6-435d-bfff-ab0d469ce543';
 
 export const PulseEntryPage = () => {
+  const navigate = useNavigate();
   const [venue, setVenue] = useState('demo-club');
   // Flow states: idle | intake | dedupe | decision | success
   const [flowState, setFlowState] = useState('idle');
