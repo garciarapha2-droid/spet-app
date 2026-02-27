@@ -9,6 +9,10 @@ import { ProtectedRoute } from './components/ProtectedRoute';
 import { LoginPage } from './pages/LoginPage';
 import { ModulesPage } from './pages/ModulesPage';
 import { PulseEntryPage } from './pages/pulse/PulseEntryPage';
+import { PulseInsidePage } from './pages/pulse/PulseInsidePage';
+import { PulseExitPage } from './pages/pulse/PulseExitPage';
+import { PulseBarPage } from './pages/pulse/PulseBarPage';
+import { PulseRewardsPage } from './pages/pulse/PulseRewardsPage';
 import { TapPage } from './pages/TapPage';
 import { ManagerPage } from './pages/ManagerPage';
 import { OwnerPage } from './pages/OwnerPage';
@@ -50,7 +54,7 @@ function App() {
                 path="/pulse/inside"
                 element={
                   <ProtectedRoute>
-                    <PulseEntryPage />
+                    <PulseInsidePage />
                   </ProtectedRoute>
                 }
               />
@@ -58,7 +62,7 @@ function App() {
                 path="/pulse/bar"
                 element={
                   <ProtectedRoute>
-                    <PulseEntryPage />
+                    <PulseBarPage />
                   </ProtectedRoute>
                 }
               />
@@ -66,7 +70,7 @@ function App() {
                 path="/pulse/exit"
                 element={
                   <ProtectedRoute>
-                    <PulseEntryPage />
+                    <PulseExitPage />
                   </ProtectedRoute>
                 }
               />
@@ -74,7 +78,7 @@ function App() {
                 path="/pulse/rewards"
                 element={
                   <ProtectedRoute>
-                    <PulseEntryPage />
+                    <PulseRewardsPage />
                   </ProtectedRoute>
                 }
               />
