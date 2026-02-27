@@ -216,6 +216,11 @@ export const TablePage = () => {
                   {t.status === 'occupied' && t.tab_number && (
                     <p className="text-[9px] text-muted-foreground font-medium">#{t.tab_number}</p>
                   )}
+                  {t.status === 'occupied' && (
+                    <div className="mt-1" onClick={e => e.stopPropagation()}>
+                      <ServerAssign tableId={t.id} currentServer={t.server_name} barmen={barmen} onAssigned={loadTables} />
+                    </div>
+                  )}
                 </button>
               ))}
             </div>
