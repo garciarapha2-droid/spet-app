@@ -346,28 +346,6 @@ export const VenueSelectPage = () => {
                 </Button>
               </div>
             </div>
-
-            {/* Module Cards */}
-            {data?.modules && (
-              <div className="mt-10">
-                <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-4">Modules</h3>
-                <div className="grid grid-cols-4 gap-4">
-                  {data.modules.filter(m => m.enabled).map((mod) => {
-                    const Icon = MODULE_ICONS[mod.key] || Sparkles;
-                    return (
-                      <button key={mod.key}
-                        onClick={() => handleModuleClick(mod)}
-                        className="p-5 rounded-xl border-2 border-border bg-card hover:border-primary/40 hover:bg-primary/5 transition-all text-left group"
-                        data-testid={`module-card-${mod.key}`}>
-                        <Icon className="h-6 w-6 text-muted-foreground group-hover:text-primary transition-colors mb-3" />
-                        <p className="font-semibold text-sm">{mod.name}</p>
-                        <p className="text-xs text-muted-foreground mt-0.5">{mod.description}</p>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
           </>
         )}
       </main>
