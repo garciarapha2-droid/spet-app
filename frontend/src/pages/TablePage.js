@@ -7,11 +7,55 @@ import { Button } from '../components/ui/button';
 import { ThemeToggle } from '../components/ThemeToggle';
 import {
   ArrowLeft, LayoutGrid, Plus, Users, X, Trash2, CreditCard, Banknote, Beer,
-  Home, LogOut, Pencil, Check, Camera, Upload, User, ChevronDown, Clock
+  Home, LogOut, Pencil, Check, Camera, Upload, User, ChevronDown, Clock, ShieldCheck, ShieldAlert
 } from 'lucide-react';
 
 const VENUE_ID = () => localStorage.getItem('active_venue_id') || '40a24e04-75b6-435d-bfff-ab0d469ce543';
 const CATEGORIES = ['Beers', 'Cocktails', 'Spirits', 'Non-alcoholic', 'Snacks', 'Starters', 'Mains', 'Plates'];
+
+/* ─── ID Verification Modal (Table ONLY — alcohol compliance) ─────── */
+function IDVerificationModal({ onConfirm, onCancel }) {
+  const [checked, setChecked] = useState(false);
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" data-testid="id-verification-modal">
+      <div className="bg-card border border-border rounded-2xl shadow-2xl w-full max-w-md p-6">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-12 h-12 rounded-xl bg-yellow-500/10 flex items-center justify-center">
+            <ShieldAlert className="h-6 w-6 text-yellow-500" />
+          </div>
+          <div>
+            <h2 className="text-lg font-bold">ID Verification Required</h2>
+            <p className="text-sm text-muted-foreground">Alcohol service compliance</p>
+          </div>
+        </div>
+
+        <p className="text-sm text-muted-foreground mb-5">
+          Please verify the guest is 21+ before serving alcohol.
+        </p>
+
+        <label className="flex items-start gap-3 p-3 rounded-lg border border-border bg-muted/30 mb-5 cursor-pointer" data-testid="id-verify-checkbox-label">
+          <input
+            type="checkbox"
+            checked={checked}
+            onChange={e => setChecked(e.target.checked)}
+            className="mt-0.5 h-4 w-4 rounded border-gray-300"
+            data-testid="id-verify-checkbox"
+          />
+          <span className="text-sm font-medium">I have verified this guest's ID (21+)</span>
+        </label>
+
+        <div className="flex gap-3">
+          <Button variant="outline" className="flex-1 h-11" onClick={onCancel} data-testid="id-verify-cancel-btn">
+            Cancel
+          </Button>
+          <Button className="flex-1 h-11" onClick={onConfirm} disabled={!checked} data-testid="id-verify-confirm-btn">
+            <ShieldCheck className="h-4 w-4 mr-2" /> Confirm & Add Item
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 const ElapsedTime = ({ openedAt }) => {
   const [elapsed, setElapsed] = useState('');
