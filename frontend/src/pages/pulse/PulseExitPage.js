@@ -1,19 +1,22 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { PulseHeader } from '../../components/PulseHeader';
-import { pulseAPI } from '../../services/api';
+import { pulseAPI, tapAPI } from '../../services/api';
 import { toast } from 'sonner';
-import { LogOut, User, Search, Clock, ArrowDownRight, ArrowUpRight, AlertTriangle, Ban, X } from 'lucide-react';
+import { LogOut, User, Search, Clock, ArrowDownRight, ArrowUpRight, AlertTriangle, Ban, X, CreditCard, CheckCircle } from 'lucide-react';
 import { Input } from '../../components/ui/input';
 import { Button } from '../../components/ui/button';
 
 const VENUE_ID = () => localStorage.getItem('active_venue_id') || '40a24e04-75b6-435d-bfff-ab0d469ce543';
 
 export const PulseExitPage = () => {
+  const navigate = useNavigate();
   const [guests, setGuests] = useState([]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
   const [todayExits, setTodayExits] = useState([]);
-  const [exitModal, setExitModal] = useState(null); // { type: 'open_tab'|'blocked', guest, data }
+  const [exitModal, setExitModal] = useState(null);
+  const [processingPayment, setProcessingPayment] = useState(false);
 
   const loadData = useCallback(async () => {
     try {
