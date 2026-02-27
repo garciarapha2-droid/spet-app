@@ -407,14 +407,23 @@ async def get_guest_detail(guest_id: str, venue_id: str, user: dict = Depends(re
             vid, uuid.UUID(guest_id)) or 0
         avg_spend = round(total_spend / total_sessions, 2) if total_sessions > 0 else 0
 
-        # Event history — events this guest attended
-        event_rows = await conn.fetch(
-            """SELECT eg.event_id, eg.checked_in_at, eg.checked_out_at,
-                      e.name as event_name, e.event_date, e.status as event_status
-               FROM event_guests eg
-               JOIN venue_events e ON e.id = eg.event_id
-               WHERE eg.venue_id=$1 AND eg.guest_id=$2::uuid
-               ORDER BY e.event_date DESC LIMIT 20""", vid, uuid.UUID(guest_id))
+        # Event history — events this guest attended (from MongoDB)
+    db_inner = get_mongo_db()
+    event_guest_docs = await db_inner.event_guests.find(
+        {"venue_id": venue_id, "guest_id": guest_id}, {"_id": 0}
+    ).sort("added_at", -1).to_list(20)
+
+    events_list = []
+    for eg in event_guest_docs:
+        ev_doc = await db_inner.events.find_one({"id": eg.get("event_id"), "venue_id": venue_id}, {"_id": 0})
+        events_list.append({
+            "event_id": eg.get("event_id", ""),
+            "event_name": ev_doc.get("name", "Unknown") if ev_doc else "Unknown",
+            "event_date": ev_doc.get("start_at").isoformat() if ev_doc and ev_doc.get("start_at") else None,
+            "event_status": ev_doc.get("status", "") if ev_doc else "",
+            "checked_in_at": eg.get("checked_in_at").isoformat() if eg.get("checked_in_at") else eg.get("added_at", ""),
+            "checked_out_at": eg.get("checked_out_at").isoformat() if eg.get("checked_out_at") else None,
+        })
 
     return {
         "guest": guest,
@@ -428,11 +437,7 @@ async def get_guest_detail(guest_id: str, venue_id: str, user: dict = Depends(re
         "sessions": [{"id": str(s["id"]), "status": s["status"], "total": float(s["total"]),
                       "opened_at": s["opened_at"].isoformat() if s["opened_at"] else None,
                       "closed_at": s["closed_at"].isoformat() if s["closed_at"] else None} for s in sessions],
-        "events": [{"event_id": str(ev["event_id"]), "event_name": ev["event_name"],
-                    "event_date": ev["event_date"].isoformat() if ev["event_date"] else None,
-                    "event_status": ev["event_status"],
-                    "checked_in_at": ev["checked_in_at"].isoformat() if ev["checked_in_at"] else None,
-                    "checked_out_at": ev["checked_out_at"].isoformat() if ev["checked_out_at"] else None} for ev in event_rows],
+        "events": events_list,
     }
 
 
