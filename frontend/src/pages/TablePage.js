@@ -197,8 +197,8 @@ export const TablePage = () => {
             <h3 className="text-xs font-semibold uppercase text-muted-foreground mb-3">Tables</h3>
             <div className="grid grid-cols-2 gap-2">
               {tables.map(t => (
-                <button key={t.id} onClick={() => setSelectedTable(t.id)}
-                  className={`p-2 rounded-xl border-2 text-center transition-all ${
+                <div key={t.id} onClick={() => setSelectedTable(t.id)}
+                  className={`p-2 rounded-xl border-2 text-center transition-all cursor-pointer ${
                     selectedTable === t.id ? 'border-primary bg-primary/5 ring-2 ring-primary/20' :
                     t.status === 'occupied' ? 'border-orange-500/30 bg-orange-500/5' :
                     'border-border hover:border-primary/30'
