@@ -346,6 +346,91 @@ function EventDetailPanel({ event, venueId, onClose, onEventEnded }) {
   );
 }
 
+/* ─── Event Preview Panel (1-click: quick view) ─────────────────── */
+function EventPreviewPanel({ event, venueId, onClose, onEventEnded }) {
+  const [guests, setGuests] = useState([]);
+  const [staff, setStaff] = useState([]);
+  const [showFull, setShowFull] = useState(false);
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const [gRes, sRes] = await Promise.all([
+          venueAPI.getEventGuests(venueId, event.id),
+          venueAPI.getEventStaff(venueId, event.id),
+        ]);
+        setGuests(gRes.data.guests || []);
+        setStaff(sRes.data.staff || []);
+      } catch {}
+    };
+    load();
+  }, [venueId, event.id]);
+
+  if (!showFull) {
+    return (
+      <div className="mt-2 bg-card border border-primary/30 rounded-xl p-4" data-testid="event-preview">
+        <div className="flex items-center justify-between mb-3">
+          <h4 className="font-semibold text-sm">Event Preview</h4>
+          <div className="flex items-center gap-2">
+            <Button size="sm" variant="outline" onClick={() => setShowFull(true)} data-testid="manage-event-btn">
+              Manage
+            </Button>
+            <button onClick={onClose} className="p-1 rounded hover:bg-muted"><X className="h-3.5 w-3.5" /></button>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          {/* Guest count */}
+          <div className="bg-muted/30 rounded-lg p-3" data-testid="preview-guest-count">
+            <div className="flex items-center gap-2 mb-1">
+              <Users className="h-4 w-4 text-primary" />
+              <span className="text-xs font-semibold text-muted-foreground uppercase">Guests</span>
+            </div>
+            <p className="text-2xl font-bold">{guests.length}</p>
+            <p className="text-[10px] text-muted-foreground">{guests.length > 0 ? 'inside now' : 'no guests yet'}</p>
+          </div>
+
+          {/* Staff count */}
+          <div className="bg-muted/30 rounded-lg p-3" data-testid="preview-staff-count">
+            <div className="flex items-center gap-2 mb-1">
+              <Briefcase className="h-4 w-4 text-orange-500" />
+              <span className="text-xs font-semibold text-muted-foreground uppercase">Staff</span>
+            </div>
+            <p className="text-2xl font-bold">{staff.length}</p>
+            <p className="text-[10px] text-muted-foreground">{staff.length > 0 ? 'assigned' : 'no staff yet'}</p>
+          </div>
+        </div>
+
+        {/* Staff list with names + roles */}
+        {staff.length > 0 && (
+          <div className="mt-3 space-y-1" data-testid="preview-staff-list">
+            {staff.map(s => (
+              <div key={s.staff_id} className="flex items-center justify-between text-sm px-2 py-1.5 rounded-lg bg-muted/20">
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-full bg-orange-500/10 flex items-center justify-center">
+                    <Briefcase className="h-3 w-3 text-orange-500" />
+                  </div>
+                  <span className="font-medium">{s.name}</span>
+                </div>
+                <span className="text-xs text-muted-foreground capitalize px-2 py-0.5 rounded-full bg-muted">{s.role}</span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <p className="text-[10px] text-center text-muted-foreground mt-3">Double-click the event card to enter operations</p>
+      </div>
+    );
+  }
+
+  // Full management view
+  return (
+    <div className="mt-2">
+      <EventDetailPanel event={event} venueId={venueId} onClose={() => { setShowFull(false); onClose(); }} onEventEnded={onEventEnded} />
+    </div>
+  );
+}
+
 /* ─── Create Event Wizard ───────────────────────────────────────── */
 function CreateEventWizard({ venueId, date, barmen, onCreated, onCancel }) {
   const [step, setStep] = useState(1);
