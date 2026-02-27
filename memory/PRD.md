@@ -3,125 +3,86 @@
 ## Original Problem Statement
 SPETAP is a multi-tenant SaaS platform for venue operations (clubs, restaurants, bars, events).
 
-### Surfaces
-- CEO Dashboard, Owner Dashboard, Manager Dashboard
-- Staff Apps: Host (PULSE) + Bartender (TAP)
-
 ### Core Principles
-- Strict multi-tenant data isolation by `venue_id`
-- `session_id` is the canonical identifier (not `table_id`)
-- Void operations are ledger-safe (mark voided, never delete)
-- KDS Kanban always visible with 4 columns even when empty
+- `session_id` is canonical identifier, void is ledger-safe
+- Currency: **USD ($)**
+- Tab numbers: sequential per day (#101+)
+- UI: desktop-first, dark-mode optimized, Stripe-like
 
 ### Tech Stack
-- **Frontend:** React + Tailwind CSS + Shadcn UI
-- **Backend:** FastAPI (Python)
-- **Databases:** PostgreSQL (transactional) + MongoDB (configs, catalog, barmen)
-- **Auth:** JWT-based, PostgreSQL
+- React + Tailwind + Shadcn UI | FastAPI | PostgreSQL + MongoDB | JWT Auth
 
 ---
 
-## What's Been Implemented
+## Implemented Features
 
 ### Venue Home - COMPLETE
-- Calendar view with events, login redirects to `/venue/home`
-- **Modules dropdown in header** (not cards): Pulse, TAP, Table, Kitchen, Manager, Owner
-- CEO hidden from module list (access by specific email only)
-- Owners (role_level >= 70) see all operational modules
+- Calendar + events, Modules dropdown in header (no cards)
+- CEO hidden from non-CEO users
 
-### Navigation & Headers - COMPLETE
-- Module dropdown in PulseHeader
-- **Consistent gap-4 + dividers** across ALL pages (fixed ThemeToggle `fixed` positioning)
-- Back-to-TAP / DISCO MODE toggle on Table page
-
-### PULSE Module (C0-C3) - COMPLETE
-- NFC scan + Manual Entry, Guest Intake with photo, Deduplication, Decision Card, Success
-
-### Guest Profile - COMPLETE
-- Block/Unblock wristband + red alert, Open tab warning
-
-### Inside Page - COMPLETE
-- Clickable guests → profile, search, 3-column grid
-
-### Bar/Bartender Page - COMPLETE
-- NFC scan, blocked wristband screen, catalog + custom drinks, cart, revenue REMOVED
-
-### Exit Page - COMPLETE
-- Open tab / blocked wristband → RED MODAL (center screen), exit history
+### PULSE Module - COMPLETE
+- NFC + Manual Entry, Guest Intake with camera, Deduplication
+- Inside page (clickable guests), Exit page (red modal for open tabs/blocked wristbands)
+- Guest Profile with block/unblock wristband
 
 ### TAP Module - COMPLETE
-- DISCO MODE + Table toggle
-- **Barman Management**: CRUD from dropdown (add/edit pencil/delete trash)
-- Must select barman before adding items
-- Custom item addition, void/remove items (ledger-safe with reason)
-- Revenue NOT shown
+- **Tab numbers** (#101+) on every tab card and detail
+- **37 menu items** across 7 categories (Snacks, Starters, Mains, Cocktails, Drinks, Beers, No Alcohol)
+- **Custom Item** form: name, $ price, category, alcohol toggle
+- **Barman Management**: CRUD from dropdown (add/edit/delete)
+- DISCO MODE + Table toggle, void items (ledger-safe with reason)
+- Currency: **$ USD** (not R$)
 
 ### TABLE Module - COMPLETE
-- Table layout with zones, open/close, add items via `/table/{id}/add-item`
-- **Server/Waiter selection** when opening table (dropdown from barmen list)
-- Void items, Send to KDS, DISCO MODE toggle, table CRUD
+- **Server/Waiter selection** when opening table
+- Table layout with zones, add/edit/delete tables
+- Void items, Send to KDS, DISCO MODE toggle
 
 ### KDS Module - COMPLETE
 - **4-Column Kanban**: Pending → Preparing → Ready → **Delayed**
-- All columns visible even when empty
-- **Live timers**: countdown when preparing ("28:55 left"), count-up when delayed ("+0:05 over!")
-- **Delayed order popup**: Full-screen modal with "ORDER DELAYED", details, "Mark Ready" / "Dismiss"
-- **"X delayed" badge** in header when orders are overdue
-- Kitchen/Bar toggle (food→kitchen, drinks→bar)
-- Chef sets estimated time when starting preparation
-- Owners/managers always have KDS access
+- **Live timers**: countdown/count-up, estimated time setting
+- **ORDER DELAYED popup**: auto-appears, Mark Ready / Dismiss
+- **Kitchen/Bar routing**: food→kitchen, drinks→bar
 
-### Barman/Staff System - COMPLETE
-- CRUD API: GET/POST/PUT/DELETE `/api/staff/barmen`
-- Soft-delete (active=false), venue-scoped
-- Used in TAP dropdown and Table server selector
+### Manager Dashboard - COMPLETE
+- Sidebar: Menu, Staff, Settings, Reports
+- **Menu Management**: 37 items, search, category filters, Add Item
+- **Staff Management**: CRUD barmen with edit/delete
+- **Settings**: Venue name, currency, operating mode, KDS toggle
+- **Reports**: Open Tabs, Revenue, Active Staff cards
+
+### Owner Dashboard - COMPLETE
+- Sidebar: Overview, Venues, Analytics, Managers, Settings
+- **Business Overview**: Revenue, Open Tabs, Closed, MTD metrics
+- **Venue card** with live stats
+- **Managers tab**: user access management
 
 ### Rewards System - COMPLETE
-- Points config, 4 tiers, configurable rewards catalog
-
 ### Block Wristband System - COMPLETE
-- Block/Unblock from guest profile, full-screen BLOCKED screen at bar
 
 ---
 
 ## Prioritized Backlog
 
 ### P1 - Next
-- Manager Dashboard (menu/catalog management, barmen, venue settings) — blocked on user designs
-- Owner Dashboard (multi-venue analytics) — blocked on user designs
+- Manager: Edit/Delete menu items, photo upload for items
+- Owner: Multi-venue support (Add New Venue flow)
+- Real-time WebSocket for KDS → Table notifications
 
 ### P2
-- Event Wallet module (cashless events)
-- Loyalty add-on enhancements (reward redemption)
-- Tips system (proportional by barman)
-- Restaurant vs Club mode
+- Event Wallet module, Loyalty enhancements
+- Tips system, Restaurant mode
+- Camera photo for catalog items
 
 ### P3
-- Offline-first for staff apps
-- Stripe webhook handlers
-- CEO Dashboard
+- Offline-first, Stripe webhooks, CEO Dashboard
 
 ---
 
-## Architecture
-```
-/app/backend/
-  server.py, database.py, config.py
-  routes/ (auth, billing, pulse, tap, table, kds, venue, rewards, barmen, manager, owner, ceo)
-  models/ (requests.py, responses.py)
-  middleware/ (auth_middleware.py)
-  init_postgres.sql
-
-/app/frontend/src/
-  pages/ (venue/, pulse/, TapPage, TablePage, KitchenPage)
-  components/ (PulseHeader, ThemeToggle, ui/)
-  services/ (api.js)
-```
-
-## Test User
-- Email: teste@teste.com | Password: 12345
-- Venue ID: 40a24e04-75b6-435d-bfff-ab0d469ce543
-
 ## Test Results
-- iteration_9: 7/7 backend + 100% frontend (P0 bugs, modules, demo data)
-- iteration_10: 11/11 backend + 100% frontend (Barman CRUD, Table server, Modules dropdown, KDS 4-column Kanban)
+- iteration_9: 7/7 backend + 100% frontend (P0 bugs)
+- iteration_10: 11/11 backend + 100% frontend (Barman CRUD, KDS Kanban)
+- iteration_11: 13/13 backend + 100% frontend (Tab numbers, menu categories, Manager/Owner dashboards, $ currency)
+
+## Credentials
+- Email: teste@teste.com | Password: 12345 | Venue: 40a24e04-75b6-435d-bfff-ab0d469ce543
