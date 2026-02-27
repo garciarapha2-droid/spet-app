@@ -259,7 +259,8 @@ class TestEventGuestsCRUD(TestAuth):
         if response.status_code == 200:
             guests = response.json().get("guests", [])
             if guests:
-                return guests[0]["id"]
+                # Field is 'guest_id' not 'id'
+                return guests[0].get("guest_id") or guests[0].get("id")
         
         # Get from entries/today
         entries_response = requests.get(
