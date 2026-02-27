@@ -332,7 +332,7 @@ export const TapPage = () => {
           <div className="col-span-2 space-y-4">
             <form onSubmit={handleScan} className="space-y-2">
               <div className="flex items-center gap-1.5 text-xs text-muted-foreground"><ScanLine className="h-3.5 w-3.5" /> Scan NFC</div>
-              <Input value={scanInput} onChange={e => setScanInput(e.target.value)} placeholder="Name or #..." className="h-9 text-sm" data-testid="tap-scan-input" />
+              <Input value={scanInput} onChange={e => setScanInput(e.target.value)} placeholder="Name or tab number..." className="h-9 text-sm" data-testid="tap-scan-input" />
             </form>
             <div className="flex items-center justify-between">
               <h3 className="text-xs font-semibold uppercase text-muted-foreground">Tabs ({sessions.length})</h3>
