@@ -1072,7 +1072,7 @@ function ShiftOpsSection() {
   const [editRole, setEditRole] = useState('');
   const [newRoleName, setNewRoleName] = useState('');
   const [newRoleRate, setNewRoleRate] = useState('');
-  const [aiResult, setAiResult] = useState(null);
+  const [aiConversations, setAiConversations] = useState([]);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiQuestion, setAiQuestion] = useState('');
 
