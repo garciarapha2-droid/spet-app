@@ -3,10 +3,22 @@ from middleware.auth_middleware import require_auth
 from database import get_mongo_db, get_postgres_pool
 from datetime import datetime, timezone, date
 import uuid
+import json as json_mod
 import logging
 
 logger = logging.getLogger(__name__)
-router = APIRouter()
+
+
+def _parse_meta(raw):
+    if isinstance(raw, dict):
+        return raw
+    if isinstance(raw, str):
+        try:
+            return json_mod.loads(raw)
+        except (json_mod.JSONDecodeError, TypeError):
+            return {}
+    return {}
+
 
 VENUE_UUID = uuid.UUID("40a24e04-75b6-435d-bfff-ab0d469ce543")
 
