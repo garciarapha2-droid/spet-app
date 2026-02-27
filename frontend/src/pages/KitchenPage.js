@@ -338,15 +338,15 @@ export const KitchenPage = () => {
       <main className="w-full px-6 py-6">
         <div className="grid grid-cols-5 gap-5">
           <KanbanColumn title="Pending" tickets={pending} dotColor="bg-yellow-500"
-            onStatusChange={handleStatusChange} onSetTime={handleSetTime} />
+            onStatusChange={handleStatusChange} onSetTime={handleSetTime} onDrop={handleDrop} />
           <KanbanColumn title="Preparing" tickets={preparing} dotColor="bg-primary"
-            onStatusChange={handleStatusChange} onSetTime={handleSetTime} />
+            onStatusChange={handleStatusChange} onSetTime={handleSetTime} onDrop={handleDrop} />
           <KanbanColumn title="Ready" tickets={ready} dotColor="bg-green-500"
-            onStatusChange={handleStatusChange} onSetTime={handleSetTime} />
+            onStatusChange={handleStatusChange} onSetTime={handleSetTime} onDrop={handleDrop} />
           <KanbanColumn title="Delivered" tickets={delivered} dotColor="bg-blue-500"
-            onStatusChange={handleStatusChange} onSetTime={handleSetTime} />
+            onStatusChange={handleStatusChange} onSetTime={handleSetTime} onDrop={handleDrop} />
           <KanbanColumn title="Delayed" tickets={delayed} dotColor="bg-red-500"
-            onStatusChange={handleStatusChange} onSetTime={handleSetTime} isDelayed />
+            onStatusChange={handleStatusChange} onSetTime={handleSetTime} isDelayed onDrop={handleDrop} />
         </div>
       </main>
     </div>
