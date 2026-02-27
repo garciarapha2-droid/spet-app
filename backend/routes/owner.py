@@ -673,7 +673,7 @@ Return ONLY a valid JSON array of insight objects with fields: summary, what_we_
             system_message=AI_SYSTEM_PROMPT,
         ).with_model("openai", "gpt-5.2")
 
-        raw = llm.send_message(UserMessage(text=user_message))
+        raw = await llm.send_message(UserMessage(text=user_message))
         # Extract JSON from response
         text = raw.strip()
         if text.startswith("```"):
