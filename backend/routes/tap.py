@@ -7,6 +7,7 @@ import json as json_mod
 import logging
 
 logger = logging.getLogger(__name__)
+router = APIRouter()
 
 
 def _parse_meta(raw):
