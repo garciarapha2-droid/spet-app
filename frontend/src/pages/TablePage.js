@@ -245,13 +245,15 @@ export const TablePage = () => {
             <span className="text-sm text-primary font-medium" onClick={() => navigate('/tap')}>DISCO MODE</span>
           </label>
           <div className="h-5 w-px bg-border" />
-          {/* Server Selector */}
+          {/* Server Selector — mandatory */}
           <div className="relative">
             <button onClick={() => setShowServerMenu(!showServerMenu)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm hover:bg-muted" data-testid="server-selector">
-              <User className="h-3.5 w-3.5 text-muted-foreground" />
-              <span className="text-muted-foreground">{selectedServer || 'Select server'}</span>
-              <ChevronDown className="h-3 w-3 text-muted-foreground" />
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium ${
+                selectedServer ? 'bg-blue-500/10 text-blue-600 hover:bg-blue-500/20' : 'bg-red-500/10 text-red-500 hover:bg-red-500/20 animate-pulse'
+              }`} data-testid="server-selector">
+              <User className="h-3.5 w-3.5" />
+              <span>{selectedServer || 'Select Server'}</span>
+              <ChevronDown className="h-3 w-3" />
             </button>
             {showServerMenu && (
               <div className="absolute top-full left-0 mt-1 bg-card border border-border rounded-lg shadow-lg z-50 min-w-[200px] py-1" data-testid="server-dropdown">
