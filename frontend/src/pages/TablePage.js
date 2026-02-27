@@ -221,7 +221,7 @@ export const TablePage = () => {
                       <ServerAssign tableId={t.id} currentServer={t.server_name} barmen={barmen} onAssigned={loadTables} />
                     </div>
                   )}
-                </button>
+                </div>
               ))}
             </div>
           </div>
