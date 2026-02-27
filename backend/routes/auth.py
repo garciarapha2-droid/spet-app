@@ -59,13 +59,13 @@ async def login(request: LoginRequest):
     
     # Determine next route
     next_route = "/modules"
-    if len(access_docs) == 0:
+    if len(access_roles) == 0:
         next_route = "/setup"
-    elif any(doc['role'] in ['platform_admin', 'ceo'] for doc in access_docs):
+    elif any(doc['role'] in ['platform_admin', 'ceo'] for doc in access_roles):
         next_route = "/ceo/dashboard"
-    elif len(access_docs) == 1:
+    elif len(access_roles) == 1:
         # Single context, redirect based on role
-        role = access_docs[0]['role']
+        role = access_roles[0]['role']
         if role == 'manager':
             next_route = "/manager/overview"
         elif role == 'host':
