@@ -1,13 +1,14 @@
-from fastapi import APIRouter, HTTPException, Depends, Form, Query
+from fastapi import APIRouter, HTTPException, Depends, Form
 from middleware.auth_middleware import require_auth
 from database import get_mongo_db, get_postgres_pool
 from datetime import datetime, timezone, date
 import uuid
-import json
 import logging
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
+
+VENUE_UUID = uuid.UUID("40a24e04-75b6-435d-bfff-ab0d469ce543")
 
 
 # ─── B0: Venue TAP config & stats ────────────────────────────────
@@ -16,9 +17,7 @@ async def get_tap_config(venue_id: str, user: dict = Depends(require_auth)):
     """B0 — Get venue TAP configuration (bar mode, policies)."""
     db = get_mongo_db()
     cfg = await db.venue_configs.find_one({"venue_id": venue_id}, {"_id": 0})
-    bar_mode = "disco"
-    if cfg:
-        bar_mode = cfg.get("bar_mode", "disco")
+    bar_mode = cfg.get("bar_mode", "disco") if cfg else "disco"
     return {
         "venue_id": venue_id,
         "bar_mode": bar_mode,
@@ -31,41 +30,37 @@ async def get_tap_config(venue_id: str, user: dict = Depends(require_auth)):
 @router.get("/stats")
 async def get_tap_stats(venue_id: str, user: dict = Depends(require_auth)):
     """B0 — Real-time stats for TAP dashboard."""
-    db = get_mongo_db()
+    pool = get_postgres_pool()
     today_start = datetime.combine(date.today(), datetime.min.time()).replace(tzinfo=timezone.utc)
+    vid = uuid.UUID(venue_id)
 
-    open_tabs = await db.tap_sessions.count_documents({
-        "venue_id": venue_id, "status": "open"
-    })
-    pipeline = [
-        {"$match": {"venue_id": venue_id, "status": "open"}},
-        {"$group": {"_id": None, "total": {"$sum": "$running_total"}}}
-    ]
-    agg = await db.tap_sessions.aggregate(pipeline).to_list(1)
-    running_total = agg[0]["total"] if agg else 0
-
-    closed_today = await db.tap_sessions.count_documents({
-        "venue_id": venue_id, "status": "closed", "closed_at": {"$gte": today_start}
-    })
-    pipeline_revenue = [
-        {"$match": {"venue_id": venue_id, "status": "closed", "closed_at": {"$gte": today_start}}},
-        {"$group": {"_id": None, "total": {"$sum": "$running_total"}}}
-    ]
-    agg_rev = await db.tap_sessions.aggregate(pipeline_revenue).to_list(1)
-    revenue_today = agg_rev[0]["total"] if agg_rev else 0
+    async with pool.acquire() as conn:
+        open_tabs = await conn.fetchval(
+            "SELECT COUNT(*) FROM tap_sessions WHERE venue_id = $1 AND status = 'open'", vid
+        )
+        running = await conn.fetchval(
+            "SELECT COALESCE(SUM(total), 0) FROM tap_sessions WHERE venue_id = $1 AND status = 'open'", vid
+        )
+        closed_today = await conn.fetchval(
+            "SELECT COUNT(*) FROM tap_sessions WHERE venue_id = $1 AND status = 'closed' AND closed_at >= $2",
+            vid, today_start
+        )
+        revenue = await conn.fetchval(
+            "SELECT COALESCE(SUM(total), 0) FROM tap_sessions WHERE venue_id = $1 AND status = 'closed' AND closed_at >= $2",
+            vid, today_start
+        )
 
     return {
         "open_tabs": open_tabs,
-        "running_total": running_total,
+        "running_total": float(running),
         "closed_today": closed_today,
-        "revenue_today": revenue_today,
+        "revenue_today": float(revenue),
     }
 
 
-# ─── Catalog ─────────────────────────────────────────────────────
+# ─── Catalog (MongoDB — non-transactional config) ────────────────
 @router.get("/catalog")
 async def get_catalog(venue_id: str, user: dict = Depends(require_auth)):
-    """Get venue catalog items for TAP ordering."""
     db = get_mongo_db()
     cursor = db.venue_catalog.find(
         {"venue_id": venue_id, "active": True}, {"_id": 0}
@@ -83,7 +78,6 @@ async def add_catalog_item(
     price: float = Form(...),
     is_alcohol: bool = Form(False),
 ):
-    """Add item to venue catalog."""
     db = get_mongo_db()
     item = {
         "id": str(uuid.uuid4()),
@@ -99,42 +93,43 @@ async def add_catalog_item(
     return {"id": item["id"], "name": name, "price": price}
 
 
-# ─── B1: Tab (session) management ────────────────────────────────
+# ─── B1: Tab (session) management — ALL in PostgreSQL ─────────────
 @router.post("/session/open")
 async def open_tab(
     user: dict = Depends(require_auth),
     venue_id: str = Form(...),
-    guest_name: str = Form(None),
+    guest_name: str = Form("Guest"),
     guest_id: str = Form(None),
     table_id: str = Form(None),
     nfc_card_id: str = Form(None),
+    session_type: str = Form("tap"),
 ):
-    """B1 — Open a new tab/session."""
-    db = get_mongo_db()
-    session_id = str(uuid.uuid4())
-    now = datetime.now(timezone.utc)
+    """B1 — Open a new tab/session in PG."""
+    pool = get_postgres_pool()
+    vid = uuid.UUID(venue_id)
+    staff_id = uuid.UUID(user["sub"])
 
-    session = {
-        "id": session_id,
-        "venue_id": venue_id,
-        "guest_name": guest_name or "Guest",
-        "guest_id": guest_id,
-        "table_id": table_id,
-        "nfc_card_id": nfc_card_id,
-        "status": "open",
-        "items": [],
-        "running_total": 0,
-        "payments": [],
-        "staff_id": user.get("sub"),
-        "opened_at": now,
-        "closed_at": None,
-    }
-    await db.tap_sessions.insert_one(session)
+    async with pool.acquire() as conn:
+        row = await conn.fetchrow(
+            """INSERT INTO tap_sessions
+               (venue_id, guest_id, nfc_card_id, table_id, session_type,
+                opened_by_user_id, status, meta)
+               VALUES ($1, $2, $3, $4, $5, $6, 'open', $7::jsonb)
+               RETURNING id, opened_at""",
+            vid,
+            uuid.UUID(guest_id) if guest_id else None,
+            uuid.UUID(nfc_card_id) if nfc_card_id else None,
+            uuid.UUID(table_id) if table_id else None,
+            session_type,
+            staff_id,
+            f'{{"guest_name": "{guest_name}"}}',
+        )
+
     return {
-        "session_id": session_id,
-        "guest_name": session["guest_name"],
+        "session_id": str(row["id"]),
+        "guest_name": guest_name,
         "status": "open",
-        "opened_at": now.isoformat(),
+        "opened_at": row["opened_at"].isoformat(),
     }
 
 
@@ -144,27 +139,87 @@ async def list_sessions(
     status: str = "open",
     user: dict = Depends(require_auth),
 ):
-    """B1 — List open (or closed) tabs for a venue."""
-    db = get_mongo_db()
-    query = {"venue_id": venue_id, "status": status}
-    cursor = db.tap_sessions.find(query, {"_id": 0}).sort("opened_at", -1)
-    sessions = await cursor.to_list(100)
-    for s in sessions:
-        s["opened_at"] = s["opened_at"].isoformat() if s.get("opened_at") else None
-        s["closed_at"] = s["closed_at"].isoformat() if s.get("closed_at") else None
+    """B1 — List open/closed tabs for a venue."""
+    pool = get_postgres_pool()
+    vid = uuid.UUID(venue_id)
+
+    async with pool.acquire() as conn:
+        rows = await conn.fetch(
+            """SELECT s.id, s.status, s.session_type, s.total, s.subtotal,
+                      s.opened_at, s.closed_at, s.meta
+               FROM tap_sessions s
+               WHERE s.venue_id = $1 AND s.status = $2
+               ORDER BY s.opened_at DESC""",
+            vid, status,
+        )
+
+    sessions = []
+    for r in rows:
+        meta = r["meta"] or {}
+        sessions.append({
+            "id": str(r["id"]),
+            "guest_name": meta.get("guest_name", "Guest"),
+            "status": r["status"],
+            "session_type": r["session_type"],
+            "total": float(r["total"]),
+            "subtotal": float(r["subtotal"]),
+            "opened_at": r["opened_at"].isoformat() if r["opened_at"] else None,
+            "closed_at": r["closed_at"].isoformat() if r["closed_at"] else None,
+        })
     return {"sessions": sessions, "total": len(sessions)}
 
 
 @router.get("/session/{session_id}")
 async def get_session(session_id: str, user: dict = Depends(require_auth)):
     """B1 — Get tab details with items."""
-    db = get_mongo_db()
-    session = await db.tap_sessions.find_one({"id": session_id}, {"_id": 0})
-    if not session:
-        raise HTTPException(404, "Session not found")
-    session["opened_at"] = session["opened_at"].isoformat() if session.get("opened_at") else None
-    session["closed_at"] = session["closed_at"].isoformat() if session.get("closed_at") else None
-    return session
+    pool = get_postgres_pool()
+    sid = uuid.UUID(session_id)
+
+    async with pool.acquire() as conn:
+        session = await conn.fetchrow(
+            """SELECT id, venue_id, status, session_type, total, subtotal,
+                      opened_at, closed_at, meta
+               FROM tap_sessions WHERE id = $1""",
+            sid,
+        )
+        if not session:
+            raise HTTPException(404, "Session not found")
+
+        items = await conn.fetch(
+            """SELECT id, item_name, category, unit_price, qty, line_total,
+                      is_alcohol, notes, created_at
+               FROM tap_items
+               WHERE tap_session_id = $1 AND voided_at IS NULL
+               ORDER BY created_at""",
+            sid,
+        )
+
+    meta = session["meta"] or {}
+    return {
+        "id": str(session["id"]),
+        "venue_id": str(session["venue_id"]),
+        "guest_name": meta.get("guest_name", "Guest"),
+        "status": session["status"],
+        "session_type": session["session_type"],
+        "total": float(session["total"]),
+        "subtotal": float(session["subtotal"]),
+        "opened_at": session["opened_at"].isoformat() if session["opened_at"] else None,
+        "closed_at": session["closed_at"].isoformat() if session["closed_at"] else None,
+        "items": [
+            {
+                "id": str(it["id"]),
+                "name": it["item_name"],
+                "category": it["category"],
+                "unit_price": float(it["unit_price"]),
+                "qty": it["qty"],
+                "line_total": float(it["line_total"]),
+                "is_alcohol": it["is_alcohol"],
+                "notes": it["notes"],
+                "created_at": it["created_at"].isoformat() if it["created_at"] else None,
+            }
+            for it in items
+        ],
+    }
 
 
 @router.post("/session/{session_id}/add")
@@ -175,45 +230,59 @@ async def add_item_to_tab(
     qty: int = Form(1),
     notes: str = Form(None),
 ):
-    """B1 — Add catalog item to an open tab."""
+    """B1 — Add catalog item to an open tab (item in PG, catalog in MongoDB)."""
     db = get_mongo_db()
-    session = await db.tap_sessions.find_one({"id": session_id}, {"_id": 0})
+    pool = get_postgres_pool()
+    sid = uuid.UUID(session_id)
+    staff_id = uuid.UUID(user["sub"])
+
+    # Verify session exists and is open
+    async with pool.acquire() as conn:
+        session = await conn.fetchrow(
+            "SELECT id, venue_id, status FROM tap_sessions WHERE id = $1", sid
+        )
     if not session:
         raise HTTPException(404, "Session not found")
     if session["status"] != "open":
         raise HTTPException(400, "Tab is closed")
 
+    # Get catalog item from MongoDB
     catalog_item = await db.venue_catalog.find_one(
-        {"id": item_id, "venue_id": session["venue_id"]}, {"_id": 0}
+        {"id": item_id, "venue_id": str(session["venue_id"])}, {"_id": 0}
     )
     if not catalog_item:
         raise HTTPException(404, "Catalog item not found")
 
-    line_item = {
-        "id": str(uuid.uuid4()),
-        "item_id": item_id,
-        "name": catalog_item["name"],
-        "category": catalog_item["category"],
-        "price": catalog_item["price"],
-        "qty": qty,
-        "subtotal": catalog_item["price"] * qty,
-        "notes": notes,
-        "added_at": datetime.now(timezone.utc).isoformat(),
-        "staff_id": user.get("sub"),
-    }
+    line_total = catalog_item["price"] * qty
 
-    new_total = session["running_total"] + line_item["subtotal"]
-    await db.tap_sessions.update_one(
-        {"id": session_id},
-        {"$push": {"items": line_item}, "$set": {"running_total": new_total}},
-    )
+    # Insert line item and update session total in PG
+    async with pool.acquire() as conn:
+        item_row = await conn.fetchrow(
+            """INSERT INTO tap_items
+               (venue_id, tap_session_id, catalog_item_id, item_name, category,
+                unit_price, qty, line_total, is_alcohol, notes, created_by_user_id)
+               VALUES ($1, $2, $3::uuid, $4, $5, $6, $7, $8, $9, $10, $11)
+               RETURNING id""",
+            session["venue_id"], sid, uuid.UUID(item_id),
+            catalog_item["name"], catalog_item["category"],
+            catalog_item["price"], qty, line_total,
+            catalog_item.get("is_alcohol", False), notes, staff_id,
+        )
+        # Update session totals
+        await conn.execute(
+            """UPDATE tap_sessions
+               SET subtotal = subtotal + $1, total = subtotal + $1
+               WHERE id = $2""",
+            line_total, sid,
+        )
+        new_total = await conn.fetchval("SELECT total FROM tap_sessions WHERE id = $1", sid)
 
     return {
-        "line_item_id": line_item["id"],
-        "name": line_item["name"],
+        "line_item_id": str(item_row["id"]),
+        "name": catalog_item["name"],
         "qty": qty,
-        "subtotal": line_item["subtotal"],
-        "running_total": new_total,
+        "line_total": float(line_total),
+        "session_total": float(new_total),
     }
 
 
@@ -223,40 +292,41 @@ async def close_tab(
     user: dict = Depends(require_auth),
     payment_method: str = Form("card"),
 ):
-    """B1 — Close tab and record payment in PG."""
-    db = get_mongo_db()
+    """B1 — Close tab: update session + record payment in PG."""
     pool = get_postgres_pool()
+    sid = uuid.UUID(session_id)
+    staff_id = uuid.UUID(user["sub"])
     now = datetime.now(timezone.utc)
 
-    session = await db.tap_sessions.find_one({"id": session_id}, {"_id": 0})
-    if not session:
-        raise HTTPException(404, "Session not found")
-    if session["status"] != "open":
-        raise HTTPException(400, "Tab already closed")
-
-    # Close in MongoDB
-    await db.tap_sessions.update_one(
-        {"id": session_id},
-        {"$set": {"status": "closed", "closed_at": now}},
-    )
-
-    # Record payment in PG for financial audit trail
     async with pool.acquire() as conn:
+        session = await conn.fetchrow(
+            "SELECT id, venue_id, total, status FROM tap_sessions WHERE id = $1", sid
+        )
+        if not session:
+            raise HTTPException(404, "Session not found")
+        if session["status"] != "open":
+            raise HTTPException(400, "Tab already closed")
+
+        # Close session
         await conn.execute(
-            """INSERT INTO invoice_events
-               (venue_id, event_type, amount, currency, payment_method, reference_id, created_at)
-               VALUES ($1::uuid, 'tap_checkout', $2, 'BRL', $3, $4, $5)""",
-            uuid.UUID(session["venue_id"]),
-            session["running_total"],
-            payment_method,
-            session_id,
-            now,
+            """UPDATE tap_sessions
+               SET status = 'closed', closed_at = $1, closed_by_user_id = $2
+               WHERE id = $3""",
+            now, staff_id, sid,
+        )
+
+        # Record payment
+        await conn.execute(
+            """INSERT INTO tap_payments
+               (venue_id, tap_session_id, amount, method, paid_by_user_id, paid_at)
+               VALUES ($1, $2, $3, $4, $5, $6)""",
+            session["venue_id"], sid, session["total"], payment_method, staff_id, now,
         )
 
     return {
-        "session_id": session_id,
+        "session_id": str(sid),
         "status": "closed",
-        "total": session["running_total"],
+        "total": float(session["total"]),
         "payment_method": payment_method,
         "closed_at": now.isoformat(),
     }
