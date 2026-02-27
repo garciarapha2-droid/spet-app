@@ -76,9 +76,13 @@ SPETAP is a multi-tenant SaaS platform for venue operations (clubs, restaurants,
 - **Data Architecture**: Sessions/Items/Payments → PostgreSQL, Catalog → MongoDB
 - **Testing: 100% pass** — 27/27 backend tests, all frontend flows verified
 
----
-
-## Prioritized Backlog
+### Session 2e (2026-02-27) - PULSE Screens (Inside/Exit/Bar/Rewards/History)
+- **COMPLETED: Guest History Arrow** — ChevronRight (→) on each guest row, opens right panel with full event timeline (entries, exits, decisions, timestamps)
+- **COMPLETED: Inside Page** — 3-column grid of currently inside guests with Exit buttons, count indicator
+- **COMPLETED: Exit Page** — 2-column layout (inside guests with search + Recent Exits panel), tap-to-exit
+- **COMPLETED: Bar Page** — Auto-redirects to /tap after 2s, "Open TAP Now" button
+- **COMPLETED: Rewards Page** — Placeholder with Points/Tiers/Rewards cards, lock icon ("Contact sales")
+- **Testing: 100% pass** — 12/12 backend tests, all frontend flows verified
 
 ### P1 (Next)
 - Implement Table & KDS Modules with feature-gating
