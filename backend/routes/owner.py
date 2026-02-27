@@ -59,12 +59,8 @@ async def get_owner_dashboard(user: dict = Depends(require_auth), view: str = "b
     """Owner Overview — supports view modes: business (default), venue, events."""
     pool = get_postgres_pool()
     db = get_mongo_db()
-    now = datetime.now(timezone.utc)
     today = _today_start()
     month = _month_start()
-
-    # ─── Business View (aggregated) ───
-    if view == "business":
     year = _year_start()
     prev_start, prev_end = _prev_month_range()
 
@@ -73,6 +69,9 @@ async def get_owner_dashboard(user: dict = Depends(require_auth), view: str = "b
 
     if not venue_ids:
         return {"kpis": {}, "venues": [], "view": view}
+
+    # ─── Business View (aggregated) ───
+    if view == "business":
         async with pool.acquire() as conn:
             rev_today = float(await conn.fetchval(
                 "SELECT COALESCE(SUM(total),0) FROM tap_sessions WHERE venue_id = ANY($1) AND status='closed' AND closed_at>=$2",
