@@ -8,7 +8,7 @@ import {
   ArrowLeft, Home, LogOut, Building2, BarChart3, Users,
   DollarSign, TrendingUp, TrendingDown, Clock, Settings,
   Shield, Lightbulb, ChevronRight, Heart, Activity, Server,
-  AlertTriangle, X, Zap, Target, PieChart
+  AlertTriangle, X, Zap, Target, PieChart, Copy, ClipboardCheck
 } from 'lucide-react';
 
 const VNAME = () => localStorage.getItem('active_venue_name') || 'Demo Club';
