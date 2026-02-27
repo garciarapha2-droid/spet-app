@@ -151,8 +151,9 @@ export const PulseHeader = () => {
         )}
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-4">
         <ThemeToggle />
+        <div className="h-5 w-px bg-border" />
         <Button variant="ghost" size="icon" onClick={() => { logout(); navigate('/login'); }} data-testid="logout-btn">
           <LogOut className="h-4 w-4" />
         </Button>
