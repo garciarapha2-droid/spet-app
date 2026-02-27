@@ -17,7 +17,7 @@ VENUE_ID = "40a24e04-75b6-435d-bfff-ab0d469ce543"
 @pytest.fixture(scope="module")
 def auth_token():
     """Get auth token via login."""
-    response = requests.post(f"{BASE_URL}/api/auth/login", data={
+    response = requests.post(f"{BASE_URL}/api/auth/login", json={
         "email": "teste@teste.com",
         "password": "12345"
     })
