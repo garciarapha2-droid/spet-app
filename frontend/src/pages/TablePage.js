@@ -265,14 +265,21 @@ export const TablePage = () => {
                   {tables.filter(t => t.zone === zone).map(t => (
                     <button key={t.id} onClick={() => setSelectedTable(t.id)}
                       className={`p-3 rounded-xl border-2 text-center transition-all ${
-                        selectedTable === t.id ? 'border-primary bg-primary/5' :
-                        t.status === 'occupied' ? 'border-destructive/30 bg-destructive/5' :
+                        selectedTable === t.id ? 'border-primary bg-primary/5 ring-2 ring-primary/20' :
+                        t.status === 'occupied' ? 'border-orange-500/30 bg-orange-500/5' :
                         'border-border hover:border-primary/30'
                       }`} data-testid={`table-${t.table_number}`}>
                       <span className="text-lg font-bold">#{t.table_number}</span>
                       <p className="text-xs text-muted-foreground"><Users className="h-3 w-3 inline" /> {t.capacity}</p>
+                      <span className={`mt-1 inline-block text-[10px] font-medium px-2 py-0.5 rounded-full ${
+                        t.status === 'occupied' ? 'bg-orange-500/10 text-orange-600' :
+                        'bg-green-500/10 text-green-600'
+                      }`}>{t.status === 'occupied' ? 'Occupied' : 'Available'}</span>
                       {t.status === 'occupied' && t.session_guest && (
-                        <p className="text-xs text-primary mt-1 truncate">{t.session_guest}</p>
+                        <p className="text-xs text-primary mt-1 truncate font-medium">{t.session_guest}</p>
+                      )}
+                      {t.status === 'occupied' && t.tab_number && (
+                        <p className="text-[10px] text-muted-foreground font-medium">Tab #{t.tab_number}</p>
                       )}
                     </button>
                   ))}
