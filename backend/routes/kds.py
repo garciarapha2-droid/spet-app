@@ -194,7 +194,6 @@ async def update_ticket_status(
         if not ticket:
             raise HTTPException(404, "Ticket not found")
 
-        updates = {"status": status}
         set_clauses = ["status = $2"]
         params = [tid, status]
         idx = 3
