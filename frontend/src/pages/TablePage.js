@@ -339,7 +339,13 @@ export const TablePage = () => {
                   </div>
                 ) : (
                   <>
-                    <p className="text-sm text-muted-foreground mb-1">{tableDetail.session?.guest_name}</p>
+                    <p className="text-sm font-medium">{tableDetail.session?.guest_name}</p>
+                    {tableDetail.session?.tab_number && (
+                      <p className="text-sm text-primary font-semibold" data-testid="table-detail-tab-number">Tab #{tableDetail.session.tab_number}</p>
+                    )}
+                    {tableDetail.session?.server_name && (
+                      <p className="text-xs text-muted-foreground mb-1">Server: {tableDetail.session.server_name}</p>
+                    )}
                     <p className="text-2xl font-bold text-primary mb-4" data-testid="table-total">
                       ${(tableDetail.session?.total || 0).toFixed(2)}
                     </p>
