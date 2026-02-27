@@ -240,6 +240,11 @@ export const KitchenPage = () => {
     } catch { toast.error('Failed to set time'); }
   };
 
+  const handleDrop = async (ticketId, newStatus) => {
+    if (!ticketId || !newStatus) return;
+    await handleStatusChange(ticketId, newStatus);
+  };
+
   // Categorize tickets
   const now = Date.now();
   const isDelayed = (t) => {
