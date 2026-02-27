@@ -637,7 +637,7 @@ function ShiftsSection() {
 }
 
 /* ═══════════════════════════════════════════════════════════════════
-   5. NFC & GUESTS
+   5. NFC & GUESTS — Sorted by Highest Spender + Profile Modal
    ═══════════════════════════════════════════════════════════════════ */
 function GuestsSection() {
   const [guests, setGuests] = useState([]);
@@ -645,6 +645,7 @@ function GuestsSection() {
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState(null);
   const [detail, setDetail] = useState(null);
+  const [detailLoading, setDetailLoading] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const load = useCallback((q) => {
@@ -655,9 +656,15 @@ function GuestsSection() {
 
   const loadDetail = async (guestId) => {
     setSelected(guestId);
-    const r = await managerAPI.getGuestDetail(guestId, VID());
-    setDetail(r.data);
+    setDetailLoading(true);
+    try {
+      const r = await managerAPI.getGuestDetail(guestId, VID());
+      setDetail(r.data);
+    } catch { toast.error('Failed to load guest profile'); }
+    setDetailLoading(false);
   };
+
+  const closeDetail = () => { setSelected(null); setDetail(null); };
 
   const doSearch = () => { setLoading(true); load(search); };
 
@@ -666,7 +673,7 @@ function GuestsSection() {
   return (
     <div data-testid="guests-section">
       <div className="flex items-center justify-between mb-4">
-        <div><h2 className="text-xl font-bold">NFC & Guests</h2><p className="text-sm text-muted-foreground">{total} total guests</p></div>
+        <div><h2 className="text-xl font-bold">NFC & Guests</h2><p className="text-sm text-muted-foreground">{total} total guests — sorted by highest spender</p></div>
       </div>
 
       <div className="flex gap-3 mb-4">
@@ -674,63 +681,126 @@ function GuestsSection() {
           <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
           <Input value={search} onChange={e => setSearch(e.target.value)} onKeyDown={e => e.key === 'Enter' && doSearch()} placeholder="Search guests..." className="pl-9" />
         </div>
-        <Button variant="outline" onClick={doSearch}>Search</Button>
+        <Button variant="outline" onClick={doSearch} data-testid="search-guests-btn">Search</Button>
       </div>
 
-      <div className="flex gap-4">
-        {/* Guest List */}
-        <div className="flex-1 space-y-1">
-          {guests.map(g => (
-            <div key={g.id} onClick={() => loadDetail(g.id)}
-              className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-colors ${selected === g.id ? 'border-primary bg-primary/5' : 'border-border hover:bg-muted/20'}`}>
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">{g.name?.[0] || '?'}</div>
-                <div>
-                  <p className="text-sm font-medium">{g.name}</p>
-                  <p className="text-xs text-muted-foreground">{g.email} — {g.visits || 0} visits</p>
-                </div>
+      {/* Guest List */}
+      <div className="space-y-1">
+        {guests.map((g, idx) => (
+          <div key={g.id} onClick={() => loadDetail(g.id)}
+            className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-colors ${selected === g.id ? 'border-primary bg-primary/5' : 'border-border hover:bg-muted/20'}`}
+            data-testid={`guest-row-${g.id}`}>
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary relative">
+                {g.name?.[0] || '?'}
+                {idx < 3 && <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-yellow-500 text-white text-[8px] flex items-center justify-center font-bold">{idx + 1}</span>}
               </div>
-              <div className="flex items-center gap-2">
-                {g.tags?.includes('vip') && <span className="text-xs bg-yellow-500/10 text-yellow-600 px-2 py-0.5 rounded-full">VIP</span>}
-                {g.wristband_blocked && <span className="text-xs bg-red-500/10 text-red-600 px-2 py-0.5 rounded-full">Blocked</span>}
-                <span className="text-xs text-green-500 font-medium">${(g.spend_total || 0).toFixed(0)}</span>
+              <div>
+                <p className="text-sm font-medium">{g.name}</p>
+                <p className="text-xs text-muted-foreground">{g.email} — {g.visits || 0} visits</p>
               </div>
             </div>
-          ))}
-        </div>
-
-        {/* Guest Detail */}
-        {detail && (
-          <div className="w-80 bg-card border border-border rounded-xl p-4 self-start" data-testid="guest-detail">
-            <h3 className="font-bold mb-3">{detail.guest?.name}</h3>
-            <div className="space-y-2 text-sm mb-4">
-              <p><span className="text-muted-foreground">Email:</span> {detail.guest?.email}</p>
-              <p><span className="text-muted-foreground">Phone:</span> {detail.guest?.phone}</p>
-              <p><span className="text-muted-foreground">Visits:</span> {detail.guest?.visits}</p>
-              <p><span className="text-muted-foreground">Total Spend:</span> <span className="text-green-500 font-bold">${(detail.guest?.spend_total || 0).toFixed(2)}</span></p>
-              <p><span className="text-muted-foreground">Points:</span> {detail.guest?.reward_points || 0}</p>
-            </div>
-            <h4 className="text-xs font-semibold text-muted-foreground uppercase mb-1">Recent Entries</h4>
-            <div className="space-y-1 mb-3 max-h-32 overflow-y-auto">
-              {detail.entries?.map((e, i) => (
-                <div key={i} className="text-xs flex justify-between p-1 bg-muted/20 rounded">
-                  <span>{e.entry_type} — {e.decision}</span>
-                  <span className="text-muted-foreground">{e.date ? new Date(e.date).toLocaleDateString() : ''}</span>
-                </div>
-              ))}
-            </div>
-            <h4 className="text-xs font-semibold text-muted-foreground uppercase mb-1">Recent Tabs</h4>
-            <div className="space-y-1 max-h-32 overflow-y-auto">
-              {detail.sessions?.map((s, i) => (
-                <div key={i} className="text-xs flex justify-between p-1 bg-muted/20 rounded">
-                  <span className={s.status === 'open' ? 'text-blue-500' : 'text-green-500'}>{s.status}</span>
-                  <span className="font-bold">${s.total.toFixed(2)}</span>
-                </div>
-              ))}
+            <div className="flex items-center gap-2">
+              {g.tags?.includes('vip') && <span className="text-xs bg-yellow-500/10 text-yellow-600 px-2 py-0.5 rounded-full">VIP</span>}
+              {g.wristband_blocked && <span className="text-xs bg-red-500/10 text-red-600 px-2 py-0.5 rounded-full">Blocked</span>}
+              <span className="text-sm text-green-500 font-bold">${(g.spend_total || 0).toFixed(0)}</span>
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
             </div>
           </div>
-        )}
+        ))}
       </div>
+
+      {/* Guest Profile Modal */}
+      {selected && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center" onClick={closeDetail} data-testid="guest-profile-modal">
+          <div className="bg-card border border-border rounded-xl w-full max-w-lg max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            {detailLoading ? (
+              <div className="p-8 text-center animate-pulse"><p className="text-sm text-muted-foreground">Loading profile...</p></div>
+            ) : detail ? (
+              <>
+                {/* Profile Header */}
+                <div className="p-5 border-b border-border bg-primary/5">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-lg font-bold text-primary">{detail.guest?.name?.[0] || '?'}</div>
+                      <div>
+                        <h3 className="font-bold text-base">{detail.guest?.name}</h3>
+                        <p className="text-xs text-muted-foreground">{detail.guest?.email}</p>
+                      </div>
+                    </div>
+                    <Button variant="ghost" size="sm" onClick={closeDetail} data-testid="close-guest-modal"><X className="h-4 w-4" /></Button>
+                  </div>
+                  {detail.guest?.tags?.includes('vip') && <span className="text-xs bg-yellow-500/10 text-yellow-600 px-2 py-0.5 rounded-full">VIP</span>}
+                </div>
+
+                {/* Spend Summary */}
+                <div className="p-5 border-b border-border">
+                  <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Spend Summary</h4>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="text-center p-3 bg-green-500/5 rounded-lg border border-green-500/20" data-testid="guest-total-spend">
+                      <p className="text-xl font-bold text-green-500">${(detail.spend_summary?.total_spend || 0).toFixed(0)}</p>
+                      <p className="text-[10px] text-muted-foreground">Total Spend</p>
+                    </div>
+                    <div className="text-center p-3 bg-muted/30 rounded-lg" data-testid="guest-total-tabs">
+                      <p className="text-xl font-bold">{detail.spend_summary?.total_sessions || 0}</p>
+                      <p className="text-[10px] text-muted-foreground">Total Tabs</p>
+                    </div>
+                    <div className="text-center p-3 bg-muted/30 rounded-lg" data-testid="guest-avg-spend">
+                      <p className="text-xl font-bold text-primary">${(detail.spend_summary?.avg_spend || 0).toFixed(2)}</p>
+                      <p className="text-[10px] text-muted-foreground">Avg Spend</p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4 mt-3">
+                    <div className="text-center p-2 bg-muted/20 rounded-lg">
+                      <p className="text-sm font-bold">{detail.guest?.visits || 0}</p>
+                      <p className="text-[10px] text-muted-foreground">Visits</p>
+                    </div>
+                    <div className="text-center p-2 bg-muted/20 rounded-lg">
+                      <p className="text-sm font-bold">{detail.guest?.reward_points || 0}</p>
+                      <p className="text-[10px] text-muted-foreground">Points</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Event History */}
+                <div className="p-5 border-b border-border">
+                  <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Event History ({detail.events?.length || 0})</h4>
+                  <div className="space-y-1 max-h-36 overflow-y-auto">
+                    {detail.events?.length > 0 ? detail.events.map((ev, i) => (
+                      <div key={i} className="flex items-center justify-between p-2 bg-muted/20 rounded-lg text-xs" data-testid={`guest-event-${i}`}>
+                        <div className="flex items-center gap-2">
+                          <Calendar className="h-3 w-3 text-primary" />
+                          <span className="font-medium">{ev.event_name}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className={`px-1.5 py-0.5 rounded-full ${ev.event_status === 'active' ? 'bg-green-500/10 text-green-600' : 'bg-muted text-muted-foreground'}`}>{ev.event_status}</span>
+                          <span className="text-muted-foreground">{ev.event_date ? new Date(ev.event_date).toLocaleDateString() : ''}</span>
+                        </div>
+                      </div>
+                    )) : <p className="text-xs text-muted-foreground">No events attended</p>}
+                  </div>
+                </div>
+
+                {/* Recent Tabs */}
+                <div className="p-5">
+                  <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Recent Tabs ({detail.sessions?.length || 0})</h4>
+                  <div className="space-y-1 max-h-36 overflow-y-auto">
+                    {detail.sessions?.length > 0 ? detail.sessions.map((s, i) => (
+                      <div key={i} className="flex items-center justify-between p-2 bg-muted/20 rounded-lg text-xs">
+                        <span className={`font-medium ${s.status === 'open' ? 'text-blue-500' : 'text-green-500'}`}>{s.status}</span>
+                        <span className="font-bold">${s.total.toFixed(2)}</span>
+                        <span className="text-muted-foreground">{s.opened_at ? new Date(s.opened_at).toLocaleDateString() : ''}</span>
+                      </div>
+                    )) : <p className="text-xs text-muted-foreground">No tabs</p>}
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="p-8 text-center"><p className="text-sm text-muted-foreground">Guest not found</p></div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
