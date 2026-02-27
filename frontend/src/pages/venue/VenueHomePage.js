@@ -329,12 +329,16 @@ export const VenueSelectPage = () => {
                 ) : (
                   <div className="space-y-3">
                     {events.map((evt) => (
-                      <div key={evt.id} className="bg-card border border-border rounded-xl p-5 hover:border-primary/30 transition-colors">
+                      <div key={evt.id}
+                        className="bg-card border border-border rounded-xl p-5 hover:border-primary/30 transition-colors cursor-pointer"
+                        onDoubleClick={handleEnter}
+                        data-testid={`event-card-${evt.id}`}>
                         <h4 className="font-semibold mb-1">{evt.name}</h4>
                         <div className="flex gap-4 text-sm text-muted-foreground">
                           {evt.cover_price > 0 && <span>Cover: ${evt.cover_price}</span>}
                           {evt.cover_consumption_price > 0 && <span>Cover+Cons: ${evt.cover_consumption_price}</span>}
                         </div>
+                        <p className="text-xs text-muted-foreground/60 mt-2">Double-click to enter</p>
                       </div>
                     ))}
                   </div>
