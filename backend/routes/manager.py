@@ -359,7 +359,7 @@ async def close_shift(
 # ─── NFC & GUESTS ─────────────────────────────────────────────────
 @router.get("/guests")
 async def list_guests(venue_id: str, user: dict = Depends(require_auth), search: str = None):
-    """List guests for this venue."""
+    """List guests for this venue, sorted by highest spender."""
     db = get_mongo_db()
     query = {"venue_id": venue_id}
     if search:
@@ -367,7 +367,8 @@ async def list_guests(venue_id: str, user: dict = Depends(require_auth), search:
             {"name": {"$regex": search, "$options": "i"}},
             {"email": {"$regex": search, "$options": "i"}},
         ]
-    cursor = db.venue_guests.find(query, {"_id": 0}).sort("last_visit", -1).limit(100)
+    # Sort by spend_total descending (highest spender first)
+    cursor = db.venue_guests.find(query, {"_id": 0}).sort("spend_total", -1).limit(100)
     guests = await cursor.to_list(100)
     total = await db.venue_guests.count_documents({"venue_id": venue_id})
     return {"guests": guests, "total": total}
@@ -375,7 +376,7 @@ async def list_guests(venue_id: str, user: dict = Depends(require_auth), search:
 
 @router.get("/guests/{guest_id}")
 async def get_guest_detail(guest_id: str, venue_id: str, user: dict = Depends(require_auth)):
-    """Get guest profile with visit history."""
+    """Get guest profile with visit history, event history, and spend summary."""
     db = get_mongo_db()
     pool = get_postgres_pool()
     vid = _vid(venue_id)
@@ -384,24 +385,54 @@ async def get_guest_detail(guest_id: str, venue_id: str, user: dict = Depends(re
     if not guest:
         raise HTTPException(404, "Guest not found")
 
-    # Visit history from PG
     async with pool.acquire() as conn:
+        # Visit history
         entries = await conn.fetch(
             """SELECT entry_type, cover_amount, cover_paid, decision, created_at
                FROM entry_events WHERE venue_id=$1 AND guest_id=$2::uuid
                ORDER BY created_at DESC LIMIT 20""", vid, uuid.UUID(guest_id))
+
+        # Tab sessions
         sessions = await conn.fetch(
             """SELECT id, status, total, opened_at, closed_at, meta
                FROM tap_sessions WHERE venue_id=$1 AND guest_id=$2::uuid
                ORDER BY opened_at DESC LIMIT 20""", vid, uuid.UUID(guest_id))
 
+        # Spend summary
+        total_spend = float(await conn.fetchval(
+            "SELECT COALESCE(SUM(total),0) FROM tap_sessions WHERE venue_id=$1 AND guest_id=$2::uuid AND status='closed'",
+            vid, uuid.UUID(guest_id)) or 0)
+        total_sessions = await conn.fetchval(
+            "SELECT COUNT(*) FROM tap_sessions WHERE venue_id=$1 AND guest_id=$2::uuid",
+            vid, uuid.UUID(guest_id)) or 0
+        avg_spend = round(total_spend / total_sessions, 2) if total_sessions > 0 else 0
+
+        # Event history — events this guest attended
+        event_rows = await conn.fetch(
+            """SELECT eg.event_id, eg.checked_in_at, eg.checked_out_at,
+                      e.name as event_name, e.event_date, e.status as event_status
+               FROM event_guests eg
+               JOIN venue_events e ON e.id = eg.event_id
+               WHERE eg.venue_id=$1 AND eg.guest_id=$2::uuid
+               ORDER BY e.event_date DESC LIMIT 20""", vid, uuid.UUID(guest_id))
+
     return {
         "guest": guest,
+        "spend_summary": {
+            "total_spend": total_spend,
+            "total_sessions": total_sessions,
+            "avg_spend": avg_spend,
+        },
         "entries": [{"entry_type": e["entry_type"], "cover_amount": float(e["cover_amount"]) if e["cover_amount"] else 0,
                      "decision": e["decision"], "date": e["created_at"].isoformat()} for e in entries],
         "sessions": [{"id": str(s["id"]), "status": s["status"], "total": float(s["total"]),
                       "opened_at": s["opened_at"].isoformat() if s["opened_at"] else None,
                       "closed_at": s["closed_at"].isoformat() if s["closed_at"] else None} for s in sessions],
+        "events": [{"event_id": str(ev["event_id"]), "event_name": ev["event_name"],
+                    "event_date": ev["event_date"].isoformat() if ev["event_date"] else None,
+                    "event_status": ev["event_status"],
+                    "checked_in_at": ev["checked_in_at"].isoformat() if ev["checked_in_at"] else None,
+                    "checked_out_at": ev["checked_out_at"].isoformat() if ev["checked_out_at"] else None} for ev in event_rows],
     }
 
 
