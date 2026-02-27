@@ -171,7 +171,7 @@ async def list_sessions(
     sessions = []
     for r in rows:
         raw_meta = r["meta"]
-        meta = raw_meta if isinstance(raw_meta, dict) else {}
+        meta = _parse_meta(raw_meta)
         sessions.append({
             "id": str(r["id"]),
             "guest_name": meta.get("guest_name", "Guest"),
@@ -211,7 +211,7 @@ async def get_session(session_id: str, user: dict = Depends(require_auth)):
         )
 
     raw_meta = session["meta"]
-    meta = raw_meta if isinstance(raw_meta, dict) else {}
+    meta = _parse_meta(raw_meta)
     return {
         "id": str(session["id"]),
         "venue_id": str(session["venue_id"]),
