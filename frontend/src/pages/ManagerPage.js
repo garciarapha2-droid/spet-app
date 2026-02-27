@@ -10,7 +10,7 @@ import {
   Plus, Pencil, Trash2, Check, X, BarChart3, DollarSign,
   Search, Calendar, Shield, Clock, AlertTriangle, Download,
   ChevronDown, ChevronRight, Gift, Nfc, FileText, Activity,
-  TrendingUp, Eye
+  TrendingUp, Eye, LayoutGrid, User
 } from 'lucide-react';
 
 const VID = () => localStorage.getItem('active_venue_id') || '40a24e04-75b6-435d-bfff-ab0d469ce543';
@@ -20,6 +20,7 @@ const VNAME = () => localStorage.getItem('active_venue_name') || 'Demo Club';
 const TABS = [
   { key: 'overview', label: 'Overview', icon: Activity },
   { key: 'staff', label: 'Staff & Roles', icon: Users },
+  { key: 'tables-server', label: 'Tables by Server', icon: LayoutGrid },
   { key: 'menu', label: 'Menu / Products', icon: UtensilsCrossed },
   { key: 'shifts', label: 'Shifts & Ops', icon: Clock },
   { key: 'guests', label: 'NFC & Guests', icon: Nfc },
