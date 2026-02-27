@@ -90,6 +90,7 @@ async def add_catalog_item(
     category: str = Form(...),
     price: float = Form(...),
     is_alcohol: bool = Form(False),
+    image_url: str = Form(None),
 ):
     db = get_mongo_db()
     item = {
@@ -99,11 +100,13 @@ async def add_catalog_item(
         "category": category,
         "price": price,
         "is_alcohol": is_alcohol,
+        "image_url": image_url,
         "active": True,
         "created_at": datetime.now(timezone.utc),
     }
     await db.venue_catalog.insert_one(item)
-    return {"id": item["id"], "name": name, "price": price}
+    item.pop("_id", None)
+    return {"id": item["id"], "name": name, "price": price, "category": category}
 
 
 # ─── B1: Tab (session) management — ALL in PostgreSQL ─────────────
