@@ -26,6 +26,7 @@ export const PulseEntryPage = () => {
   const [currentGuest, setCurrentGuest] = useState(null);
   const [entryResult, setEntryResult] = useState(null);
   const [todayEntries, setTodayEntries] = useState([]);
+  const [guestHistory, setGuestHistory] = useState(null);
   const [stats, setStats] = useState({ inside: 0, visits: 0, points: 0 });
 
   // Load venue config + today's entries on mount
