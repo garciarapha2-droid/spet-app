@@ -275,6 +275,33 @@ function InsightsSection() {
     setInputValue(step);
   };
 
+  const [copiedId, setCopiedId] = useState(null);
+  const copyInsight = (convId, insight) => {
+    const text = [
+      `Priority: ${insight.priority?.toUpperCase()}`,
+      `\nSummary:\n${insight.summary}`,
+      `\nWhat We See:\n${insight.what_we_see}`,
+      `\nRecommended Actions:\n${(insight.recommended_actions || []).map((a, i) => `  ${i+1}. ${a}`).join('\n')}`,
+      insight.reference ? `\nReference: ${insight.reference}` : '',
+      insight.next_steps?.length ? `\nNext Steps:\n${insight.next_steps.map((s, i) => `  ${i+1}. ${s}`).join('\n')}` : '',
+    ].filter(Boolean).join('\n');
+    navigator.clipboard.writeText(text);
+    setCopiedId(convId);
+    setTimeout(() => setCopiedId(null), 2000);
+    toast.success('Insight copied');
+  };
+
+  const categorizeStep = (step) => {
+    const lower = step.toLowerCase();
+    if (lower.includes('revenue') || lower.includes('cost') || lower.includes('price') || lower.includes('margin') || lower.includes('profit') || lower.includes('financial'))
+      return { label: 'Revenue', color: 'bg-green-500/10 text-green-600 border-green-500/20' };
+    if (lower.includes('staff') || lower.includes('team') || lower.includes('hire') || lower.includes('training'))
+      return { label: 'Staff', color: 'bg-blue-500/10 text-blue-600 border-blue-500/20' };
+    if (lower.includes('growth') || lower.includes('market') || lower.includes('expand') || lower.includes('customer'))
+      return { label: 'Growth', color: 'bg-purple-500/10 text-purple-600 border-purple-500/20' };
+    return { label: 'Strategy', color: 'bg-orange-500/10 text-orange-600 border-orange-500/20' };
+  };
+
   const typeStyles = {
     critical: { border: 'border-red-500/40', bg: 'bg-red-500/5', icon: 'text-red-500', badge: 'bg-red-500/10 text-red-600' },
     warning: { border: 'border-yellow-500/40', bg: 'bg-yellow-500/5', icon: 'text-yellow-500', badge: 'bg-yellow-500/10 text-yellow-600' },
