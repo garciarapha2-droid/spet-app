@@ -351,3 +351,40 @@ async def delete_table(table_id: str, user: dict = Depends(require_auth)):
             raise HTTPException(400, "Cannot delete an occupied table")
         await conn.execute("DELETE FROM venue_tables WHERE id = $1", tid)
     return {"id": table_id, "deleted": True}
+
+
+# ─── Assign / Change server on an occupied table ──────────────────
+@router.post("/assign-server")
+async def assign_server(
+    user: dict = Depends(require_auth),
+    table_id: str = Form(...),
+    server_name: str = Form(...),
+):
+    """Assign or change the server for an occupied table."""
+    pool = get_postgres_pool()
+    tid = uuid.UUID(table_id)
+
+    async with pool.acquire() as conn:
+        table = await conn.fetchrow(
+            "SELECT id, current_session_id, venue_id FROM venue_tables WHERE id = $1", tid)
+        if not table or not table["current_session_id"]:
+            raise HTTPException(400, "Table has no active session")
+
+        sid = table["current_session_id"]
+        session = await conn.fetchrow("SELECT meta FROM tap_sessions WHERE id = $1", sid)
+        meta = _parse_meta(session["meta"]) if session and session["meta"] else {}
+        old_server = meta.get("server_name")
+        meta["server_name"] = server_name
+        await conn.execute(
+            "UPDATE tap_sessions SET meta = $1::jsonb WHERE id = $2",
+            json_mod.dumps(meta), sid)
+
+        # Audit trail
+        now = datetime.now(timezone.utc)
+        await conn.execute(
+            """INSERT INTO audit_events (event_type, user_id, venue_id, entity_type, metadata, timestamp)
+               VALUES ('server_change', $1::uuid, $2, 'table', $3::jsonb, $4)""",
+            uuid.UUID(user["sub"]), table["venue_id"],
+            json_mod.dumps({"table_id": str(tid), "from": old_server, "to": server_name}), now)
+
+    return {"table_id": str(tid), "server_name": server_name, "previous": old_server}
