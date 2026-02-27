@@ -124,7 +124,7 @@ export const TapPage = () => {
     } catch (err) { console.error(err); }
   }, []);
 
-  useEffect(() => { loadData(); }, [loadData]);
+  useEffect(() => { loadData(); loadBarmen(); }, [loadData, loadBarmen]);
 
   // Load active session detail
   useEffect(() => {
