@@ -100,6 +100,16 @@ function OverviewSection({ onNavigate }) {
     managerAPI.getOverview(VID()).then(r => setData(r.data)).catch(() => toast.error('Failed to load overview')).finally(() => setLoading(false));
   }, []);
 
+  const openFunnelDrilldown = async (stage) => {
+    setFunnelModal(stage);
+    setFunnelLoading(true);
+    try {
+      const res = await managerAPI.getFunnelDetail(VID(), stage);
+      setFunnelData(res.data.results || []);
+    } catch { toast.error('Failed to load detail'); }
+    setFunnelLoading(false);
+  };
+
   if (loading) return <Skeleton />;
   if (!data) return <p className="text-muted-foreground">No data available</p>;
 
