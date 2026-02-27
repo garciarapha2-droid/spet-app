@@ -424,6 +424,11 @@ export const TablePage = () => {
                           <span>Table #{tableDetail.table_number}</span>
                           <ElapsedTime openedAt={tableDetail.session.opened_at} />
                           <span className="flex items-center gap-1"><User className="h-3 w-3" /> {tableDetail.session.server_name || 'No server'}</span>
+                          {tableDetail.session.id_verified && (
+                            <span className="flex items-center gap-1 bg-green-500/10 text-green-600 px-2 py-0.5 rounded-full font-medium" data-testid="id-verified-badge">
+                              <ShieldCheck className="h-3 w-3" /> ID verified
+                            </span>
+                          )}
                         </div>
                       </div>
                       <span className="text-2xl font-bold text-primary" data-testid="table-total">${(tableDetail.session.total || 0).toFixed(2)}</span>
