@@ -1124,7 +1124,7 @@ async def shift_ai_analysis(
     venue_name = cfg.get("venue_name", "Venue") if cfg else "Venue"
     bar_mode = cfg.get("bar_mode", "disco") if cfg else "disco"
 
-    staff_lines = "\n".join([f"  - {s['name']} ({s['role']}): ${s['hourly_rate']}/hr × {s['hours_worked']}h = ${s['earned']}" for s in staff_breakdown])
+    staff_lines = "\n".join([f"  - {s['name']} ({s['role']}): ${s['hourly_rate']}/hr × {s['hours_worked']}h = Wages ${s['wages']} + Tips ${s['tips']} = Total ${s['total']}" for s in staff_breakdown])
 
     context = f"""
 VENUE: {venue_name} (Type: {bar_mode})
