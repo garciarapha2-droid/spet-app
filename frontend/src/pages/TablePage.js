@@ -227,6 +227,10 @@ export const TablePage = () => {
 
   return (
     <div className="min-h-screen bg-background" data-testid="table-page">
+      {/* ID Verification Modal */}
+      {showIdModal && (
+        <IDVerificationModal onConfirm={handleIdVerified} onCancel={handleIdCancel} />
+      )}
       <header className="h-14 border-b border-border bg-card px-6 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon" onClick={() => navigate('/tap')} data-testid="back-to-home-btn">
