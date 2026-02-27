@@ -27,6 +27,9 @@ export const EntrySuccess = ({ result, guest, onDone }) => {
 
       <div>
         <h3 className="text-2xl font-semibold" data-testid="success-guest-name">{guest?.name || 'Guest'}</h3>
+        {result?.tab_number && (
+          <p className="text-primary font-bold text-lg mt-1" data-testid="success-tab-number">Tab #{result.tab_number}</p>
+        )}
         <p className={`text-lg mt-1 ${isAllowed ? 'text-green-500' : 'text-destructive'}`}>
           {isAllowed ? 'Entry Allowed' : 'Entry Denied'}
         </p>
