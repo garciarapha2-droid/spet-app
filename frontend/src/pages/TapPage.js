@@ -144,10 +144,23 @@ export const TapPage = () => {
   const handleScan = async (e) => {
     e.preventDefault();
     if (!scanInput.trim()) return;
-    const match = sessions.find(s =>
-      s.guest_name?.toLowerCase().includes(scanInput.toLowerCase()) ||
-      (s.tab_number && s.tab_number.toString() === scanInput.trim())
-    );
+    const raw = scanInput.trim();
+    // Strip leading "#" if present, check if numeric for tab_number lookup
+    const cleaned = raw.startsWith('#') ? raw.slice(1) : raw;
+    const isNumeric = /^\d+$/.test(cleaned);
+
+    let match;
+    if (isNumeric) {
+      // Priority: match by tab_number first
+      match = sessions.find(s => s.tab_number && s.tab_number.toString() === cleaned);
+    }
+    if (!match) {
+      // Fallback: match by guest name or NFC
+      match = sessions.find(s =>
+        s.guest_name?.toLowerCase().includes(raw.toLowerCase()) ||
+        (s.tab_number && s.tab_number.toString() === cleaned)
+      );
+    }
     if (match) { setActiveSessionId(match.session_id || match.id); setScanInput(''); }
     else toast.error('No matching tab');
   };
