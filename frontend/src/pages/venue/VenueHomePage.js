@@ -7,7 +7,8 @@ import { Button } from '../../components/ui/button';
 import { toast } from 'sonner';
 import {
   ChevronLeft, ChevronRight, Plus, Calendar as CalendarIcon,
-  MapPin, LogOut, Sparkles
+  MapPin, LogOut, Sparkles, Users, CreditCard, LayoutGrid,
+  UtensilsCrossed, BarChart3, Building2, Crown
 } from 'lucide-react';
 
 export const VenueSelectPage = () => {
