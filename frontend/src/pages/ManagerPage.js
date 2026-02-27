@@ -1520,13 +1520,14 @@ function ShiftOpsSection() {
 
         {/* Always-visible Input */}
         <div className="flex gap-2 pt-2 border-t border-border/50">
-          <input
+          <textarea
             value={aiQuestion}
             onChange={e => setAiQuestion(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && !aiLoading && runAI()}
+            onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { /* allow newline */ } }}
             placeholder="Ask about this shift — staffing, costs, performance..."
-            className="flex-1 h-9 rounded-lg border border-input bg-background px-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+            className="flex-1 min-h-[36px] max-h-[120px] rounded-lg border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-none"
             disabled={aiLoading}
+            rows={1}
             data-testid="shift-ai-input"
           />
           <Button size="sm" onClick={() => runAI()} disabled={aiLoading || (!aiQuestion.trim() && aiConversations.length > 0)} data-testid="shift-ai-btn">
