@@ -131,3 +131,22 @@ async def get_current_user_info(user: dict = Depends(require_auth)):
         "status": user_row["status"],
         "roles": user.get("roles", []),
     }
+
+
+PROTECTED_SYSTEM_ACCOUNTS = {"teste@teste.com"}
+
+
+@router.delete("/users/{user_id}")
+async def delete_user(user_id: str, user: dict = Depends(require_auth)):
+    """Delete a user. Protected system accounts cannot be deleted."""
+    pool = get_postgres_pool()
+    uid = __import__("uuid").UUID(user_id)
+    async with pool.acquire() as conn:
+        target = await conn.fetchrow("SELECT id, email FROM users WHERE id = $1", uid)
+        if not target:
+            raise HTTPException(status_code=404, detail="User not found")
+        if target["email"] in PROTECTED_SYSTEM_ACCOUNTS:
+            raise HTTPException(status_code=403, detail="System account cannot be deleted")
+        await conn.execute("DELETE FROM user_access WHERE user_id = $1", uid)
+        await conn.execute("DELETE FROM users WHERE id = $1", uid)
+    return {"deleted": True, "user_id": user_id}
