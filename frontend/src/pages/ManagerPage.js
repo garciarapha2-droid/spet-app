@@ -1403,60 +1403,103 @@ function ShiftOpsSection() {
               {/* User question */}
               {conv.question && (
                 <div className="flex justify-end">
-                  <div className="bg-primary/10 border border-primary/20 rounded-lg px-3 py-2 max-w-md">
+                  <div className="bg-primary/10 border border-primary/20 rounded-lg px-4 py-2.5 max-w-md">
                     <p className="text-sm font-medium">{conv.question}</p>
                   </div>
                 </div>
               )}
 
-              {/* AI Response */}
+              {/* AI Response — Redesigned */}
               {conv.insight && (
-                <div className={`border rounded-xl p-4 relative group ${
-                  conv.insight.classification === 'healthy' ? 'border-green-500/30 bg-green-500/5' :
-                  conv.insight.classification === 'tight' ? 'border-yellow-500/30 bg-yellow-500/5' :
-                  'border-red-500/30 bg-red-500/5'
+                <div className={`border rounded-xl overflow-hidden ${
+                  conv.insight.classification === 'healthy' ? 'border-green-500/30' :
+                  conv.insight.classification === 'tight' ? 'border-yellow-500/30' :
+                  'border-red-500/30'
                 }`} data-testid={`shift-ai-result-${conv.id}`}>
-                  {/* Delete button */}
-                  <button onClick={() => removeAiCard(conv.id)}
-                    className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-lg hover:bg-background/80"
-                    data-testid={`delete-shift-ai-${conv.id}`}>
-                    <X className="h-3.5 w-3.5 text-muted-foreground" />
-                  </button>
 
-                  <div className="flex items-center gap-2 mb-2">
-                    <Lightbulb className={`h-4 w-4 ${classColors[conv.insight.classification] || 'text-blue-500'}`} />
-                    <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${
-                      conv.insight.classification === 'healthy' ? 'bg-green-500/10 text-green-600' :
-                      conv.insight.classification === 'tight' ? 'bg-yellow-500/10 text-yellow-600' :
-                      'bg-red-500/10 text-red-600'
-                    }`}>{conv.insight.classification}</span>
+                  {/* Card Header */}
+                  <div className={`px-5 py-3 flex items-center justify-between ${
+                    conv.insight.classification === 'healthy' ? 'bg-green-500/8' :
+                    conv.insight.classification === 'tight' ? 'bg-yellow-500/8' :
+                    'bg-red-500/8'
+                  }`}>
+                    <div className="flex items-center gap-2">
+                      <Lightbulb className={`h-4 w-4 ${classColors[conv.insight.classification] || 'text-blue-500'}`} />
+                      <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${
+                        conv.insight.classification === 'healthy' ? 'bg-green-500/15 text-green-600' :
+                        conv.insight.classification === 'tight' ? 'bg-yellow-500/15 text-yellow-600' :
+                        'bg-red-500/15 text-red-600'
+                      }`}>{conv.insight.classification}</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <button onClick={() => copyInsight(conv)}
+                        className="p-1.5 rounded-lg hover:bg-background/80 transition-colors"
+                        title="Copy insight"
+                        data-testid={`copy-shift-ai-${conv.id}`}>
+                        {copiedId === conv.id
+                          ? <ClipboardCheck className="h-3.5 w-3.5 text-green-500" />
+                          : <Copy className="h-3.5 w-3.5 text-muted-foreground" />}
+                      </button>
+                      <button onClick={() => removeAiCard(conv.id)}
+                        className="p-1.5 rounded-lg hover:bg-background/80 transition-colors"
+                        data-testid={`delete-shift-ai-${conv.id}`}>
+                        <X className="h-3.5 w-3.5 text-muted-foreground" />
+                      </button>
+                    </div>
                   </div>
 
-                  <div className="space-y-2">
-                    <div><p className="text-xs font-semibold text-muted-foreground uppercase">Summary</p><p className="text-sm font-medium mt-0.5">{conv.insight.summary}</p></div>
-                    <div><p className="text-xs font-semibold text-muted-foreground uppercase">What We See</p><p className="text-sm mt-0.5">{conv.insight.what_we_see}</p></div>
+                  {/* Card Body */}
+                  <div className="px-5 py-4 space-y-4 bg-card">
+                    {/* Summary */}
                     <div>
-                      <p className="text-xs font-semibold text-muted-foreground uppercase">Recommended Actions</p>
-                      <ul className="mt-1 space-y-0.5">
-                        {(conv.insight.recommended_actions || []).map((a, i) => (
-                          <li key={i} className="text-sm flex items-start gap-2"><ChevronRight className="h-3.5 w-3.5 mt-0.5 text-primary shrink-0" /><span>{a}</span></li>
-                        ))}
-                      </ul>
+                      <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">Summary</p>
+                      <p className="text-sm font-semibold leading-relaxed">{conv.insight.summary}</p>
                     </div>
-                    {conv.insight.reference && <div><p className="text-xs font-semibold text-muted-foreground uppercase">Reference</p><p className="text-xs text-muted-foreground mt-0.5 italic">{conv.insight.reference}</p></div>}
 
-                    {/* Next Steps — Clickable */}
+                    {/* What We See */}
+                    <div>
+                      <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">What We See</p>
+                      <p className="text-sm leading-relaxed text-foreground/90">{conv.insight.what_we_see}</p>
+                    </div>
+
+                    {/* Recommended Actions */}
+                    <div>
+                      <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-2">Recommended Actions</p>
+                      <div className="space-y-1.5">
+                        {(conv.insight.recommended_actions || []).map((a, i) => (
+                          <div key={i} className="flex items-start gap-2.5 pl-1">
+                            <span className="w-5 h-5 rounded-full bg-primary/10 text-primary flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5">{i+1}</span>
+                            <span className="text-sm leading-relaxed">{a}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {conv.insight.reference && (
+                      <div className="text-xs text-muted-foreground italic border-l-2 border-border pl-3">
+                        {conv.insight.reference}
+                      </div>
+                    )}
+
+                    {/* Next Steps — Redesigned with categories */}
                     {conv.insight.next_steps && conv.insight.next_steps.length > 0 && (
-                      <div data-testid={`shift-next-steps-${conv.id}`}>
-                        <p className="text-xs font-semibold text-muted-foreground uppercase mb-1.5">Next Steps</p>
-                        <div className="flex flex-wrap gap-1.5">
-                          {conv.insight.next_steps.map((step, si) => (
-                            <button key={si} onClick={() => handleAiNextStep(step)}
-                              className="text-xs px-2.5 py-1 rounded-full border border-primary/30 text-primary hover:bg-primary/10 transition-colors text-left"
-                              data-testid={`shift-next-step-${conv.id}-${si}`}>
-                              {step}
-                            </button>
-                          ))}
+                      <div className="pt-3 border-t border-border/50" data-testid={`shift-next-steps-${conv.id}`}>
+                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-2">Next Steps</p>
+                        <div className="space-y-2">
+                          {conv.insight.next_steps.map((step, si) => {
+                            const cat = categorizeStep(step);
+                            return (
+                              <button key={si} onClick={() => handleAiNextStep(step)}
+                                className="w-full flex items-start gap-3 p-2.5 rounded-lg border border-border/50 hover:border-primary/30 hover:bg-primary/3 transition-all text-left group"
+                                data-testid={`shift-next-step-${conv.id}-${si}`}>
+                                <span className="w-5 h-5 rounded-full bg-muted flex items-center justify-center text-[10px] font-bold text-muted-foreground shrink-0 mt-0.5">{si+1}</span>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm leading-relaxed group-hover:text-primary transition-colors">{step}</p>
+                                </div>
+                                <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded-full border shrink-0 ${cat.color}`}>{cat.label}</span>
+                              </button>
+                            );
+                          })}
                         </div>
                       </div>
                     )}
