@@ -143,23 +143,39 @@ const TicketCard = ({ ticket, onStatusChange, onSetTime, isDelayed }) => {
   );
 };
 
-const KanbanColumn = ({ title, tickets, dotColor, onStatusChange, onSetTime, isDelayed }) => (
-  <div>
-    <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-      <span className={`w-3 h-3 rounded-full ${dotColor}`} />
-      {title} <span className="text-muted-foreground font-normal">({tickets.length})</span>
-    </h2>
-    <div className="space-y-4 min-h-[200px]">
-      {tickets.length === 0 ? (
-        <div className="border-2 border-dashed border-border rounded-xl p-8 text-center text-muted-foreground/40 text-sm">
-          No orders
-        </div>
-      ) : tickets.map(t => (
-        <TicketCard key={t.id} ticket={t} onStatusChange={onStatusChange} onSetTime={onSetTime} isDelayed={isDelayed} />
-      ))}
+const COLUMN_STATUS = { 'Pending': 'pending', 'Preparing': 'preparing', 'Ready': 'ready', 'Delivered': 'delivered', 'Delayed': 'preparing' };
+
+const KanbanColumn = ({ title, tickets, dotColor, onStatusChange, onSetTime, isDelayed, onDrop }) => {
+  const [dragOver, setDragOver] = useState(false);
+
+  const handleDragOver = (e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; setDragOver(true); };
+  const handleDragLeave = () => { setDragOver(false); };
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setDragOver(false);
+    const ticketId = e.dataTransfer.getData('ticket_id');
+    if (ticketId && onDrop) onDrop(ticketId, COLUMN_STATUS[title]);
+  };
+
+  return (
+    <div onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop}
+      className={`transition-all rounded-xl p-2 ${dragOver ? 'bg-primary/10 ring-2 ring-primary/30' : ''}`}>
+      <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+        <span className={`w-3 h-3 rounded-full ${dotColor}`} />
+        {title} <span className="text-muted-foreground font-normal">({tickets.length})</span>
+      </h2>
+      <div className="space-y-4 min-h-[200px]">
+        {tickets.length === 0 ? (
+          <div className="border-2 border-dashed border-border rounded-xl p-8 text-center text-muted-foreground/40 text-sm">
+            Drop here
+          </div>
+        ) : tickets.map(t => (
+          <TicketCard key={t.id} ticket={t} onStatusChange={onStatusChange} onSetTime={onSetTime} isDelayed={isDelayed} />
+        ))}
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 export const KitchenPage = () => {
   const navigate = useNavigate();
