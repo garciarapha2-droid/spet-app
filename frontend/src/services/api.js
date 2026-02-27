@@ -68,6 +68,7 @@ export const tapAPI = {
   openSession: (fd) => api.post('/tap/session/open', fd),
   addItem: (sessionId, fd) => api.post(`/tap/session/${sessionId}/add`, fd),
   addCustomItem: (sessionId, fd) => api.post(`/tap/session/${sessionId}/add-custom`, fd),
+  addCatalogItem: (fd) => api.post('/tap/catalog', fd),
   getSession: (sessionId) => api.get(`/tap/session/${sessionId}`),
   closeSession: (sessionId, fd) => api.post(`/tap/session/${sessionId}/close`, fd),
   voidItem: (sessionId, fd) => api.post(`/tap/session/${sessionId}/void-item`, fd),
