@@ -816,3 +816,20 @@ async def get_guest_tab_status(guest_id: str, venue_id: str, user: dict = Depend
     tabs = [{"id": str(t["id"]), "total": float(t["total"]), "opened_at": t["opened_at"].isoformat()} for t in open_tabs]
     total_owed = sum(t["total"] for t in tabs)
     return {"guest_id": guest_id, "has_open_tabs": len(tabs) > 0, "open_tabs": tabs, "total_owed": total_owed}
+
+
+# ─── Guest Search (for event guest assignment) ────────────────────
+@router.get("/guests/search")
+async def search_guests(
+    venue_id: str,
+    q: str = "",
+    user: dict = Depends(require_auth),
+):
+    """Search guests by name for adding to events."""
+    db = get_mongo_db()
+    query = {"venue_id": venue_id}
+    if q.strip():
+        query["name"] = {"$regex": q.strip(), "$options": "i"}
+    cursor = db.venue_guests.find(query, {"_id": 0, "id": 1, "name": 1, "photo": 1, "email": 1, "phone": 1, "visits": 1, "spend_total": 1, "tags": 1}).limit(20)
+    guests = await cursor.to_list(20)
+    return {"guests": guests}
