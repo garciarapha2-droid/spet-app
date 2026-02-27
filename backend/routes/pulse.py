@@ -413,12 +413,21 @@ async def get_today_entries(venue_id: str, user: dict = Depends(require_auth)):
             uuid.UUID(venue_id), today_start,
         )
 
-    # Enrich with guest names from MongoDB
+    # Enrich with guest names from MongoDB and tab numbers from PG
     entries = []
     for r in rows:
         guest_doc = await db.venue_guests.find_one(
             {"id": str(r["guest_id"])}, {"_id": 0, "name": 1, "photo": 1}
         )
+        # Look up tab_number from tap_sessions
+        tab_number = None
+        async with pool.acquire() as conn2:
+            session = await conn2.fetchrow(
+                "SELECT meta FROM tap_sessions WHERE venue_id=$1::uuid AND guest_id=$2 AND opened_at>=$3 ORDER BY opened_at DESC LIMIT 1",
+                uuid.UUID(venue_id), r["guest_id"], today_start)
+            if session and session["meta"]:
+                meta = session["meta"] if isinstance(session["meta"], dict) else json.loads(session["meta"])
+                tab_number = meta.get("tab_number")
         entries.append({
             "entry_id": str(r["id"]),
             "guest_id": str(r["guest_id"]),
@@ -429,6 +438,7 @@ async def get_today_entries(venue_id: str, user: dict = Depends(require_auth)):
             "cover_amount": float(r["cover_amount"]) if r["cover_amount"] else 0,
             "cover_paid": r["cover_paid"],
             "created_at": r["created_at"].isoformat(),
+            "tab_number": tab_number,
         })
 
     return {
