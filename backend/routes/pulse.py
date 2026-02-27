@@ -345,6 +345,7 @@ async def record_entry_decision(
         )
 
     # ── Update guest in MongoDB ──
+    tab_number = None
     if decision == "allowed":
         await db.venue_guests.update_one(
             {"id": guest_id, "venue_id": venue_id},
@@ -353,11 +354,43 @@ async def record_entry_decision(
                 "$set": {"last_visit": now, "updated_at": now},
             },
         )
+        # ── Auto-create tab session for this guest ──
+        async with pool.acquire() as conn2:
+            # Check if guest already has an open tab
+            existing_tab = await conn2.fetchrow(
+                "SELECT id, meta FROM tap_sessions WHERE venue_id = $1::uuid AND guest_id = $2::uuid AND status = 'open'",
+                uuid.UUID(venue_id), uuid.UUID(guest_id),
+            )
+            if existing_tab:
+                meta = existing_tab["meta"] or {}
+                if isinstance(meta, str):
+                    try:
+                        meta = json.loads(meta)
+                    except Exception:
+                        meta = {}
+                tab_number = meta.get("tab_number")
+            else:
+                today_start = datetime.combine(date.today(), datetime.min.time()).replace(tzinfo=timezone.utc)
+                count = await conn2.fetchval(
+                    "SELECT COUNT(*) FROM tap_sessions WHERE venue_id = $1 AND opened_at >= $2",
+                    uuid.UUID(venue_id), today_start,
+                )
+                tab_number = 100 + count + 1
+                guest_name = guest_doc.get("name", "Guest")
+                meta_json = json.dumps({"guest_name": guest_name, "tab_number": tab_number})
+                await conn2.execute(
+                    """INSERT INTO tap_sessions
+                       (venue_id, guest_id, session_type, opened_by_user_id, status, meta, opened_at)
+                       VALUES ($1::uuid, $2::uuid, 'tap', $3::uuid, 'open', $4::jsonb, $5)""",
+                    uuid.UUID(venue_id), uuid.UUID(guest_id), uuid.UUID(staff_id),
+                    meta_json, now,
+                )
 
     return {
         "entry_id": str(entry_row["id"]),
         "decision": decision,
         "guest_id": guest_id,
+        "tab_number": tab_number,
         "created_at": now.isoformat(),
     }
 
