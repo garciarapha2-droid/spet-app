@@ -23,6 +23,7 @@ const TABS = [
   { key: 'tables-server', label: 'Tables by Server', icon: LayoutGrid },
   { key: 'menu', label: 'Menu / Products', icon: UtensilsCrossed },
   { key: 'shifts', label: 'Shifts & Ops', icon: Clock },
+  { key: 'shift-ops', label: 'Shift vs Ops', icon: TrendingUp },
   { key: 'guests', label: 'NFC & Guests', icon: Nfc },
   { key: 'reports', label: 'Reports & Finance', icon: BarChart3 },
   { key: 'loyalty', label: 'Loyalty & Rewards', icon: Gift },
