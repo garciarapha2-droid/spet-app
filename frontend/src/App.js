@@ -101,6 +101,22 @@ function App() {
                 }
               />
               <Route
+                path="/table"
+                element={
+                  <ProtectedRoute>
+                    <TablePage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/kitchen"
+                element={
+                  <ProtectedRoute>
+                    <KitchenPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
                 path="/owner"
                 element={
                   <ProtectedRoute>
