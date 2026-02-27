@@ -662,3 +662,64 @@ async def register_exit(
         "decision": "exit",
         "created_at": now.isoformat(),
     }
+
+
+# ─── Block/Unblock Wristband ──────────────────────────────────────
+@router.post("/guest/{guest_id}/block")
+async def block_wristband(
+    guest_id: str,
+    user: dict = Depends(require_auth),
+    venue_id: str = Form(...),
+    reason: str = Form("lost"),
+):
+    """Block a guest's wristband/comanda."""
+    db = get_mongo_db()
+    guest = await db.venue_guests.find_one({"id": guest_id, "venue_id": venue_id})
+    if not guest:
+        raise HTTPException(404, "Guest not found")
+
+    await db.venue_guests.update_one(
+        {"id": guest_id, "venue_id": venue_id},
+        {"$set": {
+            "wristband_blocked": True,
+            "wristband_block_reason": reason,
+            "wristband_blocked_at": datetime.now(timezone.utc),
+            "wristband_blocked_by": user.get("sub"),
+        }},
+    )
+    return {"guest_id": guest_id, "blocked": True, "reason": reason}
+
+
+@router.post("/guest/{guest_id}/unblock")
+async def unblock_wristband(
+    guest_id: str,
+    user: dict = Depends(require_auth),
+    venue_id: str = Form(...),
+):
+    """Unblock a guest's wristband/comanda."""
+    db = get_mongo_db()
+    await db.venue_guests.update_one(
+        {"id": guest_id, "venue_id": venue_id},
+        {"$set": {
+            "wristband_blocked": False,
+            "wristband_block_reason": None,
+            "wristband_blocked_at": None,
+            "wristband_blocked_by": None,
+        }},
+    )
+    return {"guest_id": guest_id, "blocked": False}
+
+
+@router.get("/guest/{guest_id}/tab-status")
+async def get_guest_tab_status(guest_id: str, venue_id: str, user: dict = Depends(require_auth)):
+    """Check if guest has open tabs."""
+    pool = get_postgres_pool()
+    async with pool.acquire() as conn:
+        open_tabs = await conn.fetch(
+            """SELECT id, total, opened_at FROM tap_sessions
+               WHERE guest_id = $1::uuid AND venue_id = $2::uuid AND status = 'open'""",
+            uuid.UUID(guest_id), uuid.UUID(venue_id),
+        )
+    tabs = [{"id": str(t["id"]), "total": float(t["total"]), "opened_at": t["opened_at"].isoformat()} for t in open_tabs]
+    total_owed = sum(t["total"] for t in tabs)
+    return {"guest_id": guest_id, "has_open_tabs": len(tabs) > 0, "open_tabs": tabs, "total_owed": total_owed}
