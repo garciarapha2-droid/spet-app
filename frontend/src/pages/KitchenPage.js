@@ -227,6 +227,7 @@ export const KitchenPage = () => {
       fd.append('status', newStatus);
       await kdsAPI.updateStatus(ticketId, fd);
       if (delayedPopup?.id === ticketId) setDelayedPopup(null);
+      setDismissedIds(prev => { const next = new Set(prev); next.delete(ticketId); return next; });
       await loadTickets();
     } catch { toast.error('Failed to update'); }
   };
