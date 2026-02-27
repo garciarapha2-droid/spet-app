@@ -181,7 +181,7 @@ async def update_ticket_status(
     if not _check_kds_entitlement(user):
         raise HTTPException(403, "KDS add-on not enabled for this venue")
 
-    valid = ("pending", "preparing", "ready", "delivered", "completed")
+    valid = ("pending", "preparing", "ready", "delivered", "delayed", "completed")
     if status not in valid:
         raise HTTPException(400, f"Status must be one of {valid}")
 

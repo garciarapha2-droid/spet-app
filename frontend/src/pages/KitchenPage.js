@@ -143,7 +143,7 @@ const TicketCard = ({ ticket, onStatusChange, onSetTime, isDelayed }) => {
   );
 };
 
-const COLUMN_STATUS = { 'Pending': 'pending', 'Preparing': 'preparing', 'Ready': 'ready', 'Delivered': 'delivered', 'Delayed': 'preparing' };
+const COLUMN_STATUS = { 'Pending': 'pending', 'Preparing': 'preparing', 'Ready': 'ready', 'Delivered': 'delivered', 'Delayed': 'delayed' };
 
 const KanbanColumn = ({ title, tickets, dotColor, onStatusChange, onSetTime, isDelayed, onDrop }) => {
   const [dragOver, setDragOver] = useState(false);
