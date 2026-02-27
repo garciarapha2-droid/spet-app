@@ -5,7 +5,7 @@ import { Button } from '../components/ui/button';
 import { ThemeToggle } from '../components/ThemeToggle';
 import {
   UtensilsCrossed, Beer, Clock, ChefHat, CheckCircle,
-  ArrowLeft, Timer, LogOut
+  ArrowLeft, Timer, LogOut, Home
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
