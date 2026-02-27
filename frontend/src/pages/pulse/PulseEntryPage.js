@@ -66,11 +66,30 @@ export const PulseEntryPage = () => {
   }, []);
 
   // ── C0: NFC scan submit ──
-  const handleScanSubmit = (e) => {
+  const handleScanSubmit = async (e) => {
     e.preventDefault();
-    if (scanInput.trim()) {
-      toast.info(`NFC scan: ${scanInput} — guest lookup not yet wired`);
+    if (!scanInput.trim()) return;
+    const raw = scanInput.trim();
+    const cleaned = raw.startsWith('#') ? raw.slice(1) : raw;
+    const isNumeric = /^\d+$/.test(cleaned);
+
+    // Try to find guest by tab number or name in today's entries
+    let match;
+    if (isNumeric) {
+      match = todayEntries.find(entry => entry.tab_number && entry.tab_number.toString() === cleaned);
+    }
+    if (!match) {
+      match = todayEntries.find(entry =>
+        entry.guest_name?.toLowerCase().includes(raw.toLowerCase()) ||
+        (entry.tab_number && entry.tab_number.toString() === cleaned)
+      );
+    }
+
+    if (match) {
+      navigate(`/pulse/guest/${match.guest_id}`);
       setScanInput('');
+    } else {
+      toast.error('No matching guest or tab found');
     }
   };
 
