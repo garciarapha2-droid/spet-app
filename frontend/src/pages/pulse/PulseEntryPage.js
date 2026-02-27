@@ -419,6 +419,14 @@ export const PulseEntryPage = () => {
                       }`}>
                         {entry.decision}
                       </span>
+                      <button
+                        onClick={(e) => handleViewHistory(entry.guest_id, e)}
+                        className="p-1.5 rounded-md hover:bg-primary/10 text-muted-foreground hover:text-primary transition-colors"
+                        data-testid={`history-btn-${entry.guest_id}`}
+                        title="View history"
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                      </button>
                     </div>
                   ))}
                 </div>
