@@ -179,7 +179,7 @@ export const KitchenPage = () => {
             </button>
           </div>
           <ThemeToggle />
-          <Button variant="ghost" size="icon" onClick={() => navigate('/login')}>
+          <Button variant="ghost" size="icon" onClick={() => navigate('/venue/home')}>
             <LogOut className="h-4 w-4" />
           </Button>
         </div>

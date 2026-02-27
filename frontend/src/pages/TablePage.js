@@ -132,7 +132,7 @@ export const TablePage = () => {
             <UtensilsCrossed className="h-4 w-4 mr-1" /> Kitchen (KDS)
           </Button>
           <ThemeToggle />
-          <Button variant="ghost" size="icon" onClick={() => navigate('/login')} data-testid="logout-btn">
+          <Button variant="ghost" size="icon" onClick={() => navigate('/venue/home')} data-testid="logout-btn">
             <LogOut className="h-4 w-4" />
           </Button>
         </div>

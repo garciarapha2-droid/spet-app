@@ -179,7 +179,7 @@ export const TapPage = () => {
         </div>
         <div className="flex items-center gap-3">
           <ThemeToggle />
-          <Button variant="ghost" size="icon" onClick={() => navigate('/login')} data-testid="logout-btn">
+          <Button variant="ghost" size="icon" onClick={() => navigate('/venue/home')} data-testid="logout-btn">
             <LogOut className="h-4 w-4" />
           </Button>
         </div>

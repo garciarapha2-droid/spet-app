@@ -11,7 +11,7 @@ export const CEOPage = () => {
   return (
     <div className="min-h-screen bg-background p-6">
       <ThemeToggle />
-      <Button variant="ghost" onClick={() => navigate('/modules')} className="mb-4">
+      <Button variant="ghost" onClick={() => navigate('/venue/home')} className="mb-4">
         <ArrowLeft className="h-4 w-4 mr-2" /> Back to Modules
       </Button>
       
