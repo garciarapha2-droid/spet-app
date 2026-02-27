@@ -379,7 +379,7 @@ export const PulseEntryPage = () => {
                 </h3>
                 <form onSubmit={handleScanSubmit}>
                   <Input value={scanInput} onChange={e => setScanInput(e.target.value)}
-                    placeholder="Waiting for scan..."
+                    placeholder="Name, tab number or NFC..."
                     className="h-24 text-3xl border-2 border-input focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/20 rounded-xl transition-all"
                     autoFocus={flowState === 'idle'}
                     data-testid="nfc-scan-input" />
