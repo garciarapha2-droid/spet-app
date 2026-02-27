@@ -437,8 +437,9 @@ async def void_item(
     session_id: str,
     user: dict = Depends(require_auth),
     item_id: str = Form(...),
+    reason: str = Form(None),
 ):
-    """Remove an item from an open tab."""
+    """Void an item from an open tab (ledger-safe: marks voided, doesn't delete)."""
     pool = get_postgres_pool()
     sid = uuid.UUID(session_id)
     iid = uuid.UUID(item_id)
@@ -455,16 +456,16 @@ async def void_item(
             raise HTTPException(400, "Tab is closed")
 
         item = await conn.fetchrow(
-            "SELECT id, line_total FROM tap_items WHERE id = $1 AND tap_session_id = $2 AND voided_at IS NULL",
+            "SELECT id, line_total, item_name FROM tap_items WHERE id = $1 AND tap_session_id = $2 AND voided_at IS NULL",
             iid, sid,
         )
         if not item:
             raise HTTPException(404, "Item not found")
 
-        # Void the item
+        # Void the item (ledger-safe: mark as voided, record who and why)
         await conn.execute(
-            "UPDATE tap_items SET voided_at = $1 WHERE id = $2",
-            now, iid,
+            "UPDATE tap_items SET voided_at = $1, voided_by_user_id = $2, void_reason = $3 WHERE id = $4",
+            now, staff_id, reason, iid,
         )
         # Reduce session total
         await conn.execute(
@@ -473,4 +474,4 @@ async def void_item(
         )
         new_total = await conn.fetchval("SELECT total FROM tap_sessions WHERE id = $1", sid)
 
-    return {"item_id": str(iid), "voided": True, "session_total": float(new_total)}
+    return {"item_id": str(iid), "voided": True, "item_name": item["item_name"], "session_total": float(new_total)}

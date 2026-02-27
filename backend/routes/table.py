@@ -268,6 +268,69 @@ async def edit_table(
     return {"id": table_id, "updated": True}
 
 
+# ─── Add item to table (via session) ───────────────────────────────
+@router.post("/{table_id}/add-item")
+async def add_item_to_table(
+    table_id: str,
+    user: dict = Depends(require_auth),
+    item_id: str = Form(...),
+    qty: int = Form(1),
+    notes: str = Form(None),
+):
+    """Add a catalog item to a table's active session."""
+    pool = get_postgres_pool()
+    db = get_mongo_db()
+    tid = uuid.UUID(table_id)
+    staff_id = uuid.UUID(user["sub"])
+
+    async with pool.acquire() as conn:
+        table = await conn.fetchrow(
+            "SELECT id, venue_id, current_session_id FROM venue_tables WHERE id = $1", tid
+        )
+        if not table or not table["current_session_id"]:
+            raise HTTPException(400, "Table has no active session")
+
+        sid = table["current_session_id"]
+        session = await conn.fetchrow(
+            "SELECT id, venue_id, status FROM tap_sessions WHERE id = $1", sid
+        )
+        if not session or session["status"] != "open":
+            raise HTTPException(400, "Session is not open")
+
+        catalog_item = await db.venue_catalog.find_one(
+            {"id": item_id, "venue_id": str(session["venue_id"])}, {"_id": 0}
+        )
+        if not catalog_item:
+            raise HTTPException(404, "Catalog item not found")
+
+        line_total = catalog_item["price"] * qty
+
+        item_row = await conn.fetchrow(
+            """INSERT INTO tap_items
+               (venue_id, tap_session_id, catalog_item_id, item_name, category,
+                unit_price, qty, line_total, is_alcohol, notes, created_by_user_id)
+               VALUES ($1, $2, $3::uuid, $4, $5, $6, $7, $8, $9, $10, $11)
+               RETURNING id""",
+            session["venue_id"], sid, uuid.UUID(item_id),
+            catalog_item["name"], catalog_item["category"],
+            catalog_item["price"], qty, line_total,
+            catalog_item.get("is_alcohol", False), notes, staff_id,
+        )
+        await conn.execute(
+            "UPDATE tap_sessions SET subtotal = subtotal + $1, total = subtotal + $1 WHERE id = $2",
+            line_total, sid,
+        )
+        new_total = await conn.fetchval("SELECT total FROM tap_sessions WHERE id = $1", sid)
+
+    return {
+        "line_item_id": str(item_row["id"]),
+        "name": catalog_item["name"],
+        "qty": qty,
+        "line_total": float(line_total),
+        "session_total": float(new_total),
+    }
+
+
 @router.delete("/tables/{table_id}")
 async def delete_table(table_id: str, user: dict = Depends(require_auth)):
     pool = get_postgres_pool()

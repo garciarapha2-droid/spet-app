@@ -22,9 +22,13 @@ def _parse_meta(raw):
 
 
 def _check_kds_entitlement(user: dict) -> bool:
-    """Feature-gate: check if user/venue has KDS add-on enabled."""
+    """Feature-gate: check if user/venue has KDS add-on enabled.
+    Owners and platform_admins always have access."""
     roles = user.get("roles", [])
     for r in roles:
+        role = r.get("role", "")
+        if role in ("owner", "platform_admin", "ceo", "manager"):
+            return True
         perms = r.get("permissions", {})
         if isinstance(perms, dict) and perms.get("kds"):
             return True
