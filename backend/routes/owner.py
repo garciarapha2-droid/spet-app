@@ -244,11 +244,7 @@ async def get_venues_performance(user: dict = Depends(require_auth)):
     today = _today_start()
     month = _month_start()
     user_id = user["sub"]
-
-    async with pool.acquire() as conn:
-        access_rows = await conn.fetch(
-            "SELECT venue_id FROM user_access WHERE user_id = $1::uuid", user_id)
-        venue_ids = [r["venue_id"] for r in access_rows if r["venue_id"]]
+    venue_ids = await _get_user_venue_ids(pool, user_id)
 
     venues = []
     for vid in venue_ids:
