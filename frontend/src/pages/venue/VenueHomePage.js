@@ -95,6 +95,24 @@ export const VenueSelectPage = () => {
     navigate('/pulse/entry');
   };
 
+  const MODULE_ICONS = {
+    pulse: Users, tap: CreditCard, table: LayoutGrid, kds: UtensilsCrossed,
+    manager: BarChart3, owner: Building2, ceo: Crown,
+  };
+  const MODULE_ROUTES = {
+    pulse: '/pulse/entry', tap: '/tap', table: '/table', kds: '/kitchen',
+    manager: '/manager', owner: '/owner', ceo: '/ceo',
+  };
+
+  const handleModuleClick = (mod) => {
+    if (!mod.enabled) return;
+    if (selectedVenue) {
+      localStorage.setItem('active_venue_id', selectedVenue.id);
+      localStorage.setItem('active_venue_name', selectedVenue.name);
+    }
+    navigate(MODULE_ROUTES[mod.key] || '/venue/home');
+  };
+
   // Calendar logic
   const calendarMonth = selectedDate.getMonth();
   const calendarYear = selectedDate.getFullYear();
