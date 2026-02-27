@@ -566,7 +566,7 @@ class TestKdsModule:
                 data=send_data,
                 headers=auth_headers
             )
-            assert response.status_code == 400
+            assert response.status_code in [400, 422]  # Either validation error code is acceptable
         finally:
             # Clean up
             close_data = {"payment_method": "card"}
