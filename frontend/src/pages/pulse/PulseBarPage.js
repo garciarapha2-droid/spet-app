@@ -431,11 +431,19 @@ export const PulseBarPage = () => {
                   <span>Total</span>
                   <span data-testid="cart-total">R${cartTotal.toFixed(2)}</span>
                 </div>
-                <Button className="w-full h-12 text-base font-semibold" disabled={!scanResult || cart.length === 0 || loading}
+                <Button className="w-full h-12 text-base font-semibold" disabled={!scanResult || scanResult.blocked || cart.length === 0 || loading}
                   onClick={handleSubmitOrder} data-testid="submit-order-btn">
                   <DollarSign className="h-5 w-5 mr-1" />
                   Add to Tab
                 </Button>
+              </div>
+
+              {/* Revenue summary */}
+              <div className="mt-4 pt-4 border-t border-border">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">Today's Revenue</p>
+                <p className="text-xl font-bold text-green-500" data-testid="bar-revenue">
+                  R${activeSessions.reduce((s, a) => s + (a.total || 0), 0).toFixed(2)}
+                </p>
               </div>
             </div>
           </div>
