@@ -251,11 +251,10 @@ async def get_guest_decision_card(guest_id: str, venue_id: str, user: dict = Dep
             uuid.UUID(guest_id), uuid.UUID(venue_id),
         )
         if tab_row and tab_row["meta"]:
-            import json as json_mod
             meta = tab_row["meta"]
             if isinstance(meta, str):
                 try:
-                    meta = json_mod.loads(meta)
+                    meta = json.loads(meta)
                 except Exception:
                     meta = {}
             tab_number = meta.get("tab_number")
@@ -641,9 +640,8 @@ async def get_inside_guests(venue_id: str, user: dict = Depends(require_auth)):
             if tab_row:
                 meta = tab_row["meta"] or {}
                 if isinstance(meta, str):
-                    import json as json_mod
                     try:
-                        meta = json_mod.loads(meta)
+                        meta = json.loads(meta)
                     except Exception:
                         meta = {}
                 tab_info = {
