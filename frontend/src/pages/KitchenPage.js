@@ -225,6 +225,7 @@ export const KitchenPage = () => {
   const preparing = tickets.filter(t => t.status === 'preparing' && !isDelayed(t));
   const delayed = tickets.filter(t => isDelayed(t));
   const ready = tickets.filter(t => t.status === 'ready');
+  const delivered = tickets.filter(t => t.status === 'delivered');
 
   return (
     <div className="min-h-screen bg-background" data-testid="kds-page">
@@ -303,13 +304,15 @@ export const KitchenPage = () => {
         </div>
       </header>
 
-      <main className="w-full px-8 py-8">
-        <div className="grid grid-cols-4 gap-6">
+      <main className="w-full px-6 py-6">
+        <div className="grid grid-cols-5 gap-5">
           <KanbanColumn title="Pending" tickets={pending} dotColor="bg-yellow-500"
             onStatusChange={handleStatusChange} onSetTime={handleSetTime} />
           <KanbanColumn title="Preparing" tickets={preparing} dotColor="bg-primary"
             onStatusChange={handleStatusChange} onSetTime={handleSetTime} />
           <KanbanColumn title="Ready" tickets={ready} dotColor="bg-green-500"
+            onStatusChange={handleStatusChange} onSetTime={handleSetTime} />
+          <KanbanColumn title="Delivered" tickets={delivered} dotColor="bg-blue-500"
             onStatusChange={handleStatusChange} onSetTime={handleSetTime} />
           <KanbanColumn title="Delayed" tickets={delayed} dotColor="bg-red-500"
             onStatusChange={handleStatusChange} onSetTime={handleSetTime} isDelayed />
