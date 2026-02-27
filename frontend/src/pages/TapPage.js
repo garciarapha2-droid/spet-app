@@ -379,12 +379,19 @@ export const TapPage = () => {
                   {(activeSession.items || []).length === 0 ? (
                     <p className="text-sm text-muted-foreground py-4 text-center">No items yet — add from menu</p>
                   ) : activeSession.items.map(item => (
-                    <div key={item.id} className="flex items-center justify-between py-2 px-2 rounded hover:bg-muted/30 text-sm">
+                    <div key={item.id} className="flex items-center justify-between py-2 px-2 rounded hover:bg-muted/30 text-sm group">
                       <div className="flex-1">
                         <span className="font-medium">{item.name}</span>
                         <span className="text-muted-foreground ml-2">x{item.qty}</span>
                       </div>
-                      <span className="font-medium">R${item.line_total.toFixed(2)}</span>
+                      <span className="font-medium mr-2">R${item.line_total.toFixed(2)}</span>
+                      {activeSession.status === 'open' && (
+                        <button onClick={() => handleVoidItem(item.id)}
+                          className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-all"
+                          data-testid={`void-item-${item.id}`}>
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      )}
                     </div>
                   ))}
                 </div>
