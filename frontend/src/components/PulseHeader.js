@@ -81,7 +81,7 @@ export const PulseHeader = ({ venue, onVenueChange }) => {
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => navigate('/modules')}
+              onClick={() => navigate('/venue/home')}
               data-testid="back-button"
             >
               <LogOut className="h-4 w-4" />
