@@ -1,133 +1,143 @@
-<analysis>**original_problem_statement**: The user wants to build a multi-tenant SaaS platform named **SPETAP**, designed for venue operations. The user has provided extensive and detailed product requirements for all modules.
+<analysis>**original_problem_statement**: The user wants to build a multi-tenant SaaS platform named **SPETAP**, designed for venue operations.
 
-**PRODUCT REQUIREMENTS:**
--   **Core Modules:** PULSE (guest entry), TAP (bar operations), TABLE (table management), KDS (kitchen display), EVENT WALLET (cashless events).
--   **Dashboards:** CEO, Owner, and Manager dashboards with detailed KPIs, charts, and operational controls. Staff-facing apps for Host (Pulse) and Bar (Tap).
--   **Key Features requested in this session:**
-    -   Protect the  system account from deletion.
-    -   Implement the full Manager and Owner dashboards.
-    -   Fix a Dismiss button bug in the KDS.
-    -   Enhance Pulse, Table, and Manager dashboards with operational details like tab numbers, server assignments, and drill-down funnels.
-    -   Integrate AI insights into the Owner Dashboard.
-    -   Add a Shift vs Operations section to the Manager Dashboard with AI analysis.
-    -   Evolve the AI assistant into a conversational, participatory partner in both Owner and Manager dashboards.
+**PRODUCT REQUIREMENTS (latest additions):**
+*   **Manager Dashboard › Guests:** The guest list must be sorted by the highest spender. Clicking a guest should open a detailed profile showing total spend, event history, and a profile summary.
+*   **Home Page:** The home page must only show the active event for the current day, removing all past events. A single click on an event card should show a preview (guest/staff count), and a double click should enter the event management view.
+*   **Owner Dashboard › Overview:** The main overview needs a view switcher to alternate between Business Overview, Venue, and Events, showing aggregated financials for each context.
+*   **Owner Dashboard › People in Ops:** The staff overview cards (By Venue, By Event) must be clickable, drilling down to show the specific staff members working in that context.
+*   **AI Business Partner UX:**
+    *   Pressing  in the AI input field should create a new line, not submit the query. Submission must be an explicit action (clicking the button).
+    *   The Next Steps suggestions should be context-aware and natural, without generic category labels like Strategy or Staff.
+*   **Unified Close Flow (Tap & Table):**
+    *   Closing a tab/table presents two options: Pay here (with the server's device) or Pay at register.
+*   **Semi-Automatic Tip Handling:**
+    *   After a physical payment is made, the server returns to the system and manually enters the tip amount from the receipt into a dedicated field on the closed tab.
+    *   The system then automatically calculates and distributes the tips proportionally among the staff based on their sales for that tab.
 
-**User's preferred language**: Portuguese. The user provides detailed feedback and instructions in Portuguese. The next agent MUST respond in Portuguese.
+**User's preferred language**: Portuguese. The user provides detailed feedback and instructions in Portuguese. The next agent **MUST** respond in Portuguese.
 
 **what currently exists?**
-A robust full-stack application (React/FastAPI/PostgreSQL/MongoDB) for venue operations. Key modules (Pulse, Tap, Table, KDS) are functional. The Manager and Owner dashboards are fully implemented and populated with data. A new Shift vs Operations section exists within the Manager dashboard, complete with KPI tracking, staff cost analysis, and its own AI-driven analysis. The AI assistant in both dashboards is functional but needs to be upgraded to be more conversational and interactive as per the latest user request. The codebase is stable, and a comprehensive demo seed script provides realistic data for development and testing.
+A comprehensive full-stack application (React/FastAPI/PostgreSQL/MongoDB) for venue operations. The core modules (Pulse, Tap, Table, KDS, Owner/Manager Dashboards) are all functional. The most recent updates include:
+*   A fully conversational AI assistant in both the Manager and Owner dashboards.
+*   Strict product rules for Bar/Tap (guest photo confirmation) and Table (mandatory ID verification for alcohol) are implemented.
+*   A bug fix allowing tab number search without the # prefix in both Tap and Pulse pages.
+*   The Table page now enforces mandatory server selection before an order can be placed.
+*   The AI response UI has been redesigned for clarity, adding a copy button and improving the layout of Next Steps.
+*   The home page was updated to show only active events with a new preview on single-click, enter on double-click behavior.
+*   A unified close flow for both Tap and Table pages has been implemented, along with a semi-automatic tip recording system where servers input the tip amount manually for automatic system distribution.
 
 **Last working item**:
--   **Last item agent was working**: The user approved a detailed plan to evolve the existing AI Insights feature in both the Manager and Owner dashboards into a conversational, participatory assistant. This involves significant UI/UX changes and backend prompt engineering to make the AI suggest next steps and guide the user's analysis.
--   **Status**: NOT STARTED
--   **Agent Testing Done**: N
--   **Which testing method agent to use?**: both (The backend AI prompts and logic need validation, and the frontend requires extensive UI/UX testing for the new conversational components).
--   **User Testing Done**: N
+The agent just completed a large batch of work based on the user's latest detailed specifications, successfully implementing several critical UX fixes and the entire unified close-flow/tip-recording system. The task is considered complete and was verified by the testing agent. The next task is to continue with the remaining items from the user's latest specification list.
+- Last item agent was working: Batch implementation of UX fixes and the unified Close Flow + Tip Recording system.
+- Status: USER VERIFICATION PENDING (The implementation is complete and tested by the agent, but the user has not seen the final result yet).
+- Agent Testing Done: Y
+- Which testing method agent to use? both (The next set of tasks involves backend API changes and significant frontend UI work on several dashboards).
+- User Testing Done: N
 
 **All Pending/In progress Issue list**:
-There are no outstanding bugs or issues. The focus is entirely on the new feature development requested by the user.
+There are no outstanding bugs or technical issues. The work is focused on implementing the next set of user-defined features.
 
 **In progress Task List**:
--   **Task 1: Implement the Conversational and Participatory AI Assistant.** (P0 - HIGHEST PRIORITY)
-    -   **Where to resume**: Start by implementing the backend changes, followed by the frontend updates for both the Owner and Manager dashboards.
-    -   **What will be achieved with this?**: This will transform the AI from a passive analysis tool into an active business partner that guides user queries, suggests next steps, and makes the interface more interactive and less like a static report.
-    -   **Status**: NOT STARTED
-    -   **Should Test frontend/backend/both after fix?**: Both
-    -   **Blocked on something**: No.
+There are no tasks currently in progress. The previous batch was completed.
 
 **Upcoming and Future Tasks**
-
 **Upcoming Tasks:**
--   **(P0) Implement Conversational AI Assistant (Current Task):**
-    -   **UI/UX Overhaul:** Create an empty state UI to invite interaction, render each AI response as a deletable card, and keep the input field always visible.
-    -   **Participatory AI:** Implement a mandatory Next steps block in every AI response, with clickable suggestions that auto-populate the input field.
-    -   **Manager Dashboard Data Enhancement:** In the Shift vs Operations section, update the staff breakdown to show , , and  earnings.
-    -   **Contextual AI Prompts:** Refine the system prompts for both the Manager (operational focus) and Owner (strategic focus) to generate relevant Next steps and adopt the correct tone.
+*   **(P0) Implement Structural Dashboard Features (as a single block):** This is the next priority, continuing from the user's latest spec list.
+    *   **Manager Dashboard › Guests View:**
+        *   Modify the guest list on the Manager dashboard to be sorted by .
+        *   Implement a clickable guest profile modal that opens on guest selection, showing total spend, event count, and event history.
+        *   Files: , .
+    *   **Owner Dashboard › Overview Switcher:**
+        *   Add a segmented control or tabs to the Owner Dashboard to switch the main view between , , and .
+        *   Implement the backend logic to provide aggregated data for each view.
+        *   Files: , .
+    *   **Owner Dashboard › Clickable People in Ops Cards:**
+        *   Make the By Venue and By Event cards in the People in Ops section clickable.
+        *   On click, display a detailed view showing the specific staff members assigned to that venue or event.
+        *   Files: , .
 
 **Future Tasks:**
--   (P2) KDS / Bar Order Routing (splitting food and drink orders).
--   (P2) Tip-Splitting Logic (the UI placeholders for  have been added).
--   (P2) Push notifications for real-time alerts.
--   (P3) Stripe Webhooks for subscriptions.
--   (P3) Offline-First Capabilities for staff apps.
--   (P3) Event Wallet Module.
+*   (P1) **Per-Event Dashboard (Manager View):** Build a new dashboard for managers to analyze the performance of a single, completed event, including top spenders, top-selling items, and team performance, as detailed by the user.
+*   (P2) KDS / Bar Order Routing (splitting food and drink orders).
+*   (P2) Push notifications for real-time alerts.
+*   (P3) Stripe Webhooks for subscriptions.
+*   (P3) Offline-First Capabilities for staff apps.
+*   (P3) Event Wallet Module.
 
 **Completed work in this session**
--   **Phase 2 & 3: Manager & Owner Dashboards (DONE)**: Fully implemented both dashboards with all requested sections, KPIs, and backend APIs.
--   **Manager Dashboard Extension: Shift vs Operations (DONE)**: Added a comprehensive section for managers to analyze shift profitability, track staff costs, customize roles, and view performance history with AI-driven analysis.
--   **Core Feature Enhancements (DONE)**:
-    -   **Pulse:** Added  to the Guest Today list for clear identification.
-    -   **Tables:** Implemented mandatory server assignment, making it visible on each table card with functionality to change the server.
-    -   **Manager Funnel:** Made the guest funnel KPIs clickable for operational drill-downs.
--   **AI Integration (DONE)**: Integrated OpenAI GPT-5.2 using the Emergent LLM Key to power insights in both the Owner and Manager dashboards.
--   **Critical Bug Fixes & Refinements (DONE)**:
-    -   Protected the  system account from deletion by consolidating the API logic and making the seed script idempotent.
-    -   Fixed a recurring Dismiss button bug in the KDS module.
--   **Testing**: All completed work was comprehensively validated using , achieving 100% pass rates across backend and frontend tests.
+- **Conversational AI Assistant (DONE):** Implemented an interactive AI assistant in both Owner and Manager dashboards.
+- **P0 Product Rules (DONE):**
+    - Bar/Tap: Implemented a mandatory guest confirmation modal with photo.
+    - Table: Implemented mandatory ID verification for alcohol items with caching.
+- **Event & Staff Management (DONE):** Implemented backend logic and frontend UI for managing event guests and assigning staff with rate snapshots.
+- **Bug Fixes & UX Enhancements (DONE):**
+    - Fixed search on Tap/Pulse pages to accept tab numbers without '#'.
+    - Made server selection mandatory on the Table page before placing an order.
+    - Redesigned AI response cards with a copy button and better hierarchy.
+    - Changed AI input so  creates a new line.
+    - Reworked the Home page to show only active events with a preview/enter click behavior.
+- **Unified Close Flow & Tips (DONE):** Implemented a unified payment flow for Tap and Table and a semi-automatic tip recording system.
+- **Testing**: All completed work was validated using , achieving 100% pass rates.
 
 **Earlier issues found/mentioned but not fixed**
--   None. The agent has successfully addressed all issues raised during this session.
+- None.
 
 **Known issue recurrence from previous fork**
--   None.
+- None.
 
 **Code Architecture**
 
 
 **Key Technical Concepts**
 -   **Frameworks**: React (Frontend), FastAPI (Backend)
--   **Databases**: PostgreSQL (Transactional data), MongoDB (Non-transactional data)
+-   **Databases**: PostgreSQL (Transactional data), MongoDB (Guest profiles, non-transactional data)
 -   **Styling**: Tailwind CSS
 -   **Authentication**: JWT stored in .
 -   **LLM Integration**:  library for accessing OpenAI GPT-5.2.
 
 **key DB schema**
--   **PostgreSQL ()**: Includes  to link a session to a staff member.
--   **PostgreSQL (, )**: New tables to snapshot staff costs () per shift for accurate historical reporting.
--   **MongoDB ()**: Collection to manage customizable job roles and their default hourly rates.
+-   **PostgreSQL (, ):** Schema updated to support the new close flow with  and manual tip recording via .
+-   **PostgreSQL ():** This table is updated with tip amounts from the new tip recording endpoint, ensuring staff earnings are accurate.
+-   **PostgreSQL (, ):** Tables used to manage temporal guest presence and staff assignments (with rate snapshots) for events.
+-   **MongoDB ():** Used as the global source for guest profiles, searched when adding guests to events.
 
 **All files of reference**
--   **/app/backend/app/api/routes/manager.py**: Massively expanded. Contains all endpoints for the Manager Dashboard, including KPIs, staff management, and the new Shift vs. Operations analysis and AI.
--   **/app/backend/app/api/routes/owner.py**: Expanded. Contains all endpoints for the Owner Dashboard, including aggregated KPIs and the AI Insights functionality.
--   **/app/frontend/src/app/(main)/manager/dashboard/page.tsx**: The complete frontend for the Manager Dashboard. The  and AI components will be modified.
--   **/app/frontend/src/app/(main)/owner/dashboard/page.tsx**: The complete frontend for the Owner Dashboard. The  will be modified.
--   **/app/frontend/src/app/(main)/table/page.tsx**: Updated to display assigned servers and allow for changes.
--   **/app/frontend/src/app/(main)/pulse/PulseEntryPage.js**: Updated to show  in the guest list.
--   **/app/backend/scripts/seed_demo.py**: Updated with staff hourly rates.
--   **/app/backend/db/init_postgres.sql**: Contains schema for new shift and staff tracking tables.
--   **/app/backend/.env**: Contains the .
-
-**key api endpoints**
--   **Manager**: , , , 
--   **Owner**: , 
--   **Table**: 
--   **Auth**:  (with protection for system account)
+-   **/app/backend/app/api/routes/tap.py**: Updated with unified close flow and tip recording endpoint.
+-   **/app/backend/app/api/routes/table.py**: Updated with mandatory server logic and unified close flow.
+-   **/app/backend/app/api/routes/pulse.py**: Added a guest search endpoint.
+-   **/app/frontend/src/app/(main)/tap/page.tsx**: Rewritten to handle the guest confirmation modal and new close/tip flow.
+-   **/app/frontend/src/app/(main)/table/page.tsx**: Rewritten to enforce server selection and handle the ID verification modal and new close/tip flow.
+-   **/app/frontend/src/app/(main)/page.tsx**: Rewritten to filter for active events and implement the preview/enter click logic.
+-   **/app/frontend/src/app/(main)/manager/dashboard/page.tsx**: AI section redesigned.
+-   **/app/frontend/src/app/(main)/owner/dashboard/page.tsx**: AI section redesigned.
 
 **Critical Info for New Agent**
--   **Priority 1**: Implement the Conversational AI Assistant as a single, unified block of work, following the user's latest detailed request. Do not ask for intermediate checkpoints.
--   **User Specs are Law**: Adhere strictly to the user's detailed UI/UX and product logic specifications, especially the mandatory structure of AI responses (, , , ).
--   **Read-Only Principle**: The Owner dashboard and all AI insights are strictly read-only and must not perform any write operations to the database ledgers.
--   **Historical Data Integrity**: When implementing staff cost tracking, ensure that the  is snapshotted for each shift to maintain historical accuracy, as requested by the user. Do not rely on the current rate for past data.
--   **AI Tone**: Remember to adjust the AI's tone: operational and direct for the Manager, strategic and high-level for the Owner.
+-   **Follow User Specs**: The user provides detailed, non-negotiable handoff style specifications. Adhere to them strictly. The next task is to implement the remaining items from the user's spec list in .
+-   **Task Order**: The user has approved the implementation order. Continue with the Structural Dashboard Features block next.
+-   **Tip Flow Logic**: Remember the tip flow is **semi-automatic**. The server *manually* inputs the tip amount from a physical receipt, and the system *automatically* calculates and distributes it. It is not a fully automated part of the digital checkout.
 
 **documents and test reports created in this job**
 -    (Continuously updated)
--   Multiple test reports in  confirming the stability of all completed features.
+-   Multiple test reports in , with the latest confirming the success of the unified close flow and UX fixes.
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  **User**: Approved the implementation of the Shift vs. Operations section in the Manager Dashboard, including AI analysis.
-2.  **User**: Provided minor but critical adjustments: staff roles need versioning to preserve historical shift costs, and the AI endpoint must be strictly read-only and receive explicit parameters.
-3.  **Agent**: Implemented the Shift vs. Operations section, respecting all new rules.
-4.  **Agent**: Ran testing agent, which passed 100%.
-5.  **Agent**: Updated PRD.md and finished the task.
-6.  **User (LATEST)**: Provided a detailed new scope to evolve the AI assistant into a conversational and participatory partner for both the Manager and Owner dashboards. This includes specific UI/UX for an interactive chat-like experience, a mandatory Next steps block in AI responses, and adding  to the manager's cost analysis. This is the current, highest-priority task.
+10. **User**: Provided a large, unified spec list covering multiple features and UX fixes (Manager guest history, Owner dashboard enhancements, AI UX, unified close flow, and tips).
+9. **Agent**: Proposed a plan to tackle the user's spec list in logical blocks, asking for confirmation.
+8. **User**: Corrected the agent's understanding of the tip-splitting flow, clarifying it must be a semi-automatic process (manual input, automatic calculation). Approved the agent's overall plan with this correction.
+7. **Agent**: Started work on the first block of UX fixes.
+6. **Agent**: Implemented the unified close flow and semi-automatic tip recording system.
+5. **Agent**: Ran comprehensive tests using .
+4. **Agent**: Received a 100% pass rate from the testing agent.
+3. **Agent**: Updated the PRD and finished the task batch.
+2. **User**: After the agent finished, provided a follow-up image and text about a search bug on the Pulse screen (which the agent had already fixed for the Tap page).
+1. **User (LATEST)**: Provided a detailed list of new requirements for the Table, Manager, and a new Per Event Dashboard, confirming the agent's proposed plan for the next implementation blocks. This is the current source of truth for the next tasks.
 
 **Project Health Check:**
 -   **Broken**: None.
--   **Mocked**: The  field is present in the UI for the Manager's Shift vs Operations section, but the backend logic for tip splitting is a future task. The UI is forward-compatible.
+-   **Mocked**: None. All mocked UI elements (like tips) have now been implemented with backend logic.
 
 **3rd Party Integrations**
--   **OpenAI GPT-5.2**: In use for AI insights via  and the **Emergent LLM Key**.
+-   **OpenAI GPT-5.2**: Used for AI insights via  and the **Emergent LLM Key**.
 -   **Stripe (Payments)**: Installed but no features are implemented yet.
 
 **Testing status**
@@ -141,4 +151,7 @@ There are no outstanding bugs or issues. The focus is entirely on the new featur
 -   **Password**: 
 
 **What agent forgot to execute**
--   Nothing. The agent has been diligent, addressing all user requests and self-correcting minor issues during development.</analysis>
+The agent has successfully completed all tasks assigned in the last active session. The following items from the user's latest spec list () are now the immediate upcoming tasks:
+*   Manager Dashboard › Guests: Implement sorted list and clickable guest profiles.
+*   Owner Dashboard › Overview: Implement the Business/Venue/Events view switcher.
+*   Owner Dashboard › People in Ops: Implement clickable cards to show staff details.</analysis>
