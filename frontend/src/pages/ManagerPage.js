@@ -10,7 +10,7 @@ import {
   Plus, Pencil, Trash2, Check, X, BarChart3, DollarSign,
   Search, Calendar, Shield, Clock, AlertTriangle, Download,
   ChevronDown, ChevronRight, Gift, Nfc, FileText, Activity,
-  TrendingUp, Eye, LayoutGrid, User
+  TrendingUp, Eye, LayoutGrid, User, Lightbulb, Zap
 } from 'lucide-react';
 
 const VID = () => localStorage.getItem('active_venue_id') || '40a24e04-75b6-435d-bfff-ab0d469ce543';
