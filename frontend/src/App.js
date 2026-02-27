@@ -8,12 +8,13 @@ import { ProtectedRoute } from './components/ProtectedRoute';
 // Pages
 import { LoginPage } from './pages/LoginPage';
 import { ModulesPage } from './pages/ModulesPage';
-import { VenueHomePage } from './pages/venue/VenueHomePage';
+import { VenueSelectPage } from './pages/venue/VenueHomePage';
 import { PulseEntryPage } from './pages/pulse/PulseEntryPage';
 import { PulseInsidePage } from './pages/pulse/PulseInsidePage';
 import { PulseExitPage } from './pages/pulse/PulseExitPage';
 import { PulseBarPage } from './pages/pulse/PulseBarPage';
 import { PulseRewardsPage } from './pages/pulse/PulseRewardsPage';
+import { GuestProfilePage } from './pages/pulse/GuestProfilePage';
 import { TapPage } from './pages/TapPage';
 import { TablePage } from './pages/TablePage';
 import { KitchenPage } from './pages/KitchenPage';
@@ -33,7 +34,7 @@ function App() {
                 path="/venue/home"
                 element={
                   <ProtectedRoute>
-                    <VenueHomePage />
+                    <VenueSelectPage />
                   </ProtectedRoute>
                 }
               />
@@ -90,6 +91,14 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <PulseRewardsPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/pulse/guest/:guestId"
+                element={
+                  <ProtectedRoute>
+                    <GuestProfilePage />
                   </ProtectedRoute>
                 }
               />
