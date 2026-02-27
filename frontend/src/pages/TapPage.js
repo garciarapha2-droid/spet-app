@@ -286,13 +286,52 @@ export const TapPage = () => {
               <ChevronDown className="h-3 w-3 text-muted-foreground" />
             </button>
             {showBarmanMenu && (
-              <div className="absolute top-full left-0 mt-1 bg-card border border-border rounded-lg shadow-lg z-50 min-w-[160px] py-1">
+              <div className="absolute top-full left-0 mt-1 bg-card border border-border rounded-lg shadow-lg z-50 min-w-[220px] py-1" data-testid="barman-dropdown">
                 {barmen.map(b => (
-                  <button key={b} onClick={() => { setSelectedBarman(b); setShowBarmanMenu(false); }}
-                    className={`w-full text-left px-4 py-2 text-sm hover:bg-muted ${selectedBarman === b ? 'text-primary font-medium' : ''}`}>
-                    {b}
-                  </button>
+                  <div key={b.id || b.name} className="flex items-center group">
+                    {editingBarman === b.id ? (
+                      <div className="flex items-center gap-1 px-3 py-1.5 w-full">
+                        <input value={editBarmanName} onChange={e => setEditBarmanName(e.target.value)}
+                          className="flex-1 px-2 py-1 text-sm rounded border border-border bg-background"
+                          autoFocus onKeyDown={e => e.key === 'Enter' && handleEditBarman(b.id)} />
+                        <button onClick={() => handleEditBarman(b.id)} className="p-1 hover:text-green-500"><Check className="h-3.5 w-3.5" /></button>
+                        <button onClick={() => setEditingBarman(null)} className="p-1 hover:text-muted-foreground"><X className="h-3.5 w-3.5" /></button>
+                      </div>
+                    ) : (
+                      <>
+                        <button onClick={() => { setSelectedBarman(b.name); setShowBarmanMenu(false); }}
+                          className={`flex-1 text-left px-4 py-2 text-sm hover:bg-muted ${selectedBarman === b.name ? 'text-primary font-medium' : ''}`}>
+                          {b.name}
+                        </button>
+                        <button onClick={() => { setEditingBarman(b.id); setEditBarmanName(b.name); }}
+                          className="p-1.5 opacity-0 group-hover:opacity-100 hover:text-primary transition-opacity" data-testid={`edit-barman-${b.id}`}>
+                          <Pencil className="h-3 w-3" />
+                        </button>
+                        <button onClick={() => handleDeleteBarman(b.id)}
+                          className="p-1.5 mr-1 opacity-0 group-hover:opacity-100 hover:text-red-500 transition-opacity" data-testid={`delete-barman-${b.id}`}>
+                          <Trash2 className="h-3 w-3" />
+                        </button>
+                      </>
+                    )}
+                  </div>
                 ))}
+                {/* Add new barman */}
+                {showAddBarman ? (
+                  <div className="flex items-center gap-1 px-3 py-1.5 border-t border-border">
+                    <input value={newBarmanName} onChange={e => setNewBarmanName(e.target.value)}
+                      placeholder="Name..."
+                      className="flex-1 px-2 py-1 text-sm rounded border border-border bg-background"
+                      autoFocus onKeyDown={e => e.key === 'Enter' && handleAddBarman()} />
+                    <button onClick={handleAddBarman} className="p-1 hover:text-green-500"><Check className="h-3.5 w-3.5" /></button>
+                    <button onClick={() => { setShowAddBarman(false); setNewBarmanName(''); }} className="p-1 hover:text-muted-foreground"><X className="h-3.5 w-3.5" /></button>
+                  </div>
+                ) : (
+                  <button onClick={() => setShowAddBarman(true)}
+                    className="w-full text-left px-4 py-2 text-sm text-primary hover:bg-muted border-t border-border flex items-center gap-1.5"
+                    data-testid="add-barman-btn">
+                    <Plus className="h-3.5 w-3.5" /> Add barman
+                  </button>
+                )}
               </div>
             )}
           </div>
