@@ -318,7 +318,7 @@ export const PulseEntryPage = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <PulseHeader venue={venue} onVenueChange={setVenue} />
+      <PulseHeader />
 
       <main className="w-full px-16 py-12">
         {/* KPI Cards */}
