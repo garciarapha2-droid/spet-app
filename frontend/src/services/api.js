@@ -65,6 +65,7 @@ export const tapAPI = {
   getCatalog: (venueId) => api.get('/tap/catalog', { params: { venue_id: venueId } }),
   getConfig: (venueId) => api.get('/tap/config', { params: { venue_id: venueId } }),
   getStats: (venueId) => api.get('/tap/stats', { params: { venue_id: venueId } }),
+  getSessions: (venueId) => api.get('/tap/sessions', { params: { venue_id: venueId } }),
   openSession: (fd) => api.post('/tap/session/open', fd),
   addItem: (sessionId, fd) => api.post(`/tap/session/${sessionId}/add`, fd),
   addCustomItem: (sessionId, fd) => api.post(`/tap/session/${sessionId}/add-custom`, fd),
