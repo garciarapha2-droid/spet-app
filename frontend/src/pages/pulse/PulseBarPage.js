@@ -63,8 +63,14 @@ export const PulseBarPage = () => {
       );
       if (match) {
         const guestRes = await pulseAPI.getGuest(match.guest_id, VENUE_ID());
-        setScanResult(guestRes.data);
-        setConfirmingIdentity(true);
+        // Check if wristband is blocked
+        if (guestRes.data.wristband_blocked) {
+          setScanResult({ ...guestRes.data, blocked: true });
+          setConfirmingIdentity(false);
+        } else {
+          setScanResult(guestRes.data);
+          setConfirmingIdentity(true);
+        }
       } else {
         toast.error('Guest not found. Try searching by name.');
       }
