@@ -768,48 +768,38 @@ export const VenueSelectPage = () => {
                   />
                 )}
 
-                {/* Event list */}
-                {events.length === 0 && !showCreate ? (
+                {/* Event list — only active events */}
+                {events.filter(e => e.is_active !== false).length === 0 && !showCreate ? (
                   <div className="bg-card border border-dashed border-border rounded-xl p-10 text-center">
                     <Sparkles className="h-10 w-10 text-muted-foreground/30 mx-auto mb-3" />
-                    <p className="text-muted-foreground mb-1">No events for this date</p>
+                    <p className="text-muted-foreground mb-1">No active events for this date</p>
                     <p className="text-sm text-muted-foreground/60">Create one or select a different date</p>
                   </div>
                 ) : (
                   <div className="space-y-3">
-                    {events.map((evt) => (
+                    {events.filter(e => e.is_active !== false).map((evt) => (
                       <div key={evt.id}>
                         <div
                           onClick={() => setSelectedEvent(selectedEvent?.id === evt.id ? null : evt)}
+                          onDoubleClick={() => handleEnter()}
                           className={`bg-card border rounded-xl p-5 transition-colors cursor-pointer ${
                             selectedEvent?.id === evt.id ? 'border-primary' : 'border-border hover:border-primary/30'
                           }`}
                           data-testid={`event-card-${evt.id}`}>
                           <div className="flex items-center justify-between">
                             <h4 className="font-semibold">{evt.name}</h4>
-                            <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${
-                              evt.is_active === false ? 'bg-red-500/10 text-red-500' : 'bg-green-500/10 text-green-500'
-                            }`}>
-                              {evt.is_active === false ? 'Ended' : 'Active'}
-                            </span>
+                            <span className="text-[10px] px-2 py-0.5 rounded-full font-medium bg-green-500/10 text-green-500">Active</span>
                           </div>
                           <div className="flex gap-4 text-sm text-muted-foreground mt-1">
                             {evt.cover_price > 0 && <span>Cover: ${evt.cover_price}</span>}
                             {evt.cover_consumption_price > 0 && <span>Cover+Cons: ${evt.cover_consumption_price}</span>}
                           </div>
-                          <p className="text-xs text-muted-foreground/60 mt-2">Click to manage guests & staff</p>
+                          <p className="text-xs text-muted-foreground/60 mt-2">Click to preview — Double-click to enter</p>
                         </div>
 
-                        {/* Event Detail Panel */}
+                        {/* Event Preview (1 click) — shows guest count + staff list */}
                         {selectedEvent?.id === evt.id && (
-                          <div className="mt-2">
-                            <EventDetailPanel
-                              event={evt}
-                              venueId={selectedVenue.id}
-                              onClose={() => setSelectedEvent(null)}
-                              onEventEnded={() => { setSelectedEvent(null); loadEvents(); }}
-                            />
-                          </div>
+                          <EventPreviewPanel event={evt} venueId={selectedVenue.id} onClose={() => setSelectedEvent(null)} onEventEnded={() => { setSelectedEvent(null); loadEvents(); }} />
                         )}
                       </div>
                     ))}
