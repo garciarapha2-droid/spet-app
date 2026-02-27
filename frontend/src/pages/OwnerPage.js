@@ -73,25 +73,66 @@ export const OwnerPage = () => {
 };
 
 /* ═══════════════════════════════════════════════════════════════════
-   1. OVERVIEW
+   1. OVERVIEW — with Business / Venue / Events View Switcher
    ═══════════════════════════════════════════════════════════════════ */
 function OverviewSection() {
+  const [view, setView] = useState('business');
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    ownerAPI.getDashboard().then(r => setData(r.data)).catch(() => toast.error('Failed')).finally(() => setLoading(false));
-  }, []);
+  const load = useCallback((v) => {
+    setLoading(true);
+    ownerAPI.getDashboard(v || view).then(r => setData(r.data)).catch(() => toast.error('Failed')).finally(() => setLoading(false));
+  }, [view]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const switchView = (v) => { setView(v); load(v); };
 
   if (loading) return <Skeleton />;
   if (!data) return <p className="text-muted-foreground">No data</p>;
 
-  const { kpis, venues } = data;
+  const VIEWS = [
+    { key: 'business', label: 'Business Overview', icon: BarChart3 },
+    { key: 'venue', label: 'By Venue', icon: Building2 },
+    { key: 'events', label: 'By Event', icon: Activity },
+  ];
 
   return (
     <div data-testid="owner-overview">
-      <h2 className="text-xl font-bold mb-4">Business Overview</h2>
+      {/* View Switcher */}
+      <div className="flex items-center justify-between mb-5">
+        <h2 className="text-xl font-bold">Overview</h2>
+        <div className="flex items-center bg-muted/50 rounded-lg p-1" data-testid="view-switcher">
+          {VIEWS.map(v => {
+            const Icon = v.icon;
+            return (
+              <button key={v.key} onClick={() => switchView(v.key)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                  view === v.key ? 'bg-card text-primary shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+                data-testid={`view-${v.key}`}>
+                <Icon className="h-4 w-4" /> {v.label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
 
+      {/* Business View */}
+      {view === 'business' && data.kpis && <BusinessView kpis={data.kpis} venues={data.venues || []} />}
+
+      {/* Venue View */}
+      {view === 'venue' && <VenueView venues={data.venues || []} />}
+
+      {/* Events View */}
+      {view === 'events' && <EventsView events={data.events || []} />}
+    </div>
+  );
+}
+
+function BusinessView({ kpis, venues }) {
+  return (
+    <>
       {/* Row 1: Revenue KPIs */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <BigKPI icon={DollarSign} label="Revenue Today" value={`$${kpis.revenue_today.toFixed(0)}`} accent="text-green-500" testid="kpi-rev-today" />
@@ -147,13 +188,108 @@ function OverviewSection() {
             </div>
           </div>
         ))}
-
         <div className="border-2 border-dashed border-border rounded-xl p-5 flex items-center justify-center text-muted-foreground cursor-pointer hover:border-primary/30 transition-colors">
           <div className="text-center">
             <Building2 className="h-8 w-8 mx-auto mb-2 opacity-30" />
             <p className="font-medium text-sm">Add New Venue</p>
           </div>
         </div>
+      </div>
+    </>
+  );
+}
+
+function VenueView({ venues }) {
+  if (!venues.length) return <p className="text-muted-foreground p-4">No venue data available</p>;
+  return (
+    <div data-testid="venue-view">
+      <div className="space-y-4">
+        {venues.map(v => (
+          <div key={v.venue_id} className="bg-card border border-border rounded-xl p-5" data-testid={`venue-financial-${v.venue_id}`}>
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center"><Building2 className="h-5 w-5 text-primary" /></div>
+                <div>
+                  <h4 className="font-bold">{v.name}</h4>
+                  <HealthBadge health={v.health} />
+                </div>
+              </div>
+              <span className="text-sm text-muted-foreground">{v.staff_count} staff</span>
+            </div>
+            <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+              <div className="text-center p-3 bg-green-500/5 rounded-lg border border-green-500/20">
+                <p className="text-xl font-bold text-green-500">${v.revenue_today.toFixed(0)}</p>
+                <p className="text-[10px] text-muted-foreground">Today</p>
+              </div>
+              <div className="text-center p-3 bg-emerald-500/5 rounded-lg border border-emerald-500/20">
+                <p className="text-xl font-bold text-emerald-500">${v.revenue_mtd.toFixed(0)}</p>
+                <p className="text-[10px] text-muted-foreground">MTD</p>
+              </div>
+              <div className="text-center p-3 bg-teal-500/5 rounded-lg border border-teal-500/20">
+                <p className="text-xl font-bold text-teal-500">${v.revenue_ytd.toFixed(0)}</p>
+                <p className="text-[10px] text-muted-foreground">YTD</p>
+              </div>
+              <div className="text-center p-3 bg-muted/30 rounded-lg">
+                <p className="text-xl font-bold text-primary">${v.avg_ticket.toFixed(2)}</p>
+                <p className="text-[10px] text-muted-foreground">Avg Ticket</p>
+              </div>
+              <div className="text-center p-3 bg-muted/30 rounded-lg">
+                <p className="text-xl font-bold">{v.open_tabs} / {v.closed_today}</p>
+                <p className="text-[10px] text-muted-foreground">Open / Closed</p>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function EventsView({ events }) {
+  if (!events.length) return (
+    <div className="bg-card border-2 border-dashed border-border rounded-xl p-8 text-center">
+      <Activity className="h-10 w-10 mx-auto mb-3 text-muted-foreground opacity-30" />
+      <p className="text-sm text-muted-foreground">No events found with financial data</p>
+    </div>
+  );
+  return (
+    <div data-testid="events-view">
+      <div className="space-y-3">
+        {events.map(ev => (
+          <div key={ev.event_id} className="bg-card border border-border rounded-xl p-5" data-testid={`event-financial-${ev.event_id}`}>
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center"><Activity className="h-5 w-5 text-primary" /></div>
+                <div>
+                  <h4 className="font-bold text-sm">{ev.name}</h4>
+                  <p className="text-xs text-muted-foreground">{ev.venue_name} — {ev.event_date ? new Date(ev.event_date).toLocaleDateString() : ''}</p>
+                </div>
+              </div>
+              <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                ev.status === 'active' ? 'bg-green-500/10 text-green-600' :
+                ev.status === 'ended' ? 'bg-muted text-muted-foreground' :
+                'bg-blue-500/10 text-blue-600'}`}>{ev.status}</span>
+            </div>
+            <div className="grid grid-cols-4 gap-4">
+              <div className="text-center p-3 bg-green-500/5 rounded-lg border border-green-500/20">
+                <p className="text-xl font-bold text-green-500">${ev.revenue.toFixed(0)}</p>
+                <p className="text-[10px] text-muted-foreground">Revenue</p>
+              </div>
+              <div className="text-center p-3 bg-muted/30 rounded-lg">
+                <p className="text-xl font-bold">{ev.tabs_closed}</p>
+                <p className="text-[10px] text-muted-foreground">Tabs Closed</p>
+              </div>
+              <div className="text-center p-3 bg-muted/30 rounded-lg">
+                <p className="text-xl font-bold">{ev.guests}</p>
+                <p className="text-[10px] text-muted-foreground">Guests</p>
+              </div>
+              <div className="text-center p-3 bg-muted/30 rounded-lg">
+                <p className="text-xl font-bold">{ev.staff}</p>
+                <p className="text-[10px] text-muted-foreground">Staff</p>
+              </div>
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );
