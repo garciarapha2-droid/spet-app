@@ -137,12 +137,42 @@ export const TablePage = () => {
 
   const handleAddItem = async (item) => {
     if (!tableDetail?.session) { toast.error('Open the table first'); return; }
+    // Check if item is alcohol and session not ID-verified
+    if (item.is_alcohol && !tableDetail.session.id_verified) {
+      setPendingAlcoholItem(item);
+      setShowIdModal(true);
+      return;
+    }
+    await doAddItem(item);
+  };
+
+  const doAddItem = async (item) => {
     try {
       const fd = new FormData(); fd.append('item_id', item.id); fd.append('qty', '1');
       await tapAPI.addItem(tableDetail.session.id, fd);
       const res = await tableAPI.getTableDetail(selectedTable); setTableDetail(res.data);
       await loadTables();
     } catch { toast.error('Failed'); }
+  };
+
+  const handleIdVerified = async () => {
+    if (!tableDetail?.session) return;
+    try {
+      await tapAPI.verifyId(tableDetail.session.id);
+      const res = await tableAPI.getTableDetail(selectedTable);
+      setTableDetail(res.data);
+      setShowIdModal(false);
+      // Now add the pending item
+      if (pendingAlcoholItem) {
+        await doAddItem(pendingAlcoholItem);
+        setPendingAlcoholItem(null);
+      }
+    } catch { toast.error('ID verification failed'); }
+  };
+
+  const handleIdCancel = () => {
+    setShowIdModal(false);
+    setPendingAlcoholItem(null);
   };
 
   const handleVoidItem = async (itemId) => {
