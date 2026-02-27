@@ -58,7 +58,7 @@ SPETAP is a multi-tenant SaaS platform for venue operations (clubs, restaurants,
 
 ### Session 2b (2026-02-27) - Auth Migration
 - **COMPLETED: Auth migrated MongoDB → PostgreSQL** — login, signup, /me all via asyncpg
-- Test user seeded in PostgreSQL (teste@teste.com / teste123, role=owner, company=Demo Club)
+- Test user seeded in PostgreSQL (teste@teste.com / 12345, role=super_admin, ALL permissions, company=Demo Club)
 
 ### Session 2c (2026-02-27) - PULSE C1→C3
 - **COMPLETED: C1 Guest Intake** — Name, Email, Phone, DOB (conditional HOST_COLLECT_DOB), Photo (camera/upload)
@@ -68,13 +68,21 @@ SPETAP is a multi-tenant SaaS platform for venue operations (clubs, restaurants,
 - **Data Architecture**: PII → MongoDB venue_guests (venue-isolated), Hashes → PG global_persons, Decisions → PG entry_events
 - **Testing: 100% pass** — 20/20 backend tests, all frontend C1-C3 flows verified
 
+### Session 2d (2026-02-27) - TAP B0+B1 + Test User + Login UX
+- **COMPLETED: Test user updated** — Password changed to `12345`, role=super_admin, ALL entitlements enabled
+- **COMPLETED: Forgot Password link** — Added `Forgot my password?` below login button (placeholder)
+- **COMPLETED: TAP B0** — Config (Disco/Restaurant/Event modes), Stats (open_tabs, running_total, closed_today, revenue_today), 12-item Catalog
+- **COMPLETED: TAP B1** — Open tab (PG tap_sessions), Add items (PG tap_items, catalog from MongoDB), Close tab (PG tap_payments), 3-column layout
+- **Data Architecture**: Sessions/Items/Payments → PostgreSQL, Catalog → MongoDB
+- **Testing: 100% pass** — 27/27 backend tests, all frontend flows verified
+
 ---
 
 ## Prioritized Backlog
 
 ### P1 (Next)
-- Implement TAP Module (Bar Mode B0-B5): 3 operational modes (Disco, Restaurant, Event)
 - Implement Table & KDS Modules with feature-gating
+- Implement TAP B2-B5: Advanced features (void items, table mode, shift summary)
 
 ### P2
 - Manager, Owner, CEO Dashboards with aggregated data
