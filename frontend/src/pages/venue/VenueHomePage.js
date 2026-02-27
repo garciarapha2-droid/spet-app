@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { venueAPI } from '../../services/api';
@@ -6,50 +6,111 @@ import { ThemeToggle } from '../../components/ThemeToggle';
 import { Button } from '../../components/ui/button';
 import { toast } from 'sonner';
 import {
-  Users, CreditCard, LayoutGrid, UtensilsCrossed,
-  BarChart3, Building2, Crown, Lock, LogOut,
-  ChevronDown, X
+  ChevronLeft, ChevronRight, Plus, Calendar as CalendarIcon,
+  MapPin, LogOut, Sparkles
 } from 'lucide-react';
 
-const MODULE_META = {
-  pulse:   { icon: Users,              route: '/pulse/entry', color: 'hsl(var(--primary))' },
-  tap:     { icon: CreditCard,         route: '/tap',         color: '#2563eb' },
-  table:   { icon: LayoutGrid,         route: '/table',       color: '#0891b2' },
-  kds:     { icon: UtensilsCrossed,    route: '/kitchen',     color: '#ea580c' },
-  manager: { icon: BarChart3,          route: '/manager',     color: '#7c3aed' },
-  owner:   { icon: Building2,          route: '/owner',       color: '#4f46e5' },
-  ceo:     { icon: Crown,              route: '/ceo',         color: '#be185d' },
-};
-
-export const VenueHomePage = () => {
+export const VenueSelectPage = () => {
   const navigate = useNavigate();
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [lockedModal, setLockedModal] = useState(null);
-  const [showVenueSelector, setShowVenueSelector] = useState(false);
+  const [selectedVenue, setSelectedVenue] = useState(null);
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [events, setEvents] = useState([]);
+  const [eventDates, setEventDates] = useState([]);
+  const [showCreate, setShowCreate] = useState(false);
+  const [newEvent, setNewEvent] = useState({ name: '', cover_price: 0, cover_consumption_price: 0 });
 
   useEffect(() => {
     const load = async () => {
       try {
         const res = await venueAPI.getHome();
         setData(res.data);
+        if (res.data.venues?.length > 0) {
+          setSelectedVenue(res.data.venues[0]);
+        }
       } catch (err) {
-        toast.error('Failed to load venue');
+        toast.error('Failed to load venues');
       }
       setLoading(false);
     };
     load();
   }, []);
 
-  const handleModuleClick = (mod) => {
-    if (!mod.enabled) {
-      setLockedModal(mod);
-      return;
+  // Load events for selected date
+  useEffect(() => {
+    if (!selectedVenue) return;
+    const loadEvents = async () => {
+      try {
+        const dateStr = selectedDate.toISOString().split('T')[0];
+        const res = await venueAPI.getEvents(selectedVenue.id, dateStr);
+        setEvents(res.data.events || []);
+      } catch {}
+    };
+    loadEvents();
+  }, [selectedVenue, selectedDate]);
+
+  // Load event dates for calendar highlights
+  useEffect(() => {
+    if (!selectedVenue) return;
+    const loadDates = async () => {
+      try {
+        const month = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}`;
+        const res = await venueAPI.getEventDates(selectedVenue.id, month);
+        setEventDates(res.data.dates || []);
+      } catch {}
+    };
+    loadDates();
+  }, [selectedVenue, selectedDate]);
+
+  const handleCreateEvent = async () => {
+    if (!newEvent.name.trim()) { toast.error('Event name required'); return; }
+    try {
+      const fd = new FormData();
+      fd.append('name', newEvent.name);
+      fd.append('date', selectedDate.toISOString().split('T')[0]);
+      fd.append('cover_price', newEvent.cover_price.toString());
+      fd.append('cover_consumption_price', newEvent.cover_consumption_price.toString());
+      await venueAPI.createEvent(selectedVenue.id, fd);
+      toast.success('Event created!');
+      setShowCreate(false);
+      setNewEvent({ name: '', cover_price: 0, cover_consumption_price: 0 });
+      // Reload events
+      const dateStr = selectedDate.toISOString().split('T')[0];
+      const res = await venueAPI.getEvents(selectedVenue.id, dateStr);
+      setEvents(res.data.events || []);
+    } catch (err) {
+      toast.error('Failed to create event');
     }
-    const meta = MODULE_META[mod.key];
-    if (meta) navigate(meta.route);
   };
+
+  const handleEnter = () => {
+    // Store active venue in localStorage for other pages to use
+    if (selectedVenue) {
+      localStorage.setItem('active_venue_id', selectedVenue.id);
+      localStorage.setItem('active_venue_name', selectedVenue.name);
+    }
+    navigate('/pulse/entry');
+  };
+
+  // Calendar logic
+  const calendarMonth = selectedDate.getMonth();
+  const calendarYear = selectedDate.getFullYear();
+  const daysInMonth = new Date(calendarYear, calendarMonth + 1, 0).getDate();
+  const firstDayOfWeek = new Date(calendarYear, calendarMonth, 1).getDay();
+  const today = new Date();
+  const todayStr = today.toISOString().split('T')[0];
+
+  const calendarDays = useMemo(() => {
+    const days = [];
+    for (let i = 0; i < firstDayOfWeek; i++) days.push(null);
+    for (let d = 1; d <= daysInMonth; d++) days.push(d);
+    return days;
+  }, [daysInMonth, firstDayOfWeek]);
+
+  const prevMonth = () => setSelectedDate(new Date(calendarYear, calendarMonth - 1, 1));
+  const nextMonth = () => setSelectedDate(new Date(calendarYear, calendarMonth + 1, 1));
 
   if (loading) {
     return (
@@ -59,47 +120,16 @@ export const VenueHomePage = () => {
     );
   }
 
-  const activeVenue = data?.active_venue;
   const venues = data?.venues || [];
-  const modules = data?.modules || [];
+  const selectedDateStr = selectedDate.toISOString().split('T')[0];
 
   return (
-    <div className="min-h-screen bg-background" data-testid="venue-home-page">
+    <div className="min-h-screen bg-background" data-testid="venue-select-page">
       {/* Header */}
       <header className="h-16 border-b border-border bg-card px-8 flex items-center justify-between">
-        <div className="flex items-center gap-5">
-          <h1 className="text-xl font-bold tracking-tight" data-testid="venue-home-logo">SPETAP</h1>
-          <div className="h-6 w-px bg-border" />
-          {/* Venue selector */}
-          <div className="relative">
-            <button
-              onClick={() => venues.length > 1 && setShowVenueSelector(!showVenueSelector)}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-muted transition-colors"
-              data-testid="venue-selector"
-            >
-              <span className="font-semibold text-foreground" data-testid="venue-name">
-                {activeVenue?.name || 'No Venue'}
-              </span>
-              {venues.length > 1 && <ChevronDown className="h-4 w-4 text-muted-foreground" />}
-            </button>
-            {showVenueSelector && venues.length > 1 && (
-              <div className="absolute top-full left-0 mt-1 bg-card border border-border rounded-lg shadow-lg z-50 min-w-[200px]">
-                {venues.map((v) => (
-                  <button
-                    key={v.id}
-                    className="w-full text-left px-4 py-2.5 text-sm hover:bg-muted transition-colors first:rounded-t-lg last:rounded-b-lg"
-                    onClick={() => setShowVenueSelector(false)}
-                    data-testid={`venue-option-${v.id}`}
-                  >
-                    {v.name}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
+        <h1 className="text-xl font-bold tracking-tight">SPETAP</h1>
         <div className="flex items-center gap-3">
-          <span className="text-sm text-muted-foreground" data-testid="user-email">{data?.user_email}</span>
+          <span className="text-sm text-muted-foreground">{data?.user_email}</span>
           <ThemeToggle />
           <Button variant="ghost" size="icon" onClick={() => { logout(); navigate('/login'); }} data-testid="logout-btn">
             <LogOut className="h-4 w-4" />
@@ -107,94 +137,154 @@ export const VenueHomePage = () => {
         </div>
       </header>
 
-      {/* Main */}
-      <main className="w-full px-8 py-12 max-w-[1400px] mx-auto">
-        <div className="mb-10">
-          <h2 className="text-3xl font-bold tracking-tight mb-2" data-testid="venue-home-title">
-            {activeVenue?.name || 'Venue'}
-          </h2>
-          <p className="text-base text-muted-foreground">Select a module to get started</p>
-        </div>
+      <main className="w-full max-w-[1200px] mx-auto px-8 py-12">
+        {/* Venue Selector */}
+        {venues.length > 1 && (
+          <div className="mb-10">
+            <p className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-3">Select Venue</p>
+            <div className="flex gap-3">
+              {venues.map((v) => (
+                <button key={v.id}
+                  onClick={() => setSelectedVenue(v)}
+                  className={`px-5 py-3 rounded-xl border-2 transition-all font-medium ${
+                    selectedVenue?.id === v.id
+                      ? 'border-primary bg-primary/5 text-primary'
+                      : 'border-border hover:border-primary/30'
+                  }`}
+                  data-testid={`venue-btn-${v.id}`}>
+                  <MapPin className="h-4 w-4 inline mr-2" />
+                  {v.name}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-          {modules.map((mod) => {
-            const meta = MODULE_META[mod.key];
-            if (!meta) return null;
-            const Icon = meta.icon;
-            const enabled = mod.enabled;
+        {selectedVenue && (
+          <>
+            <div className="mb-8">
+              <h2 className="text-4xl font-bold tracking-tight mb-1" data-testid="venue-title">{selectedVenue.name}</h2>
+              <p className="text-lg text-muted-foreground">Select a date and event to start operations</p>
+            </div>
 
-            return (
-              <button
-                key={mod.key}
-                onClick={() => handleModuleClick(mod)}
-                className={`group relative text-left rounded-2xl border-2 p-6 transition-all duration-200 ${
-                  enabled
-                    ? 'border-border bg-card hover:border-primary/50 hover:shadow-lg hover:-translate-y-0.5 cursor-pointer'
-                    : 'border-border/50 bg-muted/30 cursor-not-allowed opacity-65'
-                }`}
-                data-testid={`module-card-${mod.key}`}
-              >
-                {/* Lock badge */}
-                {!enabled && (
-                  <div className="absolute top-4 right-4 flex items-center gap-1.5 px-2 py-1 rounded-full bg-muted text-muted-foreground text-xs font-medium"
-                    data-testid={`locked-badge-${mod.key}`}>
-                    <Lock className="h-3 w-3" />
-                    Locked
+            <div className="grid grid-cols-12 gap-10">
+              {/* Calendar */}
+              <div className="col-span-7">
+                <div className="bg-card border border-border rounded-2xl p-6">
+                  <div className="flex items-center justify-between mb-6">
+                    <button onClick={prevMonth} className="p-2 rounded-lg hover:bg-muted transition-colors">
+                      <ChevronLeft className="h-5 w-5" />
+                    </button>
+                    <h3 className="text-lg font-semibold">
+                      {new Date(calendarYear, calendarMonth).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                    </h3>
+                    <button onClick={nextMonth} className="p-2 rounded-lg hover:bg-muted transition-colors">
+                      <ChevronRight className="h-5 w-5" />
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-7 gap-1 mb-2">
+                    {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map((d) => (
+                      <div key={d} className="text-center text-xs font-medium text-muted-foreground py-2">{d}</div>
+                    ))}
+                  </div>
+                  <div className="grid grid-cols-7 gap-1">
+                    {calendarDays.map((day, idx) => {
+                      if (!day) return <div key={idx} />;
+                      const dateStr = `${calendarYear}-${String(calendarMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                      const isSelected = dateStr === selectedDateStr;
+                      const isToday = dateStr === todayStr;
+                      const hasEvent = eventDates.includes(dateStr);
+                      return (
+                        <button key={idx}
+                          onClick={() => setSelectedDate(new Date(calendarYear, calendarMonth, day))}
+                          className={`relative h-12 rounded-xl flex items-center justify-center text-sm font-medium transition-all ${
+                            isSelected ? 'bg-primary text-primary-foreground' :
+                            isToday ? 'bg-primary/10 text-primary font-bold' :
+                            'hover:bg-muted'
+                          }`}
+                          data-testid={`cal-day-${day}`}>
+                          {day}
+                          {hasEvent && !isSelected && (
+                            <span className="absolute bottom-1.5 w-1.5 h-1.5 rounded-full bg-primary" />
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+
+              {/* Events for selected date */}
+              <div className="col-span-5">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold flex items-center gap-2">
+                    <CalendarIcon className="h-5 w-5 text-primary" />
+                    {selectedDate.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
+                  </h3>
+                  <Button size="sm" variant="outline" onClick={() => setShowCreate(!showCreate)} data-testid="create-event-btn">
+                    <Plus className="h-4 w-4 mr-1" /> New Event
+                  </Button>
+                </div>
+
+                {/* Create event form */}
+                {showCreate && (
+                  <div className="bg-card border border-primary/20 rounded-xl p-5 mb-4 space-y-3" data-testid="create-event-form">
+                    <input type="text" value={newEvent.name}
+                      onChange={(e) => setNewEvent(p => ({ ...p, name: e.target.value }))}
+                      placeholder="Event name (e.g. Friday Night)"
+                      className="w-full px-4 py-2.5 rounded-lg border border-input bg-background text-sm"
+                      data-testid="event-name-input" />
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-xs text-muted-foreground">Cover (R$)</label>
+                        <input type="number" value={newEvent.cover_price}
+                          onChange={(e) => setNewEvent(p => ({ ...p, cover_price: parseFloat(e.target.value) || 0 }))}
+                          className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" />
+                      </div>
+                      <div>
+                        <label className="text-xs text-muted-foreground">Cover + Consum. (R$)</label>
+                        <input type="number" value={newEvent.cover_consumption_price}
+                          onChange={(e) => setNewEvent(p => ({ ...p, cover_consumption_price: parseFloat(e.target.value) || 0 }))}
+                          className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" />
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button size="sm" onClick={handleCreateEvent} data-testid="save-event-btn">Create</Button>
+                      <Button size="sm" variant="ghost" onClick={() => setShowCreate(false)}>Cancel</Button>
+                    </div>
                   </div>
                 )}
 
-                {/* Icon */}
-                <div
-                  className={`w-12 h-12 rounded-xl flex items-center justify-center mb-5 transition-transform duration-200 ${
-                    enabled ? 'group-hover:scale-110' : ''
-                  }`}
-                  style={{ backgroundColor: enabled ? `${meta.color}15` : 'hsl(var(--muted))' }}
-                >
-                  <Icon
-                    className="h-6 w-6"
-                    style={{ color: enabled ? meta.color : 'hsl(var(--muted-foreground))' }}
-                  />
-                </div>
+                {/* Event list */}
+                {events.length === 0 ? (
+                  <div className="bg-card border border-dashed border-border rounded-xl p-10 text-center">
+                    <Sparkles className="h-10 w-10 text-muted-foreground/30 mx-auto mb-3" />
+                    <p className="text-muted-foreground mb-1">No events for this date</p>
+                    <p className="text-sm text-muted-foreground/60">Create one or select a different date</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {events.map((evt) => (
+                      <div key={evt.id} className="bg-card border border-border rounded-xl p-5 hover:border-primary/30 transition-colors">
+                        <h4 className="font-semibold mb-1">{evt.name}</h4>
+                        <div className="flex gap-4 text-sm text-muted-foreground">
+                          {evt.cover_price > 0 && <span>Cover: R${evt.cover_price}</span>}
+                          {evt.cover_consumption_price > 0 && <span>Cover+Cons: R${evt.cover_consumption_price}</span>}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
 
-                {/* Text */}
-                <h3 className={`text-lg font-semibold mb-1 ${enabled ? 'text-foreground' : 'text-muted-foreground'}`}>
-                  {mod.name}
-                </h3>
-                <p className={`text-sm ${enabled ? 'text-muted-foreground' : 'text-muted-foreground/60'}`}>
-                  {enabled ? mod.description : 'Upgrade required'}
-                </p>
-              </button>
-            );
-          })}
-        </div>
-      </main>
-
-      {/* Locked Modal */}
-      {lockedModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
-          onClick={() => setLockedModal(null)} data-testid="locked-modal-overlay">
-          <div className="bg-card border border-border rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4"
-            onClick={(e) => e.stopPropagation()} data-testid="locked-modal">
-            <div className="flex items-center justify-between mb-6">
-              <div className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center">
-                <Lock className="h-5 w-5 text-muted-foreground" />
+                {/* Enter button */}
+                <Button className="w-full mt-6 h-14 text-lg font-semibold rounded-xl" onClick={handleEnter} data-testid="enter-venue-btn">
+                  Enter {selectedVenue.name}
+                </Button>
               </div>
-              <button onClick={() => setLockedModal(null)} className="text-muted-foreground hover:text-foreground">
-                <X className="h-5 w-5" />
-              </button>
             </div>
-            <h3 className="text-xl font-semibold mb-2">{lockedModal.name}</h3>
-            <p className="text-muted-foreground mb-2">{lockedModal.locked_reason || 'This module is not available for your account.'}</p>
-            <p className="text-sm text-muted-foreground mb-6">
-              Contact your administrator or upgrade your plan to access this module.
-            </p>
-            <Button variant="outline" className="w-full" onClick={() => setLockedModal(null)}
-              data-testid="locked-modal-close-btn">
-              Understood
-            </Button>
-          </div>
-        </div>
-      )}
+          </>
+        )}
+      </main>
     </div>
   );
 };
