@@ -78,6 +78,7 @@ export const tapAPI = {
   voidItem: (sessionId, fd) => api.post(`/tap/session/${sessionId}/void-item`, fd),
   getActiveSessions: (venueId) => api.get('/tap/sessions/active', { params: { venue_id: venueId } }),
   listSessions: (venueId, status) => api.get('/tap/sessions/active', { params: { venue_id: venueId, status } }),
+  verifyId: (sessionId) => api.post(`/tap/session/${sessionId}/verify-id`),
 };
 
 // Table
