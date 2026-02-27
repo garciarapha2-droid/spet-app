@@ -301,7 +301,7 @@ async def get_insights(user: dict = Depends(require_auth)):
                     SELECT DATE(closed_at) as day, SUM(total) as daily_rev
                     FROM tap_sessions WHERE venue_id=$1 AND status='closed' AND closed_at>=$2
                     GROUP BY DATE(closed_at)
-                ) sub""", vid, now - timedelta(days=30)) or 0
+                ) sub""", vid, now - timedelta(days=30)) or 0)
             rev_today = float(await conn.fetchval(
                 "SELECT COALESCE(SUM(total),0) FROM tap_sessions WHERE venue_id=$1 AND status='closed' AND closed_at>=$2",
                 vid, today) or 0)
