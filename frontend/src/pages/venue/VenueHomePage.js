@@ -8,7 +8,7 @@ import { toast } from 'sonner';
 import {
   ChevronLeft, ChevronRight, Plus, Calendar as CalendarIcon,
   MapPin, LogOut, Sparkles, Users, CreditCard, LayoutGrid,
-  UtensilsCrossed, BarChart3, Building2, Crown
+  UtensilsCrossed, BarChart3, Building2, Crown, ChevronDown, Menu
 } from 'lucide-react';
 
 export const VenueSelectPage = () => {
@@ -22,6 +22,7 @@ export const VenueSelectPage = () => {
   const [eventDates, setEventDates] = useState([]);
   const [showCreate, setShowCreate] = useState(false);
   const [newEvent, setNewEvent] = useState({ name: '', cover_price: 0, cover_consumption_price: 0 });
+  const [showModulesMenu, setShowModulesMenu] = useState(false);
 
   useEffect(() => {
     const load = async () => {
