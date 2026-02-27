@@ -234,30 +234,45 @@ function VenuesSection() {
 }
 
 /* ═══════════════════════════════════════════════════════════════════
-   3. AI INSIGHTS (GPT-5.2)
+   3. AI INSIGHTS — Conversational & Participatory
    ═══════════════════════════════════════════════════════════════════ */
 function InsightsSection() {
-  const [insights, setInsights] = useState([]);
+  const [conversations, setConversations] = useState([]);
   const [ruleInsights, setRuleInsights] = useState([]);
   const [dismissed, setDismissed] = useState(new Set());
   const [loading, setLoading] = useState(false);
   const [ruleLoading, setRuleLoading] = useState(true);
-  const [disclaimer, setDisclaimer] = useState('');
-  const [generated, setGenerated] = useState(false);
+  const [inputValue, setInputValue] = useState('');
 
   useEffect(() => {
     ownerAPI.getInsights().then(r => setRuleInsights(r.data.insights || [])).catch(() => {}).finally(() => setRuleLoading(false));
   }, []);
 
-  const generateAI = async () => {
+  const sendQuestion = async (questionText) => {
+    const q = questionText || inputValue.trim();
+    if (!q && conversations.length > 0) return;
     setLoading(true);
+    setInputValue('');
     try {
-      const res = await ownerAPI.generateAIInsights();
-      setInsights(res.data.insights || []);
-      setDisclaimer(res.data.disclaimer || '');
-      setGenerated(true);
-    } catch { toast.error('Failed to generate AI insights'); }
+      const res = await ownerAPI.generateAIInsights(q || null);
+      const newInsights = res.data.insights || [];
+      const entry = {
+        id: Date.now(),
+        question: q || null,
+        insights: newInsights,
+        timestamp: new Date().toISOString(),
+      };
+      setConversations(prev => [...prev, entry]);
+    } catch { toast.error('AI analysis failed'); }
     setLoading(false);
+  };
+
+  const removeCard = (id) => {
+    setConversations(prev => prev.filter(c => c.id !== id));
+  };
+
+  const handleNextStep = (step) => {
+    setInputValue(step);
   };
 
   const typeStyles = {
@@ -267,26 +282,17 @@ function InsightsSection() {
   };
 
   return (
-    <div data-testid="insights-section">
+    <div data-testid="insights-section" className="flex flex-col h-[calc(100vh-56px-48px)]">
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h2 className="text-xl font-bold">AI Insights</h2>
-          <p className="text-sm text-muted-foreground">Powered by GPT-5.2 — context-aware analysis</p>
+          <h2 className="text-xl font-bold">AI Business Partner</h2>
+          <p className="text-sm text-muted-foreground">Strategic analysis powered by GPT-5.2 — ask anything about your business</p>
         </div>
-        <Button onClick={generateAI} disabled={loading} data-testid="generate-ai-btn">
-          {loading ? (
-            <><Zap className="h-4 w-4 mr-2 animate-spin" /> Analyzing...</>
-          ) : generated ? (
-            <><Zap className="h-4 w-4 mr-2" /> Refresh Insights</>
-          ) : (
-            <><Zap className="h-4 w-4 mr-2" /> Generate AI Insights</>
-          )}
-        </Button>
       </div>
 
       {/* Rule-based alerts (always shown) */}
       {!ruleLoading && ruleInsights.length > 0 && (
-        <div className="mb-6">
+        <div className="mb-4">
           <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">System Alerts</h3>
           <div className="space-y-2">
             {ruleInsights.filter(i => !dismissed.has(i.id)).map(insight => {
@@ -306,72 +312,142 @@ function InsightsSection() {
         </div>
       )}
 
-      {/* AI Insights */}
-      {!generated && !loading && (
-        <div className="bg-muted/20 border border-border rounded-xl p-8 text-center">
-          <Lightbulb className="h-10 w-10 text-primary/30 mx-auto mb-3" />
-          <p className="text-muted-foreground">Click "Generate AI Insights" to analyze your business data with GPT-5.2</p>
-        </div>
-      )}
+      {/* Conversation Area */}
+      <div className="flex-1 overflow-y-auto space-y-4 mb-4 pr-1">
+        {/* Empty State */}
+        {conversations.length === 0 && !loading && (
+          <div className="bg-card border-2 border-dashed border-border rounded-xl p-8 text-center" data-testid="ai-empty-state">
+            <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
+              <Lightbulb className="h-7 w-7 text-primary" />
+            </div>
+            <h3 className="font-bold text-base mb-2">Your AI Business Partner</h3>
+            <p className="text-sm text-muted-foreground mb-5 max-w-md mx-auto">
+              Ask about revenue trends, venue health, growth opportunities, or click below to get a general analysis of your business.
+            </p>
+            <Button onClick={() => sendQuestion(null)} className="mb-4" data-testid="initial-analysis-btn">
+              <Zap className="h-4 w-4 mr-2" /> Generate Business Analysis
+            </Button>
+            <div className="flex flex-wrap gap-2 justify-center mt-3">
+              {[
+                "How is my business performing this month?",
+                "Which venue needs attention?",
+                "What are my biggest risks right now?",
+              ].map((suggestion, i) => (
+                <button key={i} onClick={() => { setInputValue(suggestion); }}
+                  className="text-xs px-3 py-1.5 rounded-full border border-primary/30 text-primary hover:bg-primary/10 transition-colors"
+                  data-testid={`suggestion-${i}`}>
+                  {suggestion}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
-      {loading && (
-        <div className="bg-primary/5 border border-primary/20 rounded-xl p-8 text-center animate-pulse">
-          <Zap className="h-10 w-10 text-primary mx-auto mb-3" />
-          <p className="text-primary font-medium">Analyzing your venue data...</p>
-          <p className="text-xs text-muted-foreground mt-1">This may take a few seconds</p>
-        </div>
-      )}
-
-      {generated && !loading && (
-        <div className="space-y-4">
-          {insights.map((insight, idx) => {
-            const s = typeStyles[insight.priority] || typeStyles.info;
-            return (
-              <div key={idx} className={`border rounded-xl p-5 ${s.border} ${s.bg}`} data-testid={`ai-insight-${idx}`}>
-                <div className="flex items-start gap-3 mb-3">
-                  <Lightbulb className={`h-5 w-5 mt-0.5 shrink-0 ${s.icon}`} />
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${s.badge}`}>{insight.priority}</span>
-                    </div>
-                    <h4 className="font-bold text-sm">{insight.summary}</h4>
-                  </div>
-                </div>
-
-                <div className="space-y-3 ml-8">
-                  <div>
-                    <p className="text-xs font-semibold text-muted-foreground uppercase">What We See in Your Business</p>
-                    <p className="text-sm mt-0.5">{insight.what_we_see}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs font-semibold text-muted-foreground uppercase">Recommended Actions</p>
-                    <ul className="mt-1 space-y-1">
-                      {(insight.recommended_actions || []).map((action, ai) => (
-                        <li key={ai} className="text-sm flex items-start gap-2">
-                          <ChevronRight className="h-3.5 w-3.5 mt-0.5 text-primary shrink-0" />
-                          <span>{action}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                  {insight.reference && (
-                    <div>
-                      <p className="text-xs font-semibold text-muted-foreground uppercase">Reference</p>
-                      <p className="text-xs text-muted-foreground mt-0.5 italic">{insight.reference}</p>
-                    </div>
-                  )}
+        {/* Conversation Cards */}
+        {conversations.map((conv) => (
+          <div key={conv.id} className="space-y-3" data-testid={`ai-conv-${conv.id}`}>
+            {/* User question */}
+            {conv.question && (
+              <div className="flex justify-end">
+                <div className="bg-primary/10 border border-primary/20 rounded-xl px-4 py-2.5 max-w-lg">
+                  <p className="text-sm font-medium">{conv.question}</p>
                 </div>
               </div>
-            );
-          })}
-        </div>
-      )}
+            )}
 
-      {/* Disclaimer */}
-      <div className="mt-6 p-3 bg-muted/20 rounded-lg border border-border/50">
-        <p className="text-[11px] text-muted-foreground text-center">
-          {disclaimer || "AI insights are based on your business data and external references when applicable. They may contain inaccuracies. Always validate decisions with your team."}
-        </p>
+            {/* AI Response Cards */}
+            {conv.insights.map((insight, idx) => {
+              const s = typeStyles[insight.priority] || typeStyles.info;
+              return (
+                <div key={idx} className={`border rounded-xl p-5 ${s.border} ${s.bg} relative group`} data-testid={`ai-insight-${conv.id}-${idx}`}>
+                  {/* Delete button */}
+                  <button onClick={() => removeCard(conv.id)}
+                    className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-lg hover:bg-background/80"
+                    data-testid={`delete-insight-${conv.id}`}>
+                    <X className="h-3.5 w-3.5 text-muted-foreground" />
+                  </button>
+
+                  <div className="flex items-start gap-3 mb-3">
+                    <Lightbulb className={`h-5 w-5 mt-0.5 shrink-0 ${s.icon}`} />
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${s.badge}`}>{insight.priority}</span>
+                      </div>
+                      <h4 className="font-bold text-sm">{insight.summary}</h4>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3 ml-8">
+                    <div>
+                      <p className="text-xs font-semibold text-muted-foreground uppercase">What We See</p>
+                      <p className="text-sm mt-0.5">{insight.what_we_see}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold text-muted-foreground uppercase">Recommended Actions</p>
+                      <ul className="mt-1 space-y-1">
+                        {(insight.recommended_actions || []).map((action, ai) => (
+                          <li key={ai} className="text-sm flex items-start gap-2">
+                            <ChevronRight className="h-3.5 w-3.5 mt-0.5 text-primary shrink-0" />
+                            <span>{action}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                    {insight.reference && (
+                      <div>
+                        <p className="text-xs font-semibold text-muted-foreground uppercase">Reference</p>
+                        <p className="text-xs text-muted-foreground mt-0.5 italic">{insight.reference}</p>
+                      </div>
+                    )}
+
+                    {/* Next Steps — Clickable */}
+                    {insight.next_steps && insight.next_steps.length > 0 && (
+                      <div data-testid={`next-steps-${conv.id}-${idx}`}>
+                        <p className="text-xs font-semibold text-muted-foreground uppercase mb-1.5">Next Steps</p>
+                        <div className="flex flex-wrap gap-2">
+                          {insight.next_steps.map((step, si) => (
+                            <button key={si} onClick={() => handleNextStep(step)}
+                              className="text-xs px-3 py-1.5 rounded-full border border-primary/30 text-primary hover:bg-primary/10 transition-colors text-left"
+                              data-testid={`next-step-${conv.id}-${idx}-${si}`}>
+                              {step}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ))}
+
+        {/* Loading indicator */}
+        {loading && (
+          <div className="bg-primary/5 border border-primary/20 rounded-xl p-6 text-center animate-pulse" data-testid="ai-loading">
+            <Zap className="h-6 w-6 text-primary mx-auto mb-2 animate-spin" />
+            <p className="text-sm text-primary font-medium">Analyzing your business data...</p>
+          </div>
+        )}
+      </div>
+
+      {/* Always-visible Input */}
+      <div className="border-t border-border pt-3 bg-background sticky bottom-0" data-testid="ai-input-area">
+        <div className="flex gap-3">
+          <input
+            value={inputValue}
+            onChange={e => setInputValue(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && !loading && sendQuestion()}
+            placeholder="Ask about your business — revenue, growth, risks, staff..."
+            className="flex-1 h-10 rounded-lg border border-input bg-background px-4 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+            disabled={loading}
+            data-testid="ai-input"
+          />
+          <Button onClick={() => sendQuestion()} disabled={loading || (!inputValue.trim() && conversations.length > 0)} data-testid="ai-send-btn">
+            {loading ? <><Zap className="h-4 w-4 mr-1 animate-spin" /> Analyzing...</> : <><Zap className="h-4 w-4 mr-1" /> Ask AI</>}
+          </Button>
+        </div>
+        <p className="text-[10px] text-muted-foreground text-center mt-2">AI insights are read-only and based on your business data. They may contain inaccuracies. Always validate with your team.</p>
       </div>
     </div>
   );
