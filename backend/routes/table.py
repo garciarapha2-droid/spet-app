@@ -182,6 +182,8 @@ async def get_table_detail(table_id: str, user: dict = Depends(require_auth)):
                 "server_name": meta.get("server_name"),
                 "covers": meta.get("covers", 1),
                 "opened_at": session["opened_at"].isoformat() if session["opened_at"] else None,
+                "id_verified": meta.get("id_verified", False),
+                "id_verified_at": meta.get("id_verified_at"),
             }
 
             rows = await conn.fetch(
