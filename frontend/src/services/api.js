@@ -55,6 +55,9 @@ export const pulseAPI = {
   getInsideGuests: (venueId) => api.get('/pulse/inside', { params: { venue_id: venueId } }),
   registerExit: (fd) => api.post('/pulse/exit', fd),
   getTodayExits: (venueId) => api.get('/pulse/exits/today', { params: { venue_id: venueId } }),
+  blockWristband: (guestId, fd) => api.post(`/pulse/guest/${guestId}/block`, fd),
+  unblockWristband: (guestId, fd) => api.post(`/pulse/guest/${guestId}/unblock`, fd),
+  getTabStatus: (guestId, venueId) => api.get(`/pulse/guest/${guestId}/tab-status`, { params: { venue_id: venueId } }),
 };
 
 // TAP
