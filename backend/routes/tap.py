@@ -183,7 +183,9 @@ async def list_sessions(
         meta = _parse_meta(raw_meta)
         sessions.append({
             "id": str(r["id"]),
+            "session_id": str(r["id"]),
             "guest_name": meta.get("guest_name", "Guest"),
+            "tab_number": meta.get("tab_number"),
             "status": r["status"],
             "session_type": r["session_type"],
             "total": float(r["total"]),
