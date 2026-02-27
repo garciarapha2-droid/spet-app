@@ -640,6 +640,12 @@ async def get_inside_guests(venue_id: str, user: dict = Depends(require_auth)):
                 )
             if tab_row:
                 meta = tab_row["meta"] or {}
+                if isinstance(meta, str):
+                    import json as json_mod
+                    try:
+                        meta = json_mod.loads(meta)
+                    except Exception:
+                        meta = {}
                 tab_info = {
                     "session_id": str(tab_row["id"]),
                     "tab_number": meta.get("tab_number"),
