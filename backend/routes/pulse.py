@@ -292,6 +292,7 @@ async def get_guest_decision_card(guest_id: str, venue_id: str, user: dict = Dep
         "last_visit": doc.get("last_visit"),
         "wristband_blocked": doc.get("wristband_blocked", False),
         "wristband_block_reason": doc.get("wristband_block_reason"),
+        "tab_number": tab_number,
     }
 
 
