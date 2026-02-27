@@ -35,13 +35,25 @@ async def login(request: LoginRequest):
     )
     
     # Get user access/roles
-    access_docs = await db.user_access.find({"user_id": user_doc['id']}).to_list(100)
+    access_docs_cursor = db.user_access.find({"user_id": user_doc['id']})
+    access_docs = await access_docs_cursor.to_list(100)
+    
+    # Convert to plain dicts (remove MongoDB ObjectId)
+    access_roles = []
+    for doc in access_docs:
+        access_roles.append({
+            "user_id": doc.get('user_id'),
+            "company_id": doc.get('company_id'),
+            "venue_id": doc.get('venue_id'),
+            "role": doc.get('role'),
+            "permissions": doc.get('permissions', {})
+        })
     
     # Create JWT token
     token_data = {
         "sub": user_doc['id'],
         "email": user_doc['email'],
-        "roles": access_docs
+        "roles": access_roles
     }
     access_token = create_access_token(token_data)
     
