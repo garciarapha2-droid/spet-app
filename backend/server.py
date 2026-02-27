@@ -1,78 +1,34 @@
-from fastapi import FastAPI, APIRouter
+from fastapi import FastAPI, APIRouter, Request, HTTPException, Depends
+from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
-from starlette.middleware.cors import CORSMiddleware
-from motor.motor_asyncio import AsyncIOMotorClient
-import os
-import logging
 from pathlib import Path
-from pydantic import BaseModel, Field, ConfigDict
-from typing import List
-import uuid
-from datetime import datetime, timezone
+import logging
+import os
 
-
+# Load environment variables
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
-# MongoDB connection
-mongo_url = os.environ['MONGO_URL']
-client = AsyncIOMotorClient(mongo_url)
-db = client[os.environ['DB_NAME']]
+# Import database connections
+from database import (
+    connect_mongodb,
+    connect_postgres,
+    disconnect_mongodb,
+    disconnect_postgres,
+    get_mongo_db
+)
 
-# Create the main app without a prefix
-app = FastAPI()
+from config import get_settings
 
-# Create a router with the /api prefix
-api_router = APIRouter(prefix="/api")
+# Create FastAPI app
+app = FastAPI(title="SPETAP API", version="1.0.0")
+settings = get_settings()
 
-
-# Define Models
-class StatusCheck(BaseModel):
-    model_config = ConfigDict(extra="ignore")  # Ignore MongoDB's _id field
-    
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    client_name: str
-    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-
-class StatusCheckCreate(BaseModel):
-    client_name: str
-
-# Add your routes to the router instead of directly to app
-@api_router.get("/")
-async def root():
-    return {"message": "Hello World"}
-
-@api_router.post("/status", response_model=StatusCheck)
-async def create_status_check(input: StatusCheckCreate):
-    status_dict = input.model_dump()
-    status_obj = StatusCheck(**status_dict)
-    
-    # Convert to dict and serialize datetime to ISO string for MongoDB
-    doc = status_obj.model_dump()
-    doc['timestamp'] = doc['timestamp'].isoformat()
-    
-    _ = await db.status_checks.insert_one(doc)
-    return status_obj
-
-@api_router.get("/status", response_model=List[StatusCheck])
-async def get_status_checks():
-    # Exclude MongoDB's _id field from the query results
-    status_checks = await db.status_checks.find({}, {"_id": 0}).to_list(1000)
-    
-    # Convert ISO string timestamps back to datetime objects
-    for check in status_checks:
-        if isinstance(check['timestamp'], str):
-            check['timestamp'] = datetime.fromisoformat(check['timestamp'])
-    
-    return status_checks
-
-# Include the router in the main app
-app.include_router(api_router)
-
+# CORS
 app.add_middleware(
     CORSMiddleware,
+    allow_origins=settings.cors_origins.split(','),
     allow_credentials=True,
-    allow_origins=os.environ.get('CORS_ORIGINS', '*').split(','),
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -84,6 +40,45 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# Create API router with /api prefix
+api_router = APIRouter(prefix="/api")
+
+# Import route modules
+from routes import auth, billing, pulse, tap, manager, owner, ceo
+
+# Include routers
+api_router.include_router(auth.router, prefix="/auth", tags=["auth"])
+api_router.include_router(billing.router, prefix="/billing", tags=["billing"])
+api_router.include_router(pulse.router, prefix="/pulse", tags=["pulse"])
+api_router.include_router(tap.router, prefix="/tap", tags=["tap"])
+api_router.include_router(manager.router, prefix="/manager", tags=["manager"])
+api_router.include_router(owner.router, prefix="/owner", tags=["owner"])
+api_router.include_router(ceo.router, prefix="/ceo", tags=["ceo"])
+
+# Health check
+@api_router.get("/health")
+async def health_check():
+    return {"status": "healthy", "service": "SPETAP"}
+
+# Include router
+app.include_router(api_router)
+
+# Startup event
+@app.on_event("startup")
+async def startup_event():
+    logger.info("Starting SPETAP API...")
+    await connect_mongodb()
+    await connect_postgres()
+    logger.info("SPETAP API started successfully")
+
+# Shutdown event
 @app.on_event("shutdown")
-async def shutdown_db_client():
-    client.close()
+async def shutdown_event():
+    logger.info("Shutting down SPETAP API...")
+    await disconnect_mongodb()
+    await disconnect_postgres()
+    logger.info("SPETAP API shutdown complete")
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8001)
