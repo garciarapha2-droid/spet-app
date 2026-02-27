@@ -88,7 +88,7 @@ export const TablePage = () => {
     try {
       const fd = new FormData();
       fd.append('item_id', itemId);
-      await tapAPI.voidItem(tableDetail.session.session_id, fd);
+      await tapAPI.voidItem(tableDetail.session.id, fd);
       const res = await tableAPI.getTableDetail(selectedTable);
       setTableDetail(res.data);
       await loadData();
@@ -100,12 +100,11 @@ export const TablePage = () => {
     if (!tableDetail?.session || !tableDetail.items?.length) return;
     setLoading(true);
     try {
-      const itemIds = tableDetail.items.map(i => i.id);
+      const itemIds = tableDetail.items.map(i => i.id).join(',');
       const fd = new FormData();
       fd.append('venue_id', VENUE_ID());
-      fd.append('session_id', tableDetail.session.session_id);
-      fd.append('table_id', selectedTable);
-      itemIds.forEach(id => fd.append('item_ids', id));
+      fd.append('session_id', tableDetail.session.id);
+      fd.append('item_ids', itemIds);
       await kdsAPI.sendToKDS(fd);
       toast.success('Sent to kitchen/bar!');
       const res = await tableAPI.getTableDetail(selectedTable);
