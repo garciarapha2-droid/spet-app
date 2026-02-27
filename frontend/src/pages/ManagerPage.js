@@ -1165,6 +1165,33 @@ function ShiftOpsSection() {
     setAiQuestion(step);
   };
 
+  const [copiedId, setCopiedId] = useState(null);
+  const copyInsight = (conv) => {
+    const insight = conv.insight;
+    const text = [
+      `Classification: ${insight.classification?.toUpperCase()}`,
+      `\nSummary:\n${insight.summary}`,
+      `\nWhat We See:\n${insight.what_we_see}`,
+      `\nRecommended Actions:\n${(insight.recommended_actions || []).map((a, i) => `  ${i+1}. ${a}`).join('\n')}`,
+      insight.reference ? `\nReference: ${insight.reference}` : '',
+      insight.next_steps?.length ? `\nNext Steps:\n${insight.next_steps.map((s, i) => `  ${i+1}. ${s}`).join('\n')}` : '',
+    ].filter(Boolean).join('\n');
+    navigator.clipboard.writeText(text);
+    setCopiedId(conv.id);
+    setTimeout(() => setCopiedId(null), 2000);
+    toast.success('Insight copied');
+  };
+
+  // Categorize next steps with labels
+  const categorizeStep = (step) => {
+    const lower = step.toLowerCase();
+    if (lower.includes('revenue') || lower.includes('ticket') || lower.includes('price') || lower.includes('margin') || lower.includes('sales'))
+      return { label: 'Revenue', color: 'bg-green-500/10 text-green-600 border-green-500/20' };
+    if (lower.includes('staff') || lower.includes('team') || lower.includes('bartender') || lower.includes('server') || lower.includes('hire'))
+      return { label: 'Staff', color: 'bg-blue-500/10 text-blue-600 border-blue-500/20' };
+    return { label: 'Ops', color: 'bg-orange-500/10 text-orange-600 border-orange-500/20' };
+  };
+
   if (loading) return <Skeleton />;
 
   const statusColors = { positive: 'text-green-500', tight: 'text-yellow-500', negative: 'text-red-500' };
