@@ -71,6 +71,26 @@ export const tapAPI = {
   closeSession: (sessionId, formData) => api.post(`/tap/session/${sessionId}/close`, formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
 };
 
+// Table APIs
+export const tableAPI = {
+  listTables: (venueId) => api.get('/table/tables', { params: { venue_id: venueId } }),
+  openTable: (formData) => api.post('/table/open', formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
+  closeTable: (formData) => api.post('/table/close', formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
+  getTable: (tableId) => api.get(`/table/${tableId}`),
+};
+
+// KDS APIs
+export const kdsAPI = {
+  listTickets: (venueId, destination = 'kitchen', status = null) => {
+    const params = { venue_id: venueId, destination };
+    if (status) params.status = status;
+    return api.get('/kds/tickets', { params });
+  },
+  sendToKds: (formData) => api.post('/kds/send', formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
+  updateStatus: (ticketId, formData) => api.post(`/kds/ticket/${ticketId}/status`, formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
+};
+
+
 export const managerAPI = {
   getOverview: (venueId) => api.get('/manager/overview', { params: { venue_id: venueId } }),
   getCatalog: (venueId) => api.get('/manager/catalog', { params: { venue_id: venueId } })
