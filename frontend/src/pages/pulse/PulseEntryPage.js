@@ -251,6 +251,63 @@ export const PulseEntryPage = () => {
         );
       case 'success':
         return <EntrySuccess result={entryResult} guest={currentGuest} onDone={handleDone} />;
+      case 'history':
+        return (
+          <div>
+            <div className="flex items-center gap-3 mb-6">
+              <Button variant="ghost" size="icon" onClick={() => { setFlowState('idle'); setGuestHistory(null); }} data-testid="back-btn">
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
+              <h3 className="text-xl font-semibold">Guest History</h3>
+            </div>
+            {guestHistory && (
+              <div className="space-y-6">
+                <div className="flex items-center gap-4">
+                  {guestHistory.guest_photo ? (
+                    <img src={guestHistory.guest_photo} alt="" className="w-16 h-16 rounded-full object-cover border-2 border-border" />
+                  ) : (
+                    <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center">
+                      <Users className="h-6 w-6 text-muted-foreground" />
+                    </div>
+                  )}
+                  <div>
+                    <h4 className="text-2xl font-semibold" data-testid="history-guest-name">{guestHistory.guest_name}</h4>
+                    {guestHistory.guest_email && <p className="text-sm text-muted-foreground">{guestHistory.guest_email}</p>}
+                    <div className="flex gap-4 text-sm text-muted-foreground mt-1">
+                      <span>{guestHistory.visits} visits</span>
+                      <span>R${(guestHistory.spend_total || 0).toFixed(0)} spent</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="border-t border-border pt-4">
+                  <p className="text-sm font-medium text-muted-foreground mb-3">{guestHistory.total} event{guestHistory.total !== 1 ? 's' : ''}</p>
+                  <div className="space-y-2">
+                    {guestHistory.history.map((evt, i) => (
+                      <div key={evt.entry_id} className="flex items-center gap-3 p-3 rounded-lg bg-muted/30">
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                          evt.decision === 'allowed' ? 'bg-green-500/10' :
+                          evt.decision === 'exit' ? 'bg-blue-500/10' :
+                          'bg-destructive/10'
+                        }`}>
+                          <Clock className={`h-4 w-4 ${
+                            evt.decision === 'allowed' ? 'text-green-500' :
+                            evt.decision === 'exit' ? 'text-blue-500' :
+                            'text-destructive'
+                          }`} />
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-sm font-medium capitalize">{evt.decision === 'exit' ? 'Exit' : evt.decision}</p>
+                          <p className="text-xs text-muted-foreground">{evt.entry_type?.replace(/_/g, ' ')}</p>
+                        </div>
+                        <p className="text-xs text-muted-foreground">{new Date(evt.created_at).toLocaleString()}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        );
       default:
         return null;
     }
