@@ -71,8 +71,9 @@ export const ManagerPage = () => {
 
         {/* Content */}
         <main className="flex-1 p-6 overflow-y-auto max-h-[calc(100vh-56px)]">
-          {activeTab === 'overview' && <OverviewSection />}
+          {activeTab === 'overview' && <OverviewSection onNavigate={setActiveTab} />}
           {activeTab === 'staff' && <StaffSection />}
+          {activeTab === 'tables-server' && <TablesByServerSection />}
           {activeTab === 'menu' && <MenuSection />}
           {activeTab === 'shifts' && <ShiftsSection />}
           {activeTab === 'guests' && <GuestsSection />}
