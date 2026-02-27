@@ -1222,15 +1222,17 @@ function ShiftOpsSection() {
             </div>
           </div>
           <div className="text-sm mb-3 font-bold text-orange-500">Total Cost: ${staffCosts.total_cost.toFixed(2)}</div>
-          <div className="grid grid-cols-6 gap-4 px-3 py-2 text-xs font-medium text-muted-foreground uppercase"><span>Name</span><span>Role</span><span>$/Hour</span><span>Hours</span><span>Earned</span><span></span></div>
+          <div className="grid grid-cols-8 gap-3 px-3 py-2 text-xs font-medium text-muted-foreground uppercase"><span>Name</span><span>Role</span><span>$/Hour</span><span>Hours</span><span>Wages</span><span>Tips</span><span>Total</span><span></span></div>
           {staffCosts.staff?.map(s => (
-            <div key={s.id} className="grid grid-cols-6 gap-4 px-3 py-2.5 text-sm border-b border-border/20 items-center">
+            <div key={s.id} className="grid grid-cols-8 gap-3 px-3 py-2.5 text-sm border-b border-border/20 items-center">
               {editingStaff === s.id ? (
                 <>
                   <span className="font-medium">{s.name}</span>
                   <Input value={editRole} onChange={e => setEditRole(e.target.value)} placeholder={s.role} className="h-7 text-xs" />
                   <Input type="number" step="0.5" value={editRate} onChange={e => setEditRate(e.target.value)} placeholder={s.hourly_rate.toString()} className="h-7 text-xs" />
                   <span className="text-muted-foreground">{s.hours_worked}h</span>
+                  <span />
+                  <span />
                   <span />
                   <div className="flex gap-1">
                     <Button size="sm" variant="ghost" onClick={() => customizeStaffMember(s.id)}><Check className="h-3 w-3 text-green-500" /></Button>
@@ -1243,7 +1245,9 @@ function ShiftOpsSection() {
                   <span className="text-muted-foreground capitalize">{s.role}</span>
                   <span className="font-medium">${s.hourly_rate.toFixed(2)}</span>
                   <span className="text-muted-foreground">{s.hours_worked}h</span>
-                  <span className="font-bold text-orange-500">${s.earned.toFixed(2)}</span>
+                  <span className="text-orange-500">${(s.wages ?? s.earned ?? 0).toFixed(2)}</span>
+                  <span className="text-blue-500">${(s.tips ?? 0).toFixed(2)}</span>
+                  <span className="font-bold text-orange-500">${(s.total ?? s.earned ?? 0).toFixed(2)}</span>
                   <Button size="sm" variant="ghost" onClick={() => { setEditingStaff(s.id); setEditRate(s.hourly_rate.toString()); setEditRole(s.role); }}><Pencil className="h-3 w-3" /></Button>
                 </>
               )}
