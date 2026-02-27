@@ -543,27 +543,25 @@ async def get_people_ops(user: dict = Depends(require_auth)):
             "recent_shifts": len(recent_shifts),
         })
 
-    # Get events with staff assigned
+    # Get events with staff assigned (from MongoDB)
     events_staff = []
     for vid in venue_ids:
         cfg = await db.venue_configs.find_one({"venue_id": str(vid)}, {"_id": 0})
         venue_name = cfg.get("venue_name", "Demo Club") if cfg else "Demo Club"
-        async with pool.acquire() as conn:
-            events = await conn.fetch(
-                """SELECT e.id, e.name, e.event_date, e.status,
-                          (SELECT COUNT(*) FROM event_staff es WHERE es.event_id = e.id) as staff_count
-                   FROM venue_events e WHERE e.venue_id=$1
-                   ORDER BY e.event_date DESC LIMIT 10""", uuid.UUID(str(vid)))
-        for ev in events:
-            if ev["staff_count"] > 0:
+        events_cursor = db.events.find({"venue_id": str(vid)}, {"_id": 0}).sort("start_at", -1).limit(10)
+        mongo_events = await events_cursor.to_list(10)
+        for ev in mongo_events:
+            ev_id = ev.get("id", "")
+            staff_count = await db.event_staff.count_documents({"venue_id": str(vid), "event_id": ev_id})
+            if staff_count > 0:
                 events_staff.append({
-                    "event_id": str(ev["id"]),
-                    "event_name": ev["name"],
+                    "event_id": ev_id,
+                    "event_name": ev.get("name", ""),
                     "venue_name": venue_name,
                     "venue_id": str(vid),
-                    "event_date": ev["event_date"].isoformat() if ev["event_date"] else None,
-                    "status": ev["status"],
-                    "staff_count": ev["staff_count"],
+                    "event_date": ev.get("start_at").isoformat() if ev.get("start_at") else None,
+                    "status": "active" if ev.get("is_active") else "ended",
+                    "staff_count": staff_count,
                 })
 
     return {
