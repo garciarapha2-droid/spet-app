@@ -160,27 +160,43 @@ export const GuestProfilePage = () => {
           </div>
 
           {/* Stats cards */}
-          <div className="col-span-4 grid grid-cols-2 gap-3">
-            <div className="bg-card border border-border rounded-xl p-4 text-center">
-              <LogIn className="h-5 w-5 text-green-500 mx-auto mb-1" />
-              <p className="text-2xl font-bold" data-testid="stat-entries">{profile.entries_count}</p>
-              <p className="text-xs text-muted-foreground">Entries</p>
+          <div className="col-span-4 space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="bg-card border border-border rounded-xl p-4 text-center">
+                <LogIn className="h-5 w-5 text-green-500 mx-auto mb-1" />
+                <p className="text-2xl font-bold" data-testid="stat-entries">{profile.entries_count}</p>
+                <p className="text-xs text-muted-foreground">Entries</p>
+              </div>
+              <div className="bg-card border border-border rounded-xl p-4 text-center">
+                <LogOutIcon className="h-5 w-5 text-blue-500 mx-auto mb-1" />
+                <p className="text-2xl font-bold" data-testid="stat-exits">{profile.exits_count}</p>
+                <p className="text-xs text-muted-foreground">Exits</p>
+              </div>
+              <div className="bg-card border border-border rounded-xl p-4 text-center">
+                <DollarSign className="h-5 w-5 text-green-600 mx-auto mb-1" />
+                <p className="text-2xl font-bold" data-testid="stat-spent">R${(profile.total_spent || 0).toFixed(0)}</p>
+                <p className="text-xs text-muted-foreground">Spent</p>
+              </div>
+              <div className="bg-card border border-border rounded-xl p-4 text-center">
+                <Star className="h-5 w-5 text-yellow-500 mx-auto mb-1" />
+                <p className="text-2xl font-bold" data-testid="stat-points">{points?.points || 0}</p>
+                <p className="text-xs text-muted-foreground">{points?.tier || 'No tier'}</p>
+              </div>
             </div>
-            <div className="bg-card border border-border rounded-xl p-4 text-center">
-              <LogOutIcon className="h-5 w-5 text-blue-500 mx-auto mb-1" />
-              <p className="text-2xl font-bold" data-testid="stat-exits">{profile.exits_count}</p>
-              <p className="text-xs text-muted-foreground">Exits</p>
-            </div>
-            <div className="bg-card border border-border rounded-xl p-4 text-center">
-              <DollarSign className="h-5 w-5 text-green-600 mx-auto mb-1" />
-              <p className="text-2xl font-bold" data-testid="stat-spent">R${(profile.total_spent || 0).toFixed(0)}</p>
-              <p className="text-xs text-muted-foreground">Spent</p>
-            </div>
-            <div className="bg-card border border-border rounded-xl p-4 text-center">
-              <Star className="h-5 w-5 text-yellow-500 mx-auto mb-1" />
-              <p className="text-2xl font-bold" data-testid="stat-points">{points?.points || 0}</p>
-              <p className="text-xs text-muted-foreground">{points?.tier || 'No tier'}</p>
-            </div>
+            {/* Block Wristband Button */}
+            {!profile.wristband_blocked ? (
+              <Button variant="outline" onClick={handleBlock} disabled={blockLoading}
+                className="w-full border-destructive/30 text-destructive hover:bg-destructive/10"
+                data-testid="block-wristband-btn">
+                <Ban className="h-4 w-4 mr-2" /> Block Wristband
+              </Button>
+            ) : (
+              <Button variant="outline" onClick={handleUnblock} disabled={blockLoading}
+                className="w-full border-green-500/30 text-green-600 hover:bg-green-500/10"
+                data-testid="unblock-wristband-btn">
+                <ShieldCheck className="h-4 w-4 mr-2" /> Unblock Wristband
+              </Button>
+            )}
           </div>
         </div>
 
