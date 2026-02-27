@@ -176,8 +176,10 @@ async def get_owner_dashboard(user: dict = Depends(require_auth), view: str = "b
                     "SELECT COUNT(*) FROM tap_items WHERE venue_id=$1 AND voided_at>=$2", vid, today) or 0
             staff_count = await db.venue_barmen.count_documents({"venue_id": str(vid), "active": True})
             health = "green"
-            if voids > 5: health = "yellow"
-            if voids > 10: health = "red"
+            if voids > 5:
+                health = "yellow"
+            if voids > 10:
+                health = "red"
             venues_data.append({
                 "venue_id": str(vid), "name": venue_name, "health": health,
                 "revenue_today": rev_today, "revenue_mtd": rev_mtd, "revenue_ytd": rev_ytd,
