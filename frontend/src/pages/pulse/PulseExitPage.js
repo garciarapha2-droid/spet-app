@@ -31,6 +31,14 @@ export const PulseExitPage = () => {
   useEffect(() => { loadData(); }, [loadData]);
 
   const handleExit = async (guestId, guestName) => {
+    // Check for open tabs first
+    try {
+      const tabRes = await pulseAPI.getTabStatus(guestId, VENUE_ID());
+      if (tabRes.data.has_open_tabs) {
+        toast.error(`${guestName} has open tab: R$${tabRes.data.total_owed.toFixed(2)}. Must pay at cashier before exit.`, { duration: 6000 });
+        return;
+      }
+    } catch {}
     try {
       const fd = new FormData();
       fd.append('guest_id', guestId);
