@@ -1481,25 +1481,19 @@ function ShiftOpsSection() {
                       </div>
                     )}
 
-                    {/* Next Steps — Redesigned with categories */}
+                    {/* Next Steps — Clean, contextual */}
                     {conv.insight.next_steps && conv.insight.next_steps.length > 0 && (
                       <div className="pt-3 border-t border-border/50" data-testid={`shift-next-steps-${conv.id}`}>
                         <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-2">Next Steps</p>
-                        <div className="space-y-2">
-                          {conv.insight.next_steps.map((step, si) => {
-                            const cat = categorizeStep(step);
-                            return (
-                              <button key={si} onClick={() => handleAiNextStep(step)}
-                                className="w-full flex items-start gap-3 p-2.5 rounded-lg border border-border/50 hover:border-primary/30 hover:bg-primary/3 transition-all text-left group"
-                                data-testid={`shift-next-step-${conv.id}-${si}`}>
-                                <span className="w-5 h-5 rounded-full bg-muted flex items-center justify-center text-[10px] font-bold text-muted-foreground shrink-0 mt-0.5">{si+1}</span>
-                                <div className="flex-1 min-w-0">
-                                  <p className="text-sm leading-relaxed group-hover:text-primary transition-colors">{step}</p>
-                                </div>
-                                <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded-full border shrink-0 ${cat.color}`}>{cat.label}</span>
-                              </button>
-                            );
-                          })}
+                        <div className="space-y-1.5">
+                          {conv.insight.next_steps.map((step, si) => (
+                            <button key={si} onClick={() => handleAiNextStep(step)}
+                              className="w-full flex items-start gap-3 p-2.5 rounded-lg border border-border/50 hover:border-primary/30 hover:bg-primary/5 transition-all text-left group"
+                              data-testid={`shift-next-step-${conv.id}-${si}`}>
+                              <span className="w-5 h-5 rounded-full bg-primary/10 text-primary flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5">{si+1}</span>
+                              <p className="text-sm leading-relaxed group-hover:text-primary transition-colors flex-1">{step}</p>
+                            </button>
+                          ))}
                         </div>
                       </div>
                     )}
