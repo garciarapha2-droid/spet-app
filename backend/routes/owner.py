@@ -582,16 +582,13 @@ async def get_venue_staff_detail(venue_id: str, user: dict = Depends(require_aut
 
 @router.get("/people/event/{event_id}/staff")
 async def get_event_staff_detail(event_id: str, user: dict = Depends(require_auth)):
-    """Get detailed staff list assigned to a specific event."""
-    pool = get_postgres_pool()
-    async with pool.acquire() as conn:
-        rows = await conn.fetch(
-            """SELECT es.staff_id, es.staff_name, es.role, es.hourly_rate, es.assigned_at
-               FROM event_staff es WHERE es.event_id=$1::uuid
-               ORDER BY es.assigned_at""", uuid.UUID(event_id))
-    staff = [{"staff_id": str(r["staff_id"]), "name": r["staff_name"],
-              "role": r["role"], "hourly_rate": float(r["hourly_rate"]) if r["hourly_rate"] else 0,
-              "assigned_at": r["assigned_at"].isoformat() if r["assigned_at"] else None} for r in rows]
+    """Get detailed staff list assigned to a specific event (from MongoDB)."""
+    db = get_mongo_db()
+    cursor = db.event_staff.find({"event_id": event_id}, {"_id": 0})
+    docs = await cursor.to_list(100)
+    staff = [{"staff_id": s.get("staff_id", ""), "name": s.get("staff_name", s.get("name", "")),
+              "role": s.get("role", "Server"), "hourly_rate": s.get("hourly_rate", 0),
+              "assigned_at": s.get("assigned_at", "")} for s in docs]
     return {"staff": staff, "event_id": event_id}
 
 
