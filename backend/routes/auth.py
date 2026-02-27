@@ -57,23 +57,7 @@ async def login(request: LoginRequest):
     }
     access_token = create_access_token(token_data)
 
-    next_route = "/modules"
-    if len(access_roles) == 0:
-        next_route = "/setup"
-    elif any(r["role"] in ("platform_admin", "ceo", "super_admin") for r in access_roles):
-        next_route = "/pulse/entry"
-    elif len(access_roles) == 1:
-        role = access_roles[0]["role"]
-        if role == "manager":
-            next_route = "/manager/overview"
-        elif role == "host":
-            next_route = "/pulse/host"
-        elif role in ("tap", "bartender", "server"):
-            next_route = "/tap"
-        elif role == "owner":
-            next_route = "/owner"
-    else:
-        next_route = "/select-context"
+    next_route = "/venue/home"
 
     return LoginResponse(
         access_token=access_token,
