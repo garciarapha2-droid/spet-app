@@ -68,6 +68,7 @@ app.include_router(api_router)
 async def startup_event():
     logger.info("Starting SPETAP API...")
     await connect_mongodb()
+    await connect_postgres()
     logger.info("SPETAP API started successfully")
 
 # Shutdown event
@@ -75,6 +76,7 @@ async def startup_event():
 async def shutdown_event():
     logger.info("Shutting down SPETAP API...")
     await disconnect_mongodb()
+    await disconnect_postgres()
     logger.info("SPETAP API shutdown complete")
 
 if __name__ == "__main__":
