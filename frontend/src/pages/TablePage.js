@@ -167,18 +167,30 @@ export const TablePage = () => {
       {/* Header */}
       <header className="h-14 border-b border-border bg-card px-6 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => navigate('/tap')} data-testid="back-to-tap-btn">
+          <Button variant="ghost" size="icon" onClick={() => navigate('/venue/home')} data-testid="back-to-home-btn">
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <LayoutGrid className="h-5 w-5 text-primary" />
           <span className="text-lg font-bold tracking-tight">Table Mode</span>
           <div className="h-5 w-px bg-border" />
           <span className="text-sm text-muted-foreground">{tables.length} tables</span>
+          <div className="h-5 w-px bg-border" />
+
+          {/* Back to TAP / DISCO MODE toggle */}
+          <label className="flex items-center gap-2 cursor-pointer" data-testid="disco-toggle">
+            <Disc className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm text-muted-foreground">Disco</span>
+            <div className="w-10 h-5 rounded-full transition-colors relative bg-muted"
+              onClick={() => navigate('/tap')}>
+              <div className="w-4 h-4 rounded-full bg-white absolute top-0.5 translate-x-0.5" />
+            </div>
+          </label>
         </div>
         <div className="flex items-center gap-4">
           <Button size="sm" variant="outline" onClick={() => setShowSettings(!showSettings)} data-testid="table-settings-btn">
             <Settings className="h-4 w-4 mr-1" /> Manage
           </Button>
+          <div className="h-5 w-px bg-border" />
           <ThemeToggle />
           <div className="h-5 w-px bg-border" />
           <Button variant="ghost" size="icon" onClick={() => navigate('/venue/home')} data-testid="home-btn">
