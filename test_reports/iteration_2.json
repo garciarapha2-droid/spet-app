@@ -1,0 +1,77 @@
+{
+  "summary": "Completed comprehensive testing of PULSE Club Host module C1→C3. All 20 backend API tests passed. All frontend flows tested successfully - Guest Intake (C1), Dedupe (C1.1), Decision Card (C2), and Success/Reset (C3) working as expected.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_pulse_module.py",
+    "/app/test_reports/pytest/pulse_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [],
+  "updated_files": [
+    "/app/backend/tests/test_pulse_module.py"
+  ],
+  "success_rate": {
+    "backend": "100% (20/20 tests passed)",
+    "frontend": "100% (all C1-C3 flows working)"
+  },
+  "test_credentials": {
+    "email": "teste@teste.com",
+    "password": "teste123",
+    "venue_id": "40a24e04-75b6-435d-bfff-ab0d469ce543",
+    "existing_guest_id": "ace737fb-d134-444d-927f-1465772c7096",
+    "existing_guest_email": "maria@test.com"
+  },
+  "seed_data_creation": "Test guests created during testing with TEST_ prefix",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "PULSE C1-C3 module fully tested. State machine: idle→intake→dedupe→decision→success. Backend uses FormData (multipart/form-data). PII in MongoDB venue_guests, hashes in PG global_persons, decisions in PG entry_events. Venue config returns host_collect_dob boolean.",
+  "features_tested": {
+    "backend_api": [
+      "✅ GET /api/pulse/venue/config - Returns venue config with host_collect_dob field",
+      "✅ POST /api/pulse/guest/intake - Creates guest in MongoDB (PII) and PG global_persons (hashed)",
+      "✅ POST /api/pulse/guest/dedupe - Finds existing guests with masked email/phone",
+      "✅ GET /api/pulse/guest/{id} - Returns guest with risk_chips and value_chips arrays",
+      "✅ POST /api/pulse/entry/decision - Records allowed/denied in PG entry_events",
+      "✅ GET /api/pulse/entries/today - Returns today's entries with guest names and stats"
+    ],
+    "frontend_ui": [
+      "✅ Manual Entry button opens C1 Guest Registration form on right panel (col-span-5)",
+      "✅ C1 form shows Name*, Email, Phone, DOB (when enabled), Photo buttons",
+      "✅ Submitting C1 with existing email triggers C1.1 Dedupe with masked data (m***@test.com, ***0001)",
+      "✅ Clicking a dedupe match opens C2 Decision Card with Allow/Deny",
+      "✅ C2 shows risk chips (Unpaid warning) and value chips",
+      "✅ Entry type selector works (VIP, Cover, Cover+Consumption, Consumption Only)",
+      "✅ Clicking Allow Entry shows C3 success and updates KPIs in real-time",
+      "✅ Clicking Deny shows C3 denied state with red X icon",
+      "✅ 'Next Guest' button resets flow to idle C0 state (right panel closes)",
+      "✅ KPIs update correctly after each decision (Inside, Total Entries, Denied)"
+    ],
+    "data_architecture": [
+      "✅ PII only in MongoDB venue_guests collection",
+      "✅ Hashes only in PG global_persons table",
+      "✅ Decisions recorded in PG entry_events table"
+    ]
+  },
+  "backend_tests_summary": {
+    "total": 20,
+    "passed": 20,
+    "failed": 0,
+    "test_classes": [
+      "TestVenueConfig (2 tests)",
+      "TestGuestIntake (3 tests)",
+      "TestDedupeSearch (3 tests)",
+      "TestDecisionCard (4 tests)",
+      "TestEntryDecision (3 tests)",
+      "TestTodayEntries (3 tests)",
+      "TestE2EFlow (2 tests)"
+    ]
+  }
+}
