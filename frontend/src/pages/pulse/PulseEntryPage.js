@@ -36,8 +36,8 @@ export const PulseEntryPage = () => {
     const load = async () => {
       try {
         const [cfgRes, entriesRes] = await Promise.all([
-          pulseAPI.getVenueConfig(VENUE_ID),
-          pulseAPI.getTodayEntries(VENUE_ID),
+          pulseAPI.getVenueConfig(VENUE_ID()),
+          pulseAPI.getTodayEntries(VENUE_ID()),
         ]);
         setVenueConfig(cfgRes.data);
         setTodayEntries(entriesRes.data.entries || []);
@@ -55,7 +55,7 @@ export const PulseEntryPage = () => {
 
   const refreshEntries = useCallback(async () => {
     try {
-      const res = await pulseAPI.getTodayEntries(VENUE_ID);
+      const res = await pulseAPI.getTodayEntries(VENUE_ID());
       setTodayEntries(res.data.entries || []);
       setStats({
         inside: res.data.allowed || 0,
@@ -85,7 +85,7 @@ export const PulseEntryPage = () => {
       // First check for duplicates
       if (data.email || data.phone) {
         const fd = new FormData();
-        fd.append('venue_id', VENUE_ID);
+        fd.append('venue_id', VENUE_ID());
         if (data.email) fd.append('email', data.email);
         if (data.phone) fd.append('phone', data.phone);
         const dedupeRes = await pulseAPI.dedupeSearch(fd);
@@ -109,7 +109,7 @@ export const PulseEntryPage = () => {
   const handleSelectExisting = async (guestId) => {
     setLoading(true);
     try {
-      const res = await pulseAPI.getGuest(guestId, VENUE_ID);
+      const res = await pulseAPI.getGuest(guestId, VENUE_ID());
       setCurrentGuest(res.data);
       setFlowState('decision');
     } catch (err) {
@@ -132,7 +132,7 @@ export const PulseEntryPage = () => {
     try {
       const fd = new FormData();
       fd.append('name', data.name);
-      fd.append('venue_id', VENUE_ID);
+      fd.append('venue_id', VENUE_ID());
       if (data.email) fd.append('email', data.email);
       if (data.phone) fd.append('phone', data.phone);
       if (data.dob) fd.append('dob', data.dob);
@@ -142,7 +142,7 @@ export const PulseEntryPage = () => {
       const guestId = intakeRes.data.guest_id;
 
       // Load full guest with chips
-      const guestRes = await pulseAPI.getGuest(guestId, VENUE_ID);
+      const guestRes = await pulseAPI.getGuest(guestId, VENUE_ID());
       setCurrentGuest(guestRes.data);
       setFlowState('decision');
     } catch (err) {
@@ -157,8 +157,7 @@ export const PulseEntryPage = () => {
     try {
       const fd = new FormData();
       fd.append('guest_id', currentGuest.guest_id);
-      fd.append('venue_id', VENUE_ID);
-      fd.append('decision', decision);
+      fd.append('venue_id', VENUE_ID());      fd.append('decision', decision);
       fd.append('entry_type', entryType);
       fd.append('cover_amount', coverAmount.toString());
       fd.append('cover_paid', coverPaid.toString());
@@ -188,7 +187,7 @@ export const PulseEntryPage = () => {
   const handleViewHistory = async (guestId, e) => {
     if (e) e.stopPropagation();
     try {
-      const res = await pulseAPI.getGuestHistory(guestId, VENUE_ID);
+      const res = await pulseAPI.getGuestHistory(guestId, VENUE_ID());
       setGuestHistory(res.data);
       setFlowState('history');
     } catch (err) {
