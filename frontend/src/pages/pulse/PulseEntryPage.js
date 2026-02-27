@@ -7,7 +7,7 @@ import { EntrySuccess } from '../../components/pulse/EntrySuccess';
 import { Input } from '../../components/ui/input';
 import { pulseAPI } from '../../services/api';
 import { toast } from 'sonner';
-import { Users, Activity, Zap, UserPlus, ArrowLeft } from 'lucide-react';
+import { Users, Activity, Zap, UserPlus, ArrowLeft, ChevronRight, Clock } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 
 const VENUE_ID = '40a24e04-75b6-435d-bfff-ab0d469ce543';
