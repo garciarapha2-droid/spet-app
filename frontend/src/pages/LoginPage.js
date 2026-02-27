@@ -77,6 +77,12 @@ export const LoginPage = () => {
             >
               {loading ? 'Logging in...' : 'Log in'}
             </Button>
+            <div className="text-center">
+              <button type="button" className="text-sm text-primary hover:underline" data-testid="forgot-password-link"
+                onClick={() => toast.info('Password reset coming soon')}>
+                Forgot my password?
+              </button>
+            </div>
           </form>
           <div className="mt-4 text-center text-sm text-muted-foreground">
             Secure platform access
