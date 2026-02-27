@@ -273,3 +273,53 @@ CREATE INDEX idx_audit_events_company ON audit_events(company_id);
 CREATE INDEX idx_audit_events_venue ON audit_events(venue_id);
 CREATE INDEX idx_audit_events_type ON audit_events(event_type);
 CREATE INDEX idx_audit_events_timestamp ON audit_events(timestamp DESC);
+
+-- Venue tables (table management)
+CREATE TABLE IF NOT EXISTS venue_tables (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    venue_id UUID NOT NULL,
+    table_number VARCHAR(20) NOT NULL,
+    zone VARCHAR(50) DEFAULT 'main',
+    capacity INTEGER DEFAULT 4,
+    status VARCHAR(20) DEFAULT 'available',  -- available, occupied, reserved
+    current_session_id UUID REFERENCES tap_sessions(id) ON DELETE SET NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX idx_venue_tables_venue ON venue_tables(venue_id);
+CREATE INDEX idx_venue_tables_status ON venue_tables(status);
+
+-- KDS tickets
+CREATE TABLE IF NOT EXISTS kds_tickets (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    venue_id UUID NOT NULL,
+    tap_session_id UUID REFERENCES tap_sessions(id) ON DELETE SET NULL,
+    table_id UUID REFERENCES venue_tables(id) ON DELETE SET NULL,
+    destination VARCHAR(20) NOT NULL DEFAULT 'kitchen',  -- kitchen, bar
+    status VARCHAR(20) DEFAULT 'pending',  -- pending, preparing, ready, completed
+    estimated_minutes INTEGER,
+    created_by_user_id UUID REFERENCES users(id),
+    started_at TIMESTAMPTZ,
+    ready_at TIMESTAMPTZ,
+    completed_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    meta JSONB DEFAULT '{}'
+);
+
+CREATE INDEX idx_kds_tickets_venue ON kds_tickets(venue_id);
+CREATE INDEX idx_kds_tickets_status ON kds_tickets(status);
+CREATE INDEX idx_kds_tickets_destination ON kds_tickets(destination);
+
+-- KDS ticket items
+CREATE TABLE IF NOT EXISTS kds_ticket_items (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    ticket_id UUID NOT NULL REFERENCES kds_tickets(id) ON DELETE CASCADE,
+    tap_item_id UUID REFERENCES tap_items(id) ON DELETE SET NULL,
+    item_name VARCHAR(255) NOT NULL,
+    qty INTEGER NOT NULL DEFAULT 1,
+    notes TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX idx_kds_ticket_items_ticket ON kds_ticket_items(ticket_id);
