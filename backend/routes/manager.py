@@ -521,14 +521,21 @@ async def save_loyalty_config(
     daily_limit: int = Form(500),
     anti_fraud_max: int = Form(200),
 ):
-    """Save loyalty/rewards configuration."""
+    """Save loyalty/rewards configuration. Preserves existing tiers."""
     db = get_mongo_db()
+    existing = await db.venue_loyalty.find_one({"venue_id": venue_id}, {"_id": 0})
+    default_tiers = [
+        {"name": "Bronze", "min_points": 0, "discount_pct": 0},
+        {"name": "Silver", "min_points": 500, "discount_pct": 5},
+        {"name": "Gold", "min_points": 2000, "discount_pct": 10},
+    ]
     config = {
         "venue_id": venue_id,
         "enabled": enabled,
         "points_per_dollar": points_per_dollar,
         "daily_limit": daily_limit,
         "anti_fraud_max_per_visit": anti_fraud_max,
+        "tiers": existing.get("tiers", default_tiers) if existing else default_tiers,
         "updated_at": datetime.now(timezone.utc),
     }
     await db.venue_loyalty.update_one({"venue_id": venue_id}, {"$set": config}, upsert=True)
