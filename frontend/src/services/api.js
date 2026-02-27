@@ -60,6 +60,7 @@ export const pulseAPI = {
 // TAP
 export const tapAPI = {
   getCatalog: (venueId) => api.get('/tap/catalog', { params: { venue_id: venueId } }),
+  getConfig: (venueId) => api.get('/tap/config', { params: { venue_id: venueId } }),
   getStats: (venueId) => api.get('/tap/stats', { params: { venue_id: venueId } }),
   openSession: (fd) => api.post('/tap/session/open', fd),
   addItem: (sessionId, fd) => api.post(`/tap/session/${sessionId}/add`, fd),
@@ -67,14 +68,17 @@ export const tapAPI = {
   getSession: (sessionId) => api.get(`/tap/session/${sessionId}`),
   closeSession: (sessionId, fd) => api.post(`/tap/session/${sessionId}/close`, fd),
   getActiveSessions: (venueId) => api.get('/tap/sessions/active', { params: { venue_id: venueId } }),
+  listSessions: (venueId, status) => api.get('/tap/sessions/active', { params: { venue_id: venueId, status } }),
 };
 
 // Table
 export const tableAPI = {
   getTables: (venueId) => api.get('/table/tables', { params: { venue_id: venueId } }),
+  listTables: (venueId) => api.get('/table/tables', { params: { venue_id: venueId } }),
   openTable: (fd) => api.post('/table/open', fd),
   closeTable: (fd) => api.post('/table/close', fd),
   getTableDetail: (tableId) => api.get(`/table/${tableId}`),
+  getTable: (tableId) => api.get(`/table/${tableId}`),
   addTableItem: (tableId, fd) => api.post(`/table/${tableId}/add-item`, fd),
   sendToKDS: (fd) => api.post('/kds/send', fd),
 };
