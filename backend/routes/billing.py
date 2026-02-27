@@ -53,18 +53,14 @@ async def get_checkout_status(session_id: str):
     status = await stripe_checkout.get_checkout_status(session_id)
     
     # Update transaction status
-    conn = await get_postgres_conn()
-    try:
-        await conn.execute(
-            """UPDATE payment_transactions 
-               SET payment_status = $1, updated_at = $2
-               WHERE stripe_session_id = $3""",
-            status.payment_status,
-            datetime.now(timezone.utc),
-            session_id
-        )
-    finally:
-        await release_postgres_conn(conn)
+    db = get_mongo_db()
+    await db.payment_transactions.update_one(
+        {"stripe_session_id": session_id},
+        {"$set": {
+            "payment_status": status.payment_status,
+            "updated_at": datetime.now(timezone.utc)
+        }}
+    )
     
     return status
 
@@ -82,57 +78,38 @@ async def stripe_webhook(request: Request, stripe_signature: str = Header(None))
         webhook_event = await stripe_checkout.handle_webhook(body, stripe_signature)
         
         # Process webhook event idempotently
-        conn = await get_postgres_conn()
-        try:
-            # Check if event already processed (idempotency)
-            existing = await conn.fetchrow(
-                "SELECT id FROM invoice_events WHERE stripe_event_id = $1",
-                webhook_event.event_id
-            )
-            
-            if existing:
-                return {"status": "already_processed"}
-            
-            # Store event
-            event_id = uuid.uuid4()
-            await conn.execute(
-                """INSERT INTO invoice_events 
-                   (id, stripe_event_id, stripe_event_type, payload, received_at, processing_status)
-                   VALUES ($1, $2, $3, $4, $5, $6)""",
-                event_id,
-                webhook_event.event_id,
-                webhook_event.event_type,
-                json.dumps({"event_type": webhook_event.event_type}),
-                datetime.now(timezone.utc),
-                'received'
-            )
-            
-            # Process based on event type
-            if webhook_event.event_type == "checkout.session.completed":
-                # Update subscription and entitlements
-                pass
-            elif webhook_event.event_type == "customer.subscription.updated":
-                # Update subscription status
-                pass
-            elif webhook_event.event_type == "invoice.paid":
-                # Activate entitlements
-                pass
-            elif webhook_event.event_type == "invoice.payment_failed":
-                # Set to past_due
-                pass
-            
-            # Mark as processed
-            await conn.execute(
-                "UPDATE invoice_events SET processing_status = $1, processed_at = $2 WHERE id = $3",
-                'processed',
-                datetime.now(timezone.utc),
-                event_id
-            )
-            
-            return {"status": "success"}
-            
-        finally:
-            await release_postgres_conn(conn)
+        db = get_mongo_db()
+        
+        # Check if event already processed (idempotency)
+        existing = await db.invoice_events.find_one({"stripe_event_id": webhook_event.event_id})
+        
+        if existing:
+            return {"status": "already_processed"}
+        
+        # Store event
+        event_doc = {
+            "id": str(uuid.uuid4()),
+            "stripe_event_id": webhook_event.event_id,
+            "stripe_event_type": webhook_event.event_type,
+            "payload": {"event_type": webhook_event.event_type},
+            "received_at": datetime.now(timezone.utc),
+            "processing_status": 'received'
+        }
+        await db.invoice_events.insert_one(event_doc)
+        
+        # Process based on event type
+        # TODO: Implement subscription state changes
+        
+        # Mark as processed
+        await db.invoice_events.update_one(
+            {"id": event_doc["id"]},
+            {"$set": {
+                "processing_status": 'processed',
+                "processed_at": datetime.now(timezone.utc)
+            }}
+        )
+        
+        return {"status": "success"}
             
     except Exception as e:
         return {"status": "error", "message": str(e)}
@@ -140,31 +117,27 @@ async def stripe_webhook(request: Request, stripe_signature: str = Header(None))
 @router.get("/entitlements")
 async def get_entitlements(user: dict = Depends(require_auth), company_id: str = None):
     """Get entitlements for a company/venue"""
-    conn = await get_postgres_conn()
-    try:
-        query = """SELECT module, status, scope, active_from, active_until 
-                   FROM entitlements 
-                   WHERE company_id = $1 AND status IN ('active', 'grace')"""
-        
-        # Get company_id from user's first role if not provided
-        if not company_id and user.get('roles'):
-            company_id = user['roles'][0].get('company_id')
-        
-        if not company_id:
-            return {"modules": []}
-        
-        rows = await conn.fetch(query, uuid.UUID(company_id))
-        
-        modules = []
-        for row in rows:
-            modules.append({
-                "module": row['module'],
-                "status": row['status'],
-                "scope": row['scope'],
-                "active": row['status'] == 'active'
-            })
-        
-        return {"modules": modules}
-        
-    finally:
-        await release_postgres_conn(conn)
+    db = get_mongo_db()
+    
+    # Get company_id from user's first role if not provided
+    if not company_id and user.get('roles'):
+        company_id = user['roles'][0].get('company_id')
+    
+    if not company_id:
+        return {"modules": []}
+    
+    entitlements = await db.entitlements.find({
+        "company_id": company_id,
+        "status": {"$in": ["active", "grace"]}
+    }).to_list(100)
+    
+    modules = []
+    for ent in entitlements:
+        modules.append({
+            "module": ent['module'],
+            "status": ent['status'],
+            "scope": ent['scope'],
+            "active": ent['status'] == 'active'
+        })
+    
+    return {"modules": modules}
