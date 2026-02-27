@@ -977,6 +977,81 @@ function SettingsSection() {
 }
 
 /* ═══════════════════════════════════════════════════════════════════
+   TABLES BY SERVER
+   ═══════════════════════════════════════════════════════════════════ */
+function TablesByServerSection() {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    managerAPI.getTablesByServer(VID()).then(r => setData(r.data)).catch(() => toast.error('Failed')).finally(() => setLoading(false));
+  }, []);
+
+  if (loading) return <Skeleton />;
+  if (!data) return <p className="text-muted-foreground">No data</p>;
+
+  return (
+    <div data-testid="tables-server-section">
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <h2 className="text-xl font-bold">Tables by Server</h2>
+          <p className="text-sm text-muted-foreground">{data.total_tables} occupied tables</p>
+        </div>
+      </div>
+
+      {data.servers?.map(server => (
+        <div key={server.server_name} className="mb-6">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <User className="h-4 w-4 text-primary" />
+              <span className="font-bold text-sm">{server.server_name}</span>
+              <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">{server.table_count} tables</span>
+            </div>
+            <span className="text-sm font-bold text-green-500">${server.total_revenue.toFixed(0)} running</span>
+          </div>
+          <div className="grid grid-cols-4 gap-3">
+            {server.tables.map(t => (
+              <div key={t.table_id} className="bg-card border border-border rounded-xl p-3" data-testid={`server-table-${t.table_number}`}>
+                <div className="flex items-center justify-between mb-1">
+                  <span className="font-bold text-sm">Table #{t.table_number}</span>
+                  {t.tab_number && <span className="text-xs text-primary font-bold">#{t.tab_number}</span>}
+                </div>
+                <p className="text-xs text-muted-foreground truncate">{t.guest_name}</p>
+                <p className="text-sm font-bold text-green-500 mt-1">${t.total.toFixed(2)}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+
+      {data.unassigned?.length > 0 && (
+        <div>
+          <div className="flex items-center gap-2 mb-2">
+            <AlertTriangle className="h-4 w-4 text-red-500" />
+            <span className="font-bold text-sm text-red-500">Unassigned Tables</span>
+            <span className="text-xs text-muted-foreground bg-red-500/10 text-red-600 px-2 py-0.5 rounded-full">{data.unassigned.length}</span>
+          </div>
+          <div className="grid grid-cols-4 gap-3">
+            {data.unassigned.map(t => (
+              <div key={t.table_id} className="bg-card border-2 border-red-500/30 rounded-xl p-3" data-testid={`unassigned-table-${t.table_number}`}>
+                <div className="flex items-center justify-between mb-1">
+                  <span className="font-bold text-sm">Table #{t.table_number}</span>
+                  {t.tab_number && <span className="text-xs text-primary font-bold">#{t.tab_number}</span>}
+                </div>
+                <p className="text-xs text-muted-foreground truncate">{t.guest_name}</p>
+                <p className="text-sm font-bold text-green-500 mt-1">${t.total.toFixed(2)}</p>
+                <p className="text-[10px] text-red-500 font-medium mt-1">Needs server assignment</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════
    SHARED COMPONENTS
    ═══════════════════════════════════════════════════════════════════ */
 function KPICard({ icon: Icon, label, value, accent = '', sub, testid }) {
