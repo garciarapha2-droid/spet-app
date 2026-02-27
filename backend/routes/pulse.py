@@ -433,7 +433,158 @@ async def get_guest_history(guest_id: str, venue_id: str, user: dict = Depends(r
     }
 
 
-# ─── Inside: Currently inside guests ─────────────────────────────
+# ─── Guest Full Profile ───────────────────────────────────────────
+@router.get("/guest/{guest_id}/profile")
+async def get_guest_profile(guest_id: str, venue_id: str, user: dict = Depends(require_auth)):
+    """Full guest profile: info, history, spending, events attended."""
+    db = get_mongo_db()
+    pool = get_postgres_pool()
+
+    doc = await db.venue_guests.find_one({"id": guest_id, "venue_id": venue_id}, {"_id": 0})
+    if not doc:
+        raise HTTPException(404, "Guest not found")
+
+    vid = uuid.UUID(venue_id)
+    gid = uuid.UUID(guest_id)
+
+    async with pool.acquire() as conn:
+        # Entry/exit history
+        entries = await conn.fetch(
+            """SELECT id, decision, entry_type, cover_amount, cover_paid, created_at, event_id
+               FROM entry_events WHERE guest_id = $1 AND venue_id = $2
+               ORDER BY created_at DESC""",
+            gid, vid,
+        )
+
+        # Spending from tap_sessions linked to this guest
+        sessions = await conn.fetch(
+            """SELECT s.id, s.total, s.status, s.opened_at, s.closed_at, s.meta
+               FROM tap_sessions s WHERE s.guest_id = $1 AND s.venue_id = $2
+               ORDER BY s.opened_at DESC""",
+            gid, vid,
+        )
+
+        # Items from those sessions
+        session_ids = [s["id"] for s in sessions]
+        items = []
+        if session_ids:
+            items = await conn.fetch(
+                """SELECT tap_session_id, item_name, category, unit_price, qty, line_total, created_at
+                   FROM tap_items WHERE tap_session_id = ANY($1) AND voided_at IS NULL
+                   ORDER BY created_at DESC""",
+                session_ids,
+            )
+
+    # Aggregate spending
+    total_spent = sum(float(s["total"]) for s in sessions if s["status"] == "closed")
+
+    # Events attended (unique event_ids from entries)
+    event_ids = list(set(str(e["event_id"]) for e in entries if e["event_id"]))
+    events_attended = []
+    for eid in event_ids:
+        ev = await db.events.find_one({"id": eid}, {"_id": 0, "id": 1, "name": 1, "start_at": 1})
+        if ev:
+            events_attended.append({
+                "id": ev["id"],
+                "name": ev.get("name", "Event"),
+                "date": ev["start_at"].isoformat() if isinstance(ev.get("start_at"), datetime) else str(ev.get("start_at", "")),
+            })
+
+    # Build history timeline
+    history = []
+    for e in entries:
+        history.append({
+            "entry_id": str(e["id"]),
+            "type": "entry" if e["decision"] != "exit" else "exit",
+            "decision": e["decision"],
+            "entry_type": e["entry_type"],
+            "cover_amount": float(e["cover_amount"]) if e["cover_amount"] else 0,
+            "created_at": e["created_at"].isoformat(),
+        })
+
+    # Build consumptions
+    consumptions = []
+    for it in items:
+        consumptions.append({
+            "session_id": str(it["tap_session_id"]),
+            "name": it["item_name"],
+            "category": it["category"],
+            "unit_price": float(it["unit_price"]),
+            "qty": it["qty"],
+            "total": float(it["line_total"]),
+            "date": it["created_at"].isoformat() if it["created_at"] else None,
+        })
+
+    # Reward points from MongoDB
+    reward_points = doc.get("reward_points", 0)
+
+    # Count entries/exits
+    entries_count = sum(1 for e in entries if e["decision"] == "allowed")
+    exits_count = sum(1 for e in entries if e["decision"] == "exit")
+
+    return {
+        "guest_id": doc["id"],
+        "name": doc["name"],
+        "email": doc.get("email"),
+        "phone": doc.get("phone"),
+        "dob": doc.get("dob"),
+        "photo": doc.get("photo"),
+        "flags": doc.get("flags", []),
+        "tags": doc.get("tags", []),
+        "visits": doc.get("visits", 0),
+        "entries_count": entries_count,
+        "exits_count": exits_count,
+        "total_spent": total_spent,
+        "reward_points": reward_points,
+        "events_attended": events_attended,
+        "history": history,
+        "consumptions": consumptions,
+        "sessions_count": len(sessions),
+        "created_at": doc["created_at"].isoformat() if isinstance(doc.get("created_at"), datetime) else None,
+    }
+
+
+# ─── Today's exits ───────────────────────────────────────────────
+@router.get("/exits/today")
+async def get_today_exits(venue_id: str, user: dict = Depends(require_auth)):
+    """All exits today with entry and exit times."""
+    pool = get_postgres_pool()
+    db = get_mongo_db()
+    today_start = datetime.combine(date.today(), datetime.min.time()).replace(tzinfo=timezone.utc)
+
+    async with pool.acquire() as conn:
+        # Get exit events
+        exit_rows = await conn.fetch(
+            """SELECT guest_id, created_at FROM entry_events
+               WHERE venue_id = $1::uuid AND created_at >= $2
+               AND decision = 'exit'
+               ORDER BY created_at DESC""",
+            uuid.UUID(venue_id), today_start,
+        )
+
+    exits = []
+    for r in exit_rows:
+        guest_doc = await db.venue_guests.find_one(
+            {"id": str(r["guest_id"])}, {"_id": 0, "name": 1, "photo": 1}
+        )
+        # Find the entry time for this guest today
+        async with pool.acquire() as conn:
+            entry_row = await conn.fetchrow(
+                """SELECT created_at FROM entry_events
+                   WHERE guest_id = $1 AND venue_id = $2::uuid AND created_at >= $3
+                   AND decision = 'allowed'
+                   ORDER BY created_at DESC LIMIT 1""",
+                r["guest_id"], uuid.UUID(venue_id), today_start,
+            )
+        exits.append({
+            "guest_id": str(r["guest_id"]),
+            "guest_name": guest_doc["name"] if guest_doc else "Unknown",
+            "guest_photo": guest_doc.get("photo") if guest_doc else None,
+            "entered_at": entry_row["created_at"].isoformat() if entry_row else None,
+            "exited_at": r["created_at"].isoformat(),
+        })
+
+    return {"exits": exits, "total": len(exits)}
 @router.get("/inside")
 async def get_inside_guests(venue_id: str, user: dict = Depends(require_auth)):
     """Guests currently inside the venue (allowed entry, no exit after)."""
