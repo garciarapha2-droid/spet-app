@@ -20,7 +20,7 @@ export const PulseBarPage = () => {
   const [searchFilter, setSearchFilter] = useState('');
   const [cart, setCart] = useState([]);
   const [showCustom, setShowCustom] = useState(false);
-  const [customItem, setCustomItem] = useState({ name: '', price: '', category: 'Drinks' });
+  const [customItem, setCustomItem] = useState({ name: '', price: '', category: 'Cocktails' });
   const [rewardPoints, setRewardPoints] = useState(0);
   const [activeSessions, setActiveSessions] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -110,19 +110,25 @@ export const PulseBarPage = () => {
     }
   };
 
-  const handleAddCustom = () => {
+  const handleAddCustom = async () => {
     if (!customItem.name || !customItem.price) { toast.error('Name and price required'); return; }
-    const item = {
-      id: `custom-${Date.now()}`,
-      name: customItem.name,
-      price: parseFloat(customItem.price),
-      category: customItem.category,
-      is_custom: true,
-    };
-    addToCart(item);
-    setCustomItem({ name: '', price: '', category: 'Drinks' });
-    setShowCustom(false);
-    toast.success(`Added ${item.name}`);
+    try {
+      const fd = new FormData();
+      fd.append('venue_id', VENUE_ID());
+      fd.append('name', customItem.name);
+      fd.append('price', parseFloat(customItem.price).toString());
+      fd.append('category', customItem.category);
+      fd.append('is_alcohol', customItem.category !== 'Non-alcoholic' ? 'true' : 'false');
+      const res = await tapAPI.addCatalogItem(fd);
+      const newItem = res.data;
+      setCatalog(prev => [...prev, { id: newItem.id || newItem.item_id, name: customItem.name, price: parseFloat(customItem.price), category: customItem.category }]);
+      setCustomItem({ name: '', price: '', category: 'Cocktails' });
+      setShowCustom(false);
+      toast.success(`"${customItem.name}" added to menu. Click to add to order.`);
+    } catch (err) {
+      toast.error('Failed to create menu item');
+      console.error(err);
+    }
   };
 
   const cartTotal = cart.reduce((s, c) => s + c.price * c.qty, 0);
@@ -260,23 +266,29 @@ export const PulseBarPage = () => {
               </form>
             </div>
 
-            {/* Current guest */}
-            {scanResult && !confirmingIdentity && (
+            {/* Current guest + Tab # header */}
+            {scanResult && !confirmingIdentity && !scanResult.blocked && (
               <div className="bg-card border-2 border-primary/30 rounded-xl p-5" data-testid="current-guest-card">
-                <div className="flex items-center gap-3 mb-3">
+                <div className="flex items-center gap-3 mb-2">
                   {scanResult.photo ? (
                     <img src={scanResult.photo} alt="" className="w-12 h-12 rounded-full object-cover" />
                   ) : (
-                    <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
-                      <User className="h-5 w-5 text-muted-foreground" />
+                    <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                      <User className="h-5 w-5 text-primary" />
                     </div>
                   )}
-                  <div>
-                    <p className="font-semibold">{scanResult.name}</p>
-                    <p className="text-xs text-muted-foreground">{scanResult.visits} visits</p>
+                  <div className="min-w-0">
+                    <p className="font-bold text-lg leading-tight" data-testid="guest-name">{scanResult.name}</p>
+                    {scanResult.tab_number && (
+                      <p className="text-primary font-semibold text-sm" data-testid="guest-tab-number">Tab #{scanResult.tab_number}</p>
+                    )}
                   </div>
                 </div>
-                <div className="flex gap-2 text-xs">
+                <div className="flex flex-wrap gap-2 text-xs">
+                  <span className="px-2 py-0.5 rounded-full bg-muted text-muted-foreground">{scanResult.visits || 0} visits</span>
+                  {scanResult.tags?.includes('vip') && (
+                    <span className="px-2 py-0.5 rounded-full bg-yellow-500/10 text-yellow-600 font-medium">VIP</span>
+                  )}
                   {scanResult.value_chips?.map((c, i) => (
                     <span key={i} className="px-2 py-0.5 rounded-full bg-green-500/10 text-green-600">{c.label}</span>
                   ))}
@@ -291,9 +303,14 @@ export const PulseBarPage = () => {
               </h3>
               <div className="space-y-2 max-h-[300px] overflow-y-auto">
                 {activeSessions.map((s) => (
-                  <div key={s.id || s.session_id} className="p-3 bg-card border border-border rounded-lg text-sm">
-                    <p className="font-medium">{s.guest_name || 'Tab'}</p>
-                    <p className="text-xs text-muted-foreground">${(s.total || 0).toFixed(2)}</p>
+                  <div key={s.id || s.session_id} className="p-3 bg-card border border-border rounded-lg text-sm" data-testid={`session-${s.tab_number || s.id}`}>
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <p className="font-medium">{s.guest_name || 'Tab'}</p>
+                        <p className="text-xs text-primary font-semibold">Tab #{s.tab_number}</p>
+                      </div>
+                      <p className="text-sm font-bold">${(s.total || 0).toFixed(2)}</p>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -346,13 +363,12 @@ export const PulseBarPage = () => {
                   <label className="text-xs text-muted-foreground">Category</label>
                   <select value={customItem.category}
                     onChange={e => setCustomItem(p => ({ ...p, category: e.target.value }))}
-                    className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm">
-                    <option>Drinks</option>
-                    <option>Cervejas</option>
-                    <option>Sem Alcool</option>
-                    <option>Spirits</option>
+                    className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
+                    data-testid="custom-category">
                     <option>Cocktails</option>
-                    <option>Other</option>
+                    <option>Beers</option>
+                    <option>Spirits</option>
+                    <option>Non-alcoholic</option>
                   </select>
                 </div>
                 <Button onClick={handleAddCustom} data-testid="add-custom-confirm">Add</Button>
