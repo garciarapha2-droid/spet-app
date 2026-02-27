@@ -429,3 +429,48 @@ async def add_custom_item(
         "line_total": float(line_total),
         "session_total": float(new_total),
     }
+
+
+# ─── Void/remove item from session ────────────────────────────────
+@router.post("/session/{session_id}/void-item")
+async def void_item(
+    session_id: str,
+    user: dict = Depends(require_auth),
+    item_id: str = Form(...),
+):
+    """Remove an item from an open tab."""
+    pool = get_postgres_pool()
+    sid = uuid.UUID(session_id)
+    iid = uuid.UUID(item_id)
+    staff_id = uuid.UUID(user["sub"])
+    now = datetime.now(timezone.utc)
+
+    async with pool.acquire() as conn:
+        session = await conn.fetchrow(
+            "SELECT id, status FROM tap_sessions WHERE id = $1", sid
+        )
+        if not session:
+            raise HTTPException(404, "Session not found")
+        if session["status"] != "open":
+            raise HTTPException(400, "Tab is closed")
+
+        item = await conn.fetchrow(
+            "SELECT id, line_total FROM tap_items WHERE id = $1 AND tap_session_id = $2 AND voided_at IS NULL",
+            iid, sid,
+        )
+        if not item:
+            raise HTTPException(404, "Item not found")
+
+        # Void the item
+        await conn.execute(
+            "UPDATE tap_items SET voided_at = $1 WHERE id = $2",
+            now, iid,
+        )
+        # Reduce session total
+        await conn.execute(
+            "UPDATE tap_sessions SET subtotal = subtotal - $1, total = total - $1 WHERE id = $2",
+            item["line_total"], sid,
+        )
+        new_total = await conn.fetchval("SELECT total FROM tap_sessions WHERE id = $1", sid)
+
+    return {"item_id": str(iid), "voided": True, "session_total": float(new_total)}
