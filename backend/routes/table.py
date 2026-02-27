@@ -204,3 +204,79 @@ async def get_table_detail(table_id: str, user: dict = Depends(require_auth)):
         "session": session_data,
         "items": items,
     }
+
+
+# ─── Add table ──────────────────────────────────────────────────
+@router.post("/tables/add")
+async def add_table(
+    user: dict = Depends(require_auth),
+    venue_id: str = Form(...),
+    table_number: str = Form(...),
+    zone: str = Form("main"),
+    capacity: int = Form(4),
+):
+    pool = get_postgres_pool()
+    vid = uuid.UUID(venue_id)
+    async with pool.acquire() as conn:
+        existing = await conn.fetchrow(
+            "SELECT id FROM venue_tables WHERE venue_id = $1 AND table_number = $2",
+            vid, table_number,
+        )
+        if existing:
+            raise HTTPException(400, f"Table {table_number} already exists")
+        row = await conn.fetchrow(
+            """INSERT INTO venue_tables (venue_id, table_number, zone, capacity, status)
+               VALUES ($1, $2, $3, $4, 'available') RETURNING id""",
+            vid, table_number, zone, capacity,
+        )
+    return {"id": str(row["id"]), "table_number": table_number, "zone": zone, "capacity": capacity}
+
+
+@router.post("/tables/{table_id}/edit")
+async def edit_table(
+    table_id: str,
+    user: dict = Depends(require_auth),
+    table_number: str = Form(None),
+    zone: str = Form(None),
+    capacity: int = Form(None),
+):
+    pool = get_postgres_pool()
+    tid = uuid.UUID(table_id)
+    updates = []
+    params = []
+    idx = 1
+    if table_number is not None:
+        updates.append(f"table_number = ${idx}")
+        params.append(table_number)
+        idx += 1
+    if zone is not None:
+        updates.append(f"zone = ${idx}")
+        params.append(zone)
+        idx += 1
+    if capacity is not None:
+        updates.append(f"capacity = ${idx}")
+        params.append(capacity)
+        idx += 1
+    if not updates:
+        raise HTTPException(400, "Nothing to update")
+    params.append(tid)
+    async with pool.acquire() as conn:
+        await conn.execute(
+            f"UPDATE venue_tables SET {', '.join(updates)} WHERE id = ${idx}",
+            *params,
+        )
+    return {"id": table_id, "updated": True}
+
+
+@router.delete("/tables/{table_id}")
+async def delete_table(table_id: str, user: dict = Depends(require_auth)):
+    pool = get_postgres_pool()
+    tid = uuid.UUID(table_id)
+    async with pool.acquire() as conn:
+        table = await conn.fetchrow("SELECT id, status FROM venue_tables WHERE id = $1", tid)
+        if not table:
+            raise HTTPException(404, "Table not found")
+        if table["status"] == "occupied":
+            raise HTTPException(400, "Cannot delete an occupied table")
+        await conn.execute("DELETE FROM venue_tables WHERE id = $1", tid)
+    return {"id": table_id, "deleted": True}
