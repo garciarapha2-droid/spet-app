@@ -122,9 +122,27 @@ export const staffAPI = {
   deleteBarman: (barmanId) => api.delete(`/staff/barmen/${barmanId}`),
 };
 
-// Manager / Owner / CEO
+// Manager
 export const managerAPI = {
-  getDashboard: (venueId) => api.get('/manager/dashboard', { params: { venue_id: venueId } }),
+  getOverview: (venueId) => api.get('/manager/overview', { params: { venue_id: venueId } }),
+  getStaff: (venueId) => api.get('/manager/staff', { params: { venue_id: venueId } }),
+  addStaff: (fd) => api.post('/manager/staff', fd),
+  updateStaff: (id, fd) => api.put(`/manager/staff/${id}`, fd),
+  deleteStaff: (id) => api.delete(`/manager/staff/${id}`),
+  getSchedule: (venueId) => api.get('/manager/schedule', { params: { venue_id: venueId } }),
+  saveSchedule: (fd) => api.post('/manager/schedule', fd),
+  deleteSchedule: (id) => api.delete(`/manager/schedule/${id}`),
+  getShifts: (venueId) => api.get('/manager/shifts', { params: { venue_id: venueId } }),
+  closeShift: (fd) => api.post('/manager/shifts/close', fd),
+  getGuests: (venueId, search) => api.get('/manager/guests', { params: { venue_id: venueId, search } }),
+  getGuestDetail: (guestId, venueId) => api.get(`/manager/guests/${guestId}`, { params: { venue_id: venueId } }),
+  getSalesReport: (venueId, period) => api.get('/manager/reports/sales', { params: { venue_id: venueId, period } }),
+  exportReport: (venueId, period) => api.get('/manager/reports/export', { params: { venue_id: venueId, period }, responseType: 'blob' }),
+  getLoyalty: (venueId) => api.get('/manager/loyalty', { params: { venue_id: venueId } }),
+  saveLoyalty: (fd) => api.post('/manager/loyalty', fd),
+  getSettings: (venueId) => api.get('/manager/settings', { params: { venue_id: venueId } }),
+  updateSettings: (fd) => api.put('/manager/settings', fd),
+  getAudit: (venueId) => api.get('/manager/audit', { params: { venue_id: venueId } }),
 };
 
 export const ownerAPI = {
