@@ -23,10 +23,14 @@ export const GuestIntakeForm = ({ venueConfig, onSubmit, onCancel, loading }) =>
         video: { facingMode: 'user', width: 320, height: 320 },
       });
       streamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-      }
       setCameraActive(true);
+      // Wait for next tick so video element is rendered
+      requestAnimationFrame(() => {
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          videoRef.current.play().catch(() => {});
+        }
+      });
     } catch (err) {
       setCameraError(
         err.name === 'NotAllowedError'
@@ -37,12 +41,18 @@ export const GuestIntakeForm = ({ venueConfig, onSubmit, onCancel, loading }) =>
   }, []);
 
   const capturePhoto = useCallback(() => {
-    if (!videoRef.current) return;
+    if (!videoRef.current || videoRef.current.readyState < 2) return;
+    const video = videoRef.current;
     const canvas = document.createElement('canvas');
-    canvas.width = 320;
-    canvas.height = 320;
-    canvas.getContext('2d').drawImage(videoRef.current, 0, 0, 320, 320);
-    setPhoto(canvas.toDataURL('image/jpeg', 0.7));
+    canvas.width = video.videoWidth || 320;
+    canvas.height = video.videoHeight || 320;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+    // Verify the image is not blank
+    if (dataUrl && dataUrl.length > 100) {
+      setPhoto(dataUrl);
+    }
     stopCamera();
   }, []);
 
