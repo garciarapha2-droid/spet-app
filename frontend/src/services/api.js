@@ -174,12 +174,14 @@ export const managerAPI = {
 
 // Owner
 export const ownerAPI = {
-  getDashboard: () => api.get('/owner/dashboard'),
+  getDashboard: (view) => api.get('/owner/dashboard', { params: { view: view || 'business' } }),
   getVenues: () => api.get('/owner/venues'),
   getInsights: () => api.get('/owner/insights'),
   getFinance: () => api.get('/owner/finance'),
   getGrowth: () => api.get('/owner/growth'),
   getPeople: () => api.get('/owner/people'),
+  getVenueStaff: (venueId) => api.get(`/owner/people/${venueId}/staff`),
+  getEventStaff: (eventId) => api.get(`/owner/people/event/${eventId}/staff`),
   getSystem: () => api.get('/owner/system'),
   generateAIInsights: (question) => {
     const fd = new FormData();
