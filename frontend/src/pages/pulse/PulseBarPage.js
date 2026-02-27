@@ -437,14 +437,6 @@ export const PulseBarPage = () => {
                   Add to Tab
                 </Button>
               </div>
-
-              {/* Revenue summary */}
-              <div className="mt-4 pt-4 border-t border-border">
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">Today's Revenue</p>
-                <p className="text-xl font-bold text-green-500" data-testid="bar-revenue">
-                  R${activeSessions.reduce((s, a) => s + (a.total || 0), 0).toFixed(2)}
-                </p>
-              </div>
             </div>
           </div>
         </div>
