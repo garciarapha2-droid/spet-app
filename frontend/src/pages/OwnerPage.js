@@ -478,13 +478,14 @@ function InsightsSection() {
       {/* Always-visible Input */}
       <div className="border-t border-border pt-3 bg-background sticky bottom-0" data-testid="ai-input-area">
         <div className="flex gap-3">
-          <input
+          <textarea
             value={inputValue}
             onChange={e => setInputValue(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && !loading && sendQuestion()}
+            onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { /* allow newline */ } }}
             placeholder="Ask about your business — revenue, growth, risks, staff..."
-            className="flex-1 h-10 rounded-lg border border-input bg-background px-4 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+            className="flex-1 min-h-[40px] max-h-[120px] rounded-lg border border-input bg-background px-4 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-none"
             disabled={loading}
+            rows={1}
             data-testid="ai-input"
           />
           <Button onClick={() => sendQuestion()} disabled={loading || (!inputValue.trim() && conversations.length > 0)} data-testid="ai-send-btn">
