@@ -15,12 +15,13 @@ const STATUS_COLORS = {
   pending: { border: 'border-yellow-500/50', bg: 'bg-yellow-500/5', badge: 'bg-yellow-500/20 text-yellow-600', dot: 'bg-yellow-500' },
   preparing: { border: 'border-primary/50', bg: 'bg-primary/5', badge: 'bg-primary/20 text-primary', dot: 'bg-primary' },
   ready: { border: 'border-green-500/50', bg: 'bg-green-500/5', badge: 'bg-green-500/20 text-green-600', dot: 'bg-green-500' },
+  delivered: { border: 'border-blue-500/50', bg: 'bg-blue-500/5', badge: 'bg-blue-500/20 text-blue-600', dot: 'bg-blue-500' },
   delayed: { border: 'border-red-500/50', bg: 'bg-red-500/5', badge: 'bg-red-500/20 text-red-600', dot: 'bg-red-500' },
 };
 
-const NEXT_STATUS = { pending: 'preparing', preparing: 'ready', ready: 'completed' };
-const ACTION_LABELS = { pending: 'Start Preparing', preparing: 'Mark Ready', ready: 'Complete' };
-const STATUS_LABELS = { pending: 'Pending', preparing: 'Preparing', ready: 'Ready', delayed: 'Delayed' };
+const NEXT_STATUS = { pending: 'preparing', preparing: 'ready', ready: 'delivered' };
+const ACTION_LABELS = { pending: 'Start Preparing', preparing: 'Mark Ready', ready: 'Delivered' };
+const STATUS_LABELS = { pending: 'Pending', preparing: 'Preparing', ready: 'Ready', delivered: 'Delivered', delayed: 'Delayed' };
 
 // Timer hook for live countdown/countup
 const useElapsed = (startTime) => {
