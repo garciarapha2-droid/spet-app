@@ -1,50 +1,18 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { tapAPI, pulseAPI, rewardsAPI, staffAPI } from '../services/api';
+import { tapAPI, staffAPI } from '../services/api';
 import { toast } from 'sonner';
-import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
+import { Button } from '../components/ui/button';
 import { ThemeToggle } from '../components/ThemeToggle';
 import {
-  CreditCard, Banknote, Beer, Plus, X, Receipt,
-  ScanLine, User, Search, ArrowLeft, LayoutGrid,
-  LogOut, DollarSign, Star, ChevronDown, Home,
-  Pencil, Trash2, Check, Camera
+  ArrowLeft, Plus, X, CreditCard, Banknote, Beer, User, ChevronDown, ScanLine,
+  Home, LogOut, LayoutGrid, Pencil, Trash2, Check, Receipt, Camera, Upload, ChevronRight
 } from 'lucide-react';
 
 const VENUE_ID = () => localStorage.getItem('active_venue_id') || '40a24e04-75b6-435d-bfff-ab0d469ce543';
 
-const TabCard = ({ session, isActive, onClick }) => (
-  <button onClick={onClick}
-    className={`w-full text-left p-3 rounded-xl border-2 transition-all ${
-      isActive ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/30'}`}
-    data-testid={`tab-card-${session.id}`}>
-    <div className="flex items-center justify-between">
-      <div className="flex items-center gap-2">
-        <span className="text-xs font-bold bg-primary/10 text-primary px-2 py-0.5 rounded-full" data-testid="tab-number">
-          #{session.tab_number || '—'}
-        </span>
-        <span className="font-medium text-sm truncate">{session.guest_name}</span>
-      </div>
-      <span className="text-sm font-bold text-primary">${session.total?.toFixed(2)}</span>
-    </div>
-    <p className="text-xs text-muted-foreground mt-1">
-      {session.session_type} — {new Date(session.opened_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}
-    </p>
-  </button>
-);
-
-const CatalogItem = ({ item, onAdd }) => (
-  <button onClick={() => onAdd(item)}
-    className="p-3 rounded-xl border-2 border-border hover:border-primary/40 hover:bg-primary/5 transition-all text-left group"
-    data-testid={`catalog-item-${item.id}`}>
-    <p className="font-medium text-sm truncate">{item.name}</p>
-    <div className="flex items-center justify-between mt-1">
-      <span className="text-xs text-muted-foreground">{item.category}</span>
-      <span className="text-sm font-bold text-primary">${item.price?.toFixed(2)}</span>
-    </div>
-  </button>
-);
+const CATEGORIES = ['Beers', 'Cocktails', 'Spirits', 'Non-alcoholic', 'Snacks', 'Starters', 'Mains', 'Plates'];
 
 export const TapPage = () => {
   const navigate = useNavigate();
@@ -54,16 +22,20 @@ export const TapPage = () => {
   const [activeSessionId, setActiveSessionId] = useState(null);
   const [activeSession, setActiveSession] = useState(null);
   const [scanInput, setScanInput] = useState('');
-  const [filterCategory, setFilterCategory] = useState('All');
+  const [selectedCategory, setSelectedCategory] = useState(null);
   const [selectedBarman, setSelectedBarman] = useState('');
   const [newTabName, setNewTabName] = useState('');
   const [showNewTab, setShowNewTab] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showBarmanMenu, setShowBarmanMenu] = useState(false);
   const [showCustomItem, setShowCustomItem] = useState(false);
-  const [customItem, setCustomItem] = useState({ name: '', price: '', category: 'Drinks', is_alcohol: false });
+  const [customItem, setCustomItem] = useState({ name: '', price: '', category: 'Beers', is_alcohol: false });
+  const [customPhoto, setCustomPhoto] = useState(null);
+  const [editingItem, setEditingItem] = useState(null);
+  const [editForm, setEditForm] = useState({ name: '', price: '', category: '' });
+  const fileInputRef = useRef(null);
+  const cameraInputRef = useRef(null);
 
-  // Barmen from API
   const [barmen, setBarmen] = useState([]);
   const [newBarmanName, setNewBarmanName] = useState('');
   const [editingBarman, setEditingBarman] = useState(null);
@@ -108,9 +80,7 @@ export const TapPage = () => {
   }, []);
 
   useEffect(() => { loadData(); loadBarmen(); }, [loadData, loadBarmen]);
-  useEffect(() => {
-    const iv = setInterval(loadData, 15000); return () => clearInterval(iv);
-  }, [loadData]);
+  useEffect(() => { const iv = setInterval(loadData, 15000); return () => clearInterval(iv); }, [loadData]);
 
   useEffect(() => {
     if (!activeSessionId) { setActiveSession(null); return; }
@@ -133,8 +103,7 @@ export const TapPage = () => {
 
   const handleOpenTab = async () => {
     if (!newTabName.trim() || !selectedBarman) {
-      toast.error(!selectedBarman ? 'Select a barman first' : 'Enter guest name');
-      return;
+      toast.error(!selectedBarman ? 'Select a barman first' : 'Enter guest name'); return;
     }
     setLoading(true);
     try {
@@ -168,12 +137,36 @@ export const TapPage = () => {
       fd.append('category', customItem.category);
       fd.append('price', parseFloat(customItem.price).toString());
       fd.append('is_alcohol', customItem.is_alcohol.toString());
-      await tapAPI.addCatalogItem(fd);
-      setCustomItem({ name: '', price: '', category: 'Drinks', is_alcohol: false });
+      const res = await tapAPI.addCatalogItem(fd);
+      if (customPhoto && res.data.id) {
+        const photoFd = new FormData();
+        photoFd.append('photo', customPhoto);
+        await tapAPI.uploadCatalogPhoto(res.data.id, photoFd);
+      }
+      setCustomItem({ name: '', price: '', category: 'Beers', is_alcohol: false });
+      setCustomPhoto(null);
       setShowCustomItem(false);
       await loadData();
-      toast.success('Custom item added to menu');
+      toast.success(`"${customItem.name}" added to menu`);
     } catch { toast.error('Failed to add custom item'); }
+  };
+
+  const handleDeleteItem = async (itemId) => {
+    try {
+      await tapAPI.deleteCatalogItem(itemId);
+      await loadData();
+      toast.success('Item deleted from menu');
+    } catch { toast.error('Failed to delete'); }
+  };
+
+  const handleEditItem = async (itemId) => {
+    if (!editForm.name.trim()) return;
+    try {
+      const fd = new FormData();
+      fd.append('name', editForm.name); fd.append('price', editForm.price); fd.append('category', editForm.category);
+      await tapAPI.updateCatalogItem(itemId, fd);
+      setEditingItem(null); await loadData(); toast.success('Item updated');
+    } catch { toast.error('Failed to update'); }
   };
 
   const handleVoidItem = async (itemId) => {
@@ -182,8 +175,8 @@ export const TapPage = () => {
       const fd = new FormData(); fd.append('item_id', itemId);
       await tapAPI.voidItem(activeSessionId, fd);
       const res = await tapAPI.getSession(activeSessionId); setActiveSession(res.data);
-      await loadData(); toast.success('Item voided');
-    } catch { toast.error('Failed to void'); }
+      await loadData(); toast.success('Item removed');
+    } catch { toast.error('Failed to remove'); }
   };
 
   const handleCloseTab = async (method) => {
@@ -198,30 +191,28 @@ export const TapPage = () => {
     setLoading(false);
   };
 
-  const categories = ['All', ...new Set(catalog.map(i => i.category))];
-  const filteredCatalog = filterCategory === 'All' ? catalog : catalog.filter(i => i.category === filterCategory);
+  const categoryCounts = {};
+  catalog.forEach(item => { categoryCounts[item.category] = (categoryCounts[item.category] || 0) + 1; });
+  const filteredItems = selectedCategory ? catalog.filter(i => i.category === selectedCategory) : [];
 
   return (
     <div className="min-h-screen bg-background" data-testid="tap-page">
       <header className="h-14 border-b border-border bg-card px-6 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => navigate('/venue/home')} data-testid="back-btn">
+          <Button variant="ghost" size="icon" onClick={() => navigate('/pulse/bar')} data-testid="back-btn">
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <span className="text-lg font-bold tracking-tight">TAP</span>
           <span className="text-xs font-medium bg-primary/10 text-primary px-2 py-0.5 rounded-full">DISCO MODE</span>
-
-          {/* Table Mode toggle */}
           <div className="h-5 w-px bg-border" />
           <label className="flex items-center gap-2 cursor-pointer" data-testid="table-toggle">
             <LayoutGrid className="h-4 w-4 text-muted-foreground" />
             <span className="text-sm text-muted-foreground">Table</span>
-            <div className="w-10 h-5 rounded-full bg-muted relative transition-colors"
+            <div className="w-10 h-5 rounded-full bg-muted relative transition-colors cursor-pointer"
               onClick={() => navigate('/table')}>
               <div className="w-4 h-4 rounded-full bg-white absolute top-0.5 translate-x-0.5" />
             </div>
           </label>
-
           <div className="h-5 w-px bg-border" />
 
           {/* Barman Selector */}
@@ -319,62 +310,150 @@ export const TapPage = () => {
                   {!selectedBarman && <p className="text-xs text-red-500">Select a barman first</p>}
                 </div>
               )}
-              <div className="space-y-2 max-h-[calc(100vh-360px)] overflow-y-auto">
+              <div className="space-y-1.5 max-h-[calc(100vh-360px)] overflow-y-auto">
                 {sessions.length === 0 ? (
                   <p className="text-sm text-muted-foreground py-6 text-center">No open tabs</p>
                 ) : sessions.map(s => (
-                  <TabCard key={s.session_id || s.id} session={{ ...s, id: s.session_id || s.id }} isActive={(s.session_id || s.id) === activeSessionId}
-                    onClick={() => setActiveSessionId(s.session_id || s.id)} />
+                  <button key={s.session_id || s.id}
+                    onClick={() => setActiveSessionId(s.session_id || s.id)}
+                    className={`w-full text-left p-3 rounded-lg border transition-all ${
+                      (s.session_id || s.id) === activeSessionId
+                        ? 'border-primary bg-primary/5 ring-1 ring-primary/20'
+                        : 'border-border hover:border-primary/30 bg-card'
+                    }`}
+                    data-testid={`tab-${s.tab_number || s.session_id || s.id}`}>
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <span className="font-medium text-sm">{s.guest_name}</span>
+                        <span className="text-primary font-bold text-sm ml-2" data-testid={`tab-number-${s.tab_number}`}>#{s.tab_number}</span>
+                      </div>
+                      <span className="font-bold text-sm">${(s.total || 0).toFixed(2)}</span>
+                    </div>
+                  </button>
                 ))}
               </div>
             </div>
           </div>
 
-          {/* Center: Menu */}
+          {/* Center: Menu as List → Category → Items */}
           <div className="col-span-5">
             <div className="flex items-center justify-between mb-3">
-              <h2 className="text-sm font-semibold">Menu</h2>
+              <div className="flex items-center gap-2">
+                {selectedCategory && (
+                  <Button variant="ghost" size="sm" onClick={() => setSelectedCategory(null)} data-testid="menu-back-btn">
+                    <ArrowLeft className="h-3.5 w-3.5 mr-1" /> Categories
+                  </Button>
+                )}
+                <h2 className="text-sm font-semibold">{selectedCategory ? selectedCategory : 'Menu'}</h2>
+              </div>
               <Button size="sm" variant="outline" onClick={() => setShowCustomItem(!showCustomItem)} data-testid="add-custom-menu-btn">
                 <Plus className="h-3.5 w-3.5 mr-1" /> Custom Item
               </Button>
             </div>
 
+            {/* Custom Item Form */}
             {showCustomItem && (
               <div className="bg-card border border-primary/20 rounded-xl p-4 mb-3 space-y-3" data-testid="custom-item-form">
                 <div className="grid grid-cols-2 gap-2">
-                  <Input value={customItem.name} onChange={e => setCustomItem(p => ({ ...p, name: e.target.value }))} placeholder="Item name" className="text-sm" />
+                  <Input value={customItem.name} onChange={e => setCustomItem(p => ({ ...p, name: e.target.value }))} placeholder="Item name" className="text-sm" data-testid="custom-item-name" />
                   <Input type="number" step="0.01" value={customItem.price}
-                    onChange={e => setCustomItem(p => ({ ...p, price: e.target.value }))} placeholder="$ Price" className="text-sm" />
+                    onChange={e => setCustomItem(p => ({ ...p, price: e.target.value }))} placeholder="$ Price" className="text-sm" data-testid="custom-item-price" />
                 </div>
                 <div className="flex gap-2 items-center">
                   <select value={customItem.category} onChange={e => setCustomItem(p => ({ ...p, category: e.target.value }))}
-                    className="h-10 rounded-md border border-input bg-background px-2 text-sm flex-1">
-                    <option>Snacks</option><option>Starters</option><option>Mains</option>
-                    <option>Drinks</option><option>Cocktails</option><option>Beers</option><option>No Alcohol</option><option>Other</option>
+                    className="h-10 rounded-md border border-input bg-background px-2 text-sm flex-1" data-testid="custom-item-category">
+                    {CATEGORIES.map(c => <option key={c}>{c}</option>)}
                   </select>
-                  <label className="flex items-center gap-1.5 text-sm">
+                  <label className="flex items-center gap-1.5 text-sm whitespace-nowrap">
                     <input type="checkbox" checked={customItem.is_alcohol} onChange={e => setCustomItem(p => ({ ...p, is_alcohol: e.target.checked }))} />
                     Alcohol
                   </label>
-                  <Button size="sm" onClick={handleAddCustomItem} disabled={!customItem.name.trim() || !customItem.price} data-testid="custom-item-submit">
-                    <Plus className="h-3.5 w-3.5 mr-1" /> Add
-                  </Button>
                 </div>
+                {/* Photo Upload */}
+                <div className="flex gap-2 items-center">
+                  <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" className="hidden"
+                    onChange={e => e.target.files[0] && setCustomPhoto(e.target.files[0])} />
+                  <input ref={fileInputRef} type="file" accept="image/*" className="hidden"
+                    onChange={e => e.target.files[0] && setCustomPhoto(e.target.files[0])} />
+                  <Button type="button" size="sm" variant="outline" onClick={() => cameraInputRef.current?.click()} data-testid="take-photo-btn">
+                    <Camera className="h-3.5 w-3.5 mr-1" /> Take Photo
+                  </Button>
+                  <Button type="button" size="sm" variant="outline" onClick={() => fileInputRef.current?.click()} data-testid="upload-photo-btn">
+                    <Upload className="h-3.5 w-3.5 mr-1" /> Upload
+                  </Button>
+                  {customPhoto && <span className="text-xs text-green-600 truncate max-w-[120px]">{customPhoto.name}</span>}
+                </div>
+                <Button size="sm" onClick={handleAddCustomItem} disabled={!customItem.name.trim() || !customItem.price} className="w-full" data-testid="custom-item-submit">
+                  <Plus className="h-3.5 w-3.5 mr-1" /> Add to Menu
+                </Button>
               </div>
             )}
 
-            <div className="flex gap-2 mb-3 flex-wrap">
-              {categories.map(cat => (
-                <button key={cat} onClick={() => setFilterCategory(cat)}
-                  className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
-                    filterCategory === cat ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-muted/80'}`}>{cat}</button>
-              ))}
-            </div>
-            <div className="grid grid-cols-3 gap-2 max-h-[calc(100vh-300px)] overflow-y-auto">
-              {filteredCatalog.map(item => (
-                <CatalogItem key={item.id} item={item} onAdd={handleAddItem} />
-              ))}
-            </div>
+            {!selectedCategory ? (
+              /* Category List */
+              <div className="space-y-1" data-testid="category-list">
+                {CATEGORIES.map(cat => {
+                  const count = categoryCounts[cat] || 0;
+                  return (
+                    <button key={cat} onClick={() => setSelectedCategory(cat)}
+                      className="w-full flex items-center justify-between px-4 py-3 rounded-lg border border-border bg-card hover:border-primary/30 hover:bg-primary/5 transition-all text-left"
+                      data-testid={`category-${cat.toLowerCase().replace(/[^a-z]/g, '-')}`}>
+                      <span className="font-medium text-sm">{cat}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-muted-foreground">{count} items</span>
+                        <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            ) : (
+              /* Items List */
+              <div className="space-y-1 max-h-[calc(100vh-300px)] overflow-y-auto" data-testid="items-list">
+                {filteredItems.length === 0 ? (
+                  <p className="text-sm text-muted-foreground py-8 text-center">No items in this category</p>
+                ) : filteredItems.map(item => (
+                  editingItem === item.id ? (
+                    <div key={item.id} className="p-3 rounded-lg border border-primary/30 bg-primary/5 space-y-2">
+                      <div className="grid grid-cols-3 gap-2">
+                        <Input value={editForm.name} onChange={e => setEditForm(p => ({ ...p, name: e.target.value }))} className="text-sm col-span-2" />
+                        <Input type="number" step="0.01" value={editForm.price} onChange={e => setEditForm(p => ({ ...p, price: e.target.value }))} className="text-sm" />
+                      </div>
+                      <div className="flex gap-2">
+                        <Button size="sm" onClick={() => handleEditItem(item.id)} data-testid={`save-edit-${item.id}`}><Check className="h-3.5 w-3.5 mr-1" /> Save</Button>
+                        <Button size="sm" variant="outline" onClick={() => setEditingItem(null)}><X className="h-3.5 w-3.5" /></Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div key={item.id}
+                      className="flex items-center gap-3 px-4 py-3 rounded-lg border border-border bg-card hover:border-primary/30 transition-all group"
+                      data-testid={`item-${item.id}`}>
+                      {item.image_url ? (
+                        <img src={item.image_url} alt="" className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
+                      ) : (
+                        <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
+                          <Beer className="h-4 w-4 text-muted-foreground" />
+                        </div>
+                      )}
+                      <button className="flex-1 text-left" onClick={() => handleAddItem(item)}>
+                        <span className="font-medium text-sm">{item.name}</span>
+                        <span className="text-primary font-bold text-sm ml-3">${item.price.toFixed(2)}</span>
+                      </button>
+                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button onClick={() => { setEditingItem(item.id); setEditForm({ name: item.name, price: item.price, category: item.category }); }}
+                          className="p-1.5 rounded hover:bg-muted" data-testid={`edit-item-${item.id}`}>
+                          <Pencil className="h-3.5 w-3.5 text-muted-foreground hover:text-primary" />
+                        </button>
+                        <button onClick={() => handleDeleteItem(item.id)}
+                          className="p-1.5 rounded hover:bg-destructive/10" data-testid={`delete-item-${item.id}`}>
+                          <Trash2 className="h-3.5 w-3.5 text-muted-foreground hover:text-destructive" />
+                        </button>
+                      </div>
+                    </div>
+                  )
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Right: Active Tab */}
@@ -398,17 +477,17 @@ export const TapPage = () => {
                   {(activeSession.items || []).length === 0 ? (
                     <p className="text-sm text-muted-foreground py-4 text-center">No items yet — add from menu</p>
                   ) : activeSession.items.map(item => (
-                    <div key={item.id} className="flex items-center justify-between py-2 px-2 rounded hover:bg-muted/30 text-sm group">
+                    <div key={item.id} className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-muted/30 text-sm border border-transparent hover:border-border">
                       <div className="flex-1">
                         <span className="font-medium">{item.name}</span>
                         <span className="text-muted-foreground ml-2">x{item.qty}</span>
                       </div>
-                      <span className="font-medium mr-2">${item.line_total.toFixed(2)}</span>
+                      <span className="font-medium mr-3">${item.line_total.toFixed(2)}</span>
                       {activeSession.status === 'open' && (
                         <button onClick={() => handleVoidItem(item.id)}
-                          className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-all"
+                          className="p-1.5 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-all"
                           data-testid={`void-item-${item.id}`}>
-                          <X className="h-3.5 w-3.5" />
+                          <Trash2 className="h-3.5 w-3.5" />
                         </button>
                       )}
                     </div>
