@@ -314,8 +314,17 @@ export const TablePage = () => {
                 {tableDetail.status === 'available' ? (
                   <div className="space-y-3" data-testid="open-table-form">
                     <p className="text-muted-foreground text-sm">Open this table:</p>
-                    <Input value={openForm.guestName} onChange={e => setOpenForm({ guestName: e.target.value })}
+                    <Input value={openForm.guestName} onChange={e => setOpenForm(p => ({ ...p, guestName: e.target.value }))}
                       placeholder="Guest / Party name" data-testid="open-table-guest" />
+                    <div>
+                      <label className="text-xs text-muted-foreground mb-1 block">Server / Waiter</label>
+                      <select value={openForm.server} onChange={e => setOpenForm(p => ({ ...p, server: e.target.value }))}
+                        className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
+                        data-testid="open-table-server">
+                        <option value="">Select server...</option>
+                        {barmen.map(b => <option key={b.id} value={b.name}>{b.name}</option>)}
+                      </select>
+                    </div>
                     <Button className="w-full" onClick={handleOpenTable} disabled={!openForm.guestName.trim() || loading}>
                       Open Table
                     </Button>
