@@ -1,88 +1,86 @@
-# SPETAP - Product Requirements Document
+# SPETAP — Product Requirements Document
 
 ## Original Problem Statement
-SPETAP is a multi-tenant SaaS platform for venue operations (clubs, restaurants, bars, events).
+Multi-tenant SaaS platform for venue operations (clubs, bars, restaurants). Named **SPETAP**.
 
-### Core Principles
-- `session_id` is canonical identifier, void is ledger-safe
-- Currency: **USD ($)**
-- Tab numbers: sequential per day (#101+)
-- UI: desktop-first, dark-mode optimized, Stripe-like
+## Core Surfaces
+- CEO Dashboard
+- Owner Dashboard
+- Manager Dashboard
+- Staff Apps: Host (Pulse), Tap (Bar), Table, KDS (Kitchen)
 
-### Tech Stack
-- React + Tailwind + Shadcn UI | FastAPI | PostgreSQL + MongoDB | JWT Auth
+## Core Modules
+| Module | Description | Status |
+|--------|-------------|--------|
+| PULSE | Guest entry, identity verification, photo capture, risk/value signals | ✅ Implemented |
+| TAP | Bar operations, tabs, checkout | ✅ Implemented |
+| TABLE | Table management integrated with TAP | ✅ Implemented |
+| KDS | Kitchen Display System (Kanban: Pending→Preparing→Ready→Delivered→Delayed) | ✅ Implemented |
+| EVENT WALLET | Cashless event module | Backlog |
+| LOYALTY | Points/rewards add-on | Backlog |
+| RESTAURANT | KDS add-on | Backlog |
 
----
+## Architecture
+- **Frontend**: React + Tailwind CSS + Shadcn/UI
+- **Backend**: FastAPI (Python)
+- **Databases**: PostgreSQL (transactional), MongoDB (configurations, guest PII)
+- **Auth**: JWT-based (localStorage: `spetap_token`)
+- **Currency**: USD ($)
 
-## Implemented Features
+## Multi-tenancy
+- Strict data isolation by `venue_id`
+- All API endpoints require `venue_id`
 
-### Venue Home - COMPLETE
-- Calendar + events, Modules dropdown in header (no cards)
-- CEO hidden from non-CEO users
+## Design System
+- Stripe-like, desktop-first, full-width UI
+- Dark/light theme toggle
 
-### PULSE Module - COMPLETE
-- NFC + Manual Entry, Guest Intake with camera, Deduplication
-- Inside page (clickable guests), Exit page (red modal for open tabs/blocked wristbands)
-- Guest Profile with block/unblock wristband
-
-### TAP Module - COMPLETE
-- **Tab numbers** (#101+) on every tab card and detail
-- **37 menu items** across 7 categories (Snacks, Starters, Mains, Cocktails, Drinks, Beers, No Alcohol)
-- **Custom Item** form: name, $ price, category, alcohol toggle
-- **Barman Management**: CRUD from dropdown (add/edit/delete)
-- DISCO MODE + Table toggle, void items (ledger-safe with reason)
-- Currency: **$ USD** (not R$)
-
-### TABLE Module - COMPLETE
-- **Server/Waiter selection** when opening table
-- Table layout with zones, add/edit/delete tables
-- Void items, Send to KDS, DISCO MODE toggle
-
-### KDS Module - COMPLETE
-- **4-Column Kanban**: Pending → Preparing → Ready → **Delayed**
-- **Live timers**: countdown/count-up, estimated time setting
-- **ORDER DELAYED popup**: auto-appears, Mark Ready / Dismiss
-- **Kitchen/Bar routing**: food→kitchen, drinks→bar
-
-### Manager Dashboard - COMPLETE
-- Sidebar: Menu, Staff, Settings, Reports
-- **Menu Management**: 37 items, search, category filters, Add Item
-- **Staff Management**: CRUD barmen with edit/delete
-- **Settings**: Venue name, currency, operating mode, KDS toggle
-- **Reports**: Open Tabs, Revenue, Active Staff cards
-
-### Owner Dashboard - COMPLETE
-- Sidebar: Overview, Venues, Analytics, Managers, Settings
-- **Business Overview**: Revenue, Open Tabs, Closed, MTD metrics
-- **Venue card** with live stats
-- **Managers tab**: user access management
-
-### Rewards System - COMPLETE
-### Block Wristband System - COMPLETE
+## Key Credentials
+- Email: `teste@teste.com` / Password: `12345`
+- Venue ID: `40a24e04-75b6-435d-bfff-ab0d469ce543`
+- Company ID: `c0000001-0000-0000-0000-000000000001`
 
 ---
 
-## Prioritized Backlog
+## What's Been Implemented
 
-### P1 - Next
-- Manager: Edit/Delete menu items, photo upload for items
-- Owner: Multi-venue support (Add New Venue flow)
-- Real-time WebSocket for KDS → Table notifications
+### Phase 1: Demo Club Corrections (Feb 27, 2026) ✅
+1. **Guest Module**: Name + Tab # in header, Birthday field always visible (optional)
+2. **Inside Page**: Guest list with Tab #, status (Open/Blocked), VIP badges
+3. **Bar Module**: Full demo menu (Cocktails, Beers, Spirits, Non-alcoholic) with USD prices
+4. **Custom Item**: Creates item in catalog menu, NOT directly to tab
+5. **Exit/Payment**: "Go to Checkout" + "Mark as Paid" buttons in exit modal
+6. **TAP Page**: Kanban menu with 7 categories, barman management, tab numbers
+7. **Table Mode**: 8 tables across 3 zones (main/vip/patio) with status indicators
+8. **KDS**: 5-column Kanban (Pending, Preparing, Ready, Delivered, Delayed)
+9. **Demo Data**: Comprehensive seed with guests, tabs, tables, KDS tickets
+10. **Testing**: 100% pass rate (11 backend + 9 frontend tests)
 
-### P2
-- Event Wallet module, Loyalty enhancements
-- Tips system, Restaurant mode
-- Camera photo for catalog items
-
-### P3
-- Offline-first, Stripe webhooks, CEO Dashboard
+### Previous Work
+- JWT auth system with role-based access
+- Venue Home with calendar + events + modules dropdown
+- TAP module with Kanban menu, barman CRUD, unique tab numbers
+- Table module with server selection
+- Guest registration with dedupe, photo capture, risk/value signals
+- Navigation between modules
 
 ---
 
-## Test Results
-- iteration_9: 7/7 backend + 100% frontend (P0 bugs)
-- iteration_10: 11/11 backend + 100% frontend (Barman CRUD, KDS Kanban)
-- iteration_11: 13/13 backend + 100% frontend (Tab numbers, menu categories, Manager/Owner dashboards, $ currency)
+## Backlog (Prioritized)
 
-## Credentials
-- Email: teste@teste.com | Password: 12345 | Venue: 40a24e04-75b6-435d-bfff-ab0d469ce543
+### P1 — Next
+- **Manager Dashboard**: Overview (KPIs, Charts, Alerts), Staff & Roles (scheduling), Menu/Products (photo upload), Shifts & Operations, NFC & Guests, Reports, Loyalty, Settings
+- **Owner Dashboard**: Overview (KPIs), Performance by Venue, AI Insights, Finance & Risk, Growth & Loyalty, People & Ops, System & Expansion
+- **Item Photo Upload**: Camera capture / file upload for catalog items
+
+### P2 — Upcoming
+- Staff Management (full RBAC, scheduling, affects TAP/Table server selection)
+- KDS/Bar Order Routing (auto-split food→KDS, drinks→Bar)
+- Tip-Splitting Logic
+
+### P3 — Future
+- Event Wallet Module (cashless)
+- Loyalty Add-on (points, rewards, anti-fraud)
+- Stripe Webhooks for subscriptions
+- Offline-First capabilities
+- CEO Dashboard
