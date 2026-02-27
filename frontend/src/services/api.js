@@ -145,8 +145,15 @@ export const managerAPI = {
   getAudit: (venueId) => api.get('/manager/audit', { params: { venue_id: venueId } }),
 };
 
+// Owner
 export const ownerAPI = {
   getDashboard: () => api.get('/owner/dashboard'),
+  getVenues: () => api.get('/owner/venues'),
+  getInsights: () => api.get('/owner/insights'),
+  getFinance: () => api.get('/owner/finance'),
+  getGrowth: () => api.get('/owner/growth'),
+  getPeople: () => api.get('/owner/people'),
+  getSystem: () => api.get('/owner/system'),
 };
 
 export const ceoAPI = {
