@@ -38,60 +38,63 @@ SPETAP is a multi-tenant SaaS platform for venue operations (clubs, restaurants,
 
 ## What's Been Implemented
 
-### Session 1 (2026-02-27)
-- Project scaffolding (React frontend + FastAPI backend)
+### Core Architecture
 - Hybrid database setup (PostgreSQL + MongoDB)
-- Full PostgreSQL schema (14+ tables: users, companies, user_access, subscriptions, entitlements, etc.)
-- JWT-based authentication (currently via MongoDB)
-- Frontend design system tokens in index.css
-- Routing structure with placeholder pages
-- Initial PulseEntry (C0) page
+- Full PostgreSQL schema (20+ tables including venue_tables, kds_tickets, kds_ticket_items)
+- JWT-based authentication via PostgreSQL
+- Tailwind CSS design system with token-based themes
 
-### Session 2 (2026-02-27) - Current
-- **FIXED: Tailwind CSS completely broken** — Added missing `@tailwind base/components/utilities` directives to index.css
-- **FIXED: Light mode tokens had dark values** — Corrected --border, --input, --muted, --secondary for light mode
-- **FIXED: Backend crashing** — Installed PostgreSQL, created spetap database/user, applied full schema
-- **FIXED: Owner redirect route mismatch** — /owner/dashboard → /owner
-- Added @layer base wrapping for Shadcn compatibility
-- Added destructive color tokens (were missing)
-- All tests passing (10/10 backend, all frontend features verified)
+### Auth Module - COMPLETE
+- Login/Signup via PostgreSQL
+- Super admin user (teste@teste.com / 12345)
+- Forgot Password link (placeholder)
 
-### Session 2b (2026-02-27) - Auth Migration
-- **COMPLETED: Auth migrated MongoDB → PostgreSQL** — login, signup, /me all via asyncpg
-- Test user seeded in PostgreSQL (teste@teste.com / 12345, role=super_admin, ALL permissions, company=Demo Club)
+### PULSE Module (C0-C3) - COMPLETE
+- C0: NFC scan + Manual Entry
+- C1: Guest Intake (Name, Email, Phone, DOB, Photo)
+- C1.1: Deduplication (SHA-256 hashes in PG)
+- C2: Decision Card (Risk/Value chips, Allow/Deny)
+- C3: Success (Entry event logged, KPIs update)
+- Inside Page: Grid of currently inside guests with Exit buttons
+- Exit Page: Inside guests + Recent Exits panel
+- Bar Page: Auto-redirect to /tap
+- Rewards Page: Placeholder with lock icon
+- Guest History: Event timeline per guest
 
-### Session 2c (2026-02-27) - PULSE C1→C3
-- **COMPLETED: C1 Guest Intake** — Name, Email, Phone, DOB (conditional HOST_COLLECT_DOB), Photo (camera/upload)
-- **COMPLETED: C1.1 Dedupe** — SHA-256 hashes in PG global_persons, venue isolation, masked data UI (m***@test.com)
-- **COMPLETED: C2 Decision Card** — Risk chips (blocked, flagged, unpaid), Value chips (VIP, big_spender, regular, loyal), Allow/Deny
-- **COMPLETED: C3 Success** — Entry event logged in PG entry_events, KPIs update in real-time, "Next Guest" reset
-- **Data Architecture**: PII → MongoDB venue_guests (venue-isolated), Hashes → PG global_persons, Decisions → PG entry_events
-- **Testing: 100% pass** — 20/20 backend tests, all frontend C1-C3 flows verified
+### TAP Module (B0-B5) - COMPLETE
+- B0: Config + Stats (open_tabs, running_total, closed_today, revenue_today)
+- B1: Open/Close tabs, Add items, Payment (card/cash/comp)
+- Catalog management via MongoDB
+- All transactional data in PostgreSQL
 
-### Session 2d (2026-02-27) - TAP B0+B1 + Test User + Login UX
-- **COMPLETED: Test user updated** — Password changed to `12345`, role=super_admin, ALL entitlements enabled
-- **COMPLETED: Forgot Password link** — Added `Forgot my password?` below login button (placeholder)
-- **COMPLETED: TAP B0** — Config (Disco/Restaurant/Event modes), Stats (open_tabs, running_total, closed_today, revenue_today), 12-item Catalog
-- **COMPLETED: TAP B1** — Open tab (PG tap_sessions), Add items (PG tap_items, catalog from MongoDB), Close tab (PG tap_payments), 3-column layout
-- **Data Architecture**: Sessions/Items/Payments → PostgreSQL, Catalog → MongoDB
-- **Testing: 100% pass** — 27/27 backend tests, all frontend flows verified
+### TABLE Module - COMPLETE (Tested 2026-02-27)
+- 9 venue tables across 4 zones (Main, VIP, Patio, Bar)
+- Open/Close tables with guest assignment
+- Add items from catalog to table sessions
+- Send items to KDS (food to kitchen, drinks to bar)
+- Payment processing (card/cash/comp)
+- Full integration with TAP sessions
 
-### Session 2e (2026-02-27) - PULSE Screens (Inside/Exit/Bar/Rewards/History)
-- **COMPLETED: Guest History Arrow** — ChevronRight (→) on each guest row, opens right panel with full event timeline (entries, exits, decisions, timestamps)
-- **COMPLETED: Inside Page** — 3-column grid of currently inside guests with Exit buttons, count indicator
-- **COMPLETED: Exit Page** — 2-column layout (inside guests with search + Recent Exits panel), tap-to-exit
-- **COMPLETED: Bar Page** — Auto-redirects to /tap after 2s, "Open TAP Now" button
-- **COMPLETED: Rewards Page** — Placeholder with Points/Tiers/Rewards cards, lock icon ("Contact sales")
-- **Testing: 100% pass** — 12/12 backend tests, all frontend flows verified
+### KDS Module - COMPLETE (Tested 2026-02-27)
+- Kitchen/Bar destination routing based on is_alcohol flag
+- 3-column Kanban: Pending/Preparing/Ready
+- Ticket lifecycle: pending -> preparing -> ready -> completed
+- Auto-refresh every 10s
+- Estimated time setting
+- Entitlement gating (kds:true permission required)
 
-### P1 (Next)
-- Implement Table & KDS Modules with feature-gating
-- Implement TAP B2-B5: Advanced features (void items, table mode, shift summary)
+---
+
+## Prioritized Backlog
+
+### P1 - Next
+- Manager/Owner/CEO Dashboards (data aggregation + visualization)
 
 ### P2
-- Manager, Owner, CEO Dashboards with aggregated data
-- Event Wallet module
-- Loyalty add-on module
+- Event Wallet module (cashless events)
+- Loyalty add-on (points/rewards)
+
+### P3
 - Stripe webhook handlers for subscription lifecycle
 - Offline-first for staff apps (Host, Tap)
 
@@ -106,7 +109,7 @@ SPETAP is a multi-tenant SaaS platform for venue operations (clubs, restaurants,
 │   ├── database.py (MongoDB + PostgreSQL connections)
 │   ├── config.py (Settings from .env)
 │   ├── init_postgres.sql (Full PG schema)
-│   ├── routes/ (auth, billing, pulse, tap, manager, owner, ceo)
+│   ├── routes/ (auth, billing, pulse, tap, table, kds, manager, owner, ceo)
 │   ├── utils/ (auth.py, hashing.py)
 │   ├── middleware/ (auth_middleware.py)
 │   └── models/ (requests.py, responses.py)
@@ -114,7 +117,7 @@ SPETAP is a multi-tenant SaaS platform for venue operations (clubs, restaurants,
     ├── src/
     │   ├── index.css (Design tokens + @tailwind directives)
     │   ├── App.js (Router)
-    │   ├── pages/ (Login, Modules, Pulse, Tap, Manager, Owner, CEO)
+    │   ├── pages/ (Login, Modules, Pulse, Tap, Table, Kitchen, Manager, Owner, CEO)
     │   ├── components/ (PulseHeader, ProtectedRoute, ThemeToggle, ui/)
     │   ├── contexts/ (AuthContext, ThemeContext)
     │   └── services/ (api.js)
@@ -123,5 +126,9 @@ SPETAP is a multi-tenant SaaS platform for venue operations (clubs, restaurants,
 
 ## Test User
 - Email: teste@teste.com
-- Password: teste123
-- Role: owner (via MongoDB user_access)
+- Password: 12345
+- Role: super_admin (all permissions enabled)
+- Venue ID: 40a24e04-75b6-435d-bfff-ab0d469ce543
+
+## Test Results
+- Latest: iteration_5.json — 23/23 backend tests passed, all frontend flows verified (2026-02-27)
