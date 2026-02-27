@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Depends
 from middleware.auth_middleware import require_auth
-from database import get_mongo_db, get_postgres_conn, release_postgres_conn
+from database import get_mongo_db
 from models.requests import GuestIntakeRequest, GuestSearchRequest
 import uuid
 from datetime import datetime, timezone
