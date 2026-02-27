@@ -1,117 +1,366 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { PulseHeader } from '../../components/PulseHeader';
+import { GuestIntakeForm } from '../../components/pulse/GuestIntakeForm';
+import { DedupeMatches } from '../../components/pulse/DedupeMatches';
+import { DecisionCard } from '../../components/pulse/DecisionCard';
+import { EntrySuccess } from '../../components/pulse/EntrySuccess';
 import { Input } from '../../components/ui/input';
-import { Users, Activity, Zap, UserPlus } from 'lucide-react';
+import { pulseAPI } from '../../services/api';
+import { toast } from 'sonner';
+import { Users, Activity, Zap, UserPlus, ArrowLeft } from 'lucide-react';
+import { Button } from '../../components/ui/button';
+
+const VENUE_ID = '40a24e04-75b6-435d-bfff-ab0d469ce543';
 
 export const PulseEntryPage = () => {
   const [venue, setVenue] = useState('demo-club');
-  const [scanInput, setScanInput] = useState('');
-  const [guestsInside] = useState(0);
-  const [totalVisits] = useState(0);
-  const [pointsIssued] = useState(0);
+  // Flow states: idle | intake | dedupe | decision | success
+  const [flowState, setFlowState] = useState('idle');
+  const [loading, setLoading] = useState(false);
 
+  // Data
+  const [venueConfig, setVenueConfig] = useState(null);
+  const [scanInput, setScanInput] = useState('');
+  const [intakeData, setIntakeData] = useState(null);
+  const [dedupeMatches, setDedupeMatches] = useState([]);
+  const [currentGuest, setCurrentGuest] = useState(null);
+  const [entryResult, setEntryResult] = useState(null);
+  const [todayEntries, setTodayEntries] = useState([]);
+  const [stats, setStats] = useState({ inside: 0, visits: 0, points: 0 });
+
+  // Load venue config + today's entries on mount
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const [cfgRes, entriesRes] = await Promise.all([
+          pulseAPI.getVenueConfig(VENUE_ID),
+          pulseAPI.getTodayEntries(VENUE_ID),
+        ]);
+        setVenueConfig(cfgRes.data);
+        setTodayEntries(entriesRes.data.entries || []);
+        setStats({
+          inside: entriesRes.data.allowed || 0,
+          visits: entriesRes.data.total || 0,
+          points: 0,
+        });
+      } catch (err) {
+        console.error('Failed to load venue data:', err);
+      }
+    };
+    load();
+  }, []);
+
+  const refreshEntries = useCallback(async () => {
+    try {
+      const res = await pulseAPI.getTodayEntries(VENUE_ID);
+      setTodayEntries(res.data.entries || []);
+      setStats({
+        inside: res.data.allowed || 0,
+        visits: res.data.total || 0,
+        points: 0,
+      });
+    } catch {}
+  }, []);
+
+  // ── C0: NFC scan submit ──
   const handleScanSubmit = (e) => {
     e.preventDefault();
     if (scanInput.trim()) {
-      console.log('Scanning:', scanInput);
+      toast.info(`NFC scan: ${scanInput} — guest lookup not yet wired`);
       setScanInput('');
     }
   };
 
-  const handleManualEntry = () => {
-    console.log('Manual entry clicked');
+  // ── C1: Open intake form ──
+  const handleManualEntry = () => setFlowState('intake');
+
+  // ── C1: Submit intake → dedupe check ──
+  const handleIntakeSubmit = async (data) => {
+    setLoading(true);
+    setIntakeData(data);
+    try {
+      // First check for duplicates
+      if (data.email || data.phone) {
+        const fd = new FormData();
+        fd.append('venue_id', VENUE_ID);
+        if (data.email) fd.append('email', data.email);
+        if (data.phone) fd.append('phone', data.phone);
+        const dedupeRes = await pulseAPI.dedupeSearch(fd);
+        if (dedupeRes.data.matches?.length > 0) {
+          setDedupeMatches(dedupeRes.data.matches);
+          setFlowState('dedupe');
+          setLoading(false);
+          return;
+        }
+      }
+      // No matches — create guest directly
+      await createGuestAndDecide(data);
+    } catch (err) {
+      toast.error('Failed to check for duplicates');
+      console.error(err);
+    }
+    setLoading(false);
   };
+
+  // ── C1.1: Select existing match ──
+  const handleSelectExisting = async (guestId) => {
+    setLoading(true);
+    try {
+      const res = await pulseAPI.getGuest(guestId, VENUE_ID);
+      setCurrentGuest(res.data);
+      setFlowState('decision');
+    } catch (err) {
+      toast.error('Failed to load guest');
+    }
+    setLoading(false);
+  };
+
+  // ── C1.1: Create new despite matches ──
+  const handleCreateNew = async () => {
+    if (intakeData) {
+      setLoading(true);
+      await createGuestAndDecide(intakeData);
+      setLoading(false);
+    }
+  };
+
+  // ── Helper: create guest in backend, then go to decision ──
+  const createGuestAndDecide = async (data) => {
+    try {
+      const fd = new FormData();
+      fd.append('name', data.name);
+      fd.append('venue_id', VENUE_ID);
+      if (data.email) fd.append('email', data.email);
+      if (data.phone) fd.append('phone', data.phone);
+      if (data.dob) fd.append('dob', data.dob);
+      if (data.photo) fd.append('photo', data.photo);
+
+      const intakeRes = await pulseAPI.guestIntake(fd);
+      const guestId = intakeRes.data.guest_id;
+
+      // Load full guest with chips
+      const guestRes = await pulseAPI.getGuest(guestId, VENUE_ID);
+      setCurrentGuest(guestRes.data);
+      setFlowState('decision');
+    } catch (err) {
+      toast.error('Failed to register guest');
+      console.error(err);
+    }
+  };
+
+  // ── C2: Record decision ──
+  const handleDecision = async (decision, entryType, coverAmount, coverPaid) => {
+    setLoading(true);
+    try {
+      const fd = new FormData();
+      fd.append('guest_id', currentGuest.guest_id);
+      fd.append('venue_id', VENUE_ID);
+      fd.append('decision', decision);
+      fd.append('entry_type', entryType);
+      fd.append('cover_amount', coverAmount.toString());
+      fd.append('cover_paid', coverPaid.toString());
+
+      const res = await pulseAPI.recordDecision(fd);
+      setEntryResult({ ...res.data, entry_type: entryType });
+      setFlowState('success');
+      await refreshEntries();
+    } catch (err) {
+      toast.error('Failed to record decision');
+      console.error(err);
+    }
+    setLoading(false);
+  };
+
+  // ── C3: Done — reset to idle ──
+  const handleDone = () => {
+    setFlowState('idle');
+    setIntakeData(null);
+    setDedupeMatches([]);
+    setCurrentGuest(null);
+    setEntryResult(null);
+  };
+
+  const handleBack = () => {
+    if (flowState === 'dedupe') setFlowState('intake');
+    else if (flowState === 'decision' && dedupeMatches.length > 0) setFlowState('dedupe');
+    else setFlowState('idle');
+  };
+
+  // ── Right Panel Content ──
+  const renderRightPanel = () => {
+    switch (flowState) {
+      case 'intake':
+        return (
+          <div>
+            <div className="flex items-center gap-3 mb-6">
+              <Button variant="ghost" size="icon" onClick={handleBack} data-testid="back-btn">
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
+              <h3 className="text-xl font-semibold">Guest Registration</h3>
+            </div>
+            <GuestIntakeForm
+              venueConfig={venueConfig}
+              onSubmit={handleIntakeSubmit}
+              onCancel={() => setFlowState('idle')}
+              loading={loading}
+            />
+          </div>
+        );
+      case 'dedupe':
+        return (
+          <div>
+            <div className="flex items-center gap-3 mb-6">
+              <Button variant="ghost" size="icon" onClick={handleBack} data-testid="back-btn">
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
+              <h3 className="text-xl font-semibold">Duplicate Check</h3>
+            </div>
+            <DedupeMatches
+              matches={dedupeMatches}
+              onSelectExisting={handleSelectExisting}
+              onCreateNew={handleCreateNew}
+              loading={loading}
+            />
+          </div>
+        );
+      case 'decision':
+        return (
+          <div>
+            <div className="flex items-center gap-3 mb-6">
+              <Button variant="ghost" size="icon" onClick={handleBack} data-testid="back-btn">
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
+              <h3 className="text-xl font-semibold">Entry Decision</h3>
+            </div>
+            <DecisionCard guest={currentGuest} onDecision={handleDecision} loading={loading} />
+          </div>
+        );
+      case 'success':
+        return <EntrySuccess result={entryResult} guest={currentGuest} onDone={handleDone} />;
+      default:
+        return null;
+    }
+  };
+
+  const showRightPanel = flowState !== 'idle';
 
   return (
     <div className="min-h-screen bg-background">
       <PulseHeader venue={venue} onVenueChange={setVenue} />
 
-      {/* FULL WIDTH - No max-width constraints */}
-      <main className="w-full px-16 py-16">
-        {/* Page Title */}
-        <div className="mb-20">
-          <h2 className="text-5xl font-semibold mb-4 tracking-tight">Loyalty & Presence</h2>
-          <p className="text-xl text-muted-foreground">
-            Manage guest entries, track presence, and award loyalty points
-          </p>
-        </div>
-
-        {/* KPI Cards - Full width, 3 columns */}
-        <div className="grid grid-cols-3 gap-16 mb-24">
-          <div className="space-y-5">
+      <main className="w-full px-16 py-12">
+        {/* KPI Cards */}
+        <div className="grid grid-cols-3 gap-16 mb-16">
+          <div className="space-y-3">
             <div className="flex items-center gap-3 text-sm font-medium text-muted-foreground uppercase tracking-wider">
-              <Users className="h-6 w-6 text-primary" />
+              <Users className="h-5 w-5 text-primary" />
               <span>Guests Inside</span>
             </div>
-            <div className="text-8xl font-semibold tracking-tight">{guestsInside}</div>
+            <div className="text-7xl font-semibold tracking-tight" data-testid="kpi-inside">{stats.inside}</div>
           </div>
-
-          <div className="space-y-5">
+          <div className="space-y-3">
             <div className="flex items-center gap-3 text-sm font-medium text-muted-foreground uppercase tracking-wider">
-              <Activity className="h-6 w-6 text-primary" />
-              <span>Total Visits</span>
+              <Activity className="h-5 w-5 text-primary" />
+              <span>Total Entries</span>
             </div>
-            <div className="text-8xl font-semibold tracking-tight">{totalVisits}</div>
+            <div className="text-7xl font-semibold tracking-tight" data-testid="kpi-visits">{stats.visits}</div>
           </div>
-
-          <div className="space-y-5">
+          <div className="space-y-3">
             <div className="flex items-center gap-3 text-sm font-medium text-muted-foreground uppercase tracking-wider">
-              <Zap className="h-6 w-6 text-primary" />
-              <span>Points Issued</span>
+              <Zap className="h-5 w-5 text-primary" />
+              <span>Denied</span>
             </div>
-            <div className="text-8xl font-semibold tracking-tight">{pointsIssued}</div>
+            <div className="text-7xl font-semibold tracking-tight" data-testid="kpi-denied">
+              {todayEntries.filter(e => e.decision === 'denied').length}
+            </div>
           </div>
         </div>
 
-        {/* Scan & Manual Entry - 12 column grid, 8/4 split */}
-        <div className="grid grid-cols-12 gap-10 mb-24">
-          {/* Scan NFC - 8 columns */}
-          <div className="col-span-8">
-            <div className="mb-6">
-              <h3 className="text-base font-medium text-muted-foreground uppercase tracking-wider">
-                Scan NFC Tag
-              </h3>
-            </div>
-            <form onSubmit={handleScanSubmit}>
-              <Input
-                value={scanInput}
-                onChange={(e) => setScanInput(e.target.value)}
-                placeholder="Waiting for scan..."
-                className="h-32 text-4xl border-2 border-input focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/20 rounded-xl transition-all"
-                autoFocus
-                data-testid="nfc-scan-input"
-              />
-              <p className="text-base text-muted-foreground mt-6">
-                Place tag on reader or type UID manually and press Enter
-              </p>
-            </form>
-          </div>
-
-          {/* Manual Entry - 4 columns */}
-          <div 
-            className="col-span-4 border-2 border-dashed border-border hover:border-primary/50 rounded-xl cursor-pointer transition-all group"
-            onClick={handleManualEntry}
-          >
-            <div className="flex flex-col items-center justify-center h-full py-20 px-10">
-              <div className="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center mb-6 group-hover:bg-primary/20 transition-colors">
-                <UserPlus className="h-12 w-12 text-primary" />
+        {/* Main area: 12 col grid */}
+        <div className={`grid ${showRightPanel ? 'grid-cols-12 gap-10' : 'grid-cols-12 gap-10'}`}>
+          {/* Left: Scan + Manual + Guest list */}
+          <div className={showRightPanel ? 'col-span-7' : 'col-span-12'}>
+            {/* Scan + Manual Entry */}
+            <div className="grid grid-cols-12 gap-8 mb-16">
+              <div className="col-span-8">
+                <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-4">
+                  Scan NFC Tag
+                </h3>
+                <form onSubmit={handleScanSubmit}>
+                  <Input value={scanInput} onChange={e => setScanInput(e.target.value)}
+                    placeholder="Waiting for scan..."
+                    className="h-24 text-3xl border-2 border-input focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/20 rounded-xl transition-all"
+                    autoFocus={flowState === 'idle'}
+                    data-testid="nfc-scan-input" />
+                  <p className="text-sm text-muted-foreground mt-3">
+                    Place tag on reader or type UID and press Enter
+                  </p>
+                </form>
               </div>
-              <h3 className="text-2xl font-semibold mb-3">Manual Entry</h3>
-              <p className="text-base text-muted-foreground text-center">Without NFC tag</p>
+              <div className="col-span-4 border-2 border-dashed border-border hover:border-primary/50 rounded-xl cursor-pointer transition-all group"
+                onClick={handleManualEntry} data-testid="manual-entry-btn">
+                <div className="flex flex-col items-center justify-center h-full py-10">
+                  <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
+                    <UserPlus className="h-8 w-8 text-primary" />
+                  </div>
+                  <h3 className="text-lg font-semibold">Manual Entry</h3>
+                  <p className="text-sm text-muted-foreground">Without NFC tag</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Today's guest list */}
+            <div className="border-t border-border pt-10">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-2xl font-semibold">Guests Today</h3>
+                <p className="text-base text-muted-foreground">{todayEntries.length} entries</p>
+              </div>
+              {todayEntries.length === 0 ? (
+                <div className="flex items-center justify-center py-20 text-muted-foreground">
+                  No guests registered yet
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {todayEntries.map((entry) => (
+                    <div key={entry.entry_id}
+                      className="flex items-center gap-4 px-4 py-3 rounded-lg hover:bg-muted/50 transition-colors cursor-pointer"
+                      onClick={() => {
+                        handleSelectExisting(entry.guest_id);
+                      }}
+                      data-testid={`entry-row-${entry.entry_id}`}>
+                      {entry.guest_photo ? (
+                        <img src={entry.guest_photo} alt="" className="w-10 h-10 rounded-full object-cover" />
+                      ) : (
+                        <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
+                          <Users className="h-4 w-4 text-muted-foreground" />
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium truncate">{entry.guest_name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {entry.entry_type?.replace(/_/g, ' ')} — {new Date(entry.created_at).toLocaleTimeString()}
+                        </p>
+                      </div>
+                      <span className={`px-2 py-1 rounded text-xs font-medium ${
+                        entry.decision === 'allowed'
+                          ? 'bg-green-500/10 text-green-600'
+                          : 'bg-destructive/10 text-destructive'
+                      }`}>
+                        {entry.decision}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
-        </div>
 
-        {/* Guests List - Full width */}
-        <div className="border-t border-border pt-20">
-          <div className="flex items-center justify-between mb-12">
-            <h3 className="text-4xl font-semibold">Guests Hoje</h3>
-            <p className="text-xl text-muted-foreground">0 guests</p>
-          </div>
-          
-          <div className="flex items-center justify-center py-40 text-muted-foreground text-xl">
-            No guests registered yet
-          </div>
+          {/* Right panel: C1→C3 flow */}
+          {showRightPanel && (
+            <div className="col-span-5 border-l border-border pl-10" data-testid="flow-panel">
+              {renderRightPanel()}
+            </div>
+          )}
         </div>
       </main>
     </div>
