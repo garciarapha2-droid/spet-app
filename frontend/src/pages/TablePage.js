@@ -503,14 +503,70 @@ export const TablePage = () => {
                       ))}
                     </div>
 
-                    <div className="space-y-3 pt-4 border-t border-border">
-                      <p className="text-sm font-medium text-muted-foreground">Close Table</p>
-                      <div className="grid grid-cols-3 gap-2">
-                        <Button variant="outline" className="h-11" onClick={() => handleCloseTable('card')} disabled={loading}><CreditCard className="h-4 w-4 mr-1" /> Card</Button>
-                        <Button variant="outline" className="h-11" onClick={() => handleCloseTable('cash')} disabled={loading}><Banknote className="h-4 w-4 mr-1" /> Cash</Button>
-                        <Button variant="outline" className="h-11" onClick={() => handleCloseTable('comp')} disabled={loading}><Beer className="h-4 w-4 mr-1" /> Comp</Button>
+                    {!tableCloseStep && (
+                      <div className="space-y-3 pt-4 border-t border-border">
+                        <p className="text-sm font-medium text-muted-foreground">Pay Now</p>
+                        <div className="grid grid-cols-2 gap-2">
+                          <Button variant="outline" className="h-11" onClick={() => handleCloseTable('card', 'pay_here')} disabled={loading} data-testid="table-pay-here-btn">
+                            <CreditCard className="h-4 w-4 mr-1" /> Pay here
+                          </Button>
+                          <Button variant="outline" className="h-11" onClick={() => handleCloseTable('card', 'pay_at_register')} disabled={loading} data-testid="table-pay-register-btn">
+                            <Banknote className="h-4 w-4 mr-1" /> Pay at register
+                          </Button>
+                        </div>
                       </div>
-                    </div>
+                    )}
+
+                    {/* Tip Recording */}
+                    {tableCloseStep === 'tip' && tableTipSession && !tableTipResult && (
+                      <div className="space-y-3 pt-4 border-t border-border">
+                        <div className="border border-primary/30 rounded-xl p-4 bg-primary/5" data-testid="table-tip-recording">
+                          <h4 className="font-semibold text-sm mb-1">Enter tip from receipt</h4>
+                          <p className="text-xs text-muted-foreground mb-3">
+                            {tableTipSession.guest_name} — Tab #{tableTipSession.tab_number} — Total: ${tableTipSession.total?.toFixed(2)}
+                          </p>
+                          <div className="flex gap-2 mb-3">
+                            {[18, 20, 22].map(pct => (
+                              <Button key={pct} size="sm" variant={tableTipType === 'percent' && tableTipInput === pct.toString() ? 'default' : 'outline'}
+                                onClick={() => { setTableTipType('percent'); setTableTipInput(pct.toString()); }}>
+                                {pct}%
+                              </Button>
+                            ))}
+                            <Button size="sm" variant="outline" onClick={() => { setTableTipType('amount'); setTableTipInput(''); }}>Custom</Button>
+                          </div>
+                          <div className="flex gap-2">
+                            <div className="flex-1 flex items-center gap-1">
+                              <span className="text-sm font-medium text-muted-foreground">{tableTipType === 'amount' ? '$' : '%'}</span>
+                              <Input value={tableTipInput} onChange={e => setTableTipInput(e.target.value)} type="number" step="0.01"
+                                placeholder={tableTipType === 'amount' ? '0.00' : '20'} className="h-9" data-testid="table-tip-input" />
+                            </div>
+                            <Button onClick={handleTableRecordTip} disabled={!tableTipInput || loading} data-testid="table-record-tip-btn">Record Tip</Button>
+                          </div>
+                          <button onClick={handleTableTipDone} className="text-xs text-muted-foreground mt-2 hover:underline">Skip (no tip)</button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Tip Result */}
+                    {tableTipResult && (
+                      <div className="space-y-3 pt-4 border-t border-border">
+                        <div className="border border-green-500/30 rounded-xl p-4 bg-green-500/5" data-testid="table-tip-result">
+                          <h4 className="font-semibold text-sm text-green-600 mb-2">Tip: ${tableTipResult.tip_amount.toFixed(2)} ({tableTipResult.tip_percent}%)</h4>
+                          {tableTipResult.distribution?.length > 0 && (
+                            <div className="space-y-1">
+                              <p className="text-[10px] font-bold text-muted-foreground uppercase">Distribution</p>
+                              {tableTipResult.distribution.map((d, i) => (
+                                <div key={i} className="flex justify-between text-sm">
+                                  <span className="text-muted-foreground">Staff (sold ${d.sold.toFixed(2)} — {(d.proportion * 100).toFixed(0)}%)</span>
+                                  <span className="font-bold text-green-600">${d.tip.toFixed(2)}</span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                          <Button size="sm" className="mt-3 w-full" onClick={handleTableTipDone} data-testid="table-done-tip-btn">Done</Button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <div className="text-center py-10" data-testid="open-table-panel">
