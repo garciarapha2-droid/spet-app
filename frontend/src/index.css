@@ -1,3 +1,7 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 /* SPETAP Design System - Token-based Light/Dark theme */
 
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
@@ -7,8 +11,8 @@
   letter-spacing: -0.01em;
 }
 
-/* Light Mode */
-[data-theme="light"] {
+/* Light Mode - default */
+:root, [data-theme="light"] {
   --background: 0 0% 98%;
   --foreground: 224 20% 12%;
   
