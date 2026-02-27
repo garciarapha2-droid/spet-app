@@ -543,3 +543,162 @@ async def get_system_expansion(user: dict = Depends(require_auth)):
         "webhook_errors": 0,
         "last_deployment": datetime.now(timezone.utc).isoformat(),
     }
+
+
+# ─── AI INSIGHTS (GPT-5.2) ────────────────────────────────────────
+AI_SYSTEM_PROMPT = """You are an AI operational assistant designed to support managers based on their specific business context.
+
+Every response must be context-aware, using real data from the venue as the primary source of truth.
+
+Core Rules:
+1. Always prioritize internal venue data (guest funnel, staff allocation, tables, bar performance, timing).
+2. Tailor all insights to the type of business (bar, club, restaurant, lounge).
+3. Do NOT give generic advice disconnected from the venue's current state.
+4. External references (web, Google, industry best practices) may be used only to support or validate recommendations — never as the main source.
+
+When using external references:
+- Clearly state that the suggestion is supported by an external reference.
+- Use phrasing like: "According to hospitality industry best practices..." or "Based on external operational references..."
+- Do not present external information as absolute truth.
+
+Response Structure (MANDATORY - return as JSON array):
+Each insight must have these fields:
+- "summary": Brief explanation of the detected issue
+- "what_we_see": Insights based on internal data
+- "recommended_actions": Clear, practical, operational steps (as a list)
+- "reference": External validation if used, otherwise null
+- "priority": "critical", "warning", or "info"
+
+Tone: Clear, Direct, Operational, Actionable.
+You assist decision-making, you do not replace it.
+
+Return ONLY a valid JSON array of insight objects. No markdown, no explanation outside the JSON."""
+
+
+@router.post("/ai-insights")
+async def generate_ai_insights(user: dict = Depends(require_auth)):
+    """Generate AI-powered insights using GPT-5.2 with real venue data."""
+    from emergentintegrations.llm.chat import ChatMessage, chat
+
+    pool = get_postgres_pool()
+    db = get_mongo_db()
+    today = _today_start()
+    month = _month_start()
+    now = datetime.now(timezone.utc)
+    user_id = user["sub"]
+
+    # Gather venue data context
+    async with pool.acquire() as conn:
+        access_rows = await conn.fetch(
+            "SELECT venue_id FROM user_access WHERE user_id = $1::uuid", user_id)
+        venue_ids = [r["venue_id"] for r in access_rows if r["venue_id"]]
+
+    if not venue_ids:
+        return {"insights": [], "disclaimer": "No venues found."}
+
+    context_parts = []
+    for vid in venue_ids:
+        cfg = await db.venue_configs.find_one({"venue_id": str(vid)}, {"_id": 0})
+        venue_name = cfg.get("venue_name", "Demo Club") if cfg else "Demo Club"
+        bar_mode = cfg.get("bar_mode", "disco") if cfg else "disco"
+
+        async with pool.acquire() as conn:
+            rev_today = float(await conn.fetchval(
+                "SELECT COALESCE(SUM(total),0) FROM tap_sessions WHERE venue_id=$1 AND status='closed' AND closed_at>=$2", vid, today) or 0)
+            rev_month = float(await conn.fetchval(
+                "SELECT COALESCE(SUM(total),0) FROM tap_sessions WHERE venue_id=$1 AND status='closed' AND closed_at>=$2", vid, month) or 0)
+            open_tabs = await conn.fetchval(
+                "SELECT COUNT(*) FROM tap_sessions WHERE venue_id=$1 AND status='open'", vid) or 0
+            closed_tabs = await conn.fetchval(
+                "SELECT COUNT(*) FROM tap_sessions WHERE venue_id=$1 AND status='closed' AND closed_at>=$2", vid, today) or 0
+            avg_ticket = float(await conn.fetchval(
+                "SELECT COALESCE(AVG(total),0) FROM tap_sessions WHERE venue_id=$1 AND status='closed' AND closed_at>=$2", vid, today) or 0)
+            guests_today = await conn.fetchval(
+                "SELECT COUNT(DISTINCT guest_id) FROM entry_events WHERE venue_id=$1 AND created_at>=$2 AND decision='allowed'", vid, today) or 0
+            total_entries = await conn.fetchval(
+                "SELECT COUNT(*) FROM entry_events WHERE venue_id=$1 AND created_at>=$2", vid, today) or 0
+            denied = await conn.fetchval(
+                "SELECT COUNT(*) FROM entry_events WHERE venue_id=$1 AND created_at>=$2 AND decision='denied'", vid, today) or 0
+            voids = await conn.fetchval(
+                "SELECT COUNT(*) FROM tap_items WHERE venue_id=$1 AND voided_at>=$2", vid, today) or 0
+            total_items = await conn.fetchval(
+                "SELECT COUNT(*) FROM tap_items WHERE venue_id=$1 AND created_at>=$2", vid, today) or 0
+            long_tabs = await conn.fetchval(
+                "SELECT COUNT(*) FROM tap_sessions WHERE venue_id=$1 AND status='open' AND opened_at<$2",
+                vid, now - timedelta(hours=3)) or 0
+
+            # Top items
+            top_rows = await conn.fetch(
+                "SELECT item_name, SUM(line_total) as rev FROM tap_items WHERE venue_id=$1 AND created_at>=$2 AND voided_at IS NULL GROUP BY item_name ORDER BY rev DESC LIMIT 5",
+                vid, today)
+
+            # Tables
+            occupied = await conn.fetchval(
+                "SELECT COUNT(*) FROM venue_tables WHERE venue_id=$1 AND status='occupied'", vid) or 0
+            available = await conn.fetchval(
+                "SELECT COUNT(*) FROM venue_tables WHERE venue_id=$1 AND status='available'", vid) or 0
+
+        barmen_count = await db.venue_barmen.count_documents({"venue_id": str(vid), "active": True})
+        top_items = ", ".join([f"{r['item_name']} (${float(r['rev']):.0f})" for r in top_rows])
+
+        context_parts.append(f"""
+VENUE: {venue_name} (Type: {bar_mode})
+- Revenue today: ${rev_today:.2f} | Revenue MTD: ${rev_month:.2f}
+- Avg ticket: ${avg_ticket:.2f}
+- Open tabs: {open_tabs} | Closed today: {closed_tabs}
+- Guests today: {guests_today} | Total entries: {total_entries} | Denied: {denied}
+- Voids today: {voids} out of {total_items} items ({round(voids/total_items*100,1) if total_items>0 else 0}%)
+- Long open tabs (>3h): {long_tabs}
+- Tables occupied: {occupied} | Available: {available}
+- Active staff: {barmen_count}
+- Top items: {top_items if top_items else 'No sales yet'}
+- Current time: {now.strftime('%H:%M')} UTC
+""")
+
+    context = "\n".join(context_parts)
+    user_message = f"""Analyze the following real-time operational data and provide 2-4 actionable insights.
+Focus on what matters MOST right now for the business owner.
+
+{context}
+
+Return ONLY a valid JSON array of insight objects with fields: summary, what_we_see, recommended_actions (array of strings), reference (string or null), priority (critical/warning/info)."""
+
+    try:
+        llm_key = os.environ.get("EMERGENT_LLM_KEY")
+        if not llm_key:
+            return {"insights": [], "error": "LLM key not configured"}
+
+        response = await chat(
+            api_key=llm_key,
+            model="gpt-5.2",
+            messages=[
+                ChatMessage(role="system", content=AI_SYSTEM_PROMPT),
+                ChatMessage(role="user", content=user_message),
+            ],
+        )
+
+        raw = response.message.strip()
+        # Extract JSON from response
+        if raw.startswith("```"):
+            raw = raw.split("```")[1]
+            if raw.startswith("json"):
+                raw = raw[4:]
+        insights = json_mod.loads(raw)
+        if not isinstance(insights, list):
+            insights = [insights]
+
+    except Exception as e:
+        logger.error(f"AI insights error: {e}")
+        insights = [{
+            "summary": "Unable to generate AI insights at this time",
+            "what_we_see": str(e),
+            "recommended_actions": ["Check LLM configuration", "Try again later"],
+            "reference": None,
+            "priority": "info",
+        }]
+
+    return {
+        "insights": insights,
+        "disclaimer": "AI insights are based on your business data and external references when applicable. They may contain inaccuracies. Always validate decisions with your team.",
+        "generated_at": now.isoformat(),
+    }
