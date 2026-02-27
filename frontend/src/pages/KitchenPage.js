@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
-const VENUE_ID = '40a24e04-75b6-435d-bfff-ab0d469ce543';
+const VENUE_ID = () => localStorage.getItem('active_venue_id') || '40a24e04-75b6-435d-bfff-ab0d469ce543';
 
 const STATUS_STYLES = {
   pending: { bg: 'border-yellow-500/50 bg-yellow-500/5', badge: 'bg-yellow-500/20 text-yellow-600', label: 'Pending' },
@@ -115,7 +115,7 @@ export const KitchenPage = () => {
 
   const loadTickets = useCallback(async () => {
     try {
-      const res = await kdsAPI.listTickets(VENUE_ID, destination);
+      const res = await kdsAPI.getTickets(VENUE_ID(), destination);
       setTickets(res.data.tickets || []);
     } catch (err) {
       console.error(err);
