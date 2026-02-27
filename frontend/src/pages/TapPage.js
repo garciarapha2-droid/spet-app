@@ -231,6 +231,14 @@ export const TapPage = () => {
 
   return (
     <div className="min-h-screen bg-background" data-testid="tap-page">
+      {/* Guest Confirmation Modal */}
+      {pendingConfirmSession && (
+        <GuestConfirmModal
+          session={pendingConfirmSession}
+          onConfirm={handleConfirmGuest}
+          onCancel={handleCancelConfirm}
+        />
+      )}
       <header className="h-14 border-b border-border bg-card px-6 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon" onClick={() => navigate('/pulse/bar')} data-testid="back-btn">
