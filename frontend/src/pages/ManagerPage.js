@@ -89,9 +89,12 @@ export const ManagerPage = () => {
 /* ═══════════════════════════════════════════════════════════════════
    1. OVERVIEW
    ═══════════════════════════════════════════════════════════════════ */
-function OverviewSection() {
+function OverviewSection({ onNavigate }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [funnelModal, setFunnelModal] = useState(null);
+  const [funnelData, setFunnelData] = useState([]);
+  const [funnelLoading, setFunnelLoading] = useState(false);
 
   useEffect(() => {
     managerAPI.getOverview(VID()).then(r => setData(r.data)).catch(() => toast.error('Failed to load overview')).finally(() => setLoading(false));
