@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Request, Depends, Header
 from middleware.auth_middleware import require_auth
 from emergentintegrations.payments.stripe.checkout import StripeCheckout, CheckoutSessionRequest, CheckoutSessionResponse
-from database import get_postgres_conn, release_postgres_conn
+from database import get_mongo_db
 from config import get_settings
 import uuid
 from datetime import datetime, timezone
