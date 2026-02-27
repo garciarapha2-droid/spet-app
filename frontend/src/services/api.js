@@ -143,6 +143,8 @@ export const managerAPI = {
   getSettings: (venueId) => api.get('/manager/settings', { params: { venue_id: venueId } }),
   updateSettings: (fd) => api.put('/manager/settings', fd),
   getAudit: (venueId) => api.get('/manager/audit', { params: { venue_id: venueId } }),
+  getFunnelDetail: (venueId, stage) => api.get('/manager/funnel-detail', { params: { venue_id: venueId, stage } }),
+  getTablesByServer: (venueId) => api.get('/manager/tables-by-server', { params: { venue_id: venueId } }),
 };
 
 // Owner
