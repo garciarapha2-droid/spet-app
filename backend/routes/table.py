@@ -112,6 +112,7 @@ async def close_table(
     user: dict = Depends(require_auth),
     table_id: str = Form(...),
     payment_method: str = Form("card"),
+    payment_location: str = Form("pay_here"),
 ):
     pool = get_postgres_pool()
     tid = uuid.UUID(table_id)
@@ -127,11 +128,17 @@ async def close_table(
             raise HTTPException(400, "Table has no active session")
 
         sid = table["current_session_id"]
-        session = await conn.fetchrow("SELECT total FROM tap_sessions WHERE id = $1", sid)
+        session = await conn.fetchrow("SELECT total, meta FROM tap_sessions WHERE id = $1", sid)
+
+        # Update meta with payment info
+        meta = _parse_meta(session["meta"])
+        meta["payment_location"] = payment_location
+        meta["tip_amount"] = 0
+        meta["tip_recorded"] = False
 
         await conn.execute(
-            "UPDATE tap_sessions SET status = 'closed', closed_at = $1, closed_by_user_id = $2 WHERE id = $3",
-            now, staff_id, sid,
+            "UPDATE tap_sessions SET status = 'closed', closed_at = $1, closed_by_user_id = $2, meta = $3::jsonb WHERE id = $4",
+            now, staff_id, json_mod.dumps(meta), sid,
         )
         await conn.execute(
             """INSERT INTO tap_payments (venue_id, tap_session_id, amount, method, paid_by_user_id, paid_at)
@@ -146,9 +153,12 @@ async def close_table(
     return {
         "table_id": str(tid),
         "table_number": table["table_number"],
+        "session_id": str(sid),
         "status": "available",
         "total": float(session["total"]),
         "payment_method": payment_method,
+        "payment_location": payment_location,
+        "tip_pending": payment_location == "pay_here",
     }
 
 
