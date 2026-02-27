@@ -52,8 +52,11 @@ export const pulseAPI = {
   guestIntake: (formData) => api.post('/pulse/guest/intake', formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
   dedupeSearch: (formData) => api.post('/pulse/guest/dedupe', formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
   getGuest: (guestId, venueId) => api.get(`/pulse/guest/${guestId}`, { params: { venue_id: venueId } }),
+  getGuestHistory: (guestId, venueId) => api.get(`/pulse/guest/${guestId}/history`, { params: { venue_id: venueId } }),
   recordDecision: (formData) => api.post('/pulse/entry/decision', formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
   getTodayEntries: (venueId) => api.get('/pulse/entries/today', { params: { venue_id: venueId } }),
+  getInsideGuests: (venueId) => api.get('/pulse/inside', { params: { venue_id: venueId } }),
+  registerExit: (formData) => api.post('/pulse/exit', formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
 };
 
 // TAP APIs
