@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { PulseHeader } from '../../components/PulseHeader';
 import { pulseAPI } from '../../services/api';
 import { toast } from 'sonner';
-import { LogOut, User, Search, Clock, ArrowDownRight, ArrowUpRight } from 'lucide-react';
+import { LogOut, User, Search, Clock, ArrowDownRight, ArrowUpRight, AlertTriangle, Ban, X } from 'lucide-react';
 import { Input } from '../../components/ui/input';
 import { Button } from '../../components/ui/button';
 
@@ -13,6 +13,7 @@ export const PulseExitPage = () => {
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
   const [todayExits, setTodayExits] = useState([]);
+  const [exitModal, setExitModal] = useState(null); // { type: 'open_tab'|'blocked', guest, data }
 
   const loadData = useCallback(async () => {
     try {
@@ -31,14 +32,23 @@ export const PulseExitPage = () => {
   useEffect(() => { loadData(); }, [loadData]);
 
   const handleExit = async (guestId, guestName) => {
-    // Check for open tabs first
+    // Check for blocked wristband
     try {
-      const tabRes = await pulseAPI.getTabStatus(guestId, VENUE_ID());
-      if (tabRes.data.has_open_tabs) {
-        toast.error(`${guestName} has open tab: R$${tabRes.data.total_owed.toFixed(2)}. Must pay at cashier before exit.`, { duration: 6000 });
+      const guestRes = await pulseAPI.getGuest(guestId, VENUE_ID());
+      if (guestRes.data.wristband_blocked) {
+        setExitModal({ type: 'blocked', guest: { guestId, guestName } });
         return;
       }
     } catch {}
+    // Check for open tabs
+    try {
+      const tabRes = await pulseAPI.getTabStatus(guestId, VENUE_ID());
+      if (tabRes.data.has_open_tabs) {
+        setExitModal({ type: 'open_tab', guest: { guestId, guestName }, data: tabRes.data });
+        return;
+      }
+    } catch {}
+    // All clear — register exit
     try {
       const fd = new FormData();
       fd.append('guest_id', guestId);
