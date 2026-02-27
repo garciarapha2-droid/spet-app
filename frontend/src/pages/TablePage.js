@@ -94,6 +94,8 @@ export const TablePage = () => {
   const [barmen, setBarmen] = useState([]);
   const fileInputRef = useRef(null);
   const cameraInputRef = useRef(null);
+  const [pendingAlcoholItem, setPendingAlcoholItem] = useState(null);
+  const [showIdModal, setShowIdModal] = useState(false);
 
   const loadBarmen = useCallback(async () => {
     try { const res = await staffAPI.getBarmen(VENUE_ID()); setBarmen(res.data.barmen || []); } catch {}
