@@ -227,6 +227,7 @@ async def get_session(session_id: str, user: dict = Depends(require_auth)):
         "id": str(session["id"]),
         "venue_id": str(session["venue_id"]),
         "guest_name": meta.get("guest_name", "Guest"),
+        "tab_number": meta.get("tab_number"),
         "status": session["status"],
         "session_type": session["session_type"],
         "total": float(session["total"]),
