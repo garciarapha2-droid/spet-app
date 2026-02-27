@@ -141,7 +141,7 @@ function App() {
                   </ProtectedRoute>
                 }
               />
-              <Route path="/" element={<Navigate to="/login" replace />} />
+              <Route path="/" element={<Navigate to="/venue/home" replace />} />
             </Routes>
             <Toaster />
           </div>
