@@ -105,3 +105,8 @@ export const ceoAPI = {
   getDashboard: () => api.get('/ceo/dashboard'),
   getCompanies: () => api.get('/ceo/companies')
 };
+
+// Venue APIs
+export const venueAPI = {
+  getHome: () => api.get('/venue/home'),
+};
