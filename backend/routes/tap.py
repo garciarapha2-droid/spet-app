@@ -34,7 +34,7 @@ async def get_tap_config(venue_id: str, user: dict = Depends(require_auth)):
     return {
         "venue_id": venue_id,
         "bar_mode": bar_mode,
-        "currency": "BRL",
+        "currency": "USD",
         "allow_tabs": True,
         "require_nfc": bar_mode == "event",
     }
