@@ -211,14 +211,15 @@ export const KitchenPage = () => {
         const deadline = started + t.estimated_minutes * 60000;
         return now > deadline;
       });
-      if (delayed.length > 0 && !delayedPopup) {
-        setDelayedPopup(delayed[0]);
+      const unDismissed = delayed.filter(t => !dismissedIds.has(t.id));
+      if (unDismissed.length > 0 && !delayedPopup) {
+        setDelayedPopup(unDismissed[0]);
       }
     };
     const iv = setInterval(checkDelayed, 5000);
     checkDelayed();
     return () => clearInterval(iv);
-  }, [tickets, delayedPopup]);
+  }, [tickets, delayedPopup, dismissedIds]);
 
   const handleStatusChange = async (ticketId, newStatus) => {
     try {
