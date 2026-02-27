@@ -60,6 +60,7 @@ async def open_table(
     table_id: str = Form(...),
     guest_name: str = Form("Guest"),
     covers: int = Form(1),
+    server_name: str = Form(None),
 ):
     pool = get_postgres_pool()
     vid = uuid.UUID(venue_id)
@@ -76,7 +77,10 @@ async def open_table(
         if table["status"] == "occupied":
             raise HTTPException(400, "Table already occupied")
 
-        meta = json_mod.dumps({"guest_name": guest_name, "covers": covers})
+        meta_dict = {"guest_name": guest_name, "covers": covers}
+        if server_name:
+            meta_dict["server_name"] = server_name
+        meta = json_mod.dumps(meta_dict)
         session = await conn.fetchrow(
             """INSERT INTO tap_sessions
                (venue_id, table_id, session_type, opened_by_user_id, status, meta)
