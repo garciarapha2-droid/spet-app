@@ -624,3 +624,117 @@ async def verify_id(
         "id_verified_at": now.isoformat(),
         "verified_by": str(staff_id),
     }
+
+
+# ─── Record Tip (post-payment, manual entry by server) ────────────
+@router.post("/session/{session_id}/record-tip")
+async def record_tip(
+    session_id: str,
+    user: dict = Depends(require_auth),
+    tip_amount: float = Form(None),
+    tip_percent: float = Form(None),
+):
+    """Record tip from receipt. Server enters $ amount or %. System distributes proportionally."""
+    pool = get_postgres_pool()
+    db = get_mongo_db()
+    sid = uuid.UUID(session_id)
+    staff_id = uuid.UUID(user["sub"])
+    now = datetime.now(timezone.utc)
+
+    async with pool.acquire() as conn:
+        session = await conn.fetchrow(
+            "SELECT id, venue_id, total, status, meta FROM tap_sessions WHERE id = $1", sid
+        )
+        if not session:
+            raise HTTPException(404, "Session not found")
+        if session["status"] != "closed":
+            raise HTTPException(400, "Session must be closed before recording tip")
+
+        total = float(session["total"])
+        meta = _parse_meta(session["meta"])
+
+        # Calculate tip amount
+        if tip_amount is not None and tip_amount > 0:
+            final_tip = round(tip_amount, 2)
+        elif tip_percent is not None and tip_percent > 0:
+            final_tip = round(total * tip_percent / 100, 2)
+        else:
+            raise HTTPException(400, "Provide tip_amount or tip_percent")
+
+        # Get items by server (created_by_user_id) to distribute proportionally
+        items = await conn.fetch(
+            """SELECT created_by_user_id, SUM(line_total) as sold
+               FROM tap_items WHERE tap_session_id = $1 AND voided_at IS NULL
+               GROUP BY created_by_user_id""",
+            sid,
+        )
+
+        total_sold = sum(float(it["sold"]) for it in items)
+        tip_distribution = []
+
+        for it in items:
+            srv_id = it["created_by_user_id"]
+            sold = float(it["sold"])
+            proportion = sold / total_sold if total_sold > 0 else 0
+            srv_tip = round(final_tip * proportion, 2)
+            tip_distribution.append({
+                "staff_id": str(srv_id),
+                "sold": sold,
+                "proportion": round(proportion, 4),
+                "tip": srv_tip,
+            })
+
+        # Store tip in meta
+        meta["tip_amount"] = final_tip
+        meta["tip_percent"] = round(final_tip / total * 100, 1) if total > 0 else 0
+        meta["tip_recorded"] = True
+        meta["tip_recorded_at"] = now.isoformat()
+        meta["tip_recorded_by"] = str(staff_id)
+        meta["tip_distribution"] = tip_distribution
+
+        await conn.execute(
+            "UPDATE tap_sessions SET meta = $1::jsonb WHERE id = $2",
+            json_mod.dumps(meta), sid,
+        )
+
+    return {
+        "session_id": str(sid),
+        "total": total,
+        "tip_amount": final_tip,
+        "tip_percent": meta["tip_percent"],
+        "distribution": tip_distribution,
+        "recorded_at": now.isoformat(),
+    }
+
+
+# ─── Get closed sessions (for tip recording) ──────────────────────
+@router.get("/sessions/closed")
+async def get_closed_sessions(venue_id: str, user: dict = Depends(require_auth)):
+    """List recently closed sessions that may need tip recording."""
+    pool = get_postgres_pool()
+    vid = uuid.UUID(venue_id)
+    today = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+
+    async with pool.acquire() as conn:
+        rows = await conn.fetch(
+            """SELECT id, total, meta, closed_at
+               FROM tap_sessions
+               WHERE venue_id = $1 AND status = 'closed' AND closed_at >= $2
+               ORDER BY closed_at DESC""",
+            vid, today,
+        )
+
+    sessions = []
+    for r in rows:
+        meta = _parse_meta(r["meta"])
+        sessions.append({
+            "session_id": str(r["id"]),
+            "guest_name": meta.get("guest_name", "Guest"),
+            "tab_number": meta.get("tab_number"),
+            "total": float(r["total"]),
+            "tip_recorded": meta.get("tip_recorded", False),
+            "tip_amount": meta.get("tip_amount", 0),
+            "payment_location": meta.get("payment_location", "unknown"),
+            "closed_at": r["closed_at"].isoformat() if r["closed_at"] else None,
+        })
+    return {"sessions": sessions, "total": len(sessions)}
