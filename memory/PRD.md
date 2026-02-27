@@ -44,6 +44,15 @@ SPETAP is a multi-tenant SaaS platform for venue operations (clubs, restaurants,
 - JWT-based authentication via PostgreSQL
 - Tailwind CSS design system with token-based themes
 
+### Venue Home - COMPLETE (2026-02-27)
+- Login always redirects to `/venue/home`
+- Shows active venue name + selector (if multiple venues)
+- 7 module cards: Pulse, TAP, Table, Kitchen (KDS), Manager, Owner, CEO
+- Cards respect entitlements + role (locked state with modal for no-access)
+- All back/logout buttons across modules navigate to `/venue/home`
+- Light/Dark theme toggle
+- Backend: `/api/venue/home` endpoint with role-based module visibility
+
 ### Auth Module - COMPLETE
 - Login/Signup via PostgreSQL
 - Super admin user (teste@teste.com / 12345)
@@ -131,4 +140,5 @@ SPETAP is a multi-tenant SaaS platform for venue operations (clubs, restaurants,
 - Venue ID: 40a24e04-75b6-435d-bfff-ab0d469ce543
 
 ## Test Results
-- Latest: iteration_5.json — 23/23 backend tests passed, all frontend flows verified (2026-02-27)
+- iteration_5: 23/23 backend + all frontend (Table, KDS, TAP, Pulse regression) — 2026-02-27
+- iteration_6: 10/10 backend + all frontend (Venue Home, navigation, redirects) — 2026-02-27
