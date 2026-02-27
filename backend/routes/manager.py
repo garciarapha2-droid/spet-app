@@ -596,3 +596,130 @@ async def get_audit_trail(venue_id: str, user: dict = Depends(require_auth)):
         "timestamp": r["timestamp"].isoformat() if r["timestamp"] else None,
         "user": r["email"],
     } for r in rows]}
+
+
+# ─── GUEST FUNNEL DRILL-DOWN ──────────────────────────────────────
+@router.get("/funnel-detail")
+async def get_funnel_detail(venue_id: str, stage: str, user: dict = Depends(require_auth)):
+    """Drill-down for guest funnel: entries, allowed, tabs_open, tabs_closed."""
+    pool = get_postgres_pool()
+    db = get_mongo_db()
+    vid = _vid(venue_id)
+    today = _today_start()
+
+    results = []
+
+    async with pool.acquire() as conn:
+        if stage == "entries":
+            rows = await conn.fetch(
+                """SELECT guest_id, decision, entry_type, created_at
+                   FROM entry_events WHERE venue_id=$1 AND created_at>=$2
+                   ORDER BY created_at DESC""", vid, today)
+            for r in rows:
+                guest = await db.venue_guests.find_one({"id": str(r["guest_id"])}, {"_id": 0, "name": 1})
+                results.append({
+                    "guest_id": str(r["guest_id"]),
+                    "name": guest["name"] if guest else "Unknown",
+                    "decision": r["decision"],
+                    "entry_type": r["entry_type"],
+                    "time": r["created_at"].isoformat(),
+                })
+
+        elif stage == "allowed":
+            rows = await conn.fetch(
+                """SELECT guest_id, entry_type, created_at
+                   FROM entry_events WHERE venue_id=$1 AND created_at>=$2 AND decision='allowed'
+                   ORDER BY created_at DESC""", vid, today)
+            for r in rows:
+                guest = await db.venue_guests.find_one({"id": str(r["guest_id"])}, {"_id": 0, "name": 1})
+                results.append({
+                    "guest_id": str(r["guest_id"]),
+                    "name": guest["name"] if guest else "Unknown",
+                    "entry_type": r["entry_type"],
+                    "time": r["created_at"].isoformat(),
+                })
+
+        elif stage == "tabs_open":
+            rows = await conn.fetch(
+                """SELECT ts.id, ts.guest_id, ts.total, ts.meta, ts.opened_at
+                   FROM tap_sessions ts WHERE ts.venue_id=$1 AND ts.status='open'
+                   ORDER BY ts.opened_at DESC""", vid)
+            for r in rows:
+                meta = r["meta"] if isinstance(r["meta"], dict) else json_mod.loads(r["meta"]) if r["meta"] else {}
+                guest_name = meta.get("guest_name", "Guest")
+                if r["guest_id"]:
+                    guest = await db.venue_guests.find_one({"id": str(r["guest_id"])}, {"_id": 0, "name": 1})
+                    if guest:
+                        guest_name = guest["name"]
+                results.append({
+                    "guest_id": str(r["guest_id"]) if r["guest_id"] else None,
+                    "name": guest_name,
+                    "tab_number": meta.get("tab_number"),
+                    "server_name": meta.get("server_name"),
+                    "total": float(r["total"]),
+                    "opened_at": r["opened_at"].isoformat() if r["opened_at"] else None,
+                })
+
+        elif stage == "tabs_closed":
+            rows = await conn.fetch(
+                """SELECT ts.id, ts.guest_id, ts.total, ts.meta, ts.closed_at
+                   FROM tap_sessions ts WHERE ts.venue_id=$1 AND ts.status='closed' AND ts.closed_at>=$2
+                   ORDER BY ts.closed_at DESC""", vid, today)
+            for r in rows:
+                meta = r["meta"] if isinstance(r["meta"], dict) else json_mod.loads(r["meta"]) if r["meta"] else {}
+                guest_name = meta.get("guest_name", "Guest")
+                results.append({
+                    "guest_id": str(r["guest_id"]) if r["guest_id"] else None,
+                    "name": guest_name,
+                    "tab_number": meta.get("tab_number"),
+                    "total": float(r["total"]),
+                    "closed_at": r["closed_at"].isoformat() if r["closed_at"] else None,
+                })
+
+    return {"stage": stage, "results": results, "count": len(results)}
+
+
+# ─── TABLES BY SERVER ─────────────────────────────────────────────
+@router.get("/tables-by-server")
+async def get_tables_by_server(venue_id: str, user: dict = Depends(require_auth)):
+    """Get occupied tables grouped by server."""
+    pool = get_postgres_pool()
+    vid = _vid(venue_id)
+
+    async with pool.acquire() as conn:
+        rows = await conn.fetch(
+            """SELECT t.id as table_id, t.table_number, t.zone, t.status,
+                      s.id as session_id, s.total, s.meta, s.opened_at
+               FROM venue_tables t
+               LEFT JOIN tap_sessions s ON s.id = t.current_session_id AND s.status = 'open'
+               WHERE t.venue_id = $1 AND t.status = 'occupied'
+               ORDER BY t.table_number::int""", vid)
+
+    by_server = {}
+    unassigned = []
+    for r in rows:
+        meta = r["meta"] if isinstance(r["meta"], dict) else json_mod.loads(r["meta"]) if r["meta"] else {}
+        table_info = {
+            "table_id": str(r["table_id"]),
+            "table_number": r["table_number"],
+            "zone": r["zone"],
+            "guest_name": meta.get("guest_name", "Guest"),
+            "tab_number": meta.get("tab_number"),
+            "total": float(r["total"]) if r["total"] else 0,
+            "opened_at": r["opened_at"].isoformat() if r["opened_at"] else None,
+        }
+        server = meta.get("server_name")
+        if server:
+            by_server.setdefault(server, []).append(table_info)
+        else:
+            unassigned.append(table_info)
+
+    servers = [{"server_name": name, "tables": tables, "table_count": len(tables),
+                "total_revenue": sum(t["total"] for t in tables)}
+               for name, tables in by_server.items()]
+
+    return {
+        "servers": servers,
+        "unassigned": unassigned,
+        "total_tables": len(rows),
+    }
