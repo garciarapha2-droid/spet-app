@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { PulseHeader } from '../../components/PulseHeader';
 import { GuestIntakeForm } from '../../components/pulse/GuestIntakeForm';
 import { DedupeMatches } from '../../components/pulse/DedupeMatches';
@@ -10,7 +11,7 @@ import { toast } from 'sonner';
 import { Users, Activity, Zap, UserPlus, ArrowLeft, ChevronRight, Clock } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 
-const VENUE_ID = '40a24e04-75b6-435d-bfff-ab0d469ce543';
+const VENUE_ID = () => localStorage.getItem('active_venue_id') || '40a24e04-75b6-435d-bfff-ab0d469ce543';
 
 export const PulseEntryPage = () => {
   const [venue, setVenue] = useState('demo-club');
