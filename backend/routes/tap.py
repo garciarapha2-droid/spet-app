@@ -109,6 +109,9 @@ async def open_tab(
     vid = uuid.UUID(venue_id)
     staff_id = uuid.UUID(user["sub"])
 
+    import json as json_mod
+    meta_json = json_mod.dumps({"guest_name": guest_name})
+
     async with pool.acquire() as conn:
         row = await conn.fetchrow(
             """INSERT INTO tap_sessions
@@ -122,7 +125,7 @@ async def open_tab(
             uuid.UUID(table_id) if table_id else None,
             session_type,
             staff_id,
-            f'{{"guest_name": "{guest_name}"}}',
+            meta_json,
         )
 
     return {
