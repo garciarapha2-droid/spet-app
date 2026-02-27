@@ -451,8 +451,6 @@ export const PulseEntryPage = () => {
                   })}
                 </div>
               )}
-                </div>
-              )}
             </div>
           </div>
 
