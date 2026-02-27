@@ -6,9 +6,9 @@ import { Users, Activity, Zap, UserPlus } from 'lucide-react';
 export const PulseEntryPage = () => {
   const [venue, setVenue] = useState('demo-club');
   const [scanInput, setScanInput] = useState('');
-  const [guestsInside, setGuestsInside] = useState(0);
-  const [totalVisits, setTotalVisits] = useState(0);
-  const [pointsIssued, setPointsIssued] = useState(0);
+  const [guestsInside] = useState(0);
+  const [totalVisits] = useState(0);
+  const [pointsIssued] = useState(0);
 
   const handleScanSubmit = (e) => {
     e.preventDefault();
@@ -26,49 +26,49 @@ export const PulseEntryPage = () => {
     <div className="min-h-screen bg-background">
       <PulseHeader venue={venue} onVenueChange={setVenue} />
 
-      {/* Full-width main content - Desktop-first, expansive */}
-      <main className="px-12 py-12">
-        {/* Page Title - Full width */}
-        <div className="mb-16">
-          <h2 className="text-4xl font-semibold mb-3 tracking-tight">Loyalty & Presence</h2>
-          <p className="text-lg text-muted-foreground">
+      {/* FULL WIDTH - No max-width constraints */}
+      <main className="w-full px-16 py-16">
+        {/* Page Title */}
+        <div className="mb-20">
+          <h2 className="text-5xl font-semibold mb-4 tracking-tight">Loyalty & Presence</h2>
+          <p className="text-xl text-muted-foreground">
             Manage guest entries, track presence, and award loyalty points
           </p>
         </div>
 
-        {/* KPI Cards - Full width grid, expansive */}
-        <div className="grid grid-cols-3 gap-12 mb-20">
-          <div className="space-y-4">
+        {/* KPI Cards - Full width, 3 columns */}
+        <div className="grid grid-cols-3 gap-16 mb-24">
+          <div className="space-y-5">
             <div className="flex items-center gap-3 text-sm font-medium text-muted-foreground uppercase tracking-wider">
-              <Users className="h-5 w-5 text-primary" />
+              <Users className="h-6 w-6 text-primary" />
               <span>Guests Inside</span>
             </div>
-            <div className="text-7xl font-semibold tracking-tight">{guestsInside}</div>
+            <div className="text-8xl font-semibold tracking-tight">{guestsInside}</div>
           </div>
 
-          <div className="space-y-4">
+          <div className="space-y-5">
             <div className="flex items-center gap-3 text-sm font-medium text-muted-foreground uppercase tracking-wider">
-              <Activity className="h-5 w-5 text-primary" />
+              <Activity className="h-6 w-6 text-primary" />
               <span>Total Visits</span>
             </div>
-            <div className="text-7xl font-semibold tracking-tight">{totalVisits}</div>
+            <div className="text-8xl font-semibold tracking-tight">{totalVisits}</div>
           </div>
 
-          <div className="space-y-4">
+          <div className="space-y-5">
             <div className="flex items-center gap-3 text-sm font-medium text-muted-foreground uppercase tracking-wider">
-              <Zap className="h-5 w-5 text-primary" />
+              <Zap className="h-6 w-6 text-primary" />
               <span>Points Issued</span>
             </div>
-            <div className="text-7xl font-semibold tracking-tight">{pointsIssued}</div>
+            <div className="text-8xl font-semibold tracking-tight">{pointsIssued}</div>
           </div>
         </div>
 
-        {/* Scan & Manual Entry - Horizontal distribution across full width */}
-        <div className="grid grid-cols-12 gap-8 mb-20">
-          {/* Scan NFC Tag - Takes 8 columns, dominant presence */}
+        {/* Scan & Manual Entry - 12 column grid, 8/4 split */}
+        <div className="grid grid-cols-12 gap-10 mb-24">
+          {/* Scan NFC - 8 columns */}
           <div className="col-span-8">
             <div className="mb-6">
-              <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+              <h3 className="text-base font-medium text-muted-foreground uppercase tracking-wider">
                 Scan NFC Tag
               </h3>
             </div>
@@ -77,40 +77,39 @@ export const PulseEntryPage = () => {
                 value={scanInput}
                 onChange={(e) => setScanInput(e.target.value)}
                 placeholder="Waiting for scan..."
-                className="h-28 text-3xl border-2 border-primary/30 focus:border-primary focus:ring-2 focus:ring-primary/20 rounded-xl"
+                className="h-32 text-4xl border-2 border-input focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/20 rounded-xl transition-all"
                 autoFocus
                 data-testid="nfc-scan-input"
               />
-              <p className="text-base text-muted-foreground mt-5">
+              <p className="text-base text-muted-foreground mt-6">
                 Place tag on reader or type UID manually and press Enter
               </p>
             </form>
           </div>
 
-          {/* Manual Entry - Takes 4 columns, balanced */}
+          {/* Manual Entry - 4 columns */}
           <div 
-            className="col-span-4 border-2 border-dashed border-border hover:border-primary/50 rounded-xl cursor-pointer transition-colors group"
+            className="col-span-4 border-2 border-dashed border-border hover:border-primary/50 rounded-xl cursor-pointer transition-all group"
             onClick={handleManualEntry}
           >
-            <div className="flex flex-col items-center justify-center h-full py-16 px-8">
-              <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mb-5 group-hover:bg-primary/20 transition-colors">
-                <UserPlus className="h-10 w-10 text-primary" />
+            <div className="flex flex-col items-center justify-center h-full py-20 px-10">
+              <div className="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center mb-6 group-hover:bg-primary/20 transition-colors">
+                <UserPlus className="h-12 w-12 text-primary" />
               </div>
-              <h3 className="text-xl font-semibold mb-2">Manual Entry</h3>
+              <h3 className="text-2xl font-semibold mb-3">Manual Entry</h3>
               <p className="text-base text-muted-foreground text-center">Without NFC tag</p>
             </div>
           </div>
         </div>
 
-        {/* Guests List - Full width, expansive table area */}
-        <div className="border-t border-border pt-16">
-          <div className="flex items-center justify-between mb-10">
-            <h3 className="text-3xl font-semibold">Guests Hoje</h3>
-            <p className="text-muted-foreground">0 guests</p>
+        {/* Guests List - Full width */}
+        <div className="border-t border-border pt-20">
+          <div className="flex items-center justify-between mb-12">
+            <h3 className="text-4xl font-semibold">Guests Hoje</h3>
+            <p className="text-xl text-muted-foreground">0 guests</p>
           </div>
           
-          {/* Empty state - centered but within full-width context */}
-          <div className="flex items-center justify-center py-32 text-muted-foreground text-lg">
+          <div className="flex items-center justify-center py-40 text-muted-foreground text-xl">
             No guests registered yet
           </div>
         </div>
