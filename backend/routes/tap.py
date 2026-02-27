@@ -566,3 +566,51 @@ async def void_item(
         new_total = await conn.fetchval("SELECT total FROM tap_sessions WHERE id = $1", sid)
 
     return {"item_id": str(iid), "voided": True, "item_name": item["item_name"], "session_total": float(new_total)}
+
+
+# ─── ID Verification (Table compliance — 21+ for alcohol) ─────────
+@router.post("/session/{session_id}/verify-id")
+async def verify_id(
+    session_id: str,
+    user: dict = Depends(require_auth),
+):
+    """Mark a session as ID-verified for alcohol service (Table only)."""
+    pool = get_postgres_pool()
+    sid = uuid.UUID(session_id)
+    staff_id = uuid.UUID(user["sub"])
+    now = datetime.now(timezone.utc)
+
+    async with pool.acquire() as conn:
+        session = await conn.fetchrow(
+            "SELECT id, venue_id, meta, status FROM tap_sessions WHERE id = $1", sid
+        )
+        if not session:
+            raise HTTPException(404, "Session not found")
+        if session["status"] != "open":
+            raise HTTPException(400, "Session is not open")
+
+        meta = _parse_meta(session["meta"])
+        meta["id_verified"] = True
+        meta["id_verified_at"] = now.isoformat()
+        meta["id_verified_by"] = str(staff_id)
+
+        await conn.execute(
+            "UPDATE tap_sessions SET meta = $1::jsonb WHERE id = $2",
+            json_mod.dumps(meta), sid,
+        )
+
+        # Audit trail
+        await conn.execute(
+            """INSERT INTO audit_events (event_type, user_id, venue_id, entity_type, entity_id, metadata, timestamp)
+               VALUES ('id_verification_event', $1, $2, 'tap_session', $3, $4::jsonb, $5)""",
+            staff_id, session["venue_id"], sid,
+            json_mod.dumps({"session_id": str(sid), "staff_id": str(staff_id)}),
+            now,
+        )
+
+    return {
+        "session_id": str(sid),
+        "id_verified": True,
+        "id_verified_at": now.isoformat(),
+        "verified_by": str(staff_id),
+    }
