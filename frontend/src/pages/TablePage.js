@@ -267,8 +267,8 @@ export const TablePage = () => {
                       }`} data-testid={`table-${t.table_number}`}>
                       <span className="text-lg font-bold">#{t.table_number}</span>
                       <p className="text-xs text-muted-foreground"><Users className="h-3 w-3 inline" /> {t.capacity}</p>
-                      {t.status === 'occupied' && t.guest_name && (
-                        <p className="text-xs text-primary mt-1 truncate">{t.guest_name}</p>
+                      {t.status === 'occupied' && t.session_guest && (
+                        <p className="text-xs text-primary mt-1 truncate">{t.session_guest}</p>
                       )}
                     </button>
                   ))}

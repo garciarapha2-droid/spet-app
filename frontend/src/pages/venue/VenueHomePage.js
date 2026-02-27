@@ -128,9 +128,11 @@ export const VenueSelectPage = () => {
       {/* Header */}
       <header className="h-16 border-b border-border bg-card px-8 flex items-center justify-between">
         <h1 className="text-xl font-bold tracking-tight">SPETAP</h1>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-4">
           <span className="text-sm text-muted-foreground">{data?.user_email}</span>
+          <div className="h-5 w-px bg-border" />
           <ThemeToggle />
+          <div className="h-5 w-px bg-border" />
           <Button variant="ghost" size="icon" onClick={() => { logout(); navigate('/login'); }} data-testid="logout-btn">
             <LogOut className="h-4 w-4" />
           </Button>
