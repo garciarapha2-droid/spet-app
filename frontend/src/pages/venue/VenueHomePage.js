@@ -1,16 +1,501 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { venueAPI } from '../../services/api';
+import { venueAPI, pulseAPI, staffAPI } from '../../services/api';
 import { ThemeToggle } from '../../components/ThemeToggle';
 import { Button } from '../../components/ui/button';
+import { Input } from '../../components/ui/input';
 import { toast } from 'sonner';
 import {
   ChevronLeft, ChevronRight, Plus, Calendar as CalendarIcon,
   MapPin, LogOut, Sparkles, Users, CreditCard, LayoutGrid,
-  UtensilsCrossed, BarChart3, Building2, Crown, ChevronDown, Menu
+  UtensilsCrossed, BarChart3, Building2, Crown, ChevronDown, Menu,
+  X, Search, Trash2, UserPlus, Briefcase, DollarSign, Clock, Power
 } from 'lucide-react';
 
+const VENUE_ID = () => localStorage.getItem('active_venue_id') || '';
+
+/* ─── Event Detail Panel ────────────────────────────────────────── */
+function EventDetailPanel({ event, venueId, onClose, onEventEnded }) {
+  const [tab, setTab] = useState('guests');
+  const [guests, setGuests] = useState([]);
+  const [staff, setStaff] = useState([]);
+  const [guestSearch, setGuestSearch] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [searching, setSearching] = useState(false);
+  const [barmen, setBarmen] = useState([]);
+  const [showStaffAdd, setShowStaffAdd] = useState(false);
+  const [newStaff, setNewStaff] = useState({ staff_id: '', role: 'server', hourly_rate: '' });
+  const [ending, setEnding] = useState(false);
+
+  const loadGuests = useCallback(async () => {
+    try {
+      const res = await venueAPI.getEventGuests(venueId, event.id);
+      setGuests(res.data.guests || []);
+    } catch {}
+  }, [venueId, event.id]);
+
+  const loadStaff = useCallback(async () => {
+    try {
+      const res = await venueAPI.getEventStaff(venueId, event.id);
+      setStaff(res.data.staff || []);
+    } catch {}
+  }, [venueId, event.id]);
+
+  const loadBarmen = useCallback(async () => {
+    try {
+      const res = await staffAPI.getBarmen(venueId);
+      setBarmen(res.data.barmen || []);
+    } catch {}
+  }, [venueId]);
+
+  useEffect(() => { loadGuests(); loadStaff(); loadBarmen(); }, [loadGuests, loadStaff, loadBarmen]);
+
+  // Debounced guest search
+  useEffect(() => {
+    if (!guestSearch.trim()) { setSearchResults([]); return; }
+    const timeout = setTimeout(async () => {
+      setSearching(true);
+      try {
+        const res = await pulseAPI.searchGuests(venueId, guestSearch.trim());
+        // Filter out guests already in event
+        const existingIds = new Set(guests.map(g => g.guest_id));
+        setSearchResults((res.data.guests || []).filter(g => !existingIds.has(g.id)));
+      } catch { setSearchResults([]); }
+      setSearching(false);
+    }, 300);
+    return () => clearTimeout(timeout);
+  }, [guestSearch, venueId, guests]);
+
+  const addGuest = async (guestId) => {
+    try {
+      const fd = new FormData();
+      fd.append('guest_id', guestId);
+      await venueAPI.addGuestToEvent(venueId, event.id, fd);
+      await loadGuests();
+      setGuestSearch('');
+      setSearchResults([]);
+      toast.success('Guest added');
+    } catch (e) {
+      toast.error(e.response?.data?.detail || 'Failed');
+    }
+  };
+
+  const removeGuest = async (guestId) => {
+    try {
+      await venueAPI.removeGuestFromEvent(venueId, event.id, guestId);
+      await loadGuests();
+      toast.success('Guest removed');
+    } catch { toast.error('Failed'); }
+  };
+
+  const assignStaff = async () => {
+    if (!newStaff.staff_id || !newStaff.hourly_rate) { toast.error('Select staff and set rate'); return; }
+    try {
+      const fd = new FormData();
+      fd.append('staff_id', newStaff.staff_id);
+      fd.append('role', newStaff.role);
+      fd.append('hourly_rate', parseFloat(newStaff.hourly_rate).toString());
+      await venueAPI.assignStaffToEvent(venueId, event.id, fd);
+      await loadStaff();
+      setNewStaff({ staff_id: '', role: 'server', hourly_rate: '' });
+      setShowStaffAdd(false);
+      toast.success('Staff assigned');
+    } catch (e) {
+      toast.error(e.response?.data?.detail || 'Failed');
+    }
+  };
+
+  const removeStaffMember = async (staffId) => {
+    try {
+      await venueAPI.removeStaffFromEvent(venueId, event.id, staffId);
+      await loadStaff();
+      toast.success('Staff removed');
+    } catch { toast.error('Failed'); }
+  };
+
+  const endEvent = async () => {
+    if (!window.confirm('End this event? Guest presence will be cleared (guest data is preserved in Pulse).')) return;
+    setEnding(true);
+    try {
+      const res = await venueAPI.endEvent(venueId, event.id);
+      toast.success(`Event ended. ${res.data.guests_cleared} guests cleared.`);
+      onEventEnded?.();
+    } catch { toast.error('Failed'); }
+    setEnding(false);
+  };
+
+  const isEnded = event.is_active === false;
+  const availableBarmen = barmen.filter(b => !staff.some(s => s.staff_id === b.id));
+
+  return (
+    <div className="bg-card border border-border rounded-xl overflow-hidden" data-testid="event-detail-panel">
+      {/* Header */}
+      <div className="px-5 py-3 border-b border-border flex items-center justify-between bg-muted/30">
+        <div>
+          <h3 className="font-bold text-base" data-testid="event-detail-name">{event.name}</h3>
+          <div className="flex items-center gap-3 text-xs text-muted-foreground">
+            {event.cover_price > 0 && <span>Cover: ${event.cover_price}</span>}
+            <span className={`px-2 py-0.5 rounded-full font-medium ${isEnded ? 'bg-red-500/10 text-red-500' : 'bg-green-500/10 text-green-500'}`}>
+              {isEnded ? 'Ended' : 'Active'}
+            </span>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          {!isEnded && (
+            <Button size="sm" variant="outline" onClick={endEvent} disabled={ending} className="text-red-500 border-red-500/30 hover:bg-red-500/5" data-testid="end-event-btn">
+              <Power className="h-3.5 w-3.5 mr-1" /> End Event
+            </Button>
+          )}
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-muted"><X className="h-4 w-4" /></button>
+        </div>
+      </div>
+
+      {/* Tabs */}
+      <div className="flex border-b border-border">
+        {[
+          { key: 'guests', label: 'Guests', icon: Users, count: guests.length },
+          { key: 'staff', label: 'Staff', icon: Briefcase, count: staff.length },
+        ].map(t => (
+          <button key={t.key} onClick={() => setTab(t.key)}
+            className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-medium transition-colors ${
+              tab === t.key ? 'border-b-2 border-primary text-primary' : 'text-muted-foreground hover:text-foreground'
+            }`}
+            data-testid={`event-tab-${t.key}`}>
+            <t.icon className="h-4 w-4" /> {t.label}
+            <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded-full">{t.count}</span>
+          </button>
+        ))}
+      </div>
+
+      {/* Content */}
+      <div className="p-4 max-h-[400px] overflow-y-auto">
+        {/* === GUESTS TAB === */}
+        {tab === 'guests' && (
+          <div>
+            {!isEnded && (
+              <div className="mb-3 relative">
+                <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  value={guestSearch}
+                  onChange={e => setGuestSearch(e.target.value)}
+                  placeholder="Search Pulse guests by name..."
+                  className="pl-9 h-9"
+                  data-testid="event-guest-search"
+                />
+                {/* Search Dropdown */}
+                {(searchResults.length > 0 || searching) && (
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-card border border-border rounded-lg shadow-lg z-20 max-h-48 overflow-y-auto">
+                    {searching && <p className="p-3 text-xs text-muted-foreground text-center">Searching...</p>}
+                    {searchResults.map(g => (
+                      <button key={g.id} onClick={() => addGuest(g.id)}
+                        className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-muted text-left transition-colors"
+                        data-testid={`add-guest-${g.id}`}>
+                        {g.photo ? (
+                          <img src={g.photo} alt="" className="w-8 h-8 rounded-full object-cover" />
+                        ) : (
+                          <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                            <Users className="h-4 w-4 text-primary" />
+                          </div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">{g.name}</p>
+                          <p className="text-[10px] text-muted-foreground">{g.visits || 0} visits | ${g.spend_total || 0} spent</p>
+                        </div>
+                        <UserPlus className="h-4 w-4 text-primary shrink-0" />
+                      </button>
+                    ))}
+                    {!searching && searchResults.length === 0 && guestSearch.trim() && (
+                      <p className="p-3 text-xs text-muted-foreground text-center">No guests found</p>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {guests.length === 0 ? (
+              <div className="text-center py-8">
+                <Users className="h-8 w-8 text-muted-foreground/30 mx-auto mb-2" />
+                <p className="text-sm text-muted-foreground">{isEnded ? 'Event ended — guest presence cleared' : 'No guests yet'}</p>
+                {!isEnded && <p className="text-xs text-muted-foreground/60 mt-1">Search and add guests from Pulse above</p>}
+              </div>
+            ) : (
+              <div className="space-y-1">
+                {guests.map(g => (
+                  <div key={g.guest_id} className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-muted/50 group" data-testid={`event-guest-${g.guest_id}`}>
+                    {g.photo ? (
+                      <img src={g.photo} alt="" className="w-9 h-9 rounded-full object-cover" />
+                    ) : (
+                      <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center">
+                        <Users className="h-4 w-4 text-primary" />
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{g.name}</p>
+                      <p className="text-[10px] text-muted-foreground">{g.visits || 0} visits | ${g.spend_total || 0} total spend</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {g.tags?.length > 0 && g.tags.map((tag, i) => (
+                        <span key={i} className="text-[10px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary">{tag}</span>
+                      ))}
+                      {!isEnded && (
+                        <button onClick={() => removeGuest(g.guest_id)}
+                          className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-red-500/10"
+                          data-testid={`remove-guest-${g.guest_id}`}>
+                          <Trash2 className="h-3.5 w-3.5 text-red-500" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* === STAFF TAB === */}
+        {tab === 'staff' && (
+          <div>
+            {!isEnded && (
+              <>
+                {!showStaffAdd ? (
+                  <Button size="sm" variant="outline" className="w-full mb-3" onClick={() => setShowStaffAdd(true)} data-testid="add-staff-btn">
+                    <Plus className="h-4 w-4 mr-1" /> Assign Staff
+                  </Button>
+                ) : (
+                  <div className="bg-muted/30 border border-border rounded-lg p-3 mb-3 space-y-2" data-testid="staff-assign-form">
+                    <select
+                      value={newStaff.staff_id}
+                      onChange={e => {
+                        const selected = barmen.find(b => b.id === e.target.value);
+                        setNewStaff(prev => ({
+                          ...prev,
+                          staff_id: e.target.value,
+                          hourly_rate: selected?.hourly_rate?.toString() || prev.hourly_rate,
+                          role: selected?.role || prev.role,
+                        }));
+                      }}
+                      className="w-full h-9 rounded-lg border border-input bg-background px-3 text-sm"
+                      data-testid="staff-select">
+                      <option value="">Select staff member...</option>
+                      {availableBarmen.map(b => (
+                        <option key={b.id} value={b.id}>{b.name} — {b.role || 'server'} (${b.hourly_rate || 0}/hr)</option>
+                      ))}
+                    </select>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="text-[10px] text-muted-foreground uppercase">Role</label>
+                        <Input value={newStaff.role} onChange={e => setNewStaff(p => ({ ...p, role: e.target.value }))}
+                          placeholder="server" className="h-8 text-sm" data-testid="staff-role-input" />
+                      </div>
+                      <div>
+                        <label className="text-[10px] text-muted-foreground uppercase">$/Hour</label>
+                        <Input type="number" step="0.5" value={newStaff.hourly_rate}
+                          onChange={e => setNewStaff(p => ({ ...p, hourly_rate: e.target.value }))}
+                          placeholder="15" className="h-8 text-sm" data-testid="staff-rate-input" />
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button size="sm" onClick={assignStaff} data-testid="confirm-staff-btn">Assign</Button>
+                      <Button size="sm" variant="ghost" onClick={() => setShowStaffAdd(false)}>Cancel</Button>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+
+            {staff.length === 0 ? (
+              <div className="text-center py-8">
+                <Briefcase className="h-8 w-8 text-muted-foreground/30 mx-auto mb-2" />
+                <p className="text-sm text-muted-foreground">No staff assigned</p>
+                {!isEnded && <p className="text-xs text-muted-foreground/60 mt-1">Assign team members above</p>}
+              </div>
+            ) : (
+              <div className="space-y-1">
+                {staff.map(s => (
+                  <div key={s.staff_id} className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-muted/50 group" data-testid={`event-staff-${s.staff_id}`}>
+                    <div className="w-9 h-9 rounded-full bg-orange-500/10 flex items-center justify-center">
+                      <Briefcase className="h-4 w-4 text-orange-500" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium">{s.name}</p>
+                      <p className="text-[10px] text-muted-foreground capitalize">{s.role}</p>
+                    </div>
+                    <div className="flex items-center gap-3 text-xs">
+                      <span className="font-medium text-orange-500">${s.hourly_rate}/hr</span>
+                      {!isEnded && (
+                        <button onClick={() => removeStaffMember(s.staff_id)}
+                          className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-red-500/10"
+                          data-testid={`remove-staff-${s.staff_id}`}>
+                          <Trash2 className="h-3.5 w-3.5 text-red-500" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+                <div className="mt-2 pt-2 border-t border-border/50 flex justify-between text-xs">
+                  <span className="text-muted-foreground">Total hourly cost:</span>
+                  <span className="font-bold text-orange-500">${staff.reduce((sum, s) => sum + (s.hourly_rate || 0), 0).toFixed(2)}/hr</span>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ─── Create Event Wizard ───────────────────────────────────────── */
+function CreateEventWizard({ venueId, date, barmen, onCreated, onCancel }) {
+  const [step, setStep] = useState(1);
+  const [eventInfo, setEventInfo] = useState({ name: '', cover_price: 0, cover_consumption_price: 0 });
+  const [staffList, setStaffList] = useState([]);
+  const [newStaff, setNewStaff] = useState({ staff_id: '', role: 'server', hourly_rate: '' });
+  const [creating, setCreating] = useState(false);
+
+  const availableBarmen = barmen.filter(b => !staffList.some(s => s.staff_id === b.id));
+
+  const addStaffToList = () => {
+    if (!newStaff.staff_id || !newStaff.hourly_rate) return;
+    const barman = barmen.find(b => b.id === newStaff.staff_id);
+    setStaffList(prev => [...prev, { ...newStaff, name: barman?.name || 'Unknown' }]);
+    setNewStaff({ staff_id: '', role: 'server', hourly_rate: '' });
+  };
+
+  const handleCreate = async () => {
+    if (!eventInfo.name.trim()) { toast.error('Event name required'); return; }
+    setCreating(true);
+    try {
+      const fd = new FormData();
+      fd.append('name', eventInfo.name);
+      fd.append('date', date);
+      fd.append('cover_price', eventInfo.cover_price.toString());
+      fd.append('cover_consumption_price', eventInfo.cover_consumption_price.toString());
+      const res = await venueAPI.createEvent(venueId, fd);
+      const eventId = res.data.id;
+
+      // Assign staff
+      for (const s of staffList) {
+        const sfd = new FormData();
+        sfd.append('staff_id', s.staff_id);
+        sfd.append('role', s.role);
+        sfd.append('hourly_rate', parseFloat(s.hourly_rate).toString());
+        await venueAPI.assignStaffToEvent(venueId, eventId, sfd);
+      }
+
+      toast.success('Event created!');
+      onCreated?.();
+    } catch { toast.error('Failed'); }
+    setCreating(false);
+  };
+
+  return (
+    <div className="bg-card border border-primary/20 rounded-xl p-5 mb-4" data-testid="create-event-wizard">
+      {/* Step indicators */}
+      <div className="flex items-center gap-2 mb-4">
+        <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${step >= 1 ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>1</div>
+        <div className="flex-1 h-0.5 bg-border"><div className={`h-full transition-all ${step >= 2 ? 'bg-primary w-full' : 'w-0'}`} /></div>
+        <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${step >= 2 ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>2</div>
+      </div>
+
+      {step === 1 && (
+        <div className="space-y-3" data-testid="wizard-step-1">
+          <h4 className="font-semibold text-sm">Event Info</h4>
+          <Input
+            value={eventInfo.name}
+            onChange={e => setEventInfo(p => ({ ...p, name: e.target.value }))}
+            placeholder="Event name (e.g. Friday Night)"
+            data-testid="event-name-input"
+          />
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs text-muted-foreground">Cover ($)</label>
+              <Input type="number" value={eventInfo.cover_price}
+                onChange={e => setEventInfo(p => ({ ...p, cover_price: parseFloat(e.target.value) || 0 }))} />
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground">Cover + Consum. ($)</label>
+              <Input type="number" value={eventInfo.cover_consumption_price}
+                onChange={e => setEventInfo(p => ({ ...p, cover_consumption_price: parseFloat(e.target.value) || 0 }))} />
+            </div>
+          </div>
+          <div className="flex gap-2 pt-1">
+            <Button size="sm" onClick={() => { if (!eventInfo.name.trim()) { toast.error('Event name required'); return; } setStep(2); }} data-testid="wizard-next-btn">
+              Next: Assign Staff
+            </Button>
+            <Button size="sm" variant="ghost" onClick={onCancel}>Cancel</Button>
+          </div>
+        </div>
+      )}
+
+      {step === 2 && (
+        <div className="space-y-3" data-testid="wizard-step-2">
+          <h4 className="font-semibold text-sm">Assign Staff <span className="text-xs font-normal text-muted-foreground">(optional)</span></h4>
+
+          {/* Add staff form */}
+          <div className="flex gap-2 items-end">
+            <div className="flex-1">
+              <select
+                value={newStaff.staff_id}
+                onChange={e => {
+                  const b = barmen.find(x => x.id === e.target.value);
+                  setNewStaff(prev => ({
+                    ...prev,
+                    staff_id: e.target.value,
+                    hourly_rate: b?.hourly_rate?.toString() || prev.hourly_rate,
+                    role: b?.role || prev.role,
+                  }));
+                }}
+                className="w-full h-9 rounded-lg border border-input bg-background px-3 text-sm"
+                data-testid="wizard-staff-select">
+                <option value="">Select staff...</option>
+                {availableBarmen.map(b => (
+                  <option key={b.id} value={b.id}>{b.name} (${b.hourly_rate || 0}/hr)</option>
+                ))}
+              </select>
+            </div>
+            <Input value={newStaff.role} onChange={e => setNewStaff(p => ({ ...p, role: e.target.value }))}
+              placeholder="role" className="w-24 h-9" />
+            <Input type="number" step="0.5" value={newStaff.hourly_rate}
+              onChange={e => setNewStaff(p => ({ ...p, hourly_rate: e.target.value }))}
+              placeholder="$/hr" className="w-20 h-9" />
+            <Button size="sm" variant="outline" onClick={addStaffToList} disabled={!newStaff.staff_id || !newStaff.hourly_rate}
+              data-testid="wizard-add-staff-btn">
+              <Plus className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+
+          {/* Staff list */}
+          {staffList.length > 0 && (
+            <div className="space-y-1 bg-muted/20 rounded-lg p-2">
+              {staffList.map((s, i) => (
+                <div key={i} className="flex items-center justify-between text-sm px-2 py-1.5 rounded hover:bg-muted/50">
+                  <span className="font-medium">{s.name}</span>
+                  <div className="flex items-center gap-3 text-xs">
+                    <span className="text-muted-foreground capitalize">{s.role}</span>
+                    <span className="text-orange-500 font-medium">${s.hourly_rate}/hr</span>
+                    <button onClick={() => setStaffList(prev => prev.filter((_, j) => j !== i))}><X className="h-3 w-3 text-red-500" /></button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div className="flex gap-2 pt-1">
+            <Button size="sm" variant="outline" onClick={() => setStep(1)}>Back</Button>
+            <Button size="sm" onClick={handleCreate} disabled={creating} data-testid="wizard-create-btn">
+              {creating ? 'Creating...' : `Create Event${staffList.length > 0 ? ` (${staffList.length} staff)` : ''}`}
+            </Button>
+            <Button size="sm" variant="ghost" onClick={onCancel}>Cancel</Button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ─── Main Page ─────────────────────────────────────────────────── */
 export const VenueSelectPage = () => {
   const navigate = useNavigate();
   const { logout, user } = useAuth();
@@ -21,39 +506,33 @@ export const VenueSelectPage = () => {
   const [events, setEvents] = useState([]);
   const [eventDates, setEventDates] = useState([]);
   const [showCreate, setShowCreate] = useState(false);
-  const [newEvent, setNewEvent] = useState({ name: '', cover_price: 0, cover_consumption_price: 0 });
   const [showModulesMenu, setShowModulesMenu] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState(null);
+  const [barmen, setBarmen] = useState([]);
 
   useEffect(() => {
     const load = async () => {
       try {
         const res = await venueAPI.getHome();
         setData(res.data);
-        if (res.data.venues?.length > 0) {
-          setSelectedVenue(res.data.venues[0]);
-        }
-      } catch (err) {
-        toast.error('Failed to load venues');
-      }
+        if (res.data.venues?.length > 0) setSelectedVenue(res.data.venues[0]);
+      } catch { toast.error('Failed to load venues'); }
       setLoading(false);
     };
     load();
   }, []);
 
-  // Load events for selected date
-  useEffect(() => {
+  const loadEvents = useCallback(async () => {
     if (!selectedVenue) return;
-    const loadEvents = async () => {
-      try {
-        const dateStr = selectedDate.toISOString().split('T')[0];
-        const res = await venueAPI.getEvents(selectedVenue.id, dateStr);
-        setEvents(res.data.events || []);
-      } catch {}
-    };
-    loadEvents();
+    try {
+      const dateStr = selectedDate.toISOString().split('T')[0];
+      const res = await venueAPI.getEvents(selectedVenue.id, dateStr);
+      setEvents(res.data.events || []);
+    } catch {}
   }, [selectedVenue, selectedDate]);
 
-  // Load event dates for calendar highlights
+  useEffect(() => { loadEvents(); }, [loadEvents]);
+
   useEffect(() => {
     if (!selectedVenue) return;
     const loadDates = async () => {
@@ -66,29 +545,15 @@ export const VenueSelectPage = () => {
     loadDates();
   }, [selectedVenue, selectedDate]);
 
-  const handleCreateEvent = async () => {
-    if (!newEvent.name.trim()) { toast.error('Event name required'); return; }
-    try {
-      const fd = new FormData();
-      fd.append('name', newEvent.name);
-      fd.append('date', selectedDate.toISOString().split('T')[0]);
-      fd.append('cover_price', newEvent.cover_price.toString());
-      fd.append('cover_consumption_price', newEvent.cover_consumption_price.toString());
-      await venueAPI.createEvent(selectedVenue.id, fd);
-      toast.success('Event created!');
-      setShowCreate(false);
-      setNewEvent({ name: '', cover_price: 0, cover_consumption_price: 0 });
-      // Reload events
-      const dateStr = selectedDate.toISOString().split('T')[0];
-      const res = await venueAPI.getEvents(selectedVenue.id, dateStr);
-      setEvents(res.data.events || []);
-    } catch (err) {
-      toast.error('Failed to create event');
-    }
-  };
+  useEffect(() => {
+    if (!selectedVenue) return;
+    const loadBarmenData = async () => {
+      try { const res = await staffAPI.getBarmen(selectedVenue.id); setBarmen(res.data.barmen || []); } catch {}
+    };
+    loadBarmenData();
+  }, [selectedVenue]);
 
   const handleEnter = () => {
-    // Store active venue in localStorage for other pages to use
     if (selectedVenue) {
       localStorage.setItem('active_venue_id', selectedVenue.id);
       localStorage.setItem('active_venue_name', selectedVenue.name);
@@ -114,7 +579,6 @@ export const VenueSelectPage = () => {
     navigate(MODULE_ROUTES[mod.key] || '/venue/home');
   };
 
-  // Calendar logic
   const calendarMonth = selectedDate.getMonth();
   const calendarYear = selectedDate.getFullYear();
   const daysInMonth = new Date(calendarYear, calendarMonth + 1, 0).getDate();
@@ -157,7 +621,6 @@ export const VenueSelectPage = () => {
           )}
         </div>
         <div className="flex items-center gap-4">
-          {/* Modules Dropdown */}
           {data?.modules && (
             <div className="relative">
               <button onClick={() => setShowModulesMenu(!showModulesMenu)}
@@ -260,7 +723,7 @@ export const VenueSelectPage = () => {
                       const hasEvent = eventDates.includes(dateStr);
                       return (
                         <button key={idx}
-                          onClick={() => setSelectedDate(new Date(calendarYear, calendarMonth, day))}
+                          onClick={() => { setSelectedDate(new Date(calendarYear, calendarMonth, day)); setSelectedEvent(null); }}
                           onDoubleClick={() => {
                             setSelectedDate(new Date(calendarYear, calendarMonth, day));
                             if (hasEvent) handleEnter();
@@ -289,42 +752,24 @@ export const VenueSelectPage = () => {
                     <CalendarIcon className="h-5 w-5 text-primary" />
                     {selectedDate.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
                   </h3>
-                  <Button size="sm" variant="outline" onClick={() => setShowCreate(!showCreate)} data-testid="create-event-btn">
+                  <Button size="sm" variant="outline" onClick={() => { setShowCreate(!showCreate); setSelectedEvent(null); }} data-testid="create-event-btn">
                     <Plus className="h-4 w-4 mr-1" /> New Event
                   </Button>
                 </div>
 
-                {/* Create event form */}
+                {/* Create Event Wizard */}
                 {showCreate && (
-                  <div className="bg-card border border-primary/20 rounded-xl p-5 mb-4 space-y-3" data-testid="create-event-form">
-                    <input type="text" value={newEvent.name}
-                      onChange={(e) => setNewEvent(p => ({ ...p, name: e.target.value }))}
-                      placeholder="Event name (e.g. Friday Night)"
-                      className="w-full px-4 py-2.5 rounded-lg border border-input bg-background text-sm"
-                      data-testid="event-name-input" />
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="text-xs text-muted-foreground">Cover ($)</label>
-                        <input type="number" value={newEvent.cover_price}
-                          onChange={(e) => setNewEvent(p => ({ ...p, cover_price: parseFloat(e.target.value) || 0 }))}
-                          className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" />
-                      </div>
-                      <div>
-                        <label className="text-xs text-muted-foreground">Cover + Consum. ($)</label>
-                        <input type="number" value={newEvent.cover_consumption_price}
-                          onChange={(e) => setNewEvent(p => ({ ...p, cover_consumption_price: parseFloat(e.target.value) || 0 }))}
-                          className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" />
-                      </div>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button size="sm" onClick={handleCreateEvent} data-testid="save-event-btn">Create</Button>
-                      <Button size="sm" variant="ghost" onClick={() => setShowCreate(false)}>Cancel</Button>
-                    </div>
-                  </div>
+                  <CreateEventWizard
+                    venueId={selectedVenue.id}
+                    date={selectedDateStr}
+                    barmen={barmen}
+                    onCreated={() => { setShowCreate(false); loadEvents(); }}
+                    onCancel={() => setShowCreate(false)}
+                  />
                 )}
 
                 {/* Event list */}
-                {events.length === 0 ? (
+                {events.length === 0 && !showCreate ? (
                   <div className="bg-card border border-dashed border-border rounded-xl p-10 text-center">
                     <Sparkles className="h-10 w-10 text-muted-foreground/30 mx-auto mb-3" />
                     <p className="text-muted-foreground mb-1">No events for this date</p>
@@ -333,16 +778,39 @@ export const VenueSelectPage = () => {
                 ) : (
                   <div className="space-y-3">
                     {events.map((evt) => (
-                      <div key={evt.id}
-                        className="bg-card border border-border rounded-xl p-5 hover:border-primary/30 transition-colors cursor-pointer"
-                        onDoubleClick={handleEnter}
-                        data-testid={`event-card-${evt.id}`}>
-                        <h4 className="font-semibold mb-1">{evt.name}</h4>
-                        <div className="flex gap-4 text-sm text-muted-foreground">
-                          {evt.cover_price > 0 && <span>Cover: ${evt.cover_price}</span>}
-                          {evt.cover_consumption_price > 0 && <span>Cover+Cons: ${evt.cover_consumption_price}</span>}
+                      <div key={evt.id}>
+                        <div
+                          onClick={() => setSelectedEvent(selectedEvent?.id === evt.id ? null : evt)}
+                          className={`bg-card border rounded-xl p-5 transition-colors cursor-pointer ${
+                            selectedEvent?.id === evt.id ? 'border-primary' : 'border-border hover:border-primary/30'
+                          }`}
+                          data-testid={`event-card-${evt.id}`}>
+                          <div className="flex items-center justify-between">
+                            <h4 className="font-semibold">{evt.name}</h4>
+                            <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${
+                              evt.is_active === false ? 'bg-red-500/10 text-red-500' : 'bg-green-500/10 text-green-500'
+                            }`}>
+                              {evt.is_active === false ? 'Ended' : 'Active'}
+                            </span>
+                          </div>
+                          <div className="flex gap-4 text-sm text-muted-foreground mt-1">
+                            {evt.cover_price > 0 && <span>Cover: ${evt.cover_price}</span>}
+                            {evt.cover_consumption_price > 0 && <span>Cover+Cons: ${evt.cover_consumption_price}</span>}
+                          </div>
+                          <p className="text-xs text-muted-foreground/60 mt-2">Click to manage guests & staff</p>
                         </div>
-                        <p className="text-xs text-muted-foreground/60 mt-2">Double-click to enter</p>
+
+                        {/* Event Detail Panel */}
+                        {selectedEvent?.id === evt.id && (
+                          <div className="mt-2">
+                            <EventDetailPanel
+                              event={evt}
+                              venueId={selectedVenue.id}
+                              onClose={() => setSelectedEvent(null)}
+                              onEventEnded={() => { setSelectedEvent(null); loadEvents(); }}
+                            />
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
