@@ -179,6 +179,19 @@ export const PulseEntryPage = () => {
     setDedupeMatches([]);
     setCurrentGuest(null);
     setEntryResult(null);
+    setGuestHistory(null);
+  };
+
+  // ── View guest history ──
+  const handleViewHistory = async (guestId, e) => {
+    if (e) e.stopPropagation();
+    try {
+      const res = await pulseAPI.getGuestHistory(guestId, VENUE_ID);
+      setGuestHistory(res.data);
+      setFlowState('history');
+    } catch (err) {
+      toast.error('Failed to load history');
+    }
   };
 
   const handleBack = () => {
