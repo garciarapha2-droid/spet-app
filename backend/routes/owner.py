@@ -668,22 +668,21 @@ Return ONLY a valid JSON array of insight objects with fields: summary, what_we_
         if not llm_key:
             return {"insights": [], "error": "LLM key not configured"}
 
-        response = await chat(
+        from emergentintegrations.llm.chat import LlmChat, UserMessage
+        llm = LlmChat(
             api_key=llm_key,
-            model="gpt-5.2",
-            messages=[
-                ChatMessage(role="system", content=AI_SYSTEM_PROMPT),
-                ChatMessage(role="user", content=user_message),
-            ],
-        )
+            session_id=f"owner-insights-{user_id}",
+            system_message=AI_SYSTEM_PROMPT,
+        ).with_model("openai", "gpt-5.2")
 
-        raw = response.message.strip()
+        raw = llm.send_message(UserMessage(content=user_message))
         # Extract JSON from response
-        if raw.startswith("```"):
-            raw = raw.split("```")[1]
-            if raw.startswith("json"):
-                raw = raw[4:]
-        insights = json_mod.loads(raw)
+        text = raw.strip()
+        if text.startswith("```"):
+            text = text.split("```")[1]
+            if text.startswith("json"):
+                text = text[4:]
+        insights = json_mod.loads(text)
         if not isinstance(insights, list):
             insights = [insights]
 
