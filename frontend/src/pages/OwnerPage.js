@@ -752,15 +752,40 @@ function GrowthSection() {
 }
 
 /* ═══════════════════════════════════════════════════════════════════
-   6. PEOPLE & OPS
+   6. PEOPLE & OPS — Clickable cards with staff drill-down
    ═══════════════════════════════════════════════════════════════════ */
 function PeopleSection() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [drilldown, setDrilldown] = useState(null); // { type: 'venue'|'event', id, name }
+  const [drilldownStaff, setDrilldownStaff] = useState([]);
+  const [drilldownLoading, setDrilldownLoading] = useState(false);
 
   useEffect(() => {
     ownerAPI.getPeople().then(r => setData(r.data)).catch(() => toast.error('Failed')).finally(() => setLoading(false));
   }, []);
+
+  const openVenueDrilldown = async (venue) => {
+    setDrilldown({ type: 'venue', id: venue.venue_id, name: venue.name });
+    setDrilldownLoading(true);
+    try {
+      const r = await ownerAPI.getVenueStaff(venue.venue_id);
+      setDrilldownStaff(r.data.staff || []);
+    } catch { toast.error('Failed to load staff'); }
+    setDrilldownLoading(false);
+  };
+
+  const openEventDrilldown = async (event) => {
+    setDrilldown({ type: 'event', id: event.event_id, name: event.event_name });
+    setDrilldownLoading(true);
+    try {
+      const r = await ownerAPI.getEventStaff(event.event_id);
+      setDrilldownStaff(r.data.staff || []);
+    } catch { toast.error('Failed to load staff'); }
+    setDrilldownLoading(false);
+  };
+
+  const closeDrilldown = () => { setDrilldown(null); setDrilldownStaff([]); };
 
   if (loading) return <Skeleton />;
   if (!data) return null;
@@ -779,10 +804,13 @@ function PeopleSection() {
         </div>
       </div>
 
+      {/* By Venue — Clickable */}
       <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">By Venue</h3>
-      <div className="space-y-2">
+      <div className="space-y-2 mb-6">
         {data.venues?.map(v => (
-          <div key={v.venue_id} className="bg-card border border-border rounded-xl p-4 flex items-center justify-between">
+          <div key={v.venue_id} onClick={() => openVenueDrilldown(v)}
+            className="bg-card border border-border rounded-xl p-4 flex items-center justify-between cursor-pointer hover:border-primary/40 hover:bg-primary/5 transition-all group"
+            data-testid={`people-venue-${v.venue_id}`}>
             <div className="flex items-center gap-3">
               <Building2 className="h-5 w-5 text-primary" />
               <div>
@@ -790,13 +818,91 @@ function PeopleSection() {
                 <p className="text-xs text-muted-foreground">{v.recent_shifts} recent shifts</p>
               </div>
             </div>
-            <div className="text-right">
-              <p className="text-lg font-bold">{v.staff_count}</p>
-              <p className="text-xs text-muted-foreground">staff</p>
+            <div className="flex items-center gap-3">
+              <div className="text-right">
+                <p className="text-lg font-bold">{v.staff_count}</p>
+                <p className="text-xs text-muted-foreground">staff</p>
+              </div>
+              <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
             </div>
           </div>
         ))}
       </div>
+
+      {/* By Event — Clickable */}
+      {data.events?.length > 0 && (
+        <>
+          <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">By Event</h3>
+          <div className="space-y-2 mb-6">
+            {data.events.map(ev => (
+              <div key={ev.event_id} onClick={() => openEventDrilldown(ev)}
+                className="bg-card border border-border rounded-xl p-4 flex items-center justify-between cursor-pointer hover:border-primary/40 hover:bg-primary/5 transition-all group"
+                data-testid={`people-event-${ev.event_id}`}>
+                <div className="flex items-center gap-3">
+                  <Activity className="h-5 w-5 text-primary" />
+                  <div>
+                    <p className="font-medium text-sm">{ev.event_name}</p>
+                    <p className="text-xs text-muted-foreground">{ev.venue_name} — {ev.event_date ? new Date(ev.event_date).toLocaleDateString() : ''}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="text-right">
+                    <p className="text-lg font-bold">{ev.staff_count}</p>
+                    <p className="text-xs text-muted-foreground">staff</p>
+                  </div>
+                  <span className={`text-xs px-2 py-0.5 rounded-full ${ev.status === 'active' ? 'bg-green-500/10 text-green-600' : 'bg-muted text-muted-foreground'}`}>{ev.status}</span>
+                  <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+
+      {/* Drill-down Modal */}
+      {drilldown && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center" onClick={closeDrilldown} data-testid="people-drilldown-modal">
+          <div className="bg-card border border-border rounded-xl w-full max-w-lg max-h-[70vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <div className="p-5 border-b border-border flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                {drilldown.type === 'venue' ? <Building2 className="h-5 w-5 text-primary" /> : <Activity className="h-5 w-5 text-primary" />}
+                <div>
+                  <h3 className="font-bold">{drilldown.name}</h3>
+                  <p className="text-xs text-muted-foreground capitalize">{drilldown.type} Staff</p>
+                </div>
+              </div>
+              <Button variant="ghost" size="sm" onClick={closeDrilldown} data-testid="close-drilldown"><X className="h-4 w-4" /></Button>
+            </div>
+            <div className="p-5">
+              {drilldownLoading ? (
+                <p className="text-sm text-muted-foreground animate-pulse text-center py-4">Loading staff...</p>
+              ) : drilldownStaff.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-4">No staff assigned</p>
+              ) : (
+                <div className="space-y-2">
+                  {drilldownStaff.map((s, i) => (
+                    <div key={s.id || s.staff_id || i} className="flex items-center justify-between p-3 rounded-lg border border-border hover:bg-muted/20" data-testid={`drilldown-staff-${i}`}>
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-blue-500/10 flex items-center justify-center text-xs font-bold text-blue-500">{(s.name || '?')[0]}</div>
+                        <div>
+                          <p className="text-sm font-medium">{s.name}</p>
+                          <p className="text-xs text-muted-foreground capitalize">{s.role || 'Server'}</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        {s.hourly_rate !== undefined && s.hourly_rate > 0 && (
+                          <p className="text-sm font-bold text-primary">${s.hourly_rate}/hr</p>
+                        )}
+                        {s.assigned_at && <p className="text-[10px] text-muted-foreground">Since {new Date(s.assigned_at).toLocaleDateString()}</p>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
