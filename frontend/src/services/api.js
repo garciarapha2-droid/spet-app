@@ -156,6 +156,7 @@ export const ownerAPI = {
   getGrowth: () => api.get('/owner/growth'),
   getPeople: () => api.get('/owner/people'),
   getSystem: () => api.get('/owner/system'),
+  generateAIInsights: () => api.post('/owner/ai-insights'),
 };
 
 export const ceoAPI = {
