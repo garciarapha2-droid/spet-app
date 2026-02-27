@@ -74,6 +74,8 @@ export const TapPage = () => {
   const [editingBarman, setEditingBarman] = useState(null);
   const [editBarmanName, setEditBarmanName] = useState('');
   const [showAddBarman, setShowAddBarman] = useState(false);
+  const [confirmedSessions, setConfirmedSessions] = useState(new Set());
+  const [pendingConfirmSession, setPendingConfirmSession] = useState(null);
 
   const loadBarmen = useCallback(async () => {
     try { const res = await staffAPI.getBarmen(VENUE_ID()); setBarmen(res.data.barmen || []); } catch {}
