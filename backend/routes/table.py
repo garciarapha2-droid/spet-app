@@ -48,6 +48,7 @@ async def list_tables(venue_id: str, user: dict = Depends(require_auth)):
             "session_id": str(r["current_session_id"]) if r["current_session_id"] else None,
             "session_total": float(r["total"]) if r["total"] else 0,
             "session_guest": meta.get("guest_name", None),
+            "tab_number": meta.get("tab_number", None),
         })
     return {"tables": tables, "total": len(tables)}
 
