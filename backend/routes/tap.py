@@ -347,3 +347,85 @@ async def close_tab(
         "payment_method": payment_method,
         "closed_at": now.isoformat(),
     }
+
+
+# ─── Active sessions ───────────────────────────────────────────────
+@router.get("/sessions/active")
+async def get_active_sessions(venue_id: str, user: dict = Depends(require_auth)):
+    """List all open sessions for a venue."""
+    pool = get_postgres_pool()
+    vid = uuid.UUID(venue_id)
+
+    async with pool.acquire() as conn:
+        rows = await conn.fetch(
+            """SELECT s.id, s.guest_id, s.status, s.total, s.opened_at, s.meta
+               FROM tap_sessions s WHERE s.venue_id = $1 AND s.status = 'open'
+               ORDER BY s.opened_at DESC""",
+            vid,
+        )
+
+    sessions = []
+    for r in rows:
+        meta = _parse_meta(r["meta"])
+        sessions.append({
+            "session_id": str(r["id"]),
+            "guest_name": meta.get("guest_name", "Guest"),
+            "total": float(r["total"]),
+            "opened_at": r["opened_at"].isoformat() if r["opened_at"] else None,
+        })
+    return {"sessions": sessions, "total": len(sessions)}
+
+
+# ─── Add custom item (no catalog) ─────────────────────────────────
+@router.post("/session/{session_id}/add-custom")
+async def add_custom_item(
+    session_id: str,
+    user: dict = Depends(require_auth),
+    item_name: str = Form(...),
+    category: str = Form("Drinks"),
+    unit_price: float = Form(...),
+    qty: int = Form(1),
+    notes: str = Form(None),
+):
+    """Add a custom item (not from catalog) to an open tab."""
+    pool = get_postgres_pool()
+    sid = uuid.UUID(session_id)
+    staff_id = uuid.UUID(user["sub"])
+
+    async with pool.acquire() as conn:
+        session = await conn.fetchrow(
+            "SELECT id, venue_id, status FROM tap_sessions WHERE id = $1", sid
+        )
+    if not session:
+        raise HTTPException(404, "Session not found")
+    if session["status"] != "open":
+        raise HTTPException(400, "Tab is closed")
+
+    is_alcohol = category.lower() not in ("sem alcool", "comida", "no alcohol", "food")
+    line_total = unit_price * qty
+
+    async with pool.acquire() as conn:
+        item_row = await conn.fetchrow(
+            """INSERT INTO tap_items
+               (venue_id, tap_session_id, item_name, category,
+                unit_price, qty, line_total, is_alcohol, notes, created_by_user_id)
+               VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+               RETURNING id""",
+            session["venue_id"], sid, item_name, category,
+            unit_price, qty, line_total, is_alcohol, notes, staff_id,
+        )
+        await conn.execute(
+            """UPDATE tap_sessions
+               SET subtotal = subtotal + $1, total = subtotal + $1
+               WHERE id = $2""",
+            line_total, sid,
+        )
+        new_total = await conn.fetchval("SELECT total FROM tap_sessions WHERE id = $1", sid)
+
+    return {
+        "line_item_id": str(item_row["id"]),
+        "name": item_name,
+        "qty": qty,
+        "line_total": float(line_total),
+        "session_total": float(new_total),
+    }
