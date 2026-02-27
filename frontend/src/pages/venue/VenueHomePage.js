@@ -261,6 +261,10 @@ export const VenueSelectPage = () => {
                       return (
                         <button key={idx}
                           onClick={() => setSelectedDate(new Date(calendarYear, calendarMonth, day))}
+                          onDoubleClick={() => {
+                            setSelectedDate(new Date(calendarYear, calendarMonth, day));
+                            if (hasEvent) handleEnter();
+                          }}
                           className={`relative h-12 rounded-xl flex items-center justify-center text-sm font-medium transition-all ${
                             isSelected ? 'bg-primary text-primary-foreground' :
                             isToday ? 'bg-primary/10 text-primary font-bold' :
