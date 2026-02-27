@@ -298,7 +298,7 @@ export const KitchenPage = () => {
 
       <header className="h-14 border-b border-border px-6 flex items-center justify-between bg-card">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate('/venue/home')}>
+          <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <h1 className="text-xl font-bold tracking-tight">SPETAP</h1>
