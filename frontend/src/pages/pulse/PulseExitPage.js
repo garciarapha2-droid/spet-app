@@ -191,14 +191,49 @@ export const PulseExitPage = () => {
                   </div>
                   <h3 className="text-xl font-bold text-destructive mb-2">Open Tab Pending</h3>
                   <p className="text-lg font-semibold mb-1">{exitModal.guest.guestName}</p>
-                  <p className="text-3xl font-bold text-destructive mb-3">${exitModal.data.total_owed.toFixed(2)}</p>
+                  <p className="text-3xl font-bold text-destructive mb-2">${exitModal.data.total_owed.toFixed(2)}</p>
                   <p className="text-muted-foreground mb-6">
-                    {exitModal.data.open_tabs.length} open tab{exitModal.data.open_tabs.length > 1 ? 's' : ''}. 
-                    Must go to the cashier and pay before leaving.
+                    {exitModal.data.open_tabs.length} open tab{exitModal.data.open_tabs.length > 1 ? 's' : ''}.
+                    Guest cannot leave without payment.
                   </p>
-                  <Button variant="outline" className="border-destructive/30" onClick={() => setExitModal(null)} data-testid="exit-modal-close-btn">
-                    Understood
-                  </Button>
+                  <div className="space-y-3">
+                    <Button className="w-full h-12 text-base bg-primary hover:bg-primary/90"
+                      onClick={() => { setExitModal(null); navigate('/tap'); }}
+                      data-testid="go-to-checkout-btn">
+                      <CreditCard className="h-5 w-5 mr-2" /> Go to Checkout
+                    </Button>
+                    <Button variant="outline" className="w-full h-12 text-base border-green-500/50 text-green-600 hover:bg-green-500/10"
+                      disabled={processingPayment}
+                      onClick={async () => {
+                        setProcessingPayment(true);
+                        try {
+                          for (const tab of exitModal.data.open_tabs) {
+                            const fd = new FormData();
+                            fd.append('method', 'card');
+                            fd.append('amount', (tab.total || exitModal.data.total_owed).toString());
+                            await tapAPI.closeSession(tab.session_id || tab.id, fd);
+                          }
+                          toast.success(`Payment processed for ${exitModal.guest.guestName}`);
+                          const exitFd = new FormData();
+                          exitFd.append('guest_id', exitModal.guest.guestId);
+                          exitFd.append('venue_id', VENUE_ID());
+                          await pulseAPI.registerExit(exitFd);
+                          toast.success(`${exitModal.guest.guestName} checked out`);
+                          setExitModal(null);
+                          await loadData();
+                        } catch (err) {
+                          toast.error('Failed to process payment');
+                          console.error(err);
+                        }
+                        setProcessingPayment(false);
+                      }}
+                      data-testid="mark-as-paid-btn">
+                      <CheckCircle className="h-5 w-5 mr-2" /> Mark as Paid
+                    </Button>
+                    <Button variant="ghost" className="w-full" onClick={() => setExitModal(null)} data-testid="exit-modal-cancel-btn">
+                      Cancel
+                    </Button>
+                  </div>
                 </>
               ) : (
                 <>
