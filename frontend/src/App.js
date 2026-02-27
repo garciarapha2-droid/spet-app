@@ -14,6 +14,8 @@ import { PulseExitPage } from './pages/pulse/PulseExitPage';
 import { PulseBarPage } from './pages/pulse/PulseBarPage';
 import { PulseRewardsPage } from './pages/pulse/PulseRewardsPage';
 import { TapPage } from './pages/TapPage';
+import { TablePage } from './pages/TablePage';
+import { KitchenPage } from './pages/KitchenPage';
 import { ManagerPage } from './pages/ManagerPage';
 import { OwnerPage } from './pages/OwnerPage';
 import { CEOPage } from './pages/CEOPage';
