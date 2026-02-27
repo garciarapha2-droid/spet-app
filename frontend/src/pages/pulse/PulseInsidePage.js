@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { PulseHeader } from '../../components/PulseHeader';
 import { pulseAPI } from '../../services/api';
 import { toast } from 'sonner';
-import { Users, Crown, LogIn, User, Search } from 'lucide-react';
+import { Users, Crown, LogIn, User, Search, DollarSign, ShieldAlert } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 
@@ -91,7 +91,19 @@ export const PulseInsidePage = () => {
                   </div>
                 )}
                 <div className="flex-1 min-w-0">
-                  <p className="font-semibold truncate">{g.guest_name}</p>
+                  <div className="flex items-center gap-2">
+                    <p className="font-semibold truncate">{g.guest_name}</p>
+                    {g.guest_status === 'Blocked' && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-destructive/10 text-destructive text-xs font-medium" data-testid={`status-blocked-${g.guest_id}`}>
+                        <ShieldAlert className="h-3 w-3" /> Blocked
+                      </span>
+                    )}
+                  </div>
+                  {g.tab_number && (
+                    <p className="text-sm font-semibold text-primary" data-testid={`tab-number-${g.guest_id}`}>
+                      Tab #{g.tab_number} {g.tab_total != null ? `— $${g.tab_total.toFixed(2)}` : ''}
+                    </p>
+                  )}
                   <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
                     <LogIn className="h-3 w-3" />
                     <span>{new Date(g.entered_at).toLocaleTimeString()}</span>
