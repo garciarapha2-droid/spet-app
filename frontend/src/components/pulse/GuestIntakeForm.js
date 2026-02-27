@@ -151,14 +151,12 @@ export const GuestIntakeForm = ({ venueConfig, onSubmit, onCancel, loading }) =>
           placeholder="+55 11 9xxxx-xxxx" data-testid="guest-phone-input" />
       </div>
 
-      {/* DOB — conditional */}
-      {venueConfig?.host_collect_dob && (
-        <div className="space-y-2">
-          <Label htmlFor="guest-dob">Date of Birth</Label>
-          <Input id="guest-dob" type="date" value={dob} onChange={e => setDob(e.target.value)}
-            data-testid="guest-dob-input" />
-        </div>
-      )}
+      {/* DOB — always visible, optional */}
+      <div className="space-y-2">
+        <Label htmlFor="guest-dob">Birthday <span className="text-muted-foreground text-xs">(optional)</span></Label>
+        <Input id="guest-dob" type="date" value={dob} onChange={e => setDob(e.target.value)}
+          data-testid="guest-dob-input" />
+      </div>
 
       {/* Actions */}
       <div className="flex gap-3 pt-2">

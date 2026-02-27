@@ -63,7 +63,7 @@ async def list_kds_tickets(
         query += " AND k.status = $3"
         params.append(status)
     else:
-        query += " AND k.status != 'completed'"
+        query += " AND k.status NOT IN ('completed')"
 
     query += " ORDER BY CASE k.status WHEN 'pending' THEN 0 WHEN 'preparing' THEN 1 WHEN 'ready' THEN 2 ELSE 3 END, k.created_at"
 
@@ -181,7 +181,7 @@ async def update_ticket_status(
     if not _check_kds_entitlement(user):
         raise HTTPException(403, "KDS add-on not enabled for this venue")
 
-    valid = ("pending", "preparing", "ready", "completed")
+    valid = ("pending", "preparing", "ready", "delivered", "completed")
     if status not in valid:
         raise HTTPException(400, f"Status must be one of {valid}")
 
@@ -204,6 +204,10 @@ async def update_ticket_status(
             idx += 1
         if status == "ready":
             set_clauses.append(f"ready_at = ${idx}")
+            params.append(now)
+            idx += 1
+        if status == "delivered":
+            set_clauses.append(f"completed_at = ${idx}")
             params.append(now)
             idx += 1
         if status == "completed":
