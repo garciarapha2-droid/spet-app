@@ -8,6 +8,7 @@ import { ProtectedRoute } from './components/ProtectedRoute';
 // Pages
 import { LoginPage } from './pages/LoginPage';
 import { ModulesPage } from './pages/ModulesPage';
+import { VenueHomePage } from './pages/venue/VenueHomePage';
 import { PulseEntryPage } from './pages/pulse/PulseEntryPage';
 import { PulseInsidePage } from './pages/pulse/PulseInsidePage';
 import { PulseExitPage } from './pages/pulse/PulseExitPage';
@@ -29,10 +30,18 @@ function App() {
             <Routes>
               <Route path="/login" element={<LoginPage />} />
               <Route
+                path="/venue/home"
+                element={
+                  <ProtectedRoute>
+                    <VenueHomePage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
                 path="/modules"
                 element={
                   <ProtectedRoute>
-                    <ModulesPage />
+                    <Navigate to="/venue/home" replace />
                   </ProtectedRoute>
                 }
               />
