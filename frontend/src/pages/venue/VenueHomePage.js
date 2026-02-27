@@ -147,8 +147,50 @@ export const VenueSelectPage = () => {
     <div className="min-h-screen bg-background" data-testid="venue-select-page">
       {/* Header */}
       <header className="h-16 border-b border-border bg-card px-8 flex items-center justify-between">
-        <h1 className="text-xl font-bold tracking-tight">SPETAP</h1>
         <div className="flex items-center gap-4">
+          <h1 className="text-xl font-bold tracking-tight">SPETAP</h1>
+          {selectedVenue && (
+            <>
+              <div className="h-5 w-px bg-border" />
+              <span className="text-sm text-muted-foreground">{selectedVenue.name}</span>
+            </>
+          )}
+        </div>
+        <div className="flex items-center gap-4">
+          {/* Modules Dropdown */}
+          {data?.modules && (
+            <div className="relative">
+              <button onClick={() => setShowModulesMenu(!showModulesMenu)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-muted transition-colors border border-border"
+                data-testid="modules-dropdown">
+                <Menu className="h-4 w-4" />
+                <span>Modules</span>
+                <ChevronDown className="h-3 w-3" />
+              </button>
+              {showModulesMenu && (
+                <div className="absolute top-full right-0 mt-1 bg-card border border-border rounded-lg shadow-lg z-50 min-w-[200px] py-1" data-testid="modules-menu">
+                  {data.modules
+                    .filter(m => m.enabled && m.key !== 'ceo')
+                    .map(mod => {
+                      const Icon = MODULE_ICONS[mod.key] || Sparkles;
+                      return (
+                        <button key={mod.key}
+                          onClick={() => { handleModuleClick(mod); setShowModulesMenu(false); }}
+                          className="w-full text-left px-4 py-2.5 text-sm hover:bg-muted flex items-center gap-3 transition-colors"
+                          data-testid={`module-item-${mod.key}`}>
+                          <Icon className="h-4 w-4 text-muted-foreground" />
+                          <div>
+                            <p className="font-medium">{mod.name}</p>
+                            <p className="text-xs text-muted-foreground">{mod.description}</p>
+                          </div>
+                        </button>
+                      );
+                    })}
+                </div>
+              )}
+            </div>
+          )}
+          <div className="h-5 w-px bg-border" />
           <span className="text-sm text-muted-foreground">{data?.user_email}</span>
           <div className="h-5 w-px bg-border" />
           <ThemeToggle />
