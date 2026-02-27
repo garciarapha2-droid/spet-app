@@ -188,6 +188,19 @@ export const TapPage = () => {
     setLoading(false);
   };
 
+  const handleVoidItem = async (itemId) => {
+    if (!activeSessionId) return;
+    try {
+      const fd = new FormData();
+      fd.append('item_id', itemId);
+      await tapAPI.voidItem(activeSessionId, fd);
+      const res = await tapAPI.getSession(activeSessionId);
+      setActiveSession(res.data);
+      await loadData();
+      toast.success('Item removed');
+    } catch { toast.error('Failed to remove item'); }
+  };
+
   const categories = ['All', ...new Set(catalog.map(i => i.category))];
   const filteredCatalog = filterCategory === 'All' ? catalog : catalog.filter(i => i.category === filterCategory);
 
