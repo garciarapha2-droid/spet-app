@@ -77,6 +77,7 @@ export const ManagerPage = () => {
           {activeTab === 'tables-server' && <TablesByServerSection />}
           {activeTab === 'menu' && <MenuSection />}
           {activeTab === 'shifts' && <ShiftsSection />}
+          {activeTab === 'shift-ops' && <ShiftOpsSection />}
           {activeTab === 'guests' && <GuestsSection />}
           {activeTab === 'reports' && <ReportsSection />}
           {activeTab === 'loyalty' && <LoyaltySection />}
