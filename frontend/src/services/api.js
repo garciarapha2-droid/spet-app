@@ -146,6 +146,17 @@ export const managerAPI = {
   getAudit: (venueId) => api.get('/manager/audit', { params: { venue_id: venueId } }),
   getFunnelDetail: (venueId, stage) => api.get('/manager/funnel-detail', { params: { venue_id: venueId, stage } }),
   getTablesByServer: (venueId) => api.get('/manager/tables-by-server', { params: { venue_id: venueId } }),
+  // Shift vs Operations
+  getStaffRoles: (venueId) => api.get('/manager/staff-roles', { params: { venue_id: venueId } }),
+  saveStaffRole: (fd) => api.post('/manager/staff-roles', fd),
+  deleteStaffRole: (id, venueId) => api.delete(`/manager/staff-roles/${id}`, { params: { venue_id: venueId } }),
+  customizeStaff: (id, fd) => api.put(`/manager/staff-customize/${id}`, fd),
+  getShiftOverview: (venueId, dateFrom, dateTo) => api.get('/manager/shift-overview', { params: { venue_id: venueId, date_from: dateFrom, date_to: dateTo } }),
+  getStaffCosts: (venueId, dateFrom, dateTo) => api.get('/manager/staff-costs', { params: { venue_id: venueId, date_from: dateFrom, date_to: dateTo } }),
+  getShiftHistory: (venueId, days) => api.get('/manager/shift-history', { params: { venue_id: venueId, days } }),
+  getShiftChart: (venueId, period, dateFrom, dateTo) => api.get('/manager/shift-chart', { params: { venue_id: venueId, period, date_from: dateFrom, date_to: dateTo } }),
+  saveShiftSnapshot: (fd) => api.post('/manager/shift-snapshot', fd),
+  shiftAI: (fd) => api.post('/manager/shift-ai', fd),
 };
 
 // Owner
