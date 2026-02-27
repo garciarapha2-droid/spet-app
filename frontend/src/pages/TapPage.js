@@ -7,11 +7,10 @@ import { Button } from '../components/ui/button';
 import { ThemeToggle } from '../components/ThemeToggle';
 import {
   ArrowLeft, Plus, X, CreditCard, Banknote, Beer, User, ChevronDown, ScanLine,
-  Home, LogOut, LayoutGrid, Pencil, Trash2, Check, Receipt, Camera, Upload, ChevronRight
+  Home, LogOut, LayoutGrid, Pencil, Trash2, Check, Receipt, Camera, Upload
 } from 'lucide-react';
 
 const VENUE_ID = () => localStorage.getItem('active_venue_id') || '40a24e04-75b6-435d-bfff-ab0d469ce543';
-
 const CATEGORIES = ['Beers', 'Cocktails', 'Spirits', 'Non-alcoholic', 'Snacks', 'Starters', 'Mains', 'Plates'];
 
 export const TapPage = () => {
@@ -22,7 +21,7 @@ export const TapPage = () => {
   const [activeSessionId, setActiveSessionId] = useState(null);
   const [activeSession, setActiveSession] = useState(null);
   const [scanInput, setScanInput] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState(null);
+  const [selectedCategory, setSelectedCategory] = useState('Beers');
   const [selectedBarman, setSelectedBarman] = useState('');
   const [newTabName, setNewTabName] = useState('');
   const [showNewTab, setShowNewTab] = useState(false);
@@ -35,7 +34,6 @@ export const TapPage = () => {
   const [editForm, setEditForm] = useState({ name: '', price: '', category: '' });
   const fileInputRef = useRef(null);
   const cameraInputRef = useRef(null);
-
   const [barmen, setBarmen] = useState([]);
   const [newBarmanName, setNewBarmanName] = useState('');
   const [editingBarman, setEditingBarman] = useState(null);
@@ -51,7 +49,7 @@ export const TapPage = () => {
     try {
       const fd = new FormData(); fd.append('venue_id', VENUE_ID()); fd.append('name', newBarmanName.trim());
       await staffAPI.addBarman(fd); setNewBarmanName(''); setShowAddBarman(false); await loadBarmen(); toast.success('Barman added');
-    } catch { toast.error('Failed to add'); }
+    } catch { toast.error('Failed'); }
   };
 
   const handleEditBarman = async (id) => {
@@ -59,15 +57,11 @@ export const TapPage = () => {
     try {
       const fd = new FormData(); fd.append('name', editBarmanName.trim());
       await staffAPI.updateBarman(id, fd); setEditingBarman(null); await loadBarmen();
-    } catch { toast.error('Failed to update'); }
+    } catch { toast.error('Failed'); }
   };
 
   const handleDeleteBarman = async (id) => {
-    try {
-      await staffAPI.deleteBarman(id);
-      if (selectedBarman && barmen.find(b => b.id === id)?.name === selectedBarman) setSelectedBarman('');
-      await loadBarmen(); toast.success('Barman removed');
-    } catch { toast.error('Failed to delete'); }
+    try { await staffAPI.deleteBarman(id); await loadBarmen(); toast.success('Removed'); } catch { toast.error('Failed'); }
   };
 
   const loadData = useCallback(async () => {
@@ -94,17 +88,15 @@ export const TapPage = () => {
     e.preventDefault();
     if (!scanInput.trim()) return;
     const match = sessions.find(s =>
-      s.guest_name.toLowerCase().includes(scanInput.toLowerCase()) ||
+      s.guest_name?.toLowerCase().includes(scanInput.toLowerCase()) ||
       (s.tab_number && s.tab_number.toString() === scanInput.trim())
     );
     if (match) { setActiveSessionId(match.session_id || match.id); setScanInput(''); }
-    else toast.error('No matching tab found');
+    else toast.error('No matching tab');
   };
 
   const handleOpenTab = async () => {
-    if (!newTabName.trim() || !selectedBarman) {
-      toast.error(!selectedBarman ? 'Select a barman first' : 'Enter guest name'); return;
-    }
+    if (!newTabName.trim() || !selectedBarman) { toast.error(!selectedBarman ? 'Select barman' : 'Enter name'); return; }
     setLoading(true);
     try {
       const fd = new FormData();
@@ -112,61 +104,48 @@ export const TapPage = () => {
       const res = await tapAPI.openSession(fd);
       setActiveSessionId(res.data.session_id); setNewTabName(''); setShowNewTab(false);
       await loadData(); toast.success(`Tab #${res.data.tab_number} opened`);
-    } catch { toast.error('Failed to open tab'); }
+    } catch { toast.error('Failed'); }
     setLoading(false);
   };
 
   const handleAddItem = async (item) => {
     if (!activeSessionId) { toast.error('Select a tab first'); return; }
-    if (!selectedBarman) { toast.error('Select a barman first'); return; }
+    if (!selectedBarman) { toast.error('Select barman first'); return; }
     try {
-      const fd = new FormData();
-      fd.append('item_id', item.id); fd.append('qty', '1');
+      const fd = new FormData(); fd.append('item_id', item.id); fd.append('qty', '1');
       await tapAPI.addItem(activeSessionId, fd);
       const res = await tapAPI.getSession(activeSessionId); setActiveSession(res.data);
       await loadData();
-    } catch { toast.error('Failed to add item'); }
+    } catch { toast.error('Failed'); }
   };
 
   const handleAddCustomItem = async () => {
-    if (!customItem.name.trim() || !customItem.price) { toast.error('Enter name and price'); return; }
+    if (!customItem.name.trim() || !customItem.price) { toast.error('Name & price required'); return; }
     try {
       const fd = new FormData();
-      fd.append('venue_id', VENUE_ID());
-      fd.append('name', customItem.name.trim());
-      fd.append('category', customItem.category);
-      fd.append('price', parseFloat(customItem.price).toString());
+      fd.append('venue_id', VENUE_ID()); fd.append('name', customItem.name.trim());
+      fd.append('category', customItem.category); fd.append('price', parseFloat(customItem.price).toString());
       fd.append('is_alcohol', customItem.is_alcohol.toString());
       const res = await tapAPI.addCatalogItem(fd);
       if (customPhoto && res.data.id) {
-        const photoFd = new FormData();
-        photoFd.append('photo', customPhoto);
-        await tapAPI.uploadCatalogPhoto(res.data.id, photoFd);
+        const pFd = new FormData(); pFd.append('photo', customPhoto);
+        await tapAPI.uploadCatalogPhoto(res.data.id, pFd);
       }
-      setCustomItem({ name: '', price: '', category: 'Beers', is_alcohol: false });
-      setCustomPhoto(null);
-      setShowCustomItem(false);
-      await loadData();
-      toast.success(`"${customItem.name}" added to menu`);
-    } catch { toast.error('Failed to add custom item'); }
+      setCustomItem({ name: '', price: '', category: 'Beers', is_alcohol: false }); setCustomPhoto(null); setShowCustomItem(false);
+      await loadData(); toast.success(`"${customItem.name}" added to menu`);
+    } catch { toast.error('Failed'); }
   };
 
   const handleDeleteItem = async (itemId) => {
-    try {
-      await tapAPI.deleteCatalogItem(itemId);
-      await loadData();
-      toast.success('Item deleted from menu');
-    } catch { toast.error('Failed to delete'); }
+    try { await tapAPI.deleteCatalogItem(itemId); await loadData(); toast.success('Deleted'); } catch { toast.error('Failed'); }
   };
 
   const handleEditItem = async (itemId) => {
     if (!editForm.name.trim()) return;
     try {
-      const fd = new FormData();
-      fd.append('name', editForm.name); fd.append('price', editForm.price); fd.append('category', editForm.category);
-      await tapAPI.updateCatalogItem(itemId, fd);
-      setEditingItem(null); await loadData(); toast.success('Item updated');
-    } catch { toast.error('Failed to update'); }
+      const fd = new FormData(); fd.append('name', editForm.name); fd.append('price', editForm.price); fd.append('category', editForm.category);
+      await tapAPI.updateCatalogItem(itemId, fd); setEditingItem(null); await loadData(); toast.success('Updated');
+    } catch { toast.error('Failed'); }
   };
 
   const handleVoidItem = async (itemId) => {
@@ -175,8 +154,8 @@ export const TapPage = () => {
       const fd = new FormData(); fd.append('item_id', itemId);
       await tapAPI.voidItem(activeSessionId, fd);
       const res = await tapAPI.getSession(activeSessionId); setActiveSession(res.data);
-      await loadData(); toast.success('Item removed');
-    } catch { toast.error('Failed to remove'); }
+      await loadData(); toast.success('Removed');
+    } catch { toast.error('Failed'); }
   };
 
   const handleCloseTab = async (method) => {
@@ -185,15 +164,12 @@ export const TapPage = () => {
     try {
       const fd = new FormData(); fd.append('payment_method', method);
       await tapAPI.closeSession(activeSessionId, fd);
-      setActiveSessionId(null); setActiveSession(null);
-      await loadData(); toast.success('Tab closed');
-    } catch { toast.error('Failed to close'); }
+      setActiveSessionId(null); setActiveSession(null); await loadData(); toast.success('Tab closed');
+    } catch { toast.error('Failed'); }
     setLoading(false);
   };
 
-  const categoryCounts = {};
-  catalog.forEach(item => { categoryCounts[item.category] = (categoryCounts[item.category] || 0) + 1; });
-  const filteredItems = selectedCategory ? catalog.filter(i => i.category === selectedCategory) : [];
+  const filteredItems = catalog.filter(i => i.category === selectedCategory);
 
   return (
     <div className="min-h-screen bg-background" data-testid="tap-page">
@@ -203,22 +179,17 @@ export const TapPage = () => {
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <span className="text-lg font-bold tracking-tight">TAP</span>
-          <span className="text-xs font-medium bg-primary/10 text-primary px-2 py-0.5 rounded-full">DISCO MODE</span>
+          <span className="text-xs font-medium bg-primary/10 text-primary px-2 py-0.5 rounded-full">DISCO</span>
           <div className="h-5 w-px bg-border" />
           <label className="flex items-center gap-2 cursor-pointer" data-testid="table-toggle">
             <LayoutGrid className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm text-muted-foreground">Table</span>
-            <div className="w-10 h-5 rounded-full bg-muted relative transition-colors cursor-pointer"
-              onClick={() => navigate('/table')}>
-              <div className="w-4 h-4 rounded-full bg-white absolute top-0.5 translate-x-0.5" />
-            </div>
+            <span className="text-sm text-muted-foreground" onClick={() => navigate('/table')}>Table</span>
           </label>
           <div className="h-5 w-px bg-border" />
-
           {/* Barman Selector */}
           <div className="relative">
             <button onClick={() => setShowBarmanMenu(!showBarmanMenu)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm hover:bg-muted transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm hover:bg-muted"
               data-testid="barman-selector">
               <User className="h-3.5 w-3.5 text-muted-foreground" />
               <span className="text-muted-foreground">{selectedBarman || 'Select barman'}</span>
@@ -234,7 +205,7 @@ export const TapPage = () => {
                           className="flex-1 px-2 py-1 text-sm rounded border border-border bg-background"
                           autoFocus onKeyDown={e => e.key === 'Enter' && handleEditBarman(b.id)} />
                         <button onClick={() => handleEditBarman(b.id)} className="p-1 hover:text-green-500"><Check className="h-3.5 w-3.5" /></button>
-                        <button onClick={() => setEditingBarman(null)} className="p-1 hover:text-muted-foreground"><X className="h-3.5 w-3.5" /></button>
+                        <button onClick={() => setEditingBarman(null)} className="p-1"><X className="h-3.5 w-3.5" /></button>
                       </div>
                     ) : (
                       <>
@@ -243,9 +214,9 @@ export const TapPage = () => {
                           {b.name}
                         </button>
                         <button onClick={() => { setEditingBarman(b.id); setEditBarmanName(b.name); }}
-                          className="p-1.5 opacity-0 group-hover:opacity-100 hover:text-primary transition-opacity"><Pencil className="h-3 w-3" /></button>
+                          className="p-1.5 opacity-0 group-hover:opacity-100 hover:text-primary"><Pencil className="h-3 w-3" /></button>
                         <button onClick={() => handleDeleteBarman(b.id)}
-                          className="p-1.5 mr-1 opacity-0 group-hover:opacity-100 hover:text-red-500 transition-opacity"><Trash2 className="h-3 w-3" /></button>
+                          className="p-1.5 mr-1 opacity-0 group-hover:opacity-100 hover:text-red-500"><Trash2 className="h-3 w-3" /></button>
                       </>
                     )}
                   </div>
@@ -256,204 +227,158 @@ export const TapPage = () => {
                       className="flex-1 px-2 py-1 text-sm rounded border border-border bg-background"
                       autoFocus onKeyDown={e => e.key === 'Enter' && handleAddBarman()} />
                     <button onClick={handleAddBarman} className="p-1 hover:text-green-500"><Check className="h-3.5 w-3.5" /></button>
-                    <button onClick={() => { setShowAddBarman(false); setNewBarmanName(''); }} className="p-1 hover:text-muted-foreground"><X className="h-3.5 w-3.5" /></button>
+                    <button onClick={() => setShowAddBarman(false)} className="p-1"><X className="h-3.5 w-3.5" /></button>
                   </div>
                 ) : (
                   <button onClick={() => setShowAddBarman(true)}
-                    className="w-full text-left px-4 py-2 text-sm text-primary hover:bg-muted border-t border-border flex items-center gap-1.5"
-                    data-testid="add-barman-btn"><Plus className="h-3.5 w-3.5" /> Add barman</button>
+                    className="w-full text-left px-4 py-2 text-sm text-primary hover:bg-muted border-t border-border"
+                    data-testid="add-barman-btn"><Plus className="h-3.5 w-3.5 inline mr-1" /> Add barman</button>
                 )}
               </div>
             )}
           </div>
         </div>
-
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
           <span className="text-sm text-muted-foreground">Tabs: <strong className="text-foreground">{stats.open_tabs || 0}</strong></span>
           <div className="h-5 w-px bg-border" />
           <ThemeToggle />
-          <div className="h-5 w-px bg-border" />
           <Button variant="ghost" size="icon" onClick={() => navigate('/venue/home')} data-testid="home-btn"><Home className="h-4 w-4" /></Button>
-          <div className="h-5 w-px bg-border" />
           <Button variant="ghost" size="icon" onClick={() => { localStorage.removeItem('spetap_token'); navigate('/login'); }} data-testid="logout-btn"><LogOut className="h-4 w-4" /></Button>
         </div>
       </header>
 
-      <main className="w-full px-6 py-6">
+      <main className="w-full px-6 py-4">
         <div className="grid grid-cols-12 gap-6">
-          {/* Left: Scanner + Tabs */}
-          <div className="col-span-3 space-y-4">
-            <div className="bg-card border border-border rounded-xl p-4">
-              <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                <ScanLine className="h-3.5 w-3.5" /> Scan NFC / Search
-              </h3>
-              <form onSubmit={handleScan}>
-                <Input value={scanInput} onChange={e => setScanInput(e.target.value)}
-                  placeholder="NFC or name / tab #..." className="h-10 text-sm mb-2" data-testid="tap-scan-input" />
-                <Button type="submit" size="sm" className="w-full" data-testid="tap-scan-btn">Scan</Button>
-              </form>
+          {/* Left: Scan + Tabs */}
+          <div className="col-span-2 space-y-4">
+            <form onSubmit={handleScan} className="space-y-2">
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground"><ScanLine className="h-3.5 w-3.5" /> Scan NFC</div>
+              <Input value={scanInput} onChange={e => setScanInput(e.target.value)} placeholder="Name or #..." className="h-9 text-sm" data-testid="tap-scan-input" />
+            </form>
+            <div className="flex items-center justify-between">
+              <h3 className="text-xs font-semibold uppercase text-muted-foreground">Tabs ({sessions.length})</h3>
+              <button onClick={() => setShowNewTab(true)} className="text-primary hover:text-primary/80" data-testid="new-tab-btn"><Plus className="h-4 w-4" /></button>
             </div>
-
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-semibold">Open Tabs ({sessions.length})</h3>
-                <Button size="sm" variant="outline" onClick={() => setShowNewTab(true)} data-testid="new-tab-btn"><Plus className="h-3.5 w-3.5 mr-1" /> New</Button>
-              </div>
-              {showNewTab && (
-                <div className="mb-3 p-3 rounded-lg border border-primary/30 bg-primary/5 space-y-2" data-testid="new-tab-form">
-                  <Input value={newTabName} onChange={e => setNewTabName(e.target.value)}
-                    placeholder="Guest name" autoFocus onKeyDown={e => e.key === 'Enter' && handleOpenTab()} data-testid="new-tab-name-input" />
-                  <div className="flex gap-2">
-                    <Button size="sm" className="flex-1" onClick={handleOpenTab} disabled={!newTabName.trim() || !selectedBarman || loading}>Open</Button>
-                    <Button size="sm" variant="outline" onClick={() => setShowNewTab(false)}><X className="h-3.5 w-3.5" /></Button>
-                  </div>
-                  {!selectedBarman && <p className="text-xs text-red-500">Select a barman first</p>}
+            {showNewTab && (
+              <div className="p-2 rounded-lg border border-primary/30 bg-primary/5 space-y-2" data-testid="new-tab-form">
+                <Input value={newTabName} onChange={e => setNewTabName(e.target.value)} placeholder="Guest name" className="h-8 text-sm" autoFocus data-testid="new-tab-name-input" />
+                <div className="flex gap-1">
+                  <Button size="sm" className="flex-1 h-8 text-xs" onClick={handleOpenTab} disabled={!newTabName.trim() || !selectedBarman || loading}>Open</Button>
+                  <Button size="sm" variant="ghost" className="h-8" onClick={() => setShowNewTab(false)}><X className="h-3 w-3" /></Button>
                 </div>
-              )}
-              <div className="space-y-1.5 max-h-[calc(100vh-360px)] overflow-y-auto">
-                {sessions.length === 0 ? (
-                  <p className="text-sm text-muted-foreground py-6 text-center">No open tabs</p>
-                ) : sessions.map(s => (
-                  <button key={s.session_id || s.id}
-                    onClick={() => setActiveSessionId(s.session_id || s.id)}
-                    className={`w-full text-left p-3 rounded-lg border transition-all ${
-                      (s.session_id || s.id) === activeSessionId
-                        ? 'border-primary bg-primary/5 ring-1 ring-primary/20'
-                        : 'border-border hover:border-primary/30 bg-card'
-                    }`}
-                    data-testid={`tab-${s.tab_number || s.session_id || s.id}`}>
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <span className="font-medium text-sm">{s.guest_name}</span>
-                        <span className="text-primary font-bold text-sm ml-2" data-testid={`tab-number-${s.tab_number}`}>#{s.tab_number}</span>
-                      </div>
-                      <span className="font-bold text-sm">${(s.total || 0).toFixed(2)}</span>
-                    </div>
-                  </button>
-                ))}
               </div>
+            )}
+            <div className="space-y-1 max-h-[calc(100vh-300px)] overflow-y-auto">
+              {sessions.map(s => (
+                <button key={s.session_id || s.id}
+                  onClick={() => setActiveSessionId(s.session_id || s.id)}
+                  className={`w-full text-left px-3 py-2 rounded-lg border transition-all text-sm ${
+                    (s.session_id || s.id) === activeSessionId ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/30 bg-card'
+                  }`} data-testid={`tab-${s.tab_number || s.session_id || s.id}`}>
+                  <div className="flex justify-between items-center">
+                    <div className="truncate">
+                      <span className="font-medium">{s.guest_name}</span>
+                      <span className="text-primary font-bold ml-1">#{s.tab_number}</span>
+                    </div>
+                    <span className="font-bold text-xs">${(s.total || 0).toFixed(2)}</span>
+                  </div>
+                </button>
+              ))}
             </div>
           </div>
 
-          {/* Center: Menu as List → Category → Items */}
-          <div className="col-span-5">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                {selectedCategory && (
-                  <Button variant="ghost" size="sm" onClick={() => setSelectedCategory(null)} data-testid="menu-back-btn">
-                    <ArrowLeft className="h-3.5 w-3.5 mr-1" /> Categories
-                  </Button>
-                )}
-                <h2 className="text-sm font-semibold">{selectedCategory ? selectedCategory : 'Menu'}</h2>
-              </div>
-              <Button size="sm" variant="outline" onClick={() => setShowCustomItem(!showCustomItem)} data-testid="add-custom-menu-btn">
-                <Plus className="h-3.5 w-3.5 mr-1" /> Custom Item
-              </Button>
+          {/* Center: Kanban Menu */}
+          <div className="col-span-6">
+            {/* Horizontal Category Tabs */}
+            <div className="flex items-center gap-1 mb-4 overflow-x-auto pb-1" data-testid="category-tabs">
+              {CATEGORIES.map(cat => (
+                <button key={cat} onClick={() => { setSelectedCategory(cat); setEditingItem(null); }}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all ${
+                    selectedCategory === cat
+                      ? 'bg-primary text-primary-foreground shadow-sm'
+                      : 'bg-card border border-border text-muted-foreground hover:text-foreground hover:border-primary/30'
+                  }`} data-testid={`cat-tab-${cat.toLowerCase().replace(/[^a-z]/g, '-')}`}>
+                  {cat}
+                </button>
+              ))}
+              <button onClick={() => setShowCustomItem(!showCustomItem)}
+                className="px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap bg-card border border-dashed border-primary/40 text-primary hover:bg-primary/5"
+                data-testid="add-custom-menu-btn">
+                <Plus className="h-3.5 w-3.5 inline mr-1" /> Custom
+              </button>
             </div>
 
             {/* Custom Item Form */}
             {showCustomItem && (
-              <div className="bg-card border border-primary/20 rounded-xl p-4 mb-3 space-y-3" data-testid="custom-item-form">
-                <div className="grid grid-cols-2 gap-2">
-                  <Input value={customItem.name} onChange={e => setCustomItem(p => ({ ...p, name: e.target.value }))} placeholder="Item name" className="text-sm" data-testid="custom-item-name" />
-                  <Input type="number" step="0.01" value={customItem.price}
-                    onChange={e => setCustomItem(p => ({ ...p, price: e.target.value }))} placeholder="$ Price" className="text-sm" data-testid="custom-item-price" />
+              <div className="bg-card border border-primary/20 rounded-xl p-4 mb-4 space-y-3" data-testid="custom-item-form">
+                <div className="grid grid-cols-3 gap-2">
+                  <Input value={customItem.name} onChange={e => setCustomItem(p => ({ ...p, name: e.target.value }))} placeholder="Item name" className="text-sm col-span-2" data-testid="custom-item-name" />
+                  <Input type="number" step="0.01" value={customItem.price} onChange={e => setCustomItem(p => ({ ...p, price: e.target.value }))} placeholder="$ Price" className="text-sm" data-testid="custom-item-price" />
                 </div>
                 <div className="flex gap-2 items-center">
                   <select value={customItem.category} onChange={e => setCustomItem(p => ({ ...p, category: e.target.value }))}
-                    className="h-10 rounded-md border border-input bg-background px-2 text-sm flex-1" data-testid="custom-item-category">
+                    className="h-9 rounded-md border border-input bg-background px-2 text-sm flex-1" data-testid="custom-item-category">
                     {CATEGORIES.map(c => <option key={c}>{c}</option>)}
                   </select>
                   <label className="flex items-center gap-1.5 text-sm whitespace-nowrap">
-                    <input type="checkbox" checked={customItem.is_alcohol} onChange={e => setCustomItem(p => ({ ...p, is_alcohol: e.target.checked }))} />
-                    Alcohol
+                    <input type="checkbox" checked={customItem.is_alcohol} onChange={e => setCustomItem(p => ({ ...p, is_alcohol: e.target.checked }))} /> Alcohol
                   </label>
                 </div>
-                {/* Photo Upload */}
                 <div className="flex gap-2 items-center">
-                  <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" className="hidden"
-                    onChange={e => e.target.files[0] && setCustomPhoto(e.target.files[0])} />
-                  <input ref={fileInputRef} type="file" accept="image/*" className="hidden"
-                    onChange={e => e.target.files[0] && setCustomPhoto(e.target.files[0])} />
-                  <Button type="button" size="sm" variant="outline" onClick={() => cameraInputRef.current?.click()} data-testid="take-photo-btn">
-                    <Camera className="h-3.5 w-3.5 mr-1" /> Take Photo
-                  </Button>
-                  <Button type="button" size="sm" variant="outline" onClick={() => fileInputRef.current?.click()} data-testid="upload-photo-btn">
-                    <Upload className="h-3.5 w-3.5 mr-1" /> Upload
-                  </Button>
-                  {customPhoto && <span className="text-xs text-green-600 truncate max-w-[120px]">{customPhoto.name}</span>}
+                  <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={e => e.target.files[0] && setCustomPhoto(e.target.files[0])} />
+                  <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={e => e.target.files[0] && setCustomPhoto(e.target.files[0])} />
+                  <Button type="button" size="sm" variant="outline" onClick={() => cameraInputRef.current?.click()} data-testid="take-photo-btn"><Camera className="h-3.5 w-3.5 mr-1" /> Photo</Button>
+                  <Button type="button" size="sm" variant="outline" onClick={() => fileInputRef.current?.click()} data-testid="upload-photo-btn"><Upload className="h-3.5 w-3.5 mr-1" /> Upload</Button>
+                  {customPhoto && <span className="text-xs text-green-600 truncate max-w-[100px]">{customPhoto.name}</span>}
                 </div>
-                <Button size="sm" onClick={handleAddCustomItem} disabled={!customItem.name.trim() || !customItem.price} className="w-full" data-testid="custom-item-submit">
-                  <Plus className="h-3.5 w-3.5 mr-1" /> Add to Menu
-                </Button>
+                <Button size="sm" onClick={handleAddCustomItem} disabled={!customItem.name.trim() || !customItem.price} className="w-full" data-testid="custom-item-submit">Add to Menu</Button>
               </div>
             )}
 
-            {!selectedCategory ? (
-              /* Category List */
-              <div className="space-y-1" data-testid="category-list">
-                {CATEGORIES.map(cat => {
-                  const count = categoryCounts[cat] || 0;
-                  return (
-                    <button key={cat} onClick={() => setSelectedCategory(cat)}
-                      className="w-full flex items-center justify-between px-4 py-3 rounded-lg border border-border bg-card hover:border-primary/30 hover:bg-primary/5 transition-all text-left"
-                      data-testid={`category-${cat.toLowerCase().replace(/[^a-z]/g, '-')}`}>
-                      <span className="font-medium text-sm">{cat}</span>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-muted-foreground">{count} items</span>
-                        <ChevronRight className="h-4 w-4 text-muted-foreground" />
+            {/* Category Title + Items List */}
+            <h3 className="text-center font-bold text-lg mb-3" data-testid="category-title">{selectedCategory}</h3>
+            <div className="space-y-1 max-h-[calc(100vh-280px)] overflow-y-auto" data-testid="items-list">
+              {filteredItems.length === 0 ? (
+                <p className="text-sm text-muted-foreground py-8 text-center">No items in {selectedCategory}</p>
+              ) : filteredItems.map(item => (
+                editingItem === item.id ? (
+                  <div key={item.id} className="p-3 rounded-lg border border-primary/30 bg-primary/5 space-y-2">
+                    <div className="grid grid-cols-3 gap-2">
+                      <Input value={editForm.name} onChange={e => setEditForm(p => ({ ...p, name: e.target.value }))} className="text-sm col-span-2" />
+                      <Input type="number" step="0.01" value={editForm.price} onChange={e => setEditForm(p => ({ ...p, price: e.target.value }))} className="text-sm" />
+                    </div>
+                    <div className="flex gap-2">
+                      <Button size="sm" onClick={() => handleEditItem(item.id)}><Check className="h-3.5 w-3.5 mr-1" /> Save</Button>
+                      <Button size="sm" variant="outline" onClick={() => setEditingItem(null)}><X className="h-3.5 w-3.5" /></Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div key={item.id}
+                    className="flex items-center gap-3 px-4 py-2.5 rounded-lg border border-border bg-card hover:border-primary/30 transition-all group"
+                    data-testid={`item-${item.id}`}>
+                    {item.image_url ? (
+                      <img src={item.image_url} alt="" className="w-9 h-9 rounded-lg object-cover flex-shrink-0" />
+                    ) : (
+                      <div className="w-9 h-9 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
+                        <Beer className="h-4 w-4 text-muted-foreground" />
                       </div>
+                    )}
+                    <button className="flex-1 text-left" onClick={() => handleAddItem(item)}>
+                      <span className="font-medium text-sm">{item.name}</span>
                     </button>
-                  );
-                })}
-              </div>
-            ) : (
-              /* Items List */
-              <div className="space-y-1 max-h-[calc(100vh-300px)] overflow-y-auto" data-testid="items-list">
-                {filteredItems.length === 0 ? (
-                  <p className="text-sm text-muted-foreground py-8 text-center">No items in this category</p>
-                ) : filteredItems.map(item => (
-                  editingItem === item.id ? (
-                    <div key={item.id} className="p-3 rounded-lg border border-primary/30 bg-primary/5 space-y-2">
-                      <div className="grid grid-cols-3 gap-2">
-                        <Input value={editForm.name} onChange={e => setEditForm(p => ({ ...p, name: e.target.value }))} className="text-sm col-span-2" />
-                        <Input type="number" step="0.01" value={editForm.price} onChange={e => setEditForm(p => ({ ...p, price: e.target.value }))} className="text-sm" />
-                      </div>
-                      <div className="flex gap-2">
-                        <Button size="sm" onClick={() => handleEditItem(item.id)} data-testid={`save-edit-${item.id}`}><Check className="h-3.5 w-3.5 mr-1" /> Save</Button>
-                        <Button size="sm" variant="outline" onClick={() => setEditingItem(null)}><X className="h-3.5 w-3.5" /></Button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div key={item.id}
-                      className="flex items-center gap-3 px-4 py-3 rounded-lg border border-border bg-card hover:border-primary/30 transition-all group"
-                      data-testid={`item-${item.id}`}>
-                      {item.image_url ? (
-                        <img src={item.image_url} alt="" className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
-                      ) : (
-                        <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
-                          <Beer className="h-4 w-4 text-muted-foreground" />
-                        </div>
-                      )}
-                      <button className="flex-1 text-left" onClick={() => handleAddItem(item)}>
-                        <span className="font-medium text-sm">{item.name}</span>
-                        <span className="text-primary font-bold text-sm ml-3">${item.price.toFixed(2)}</span>
-                      </button>
-                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button onClick={() => { setEditingItem(item.id); setEditForm({ name: item.name, price: item.price, category: item.category }); }}
-                          className="p-1.5 rounded hover:bg-muted" data-testid={`edit-item-${item.id}`}>
-                          <Pencil className="h-3.5 w-3.5 text-muted-foreground hover:text-primary" />
-                        </button>
-                        <button onClick={() => handleDeleteItem(item.id)}
-                          className="p-1.5 rounded hover:bg-destructive/10" data-testid={`delete-item-${item.id}`}>
-                          <Trash2 className="h-3.5 w-3.5 text-muted-foreground hover:text-destructive" />
-                        </button>
-                      </div>
-                    </div>
-                  )
-                ))}
-              </div>
-            )}
+                    <span className="text-primary font-bold text-sm">${item.price.toFixed(2)}</span>
+                    <button onClick={() => { setEditingItem(item.id); setEditForm({ name: item.name, price: item.price, category: item.category }); }}
+                      className="p-1.5 rounded opacity-0 group-hover:opacity-100 hover:bg-muted" data-testid={`edit-item-${item.id}`}>
+                      <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
+                    </button>
+                    <button onClick={() => handleDeleteItem(item.id)}
+                      className="p-1.5 rounded opacity-0 group-hover:opacity-100 hover:bg-destructive/10" data-testid={`delete-item-${item.id}`}>
+                      <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
+                    </button>
+                  </div>
+                )
+              ))}
+            </div>
           </div>
 
           {/* Right: Active Tab */}
@@ -463,33 +388,33 @@ export const TapPage = () => {
                 <div className="flex items-center justify-between mb-4">
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-bold bg-primary/10 text-primary px-2.5 py-1 rounded-lg" data-testid="active-tab-number">
-                        #{activeSession.tab_number || '—'}
-                      </span>
+                      <span className="text-sm font-bold bg-primary/10 text-primary px-2.5 py-1 rounded-lg" data-testid="active-tab-number">#{activeSession.tab_number || '—'}</span>
                       <h2 className="text-lg font-semibold">{activeSession.guest_name}</h2>
                     </div>
-                    <p className="text-xs text-muted-foreground mt-1">{activeSession.session_type} — opened {new Date(activeSession.opened_at).toLocaleTimeString()}</p>
+                    <p className="text-xs text-muted-foreground mt-1">opened {new Date(activeSession.opened_at).toLocaleTimeString()}</p>
                   </div>
                   <span className="text-2xl font-bold text-primary" data-testid="tab-total">${activeSession.total.toFixed(2)}</span>
                 </div>
 
                 <div className="space-y-1 mb-6 max-h-[350px] overflow-y-auto">
                   {(activeSession.items || []).length === 0 ? (
-                    <p className="text-sm text-muted-foreground py-4 text-center">No items yet — add from menu</p>
+                    <p className="text-sm text-muted-foreground py-4 text-center">No items — add from menu</p>
                   ) : activeSession.items.map(item => (
                     <div key={item.id} className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-muted/30 text-sm border border-transparent hover:border-border">
                       <div className="flex-1">
                         <span className="font-medium">{item.name}</span>
-                        <span className="text-muted-foreground ml-2">x{item.qty}</span>
                       </div>
-                      <span className="font-medium mr-3">${item.line_total.toFixed(2)}</span>
-                      {activeSession.status === 'open' && (
-                        <button onClick={() => handleVoidItem(item.id)}
-                          className="p-1.5 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-all"
-                          data-testid={`void-item-${item.id}`}>
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </button>
-                      )}
+                      <div className="flex items-center gap-2">
+                        <span className="text-muted-foreground">x{item.qty}</span>
+                        <span className="font-medium w-16 text-right">${item.line_total.toFixed(2)}</span>
+                        {activeSession.status === 'open' && (
+                          <button onClick={() => handleVoidItem(item.id)}
+                            className="p-1.5 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive"
+                            data-testid={`void-item-${item.id}`}>
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -498,15 +423,9 @@ export const TapPage = () => {
                   <div className="space-y-3 pt-4 border-t border-border">
                     <p className="text-sm font-medium text-muted-foreground">Close Tab</p>
                     <div className="grid grid-cols-3 gap-2">
-                      <Button variant="outline" className="h-12" onClick={() => handleCloseTab('card')} disabled={loading} data-testid="pay-card-btn">
-                        <CreditCard className="h-4 w-4 mr-1" /> Card
-                      </Button>
-                      <Button variant="outline" className="h-12" onClick={() => handleCloseTab('cash')} disabled={loading} data-testid="pay-cash-btn">
-                        <Banknote className="h-4 w-4 mr-1" /> Cash
-                      </Button>
-                      <Button variant="outline" className="h-12" onClick={() => handleCloseTab('comp')} disabled={loading} data-testid="pay-comp-btn">
-                        <Beer className="h-4 w-4 mr-1" /> Comp
-                      </Button>
+                      <Button variant="outline" className="h-11" onClick={() => handleCloseTab('card')} disabled={loading} data-testid="pay-card-btn"><CreditCard className="h-4 w-4 mr-1" /> Card</Button>
+                      <Button variant="outline" className="h-11" onClick={() => handleCloseTab('cash')} disabled={loading} data-testid="pay-cash-btn"><Banknote className="h-4 w-4 mr-1" /> Cash</Button>
+                      <Button variant="outline" className="h-11" onClick={() => handleCloseTab('comp')} disabled={loading} data-testid="pay-comp-btn"><Beer className="h-4 w-4 mr-1" /> Comp</Button>
                     </div>
                   </div>
                 )}
@@ -514,8 +433,8 @@ export const TapPage = () => {
             ) : (
               <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
                 <Receipt className="h-12 w-12 mb-4 opacity-30" />
-                <p className="text-lg">Select a tab to view details</p>
-                <p className="text-sm">or scan a wristband / tab #</p>
+                <p className="text-lg">Select a tab</p>
+                <p className="text-sm">Scan NFC or click a tab</p>
               </div>
             )}
           </div>
