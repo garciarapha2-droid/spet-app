@@ -56,16 +56,24 @@ SPETAP is a multi-tenant SaaS platform for venue operations (clubs, restaurants,
 - Added destructive color tokens (were missing)
 - All tests passing (10/10 backend, all frontend features verified)
 
+### Session 2b (2026-02-27) - Auth Migration
+- **COMPLETED: Auth migrated MongoDB → PostgreSQL** — login, signup, /me all via asyncpg
+- Test user seeded in PostgreSQL (teste@teste.com / teste123, role=owner, company=Demo Club)
+
+### Session 2c (2026-02-27) - PULSE C1→C3
+- **COMPLETED: C1 Guest Intake** — Name, Email, Phone, DOB (conditional HOST_COLLECT_DOB), Photo (camera/upload)
+- **COMPLETED: C1.1 Dedupe** — SHA-256 hashes in PG global_persons, venue isolation, masked data UI (m***@test.com)
+- **COMPLETED: C2 Decision Card** — Risk chips (blocked, flagged, unpaid), Value chips (VIP, big_spender, regular, loyal), Allow/Deny
+- **COMPLETED: C3 Success** — Entry event logged in PG entry_events, KPIs update in real-time, "Next Guest" reset
+- **Data Architecture**: PII → MongoDB venue_guests (venue-isolated), Hashes → PG global_persons, Decisions → PG entry_events
+- **Testing: 100% pass** — 20/20 backend tests, all frontend C1-C3 flows verified
+
 ---
 
 ## Prioritized Backlog
 
-### P0 (Next)
-- Migrate authentication from MongoDB to PostgreSQL (per architecture requirement)
-
-### P1
-- Implement Pulse Module (Club Host C0-C3): guest intake flow, deduplication, risk/value chips
-- Implement TAP Module (Bar Mode B0-B5): 3 operational modes
+### P1 (Next)
+- Implement TAP Module (Bar Mode B0-B5): 3 operational modes (Disco, Restaurant, Event)
 - Implement Table & KDS Modules with feature-gating
 
 ### P2
