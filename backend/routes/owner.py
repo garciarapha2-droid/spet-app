@@ -533,11 +533,7 @@ async def get_people_ops(user: dict = Depends(require_auth)):
     db = get_mongo_db()
     pool = get_postgres_pool()
     user_id = user["sub"]
-
-    async with pool.acquire() as conn:
-        access_rows = await conn.fetch(
-            "SELECT venue_id FROM user_access WHERE user_id = $1::uuid", user_id)
-        venue_ids = [r["venue_id"] for r in access_rows if r["venue_id"]]
+    venue_ids = await _get_user_venue_ids(pool, user_id)
 
     venues_staff = []
     total_staff = 0
@@ -547,7 +543,6 @@ async def get_people_ops(user: dict = Depends(require_auth)):
         count = await db.venue_barmen.count_documents({"venue_id": str(vid), "active": True})
         total_staff += count
 
-        # Shifts closed
         shifts_cursor = db.venue_shifts.find({"venue_id": str(vid)}, {"_id": 0}).sort("created_at", -1).limit(5)
         recent_shifts = await shifts_cursor.to_list(5)
 
@@ -558,10 +553,58 @@ async def get_people_ops(user: dict = Depends(require_auth)):
             "recent_shifts": len(recent_shifts),
         })
 
+    # Get events with staff assigned
+    events_staff = []
+    for vid in venue_ids:
+        cfg = await db.venue_configs.find_one({"venue_id": str(vid)}, {"_id": 0})
+        venue_name = cfg.get("venue_name", "Demo Club") if cfg else "Demo Club"
+        async with pool.acquire() as conn:
+            events = await conn.fetch(
+                """SELECT e.id, e.name, e.event_date, e.status,
+                          (SELECT COUNT(*) FROM event_staff es WHERE es.event_id = e.id) as staff_count
+                   FROM venue_events e WHERE e.venue_id=$1
+                   ORDER BY e.event_date DESC LIMIT 10""", uuid.UUID(str(vid)))
+        for ev in events:
+            if ev["staff_count"] > 0:
+                events_staff.append({
+                    "event_id": str(ev["id"]),
+                    "event_name": ev["name"],
+                    "venue_name": venue_name,
+                    "venue_id": str(vid),
+                    "event_date": ev["event_date"].isoformat() if ev["event_date"] else None,
+                    "status": ev["status"],
+                    "staff_count": ev["staff_count"],
+                })
+
     return {
         "total_staff": total_staff,
         "venues": venues_staff,
+        "events": events_staff,
     }
+
+
+@router.get("/people/{venue_id}/staff")
+async def get_venue_staff_detail(venue_id: str, user: dict = Depends(require_auth)):
+    """Get detailed staff list for a specific venue."""
+    db = get_mongo_db()
+    cursor = db.venue_barmen.find({"venue_id": venue_id, "active": True}, {"_id": 0})
+    staff = await cursor.to_list(100)
+    return {"staff": staff, "venue_id": venue_id}
+
+
+@router.get("/people/event/{event_id}/staff")
+async def get_event_staff_detail(event_id: str, user: dict = Depends(require_auth)):
+    """Get detailed staff list assigned to a specific event."""
+    pool = get_postgres_pool()
+    async with pool.acquire() as conn:
+        rows = await conn.fetch(
+            """SELECT es.staff_id, es.staff_name, es.role, es.hourly_rate, es.assigned_at
+               FROM event_staff es WHERE es.event_id=$1::uuid
+               ORDER BY es.assigned_at""", uuid.UUID(event_id))
+    staff = [{"staff_id": str(r["staff_id"]), "name": r["staff_name"],
+              "role": r["role"], "hourly_rate": float(r["hourly_rate"]) if r["hourly_rate"] else 0,
+              "assigned_at": r["assigned_at"].isoformat() if r["assigned_at"] else None} for r in rows]
+    return {"staff": staff, "event_id": event_id}
 
 
 # ─── SYSTEM & EXPANSION ───────────────────────────────────────────
