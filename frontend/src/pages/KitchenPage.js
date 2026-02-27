@@ -183,6 +183,7 @@ export const KitchenPage = () => {
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [delayedPopup, setDelayedPopup] = useState(null);
+  const [dismissedIds, setDismissedIds] = useState(new Set());
 
   const loadTickets = useCallback(async () => {
     try {
