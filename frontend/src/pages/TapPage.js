@@ -241,13 +241,16 @@ export const TapPage = () => {
           {/* Stats badges */}
           <div className="flex items-center gap-4 text-sm">
             <span className="text-muted-foreground">Tabs: <strong className="text-foreground">{stats.open_tabs || 0}</strong></span>
-            <span className="text-muted-foreground">Revenue: <strong className="text-green-500">R${(stats.revenue_today || 0).toFixed(0)}</strong></span>
           </div>
           <div className="h-5 w-px bg-border" />
           <ThemeToggle />
           <div className="h-5 w-px bg-border" />
           <Button variant="ghost" size="icon" onClick={() => navigate('/venue/home')} data-testid="home-btn">
             <Home className="h-4 w-4" />
+          </Button>
+          <div className="h-5 w-px bg-border" />
+          <Button variant="ghost" size="icon" onClick={() => { localStorage.removeItem('spetap_token'); navigate('/login'); }} data-testid="logout-btn">
+            <LogOut className="h-4 w-4" />
           </Button>
         </div>
       </header>
