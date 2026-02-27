@@ -104,6 +104,32 @@ export const GuestProfilePage = () => {
           <ArrowLeft className="h-4 w-4 mr-2" /> Back
         </Button>
 
+        {/* Wristband Blocked Alert */}
+        {profile.wristband_blocked && (
+          <div className="mb-6 p-5 rounded-2xl bg-destructive/10 border-2 border-destructive/30 flex items-center gap-4" data-testid="blocked-alert">
+            <Ban className="h-8 w-8 text-destructive flex-shrink-0" />
+            <div className="flex-1">
+              <p className="font-bold text-destructive text-lg">WRISTBAND BLOCKED</p>
+              <p className="text-sm text-destructive/80">Reason: {profile.wristband_block_reason || 'Lost wristband'}. Cannot make purchases.</p>
+            </div>
+            <Button variant="outline" onClick={handleUnblock} disabled={blockLoading}
+              className="border-destructive/30 text-destructive hover:bg-destructive/10" data-testid="unblock-btn">
+              <ShieldCheck className="h-4 w-4 mr-2" /> Unblock
+            </Button>
+          </div>
+        )}
+
+        {/* Open Tab Warning */}
+        {tabStatus?.has_open_tabs && (
+          <div className="mb-6 p-5 rounded-2xl bg-yellow-500/10 border-2 border-yellow-500/30 flex items-center gap-4" data-testid="open-tab-alert">
+            <AlertTriangle className="h-8 w-8 text-yellow-600 flex-shrink-0" />
+            <div className="flex-1">
+              <p className="font-bold text-yellow-700">Open Tab — R${tabStatus.total_owed.toFixed(2)}</p>
+              <p className="text-sm text-yellow-600/80">Guest has {tabStatus.open_tabs.length} open tab{tabStatus.open_tabs.length > 1 ? 's' : ''}. Must pay before exit.</p>
+            </div>
+          </div>
+        )}
+
         {/* Profile Header */}
         <div className="grid grid-cols-12 gap-8 mb-10">
           {/* Photo + Info */}
