@@ -45,10 +45,18 @@ def _prev_month_range():
     )
 
 
+# ─── helper: get user venue_ids ────────────────────────────────────
+async def _get_user_venue_ids(pool, user_id: str):
+    async with pool.acquire() as conn:
+        rows = await conn.fetch(
+            "SELECT venue_id FROM user_access WHERE user_id = $1::uuid", user_id)
+    return [r["venue_id"] for r in rows if r["venue_id"]]
+
+
 # ─── OWNER OVERVIEW ───────────────────────────────────────────────
 @router.get("/dashboard")
-async def get_owner_dashboard(user: dict = Depends(require_auth), company_id: str = None):
-    """Owner Overview — Aggregated KPIs across all venues."""
+async def get_owner_dashboard(user: dict = Depends(require_auth), view: str = "business"):
+    """Owner Overview — supports view modes: business (default), venue, events."""
     pool = get_postgres_pool()
     db = get_mongo_db()
     now = datetime.now(timezone.utc)
@@ -57,124 +65,174 @@ async def get_owner_dashboard(user: dict = Depends(require_auth), company_id: st
     year = _year_start()
     prev_start, prev_end = _prev_month_range()
 
-    # Get venues for this user
     user_id = user["sub"]
-    async with pool.acquire() as conn:
-        access_rows = await conn.fetch(
-            "SELECT venue_id, role FROM user_access WHERE user_id = $1::uuid", user_id)
-        venue_ids = [r["venue_id"] for r in access_rows if r["venue_id"]]
+    venue_ids = await _get_user_venue_ids(pool, user_id)
 
-        if not venue_ids:
-            return {"kpis": {}, "venues": [], "insights": []}
+    if not venue_ids:
+        return {"kpis": {}, "venues": [], "view": view}
 
-        # Revenue KPIs — all venues aggregated
-        rev_today = float(await conn.fetchval(
-            "SELECT COALESCE(SUM(total),0) FROM tap_sessions WHERE venue_id = ANY($1) AND status='closed' AND closed_at>=$2",
-            venue_ids, today) or 0)
-        rev_mtd = float(await conn.fetchval(
-            "SELECT COALESCE(SUM(total),0) FROM tap_sessions WHERE venue_id = ANY($1) AND status='closed' AND closed_at>=$2",
-            venue_ids, month) or 0)
-        rev_ytd = float(await conn.fetchval(
-            "SELECT COALESCE(SUM(total),0) FROM tap_sessions WHERE venue_id = ANY($1) AND status='closed' AND closed_at>=$2",
-            venue_ids, year) or 0)
-        rev_prev_month = float(await conn.fetchval(
-            "SELECT COALESCE(SUM(total),0) FROM tap_sessions WHERE venue_id = ANY($1) AND status='closed' AND closed_at>=$2 AND closed_at<$3",
-            venue_ids, prev_start, prev_end) or 0)
-
-        # Growth %
-        growth_pct = round(((rev_mtd - rev_prev_month) / rev_prev_month * 100) if rev_prev_month > 0 else 0, 1)
-
-        # Unique guests total
-        total_guests_today = await conn.fetchval(
-            "SELECT COUNT(DISTINCT guest_id) FROM entry_events WHERE venue_id = ANY($1) AND created_at>=$2 AND decision='allowed'",
-            venue_ids, today) or 0
-
-        # Open tabs / running
-        open_tabs = await conn.fetchval(
-            "SELECT COUNT(*) FROM tap_sessions WHERE venue_id = ANY($1) AND status='open'", venue_ids) or 0
-        running_total = float(await conn.fetchval(
-            "SELECT COALESCE(SUM(total),0) FROM tap_sessions WHERE venue_id = ANY($1) AND status='open'", venue_ids) or 0)
-
-        # Tabs closed today
-        closed_today = await conn.fetchval(
-            "SELECT COUNT(*) FROM tap_sessions WHERE venue_id = ANY($1) AND status='closed' AND closed_at>=$2",
-            venue_ids, today) or 0
-
-        # Avg ticket
-        avg_ticket = float(await conn.fetchval(
-            "SELECT COALESCE(AVG(total),0) FROM tap_sessions WHERE venue_id = ANY($1) AND status='closed' AND closed_at>=$2",
-            venue_ids, today) or 0)
-
-        # ARPU (Avg Revenue Per Unique guest this month)
-        unique_guests_month = await conn.fetchval(
-            "SELECT COUNT(DISTINCT guest_id) FROM entry_events WHERE venue_id = ANY($1) AND created_at>=$2 AND decision='allowed'",
-            venue_ids, month) or 0
-        arpu = round(rev_mtd / unique_guests_month, 2) if unique_guests_month > 0 else 0
-
-        # Estimated profit (simple: 30% margin)
-        estimated_profit = round(rev_mtd * 0.30, 2)
-
-        # Retention: returning guests (guests with >1 entry this month)
-        returning = await conn.fetchval(
-            """SELECT COUNT(*) FROM (
-                SELECT guest_id FROM entry_events WHERE venue_id = ANY($1) AND created_at>=$2 AND decision='allowed'
-                GROUP BY guest_id HAVING COUNT(*)>1
-            ) sub""", venue_ids, month) or 0
-        retention_pct = round((returning / unique_guests_month * 100) if unique_guests_month > 0 else 0, 1)
-
-    # Venues list
-    venues_data = []
-    for vid in venue_ids:
-        cfg = await db.venue_configs.find_one({"venue_id": str(vid)}, {"_id": 0})
-        venue_name = cfg.get("venue_name", "Demo Club") if cfg else "Demo Club"
-
+    # ─── Business View (aggregated) ───
+    if view == "business":
         async with pool.acquire() as conn:
-            v_rev = float(await conn.fetchval(
-                "SELECT COALESCE(SUM(total),0) FROM tap_sessions WHERE venue_id=$1 AND status='closed' AND closed_at>=$2",
-                vid, today) or 0)
-            v_tabs = await conn.fetchval(
-                "SELECT COUNT(*) FROM tap_sessions WHERE venue_id=$1 AND status='open'", vid) or 0
-            v_guests = await conn.fetchval(
-                "SELECT COUNT(DISTINCT guest_id) FROM entry_events WHERE venue_id=$1 AND created_at>=$2 AND decision='allowed'",
-                vid, today) or 0
-            v_voids = await conn.fetchval(
-                "SELECT COUNT(*) FROM tap_items WHERE venue_id=$1 AND voided_at>=$2", vid, today) or 0
+            rev_today = float(await conn.fetchval(
+                "SELECT COALESCE(SUM(total),0) FROM tap_sessions WHERE venue_id = ANY($1) AND status='closed' AND closed_at>=$2",
+                venue_ids, today) or 0)
+            rev_mtd = float(await conn.fetchval(
+                "SELECT COALESCE(SUM(total),0) FROM tap_sessions WHERE venue_id = ANY($1) AND status='closed' AND closed_at>=$2",
+                venue_ids, month) or 0)
+            rev_ytd = float(await conn.fetchval(
+                "SELECT COALESCE(SUM(total),0) FROM tap_sessions WHERE venue_id = ANY($1) AND status='closed' AND closed_at>=$2",
+                venue_ids, year) or 0)
+            rev_prev_month = float(await conn.fetchval(
+                "SELECT COALESCE(SUM(total),0) FROM tap_sessions WHERE venue_id = ANY($1) AND status='closed' AND closed_at>=$2 AND closed_at<$3",
+                venue_ids, prev_start, prev_end) or 0)
+            growth_pct = round(((rev_mtd - rev_prev_month) / rev_prev_month * 100) if rev_prev_month > 0 else 0, 1)
+            total_guests_today = await conn.fetchval(
+                "SELECT COUNT(DISTINCT guest_id) FROM entry_events WHERE venue_id = ANY($1) AND created_at>=$2 AND decision='allowed'",
+                venue_ids, today) or 0
+            open_tabs = await conn.fetchval(
+                "SELECT COUNT(*) FROM tap_sessions WHERE venue_id = ANY($1) AND status='open'", venue_ids) or 0
+            running_total = float(await conn.fetchval(
+                "SELECT COALESCE(SUM(total),0) FROM tap_sessions WHERE venue_id = ANY($1) AND status='open'", venue_ids) or 0)
+            closed_today = await conn.fetchval(
+                "SELECT COUNT(*) FROM tap_sessions WHERE venue_id = ANY($1) AND status='closed' AND closed_at>=$2",
+                venue_ids, today) or 0
+            avg_ticket = float(await conn.fetchval(
+                "SELECT COALESCE(AVG(total),0) FROM tap_sessions WHERE venue_id = ANY($1) AND status='closed' AND closed_at>=$2",
+                venue_ids, today) or 0)
+            unique_guests_month = await conn.fetchval(
+                "SELECT COUNT(DISTINCT guest_id) FROM entry_events WHERE venue_id = ANY($1) AND created_at>=$2 AND decision='allowed'",
+                venue_ids, month) or 0
+            arpu = round(rev_mtd / unique_guests_month, 2) if unique_guests_month > 0 else 0
+            estimated_profit = round(rev_mtd * 0.30, 2)
+            returning = await conn.fetchval(
+                """SELECT COUNT(*) FROM (
+                    SELECT guest_id FROM entry_events WHERE venue_id = ANY($1) AND created_at>=$2 AND decision='allowed'
+                    GROUP BY guest_id HAVING COUNT(*)>1
+                ) sub""", venue_ids, month) or 0
+            retention_pct = round((returning / unique_guests_month * 100) if unique_guests_month > 0 else 0, 1)
 
-        # Health status: green = normal, yellow = some issues, red = problems
-        health = "green"
-        if v_voids > 5:
-            health = "yellow"
-        if v_voids > 10:
-            health = "red"
+        # Venues list
+        venues_data = []
+        for vid in venue_ids:
+            cfg = await db.venue_configs.find_one({"venue_id": str(vid)}, {"_id": 0})
+            venue_name = cfg.get("venue_name", "Demo Club") if cfg else "Demo Club"
+            async with pool.acquire() as conn:
+                v_rev = float(await conn.fetchval(
+                    "SELECT COALESCE(SUM(total),0) FROM tap_sessions WHERE venue_id=$1 AND status='closed' AND closed_at>=$2",
+                    vid, today) or 0)
+                v_tabs = await conn.fetchval(
+                    "SELECT COUNT(*) FROM tap_sessions WHERE venue_id=$1 AND status='open'", vid) or 0
+                v_guests = await conn.fetchval(
+                    "SELECT COUNT(DISTINCT guest_id) FROM entry_events WHERE venue_id=$1 AND created_at>=$2 AND decision='allowed'",
+                    vid, today) or 0
+                v_voids = await conn.fetchval(
+                    "SELECT COUNT(*) FROM tap_items WHERE venue_id=$1 AND voided_at>=$2", vid, today) or 0
+            health = "green"
+            if v_voids > 5:
+                health = "yellow"
+            if v_voids > 10:
+                health = "red"
+            venues_data.append({
+                "venue_id": str(vid), "name": venue_name,
+                "revenue_today": v_rev, "open_tabs": v_tabs,
+                "guests_today": v_guests, "voids_today": v_voids, "health": health,
+            })
 
-        venues_data.append({
-            "venue_id": str(vid),
-            "name": venue_name,
-            "revenue_today": v_rev,
-            "open_tabs": v_tabs,
-            "guests_today": v_guests,
-            "voids_today": v_voids,
-            "health": health,
-        })
+        return {
+            "view": "business",
+            "kpis": {
+                "revenue_today": rev_today, "revenue_mtd": rev_mtd, "revenue_ytd": rev_ytd,
+                "growth_pct": growth_pct, "estimated_profit": estimated_profit,
+                "avg_ticket": round(avg_ticket, 2), "arpu": arpu,
+                "retention_pct": retention_pct, "total_guests_today": total_guests_today,
+                "open_tabs": open_tabs, "running_total": running_total,
+                "closed_today": closed_today, "unique_guests_month": unique_guests_month,
+            },
+            "venues": venues_data,
+        }
 
-    return {
-        "kpis": {
-            "revenue_today": rev_today,
-            "revenue_mtd": rev_mtd,
-            "revenue_ytd": rev_ytd,
-            "growth_pct": growth_pct,
-            "estimated_profit": estimated_profit,
-            "avg_ticket": round(avg_ticket, 2),
-            "arpu": arpu,
-            "retention_pct": retention_pct,
-            "total_guests_today": total_guests_today,
-            "open_tabs": open_tabs,
-            "running_total": running_total,
-            "closed_today": closed_today,
-            "unique_guests_month": unique_guests_month,
-        },
-        "venues": venues_data,
-    }
+    # ─── Venue View (per-venue financials) ───
+    elif view == "venue":
+        venues_data = []
+        for vid in venue_ids:
+            cfg = await db.venue_configs.find_one({"venue_id": str(vid)}, {"_id": 0})
+            venue_name = cfg.get("venue_name", "Demo Club") if cfg else "Demo Club"
+            async with pool.acquire() as conn:
+                rev_today = float(await conn.fetchval(
+                    "SELECT COALESCE(SUM(total),0) FROM tap_sessions WHERE venue_id=$1 AND status='closed' AND closed_at>=$2", vid, today) or 0)
+                rev_mtd = float(await conn.fetchval(
+                    "SELECT COALESCE(SUM(total),0) FROM tap_sessions WHERE venue_id=$1 AND status='closed' AND closed_at>=$2", vid, month) or 0)
+                rev_ytd = float(await conn.fetchval(
+                    "SELECT COALESCE(SUM(total),0) FROM tap_sessions WHERE venue_id=$1 AND status='closed' AND closed_at>=$2", vid, year) or 0)
+                avg_ticket = float(await conn.fetchval(
+                    "SELECT COALESCE(AVG(total),0) FROM tap_sessions WHERE venue_id=$1 AND status='closed' AND closed_at>=$2", vid, today) or 0)
+                open_tabs = await conn.fetchval(
+                    "SELECT COUNT(*) FROM tap_sessions WHERE venue_id=$1 AND status='open'", vid) or 0
+                closed_today = await conn.fetchval(
+                    "SELECT COUNT(*) FROM tap_sessions WHERE venue_id=$1 AND status='closed' AND closed_at>=$2", vid, today) or 0
+                guests_today = await conn.fetchval(
+                    "SELECT COUNT(DISTINCT guest_id) FROM entry_events WHERE venue_id=$1 AND created_at>=$2 AND decision='allowed'", vid, today) or 0
+                voids = await conn.fetchval(
+                    "SELECT COUNT(*) FROM tap_items WHERE venue_id=$1 AND voided_at>=$2", vid, today) or 0
+            staff_count = await db.venue_barmen.count_documents({"venue_id": str(vid), "active": True})
+            health = "green"
+            if voids > 5: health = "yellow"
+            if voids > 10: health = "red"
+            venues_data.append({
+                "venue_id": str(vid), "name": venue_name, "health": health,
+                "revenue_today": rev_today, "revenue_mtd": rev_mtd, "revenue_ytd": rev_ytd,
+                "avg_ticket": round(avg_ticket, 2), "open_tabs": open_tabs,
+                "closed_today": closed_today, "guests_today": guests_today,
+                "voids_today": voids, "staff_count": staff_count,
+            })
+        return {"view": "venue", "venues": venues_data}
+
+    # ─── Events View (per-event financials) ───
+    elif view == "events":
+        events_data = []
+        for vid in venue_ids:
+            cfg = await db.venue_configs.find_one({"venue_id": str(vid)}, {"_id": 0})
+            venue_name = cfg.get("venue_name", "Demo Club") if cfg else "Demo Club"
+            async with pool.acquire() as conn:
+                events = await conn.fetch(
+                    """SELECT id, name, event_date, status, start_time, end_time
+                       FROM venue_events WHERE venue_id=$1
+                       ORDER BY event_date DESC LIMIT 20""", vid)
+                for ev in events:
+                    ev_id = ev["id"]
+                    ev_rev = float(await conn.fetchval(
+                        """SELECT COALESCE(SUM(ts.total),0) FROM tap_sessions ts
+                           WHERE ts.venue_id=$1 AND ts.status='closed'
+                           AND ts.meta->>'event_id' = $2""",
+                        vid, str(ev_id)) or 0)
+                    ev_tabs = await conn.fetchval(
+                        """SELECT COUNT(*) FROM tap_sessions ts
+                           WHERE ts.venue_id=$1 AND ts.status='closed'
+                           AND ts.meta->>'event_id' = $2""",
+                        vid, str(ev_id)) or 0
+                    ev_guests = await conn.fetchval(
+                        "SELECT COUNT(*) FROM event_guests WHERE venue_id=$1 AND event_id=$2",
+                        vid, ev_id) or 0
+                    ev_staff = await conn.fetchval(
+                        "SELECT COUNT(*) FROM event_staff WHERE venue_id=$1 AND event_id=$2",
+                        vid, ev_id) or 0
+                    events_data.append({
+                        "event_id": str(ev_id), "name": ev["name"],
+                        "venue_name": venue_name, "venue_id": str(vid),
+                        "event_date": ev["event_date"].isoformat() if ev["event_date"] else None,
+                        "status": ev["status"],
+                        "start_time": ev["start_time"] if ev["start_time"] else None,
+                        "end_time": ev["end_time"] if ev["end_time"] else None,
+                        "revenue": ev_rev, "tabs_closed": ev_tabs,
+                        "guests": ev_guests, "staff": ev_staff,
+                    })
+        # Sort by event_date desc
+        events_data.sort(key=lambda x: x["event_date"] or "", reverse=True)
+        return {"view": "events", "events": events_data}
+
+    # Fallback to business
+    return {"view": view, "kpis": {}, "venues": []}
 
 
 # ─── PERFORMANCE BY VENUE ─────────────────────────────────────────
