@@ -296,7 +296,7 @@ async def get_insights(user: dict = Depends(require_auth)):
                 })
 
             # Rule 3: Revenue below average
-            avg_daily = await conn.fetchval(
+            avg_daily = float(await conn.fetchval(
                 """SELECT COALESCE(AVG(daily_rev), 0) FROM (
                     SELECT DATE(closed_at) as day, SUM(total) as daily_rev
                     FROM tap_sessions WHERE venue_id=$1 AND status='closed' AND closed_at>=$2
