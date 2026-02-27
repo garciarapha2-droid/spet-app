@@ -171,6 +171,50 @@ export const PulseExitPage = () => {
             )}
           </div>
         </div>
+
+        {/* Exit Block Modal */}
+        {exitModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" data-testid="exit-modal-overlay">
+            <div className={`relative max-w-md w-full mx-4 rounded-2xl border-2 p-8 text-center ${
+              exitModal.type === 'blocked' ? 'bg-card border-destructive/50' : 'bg-card border-destructive/50'
+            }`} data-testid="exit-modal">
+              <button onClick={() => setExitModal(null)} className="absolute top-4 right-4 text-muted-foreground hover:text-foreground">
+                <X className="h-5 w-5" />
+              </button>
+              {exitModal.type === 'open_tab' ? (
+                <>
+                  <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center mx-auto mb-5">
+                    <AlertTriangle className="h-8 w-8 text-destructive" />
+                  </div>
+                  <h3 className="text-xl font-bold text-destructive mb-2">Open Tab Pending</h3>
+                  <p className="text-lg font-semibold mb-1">{exitModal.guest.guestName}</p>
+                  <p className="text-3xl font-bold text-destructive mb-3">R${exitModal.data.total_owed.toFixed(2)}</p>
+                  <p className="text-muted-foreground mb-6">
+                    {exitModal.data.open_tabs.length} open tab{exitModal.data.open_tabs.length > 1 ? 's' : ''}. 
+                    Must go to the cashier and pay before leaving.
+                  </p>
+                  <Button variant="outline" className="border-destructive/30" onClick={() => setExitModal(null)} data-testid="exit-modal-close-btn">
+                    Understood
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center mx-auto mb-5">
+                    <Ban className="h-8 w-8 text-destructive" />
+                  </div>
+                  <h3 className="text-xl font-bold text-destructive mb-2">Wristband Blocked</h3>
+                  <p className="text-lg font-semibold mb-3">{exitModal.guest.guestName}</p>
+                  <p className="text-muted-foreground mb-6">
+                    This wristband is blocked. Please contact management.
+                  </p>
+                  <Button variant="outline" className="border-destructive/30" onClick={() => setExitModal(null)} data-testid="exit-modal-close-btn">
+                    Understood
+                  </Button>
+                </>
+              )}
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );
