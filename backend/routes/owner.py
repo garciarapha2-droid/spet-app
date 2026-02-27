@@ -578,8 +578,6 @@ Return ONLY a valid JSON array of insight objects. No markdown, no explanation o
 @router.post("/ai-insights")
 async def generate_ai_insights(user: dict = Depends(require_auth)):
     """Generate AI-powered insights using GPT-5.2 with real venue data."""
-    from emergentintegrations.llm.chat import ChatMessage, chat
-
     pool = get_postgres_pool()
     db = get_mongo_db()
     today = _today_start()
