@@ -93,6 +93,7 @@ export const tableAPI = {
   addTable: (fd) => api.post('/table/tables/add', fd),
   editTable: (tableId, fd) => api.post(`/table/tables/${tableId}/edit`, fd),
   deleteTable: (tableId) => api.delete(`/table/tables/${tableId}`),
+  assignServer: (fd) => api.post('/table/assign-server', fd),
 };
 
 // KDS
