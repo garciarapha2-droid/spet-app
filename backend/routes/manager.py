@@ -724,3 +724,456 @@ async def get_tables_by_server(venue_id: str, user: dict = Depends(require_auth)
         "unassigned": unassigned,
         "total_tables": len(rows),
     }
+
+
+# ═══════════════════════════════════════════════════════════════════
+# SHIFT VS OPERATIONS
+# ═══════════════════════════════════════════════════════════════════
+
+def _parse_date_range(date_from: str = None, date_to: str = None):
+    """Parse date range filters. Returns (start_dt, end_dt) in UTC."""
+    if date_from:
+        start = datetime.fromisoformat(date_from).replace(tzinfo=timezone.utc)
+    else:
+        start = _today_start()
+    if date_to:
+        end = datetime.fromisoformat(date_to).replace(hour=23, minute=59, second=59, tzinfo=timezone.utc)
+    else:
+        end = datetime.now(timezone.utc)
+    return start, end
+
+
+async def _calc_staff_cost(db, venue_id: str, start: datetime, end: datetime):
+    """Calculate total staff cost for a period based on active staff and their hourly rates."""
+    cursor = db.venue_barmen.find({"venue_id": venue_id, "active": True}, {"_id": 0})
+    staff = await cursor.to_list(100)
+    hours_in_period = max((end - start).total_seconds() / 3600, 1)
+    # Cap at reasonable shift length per person
+    shift_hours = min(hours_in_period, 12)
+    total_cost = 0
+    staff_breakdown = []
+    for s in staff:
+        rate = s.get("hourly_rate", 0)
+        earned = round(rate * shift_hours, 2)
+        total_cost += earned
+        staff_breakdown.append({
+            "id": s["id"],
+            "name": s["name"],
+            "role": s.get("role", "server"),
+            "hourly_rate": rate,
+            "hours_worked": round(shift_hours, 1),
+            "earned": earned,
+        })
+    return total_cost, staff_breakdown
+
+
+# ─── STAFF ROLES (Customizable) ───────────────────────────────────
+@router.get("/staff-roles")
+async def get_staff_roles(venue_id: str, user: dict = Depends(require_auth)):
+    """Get custom staff roles for this venue."""
+    db = get_mongo_db()
+    cursor = db.staff_roles.find({"venue_id": venue_id}, {"_id": 0})
+    roles = await cursor.to_list(100)
+    return {"roles": roles}
+
+
+@router.post("/staff-roles")
+async def create_or_update_role(
+    user: dict = Depends(require_auth),
+    venue_id: str = Form(...),
+    role_id: str = Form(None),
+    name: str = Form(...),
+    hourly_rate: float = Form(...),
+):
+    """Create or update a custom staff role. Versioned for audit."""
+    db = get_mongo_db()
+    now = datetime.now(timezone.utc)
+    if role_id:
+        # Update existing role — snapshot old version
+        old = await db.staff_roles.find_one({"id": role_id, "venue_id": venue_id}, {"_id": 0})
+        if old:
+            await db.staff_roles_history.insert_one({
+                **old,
+                "superseded_at": now,
+            })
+        await db.staff_roles.update_one(
+            {"id": role_id, "venue_id": venue_id},
+            {"$set": {"name": name, "hourly_rate": hourly_rate, "updated_at": now}},
+        )
+        return {"id": role_id, "name": name, "hourly_rate": hourly_rate, "updated": True}
+    else:
+        role = {
+            "id": str(uuid.uuid4()),
+            "venue_id": venue_id,
+            "name": name,
+            "hourly_rate": hourly_rate,
+            "created_at": now,
+            "updated_at": now,
+        }
+        await db.staff_roles.insert_one(role)
+        role.pop("_id", None)
+        return role
+
+
+@router.delete("/staff-roles/{role_id}")
+async def delete_role(role_id: str, venue_id: str, user: dict = Depends(require_auth)):
+    """Soft-delete a role (archive to history, remove from active)."""
+    db = get_mongo_db()
+    old = await db.staff_roles.find_one({"id": role_id, "venue_id": venue_id}, {"_id": 0})
+    if not old:
+        raise HTTPException(404, "Role not found")
+    await db.staff_roles_history.insert_one({**old, "deleted_at": datetime.now(timezone.utc)})
+    await db.staff_roles.delete_one({"id": role_id, "venue_id": venue_id})
+    return {"id": role_id, "deleted": True}
+
+
+# ─── CUSTOMIZE STAFF (assign role + hourly rate) ──────────────────
+@router.put("/staff-customize/{staff_id}")
+async def customize_staff(
+    staff_id: str,
+    user: dict = Depends(require_auth),
+    role: str = Form(None),
+    hourly_rate: float = Form(None),
+):
+    """Assign a custom role and/or hourly rate to a staff member."""
+    db = get_mongo_db()
+    update = {}
+    if role is not None:
+        update["role"] = role
+    if hourly_rate is not None:
+        update["hourly_rate"] = hourly_rate
+    if not update:
+        raise HTTPException(400, "Nothing to update")
+    update["updated_at"] = datetime.now(timezone.utc)
+    result = await db.venue_barmen.update_one({"id": staff_id}, {"$set": update})
+    if result.matched_count == 0:
+        raise HTTPException(404, "Staff not found")
+    return {"id": staff_id, "updated": True}
+
+
+# ─── SHIFT OVERVIEW ───────────────────────────────────────────────
+@router.get("/shift-overview")
+async def get_shift_overview(
+    venue_id: str,
+    date_from: str = None,
+    date_to: str = None,
+    user: dict = Depends(require_auth),
+):
+    """Shift Overview — Revenue, Tables Closed, Active Staff Cost."""
+    pool = get_postgres_pool()
+    db = get_mongo_db()
+    vid = _vid(venue_id)
+    start, end = _parse_date_range(date_from, date_to)
+
+    async with pool.acquire() as conn:
+        revenue = float(await conn.fetchval(
+            "SELECT COALESCE(SUM(total),0) FROM tap_sessions WHERE venue_id=$1 AND status='closed' AND closed_at>=$2 AND closed_at<=$3",
+            vid, start, end) or 0)
+        tables_closed = await conn.fetchval(
+            "SELECT COUNT(*) FROM tap_sessions WHERE venue_id=$1 AND status='closed' AND closed_at>=$2 AND closed_at<=$3",
+            vid, start, end) or 0
+        avg_ticket = float(await conn.fetchval(
+            "SELECT COALESCE(AVG(total),0) FROM tap_sessions WHERE venue_id=$1 AND status='closed' AND closed_at>=$2 AND closed_at<=$3",
+            vid, start, end) or 0)
+
+    staff_cost, _ = await _calc_staff_cost(db, venue_id, start, end)
+    result = revenue - staff_cost
+    status = "positive" if result > 0 else ("tight" if result > -50 else "negative")
+
+    return {
+        "revenue": revenue,
+        "tables_closed": tables_closed,
+        "avg_ticket": round(avg_ticket, 2),
+        "staff_cost": round(staff_cost, 2),
+        "result": round(result, 2),
+        "status": status,
+        "period": {"from": start.isoformat(), "to": end.isoformat()},
+    }
+
+
+# ─── STAFF COSTS BREAKDOWN ────────────────────────────────────────
+@router.get("/staff-costs")
+async def get_staff_costs(
+    venue_id: str,
+    date_from: str = None,
+    date_to: str = None,
+    user: dict = Depends(require_auth),
+):
+    """Staff Earnings / Cost Breakdown for the period."""
+    db = get_mongo_db()
+    start, end = _parse_date_range(date_from, date_to)
+    total_cost, breakdown = await _calc_staff_cost(db, venue_id, start, end)
+    return {
+        "total_cost": round(total_cost, 2),
+        "staff": breakdown,
+        "period": {"from": start.isoformat(), "to": end.isoformat()},
+    }
+
+
+# ─── SHIFT HISTORY / DAY PERFORMANCE ──────────────────────────────
+@router.get("/shift-history")
+async def get_shift_history(
+    venue_id: str,
+    days: int = 30,
+    user: dict = Depends(require_auth),
+):
+    """Shift History — per-day performance with revenue, cost, result, status."""
+    pool = get_postgres_pool()
+    db = get_mongo_db()
+    vid = _vid(venue_id)
+    today = date.today()
+
+    history = []
+    for i in range(days):
+        d = today - timedelta(days=i)
+        day_start = datetime.combine(d, datetime.min.time()).replace(tzinfo=timezone.utc)
+        day_end = datetime.combine(d, datetime.max.time()).replace(tzinfo=timezone.utc)
+
+        async with pool.acquire() as conn:
+            rev = float(await conn.fetchval(
+                "SELECT COALESCE(SUM(total),0) FROM tap_sessions WHERE venue_id=$1 AND status='closed' AND closed_at>=$2 AND closed_at<=$3",
+                vid, day_start, day_end) or 0)
+            tabs = await conn.fetchval(
+                "SELECT COUNT(*) FROM tap_sessions WHERE venue_id=$1 AND status='closed' AND closed_at>=$2 AND closed_at<=$3",
+                vid, day_start, day_end) or 0
+
+        # Get shift snapshot cost if exists, otherwise calc from current rates
+        shift_snap = await db.shift_snapshots.find_one({"venue_id": venue_id, "date": d.isoformat()}, {"_id": 0})
+        if shift_snap:
+            cost = shift_snap.get("staff_cost", 0)
+        else:
+            cost, _ = await _calc_staff_cost(db, venue_id, day_start, day_end)
+
+        result = rev - cost
+        status = "positive" if result > 50 else ("tight" if result > -50 else "negative")
+
+        if rev > 0 or cost > 0 or tabs > 0:
+            history.append({
+                "date": d.isoformat(),
+                "day_name": d.strftime("%A"),
+                "revenue": round(rev, 2),
+                "tabs_closed": tabs,
+                "staff_cost": round(cost, 2),
+                "result": round(result, 2),
+                "status": status,
+            })
+
+    return {"history": history, "days": days}
+
+
+# ─── SHIFT CHART DATA ─────────────────────────────────────────────
+@router.get("/shift-chart")
+async def get_shift_chart(
+    venue_id: str,
+    period: str = "30d",
+    date_from: str = None,
+    date_to: str = None,
+    user: dict = Depends(require_auth),
+):
+    """Chart data: Revenue × Staff Cost per day, filtered by period."""
+    pool = get_postgres_pool()
+    db = get_mongo_db()
+    vid = _vid(venue_id)
+    today = date.today()
+
+    if period == "today":
+        days_back = 1
+    elif period == "7d":
+        days_back = 7
+    elif period == "30d":
+        days_back = 30
+    elif period == "year":
+        days_back = 365
+    elif period == "custom" and date_from and date_to:
+        d1 = date.fromisoformat(date_from)
+        d2 = date.fromisoformat(date_to)
+        days_back = (d2 - d1).days + 1
+        today = d2
+    else:
+        days_back = 30
+
+    chart_data = []
+    for i in range(days_back):
+        d = today - timedelta(days=i)
+        day_start = datetime.combine(d, datetime.min.time()).replace(tzinfo=timezone.utc)
+        day_end = datetime.combine(d, datetime.max.time()).replace(tzinfo=timezone.utc)
+
+        async with pool.acquire() as conn:
+            rev = float(await conn.fetchval(
+                "SELECT COALESCE(SUM(total),0) FROM tap_sessions WHERE venue_id=$1 AND status='closed' AND closed_at>=$2 AND closed_at<=$3",
+                vid, day_start, day_end) or 0)
+
+        shift_snap = await db.shift_snapshots.find_one({"venue_id": venue_id, "date": d.isoformat()}, {"_id": 0})
+        cost = shift_snap.get("staff_cost", 0) if shift_snap else 0
+        if not shift_snap:
+            cost_calc, _ = await _calc_staff_cost(db, venue_id, day_start, day_end)
+            cost = cost_calc
+
+        if rev > 0 or cost > 0:
+            chart_data.append({
+                "date": d.isoformat(),
+                "label": d.strftime("%b %d"),
+                "revenue": round(rev, 2),
+                "cost": round(cost, 2),
+                "result": round(rev - cost, 2),
+            })
+
+    chart_data.reverse()
+    return {"data": chart_data, "period": period}
+
+
+# ─── SHIFT CLOSE WITH SNAPSHOT ─────────────────────────────────────
+@router.post("/shift-snapshot")
+async def save_shift_snapshot(
+    user: dict = Depends(require_auth),
+    venue_id: str = Form(...),
+    target_date: str = Form(None),
+):
+    """Snapshot staff costs for a specific date (preserves historical rates)."""
+    db = get_mongo_db()
+    d = target_date or date.today().isoformat()
+    day_start = datetime.fromisoformat(d).replace(tzinfo=timezone.utc)
+    day_end = day_start + timedelta(hours=24)
+    total_cost, breakdown = await _calc_staff_cost(db, venue_id, day_start, day_end)
+
+    snapshot = {
+        "venue_id": venue_id,
+        "date": d,
+        "staff_cost": round(total_cost, 2),
+        "staff_breakdown": breakdown,
+        "created_by": user.get("email", user["sub"]),
+        "created_at": datetime.now(timezone.utc),
+    }
+    await db.shift_snapshots.update_one(
+        {"venue_id": venue_id, "date": d}, {"$set": snapshot}, upsert=True)
+    return {"saved": True, "date": d, "staff_cost": round(total_cost, 2)}
+
+
+# ─── SHIFT AI (GPT-5.2) ───────────────────────────────────────────
+SHIFT_AI_SYSTEM = """You are an AI operational analyst for a hospitality venue (bar, club, restaurant).
+You analyze shift and operations data to help managers understand performance.
+
+Core Rules:
+1. Always use the REAL data provided — never invent numbers.
+2. Classify the operation as: Healthy, Tight, or Underperforming.
+3. Detect inefficiencies: overstaffing, high cost per table, low return per shift.
+4. Be direct, operational, and actionable.
+5. External references may support recommendations but never replace internal data.
+
+Response Structure (MANDATORY — return as JSON):
+{
+  "summary": "Brief classification of the shift/period",
+  "what_we_see": "Detailed analysis based on the data",
+  "recommended_actions": ["action 1", "action 2", ...],
+  "reference": "external reference if used, otherwise null",
+  "classification": "healthy" | "tight" | "underperforming"
+}
+
+Return ONLY valid JSON. No markdown, no explanation outside the JSON."""
+
+
+@router.post("/shift-ai")
+async def shift_ai_analysis(
+    user: dict = Depends(require_auth),
+    venue_id: str = Form(...),
+    date_from: str = Form(...),
+    date_to: str = Form(...),
+    question: str = Form(None),
+):
+    """AI analysis of shift performance. Read-only, context-aware."""
+    pool = get_postgres_pool()
+    db = get_mongo_db()
+    vid = _vid(venue_id)
+    start, end = _parse_date_range(date_from, date_to)
+
+    # Gather shift data
+    async with pool.acquire() as conn:
+        revenue = float(await conn.fetchval(
+            "SELECT COALESCE(SUM(total),0) FROM tap_sessions WHERE venue_id=$1 AND status='closed' AND closed_at>=$2 AND closed_at<=$3",
+            vid, start, end) or 0)
+        tables_closed = await conn.fetchval(
+            "SELECT COUNT(*) FROM tap_sessions WHERE venue_id=$1 AND status='closed' AND closed_at>=$2 AND closed_at<=$3",
+            vid, start, end) or 0
+        avg_ticket = float(await conn.fetchval(
+            "SELECT COALESCE(AVG(total),0) FROM tap_sessions WHERE venue_id=$1 AND status='closed' AND closed_at>=$2 AND closed_at<=$3",
+            vid, start, end) or 0)
+        voids = await conn.fetchval(
+            "SELECT COUNT(*) FROM tap_items WHERE venue_id=$1 AND voided_at>=$2 AND voided_at<=$3",
+            vid, start, end) or 0
+
+    total_cost, staff_breakdown = await _calc_staff_cost(db, venue_id, start, end)
+    result = revenue - total_cost
+    cost_per_table = round(total_cost / tables_closed, 2) if tables_closed > 0 else 0
+    rev_per_staff = round(revenue / len(staff_breakdown), 2) if staff_breakdown else 0
+
+    cfg = await db.venue_configs.find_one({"venue_id": venue_id}, {"_id": 0})
+    venue_name = cfg.get("venue_name", "Venue") if cfg else "Venue"
+    bar_mode = cfg.get("bar_mode", "disco") if cfg else "disco"
+
+    staff_lines = "\n".join([f"  - {s['name']} ({s['role']}): ${s['hourly_rate']}/hr × {s['hours_worked']}h = ${s['earned']}" for s in staff_breakdown])
+
+    context = f"""
+VENUE: {venue_name} (Type: {bar_mode})
+PERIOD: {start.strftime('%Y-%m-%d %H:%M')} to {end.strftime('%Y-%m-%d %H:%M')}
+
+REVENUE: ${revenue:.2f}
+TABLES CLOSED: {tables_closed}
+AVG TICKET: ${avg_ticket:.2f}
+VOIDS: {voids}
+
+STAFF COST (TOTAL): ${total_cost:.2f}
+COST PER TABLE: ${cost_per_table}
+REVENUE PER STAFF MEMBER: ${rev_per_staff}
+
+STAFF BREAKDOWN:
+{staff_lines}
+
+NET RESULT: ${result:.2f} ({'POSITIVE' if result > 0 else 'NEGATIVE'})
+"""
+
+    user_msg = f"Analyze this shift data:\n{context}"
+    if question:
+        user_msg += f"\n\nManager's question: {question}"
+    else:
+        user_msg += "\n\nProvide a complete shift analysis."
+
+    try:
+        llm_key = os.environ.get("EMERGENT_LLM_KEY")
+        if not llm_key:
+            return {"insight": {"summary": "LLM not configured"}, "disclaimer": ""}
+
+        from emergentintegrations.llm.chat import LlmChat, UserMessage
+        llm = LlmChat(
+            api_key=llm_key,
+            session_id=f"shift-ai-{venue_id}-{date_from}",
+            system_message=SHIFT_AI_SYSTEM,
+        ).with_model("openai", "gpt-5.2")
+
+        raw = await llm.send_message(UserMessage(text=user_msg))
+        text = raw.strip()
+        if text.startswith("```"):
+            text = text.split("```")[1]
+            if text.startswith("json"):
+                text = text[4:]
+        insight = json_mod.loads(text)
+    except Exception as e:
+        logger.error(f"Shift AI error: {e}")
+        insight = {
+            "summary": "Unable to generate analysis",
+            "what_we_see": str(e),
+            "recommended_actions": ["Try again later"],
+            "reference": None,
+            "classification": "unknown",
+        }
+
+    return {
+        "insight": insight,
+        "data": {
+            "revenue": revenue,
+            "tables_closed": tables_closed,
+            "staff_cost": round(total_cost, 2),
+            "result": round(result, 2),
+        },
+        "disclaimer": "AI insights are based on your business data and external references when applicable. They may contain inaccuracies. Always validate decisions with your team.",
+    }
+
