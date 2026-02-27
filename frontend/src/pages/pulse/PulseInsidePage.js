@@ -5,16 +5,15 @@ import { toast } from 'sonner';
 import { Users, Crown, LogIn, Clock, User } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 
-const VENUE_ID = '40a24e04-75b6-435d-bfff-ab0d469ce543';
+const VENUE_ID = () => localStorage.getItem('active_venue_id') || '40a24e04-75b6-435d-bfff-ab0d469ce543';
 
 export const PulseInsidePage = () => {
-  const [venue, setVenue] = useState('demo-club');
   const [guests, setGuests] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const loadInside = useCallback(async () => {
     try {
-      const res = await pulseAPI.getInsideGuests(VENUE_ID);
+      const res = await pulseAPI.getInsideGuests(VENUE_ID());
       setGuests(res.data.guests || []);
     } catch (err) {
       console.error('Failed to load inside guests:', err);
@@ -28,7 +27,7 @@ export const PulseInsidePage = () => {
     try {
       const fd = new FormData();
       fd.append('guest_id', guestId);
-      fd.append('venue_id', VENUE_ID);
+      fd.append('venue_id', VENUE_ID());
       await pulseAPI.registerExit(fd);
       toast.success(`${guestName} exited`);
       await loadInside();
@@ -39,7 +38,7 @@ export const PulseInsidePage = () => {
 
   return (
     <div className="min-h-screen bg-background" data-testid="inside-page">
-      <PulseHeader venue={venue} onVenueChange={setVenue} />
+      <PulseHeader />
       <main className="w-full px-16 py-12">
         <div className="flex items-center justify-between mb-12">
           <div>
