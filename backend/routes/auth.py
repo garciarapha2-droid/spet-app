@@ -60,8 +60,8 @@ async def login(request: LoginRequest):
     next_route = "/modules"
     if len(access_roles) == 0:
         next_route = "/setup"
-    elif any(r["role"] in ("platform_admin", "ceo") for r in access_roles):
-        next_route = "/ceo/dashboard"
+    elif any(r["role"] in ("platform_admin", "ceo", "super_admin") for r in access_roles):
+        next_route = "/pulse/entry"
     elif len(access_roles) == 1:
         role = access_roles[0]["role"]
         if role == "manager":
