@@ -64,8 +64,8 @@ export const GuestProfilePage = () => {
     } catch { toast.error('Failed to unblock'); }
     setBlockLoading(false);
   };
-    load();
-  }, [guestId]);
+
+  useEffect(() => { loadData(); }, [guestId]);
 
   if (loading) {
     return (
