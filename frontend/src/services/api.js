@@ -46,11 +46,14 @@ export const billingAPI = {
   getCheckoutStatus: (sessionId) => api.get(`/billing/checkout/status/${sessionId}`)
 };
 
-// Module APIs
+// Pulse APIs
 export const pulseAPI = {
-  guestIntake: (data) => api.post('/pulse/guest/intake', data),
-  searchGuests: (data) => api.post('/pulse/guest/search', data),
-  getGuest: (guestId) => api.get(`/pulse/guest/${guestId}`)
+  getVenueConfig: (venueId) => api.get('/pulse/venue/config', { params: { venue_id: venueId } }),
+  guestIntake: (formData) => api.post('/pulse/guest/intake', formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
+  dedupeSearch: (formData) => api.post('/pulse/guest/dedupe', formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
+  getGuest: (guestId, venueId) => api.get(`/pulse/guest/${guestId}`, { params: { venue_id: venueId } }),
+  recordDecision: (formData) => api.post('/pulse/entry/decision', formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
+  getTodayEntries: (venueId) => api.get('/pulse/entries/today', { params: { venue_id: venueId } }),
 };
 
 export const tapAPI = {
