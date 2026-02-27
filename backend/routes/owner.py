@@ -195,40 +195,33 @@ async def get_owner_dashboard(user: dict = Depends(require_auth), view: str = "b
         for vid in venue_ids:
             cfg = await db.venue_configs.find_one({"venue_id": str(vid)}, {"_id": 0})
             venue_name = cfg.get("venue_name", "Demo Club") if cfg else "Demo Club"
-            async with pool.acquire() as conn:
-                events = await conn.fetch(
-                    """SELECT id, name, event_date, status, start_time, end_time
-                       FROM venue_events WHERE venue_id=$1
-                       ORDER BY event_date DESC LIMIT 20""", vid)
-                for ev in events:
-                    ev_id = ev["id"]
+            # Get events from MongoDB
+            events_cursor = db.events.find({"venue_id": str(vid)}, {"_id": 0}).sort("start_at", -1).limit(20)
+            mongo_events = await events_cursor.to_list(20)
+            for ev in mongo_events:
+                ev_id = ev.get("id", "")
+                async with pool.acquire() as conn:
                     ev_rev = float(await conn.fetchval(
                         """SELECT COALESCE(SUM(ts.total),0) FROM tap_sessions ts
                            WHERE ts.venue_id=$1 AND ts.status='closed'
                            AND ts.meta->>'event_id' = $2""",
-                        vid, str(ev_id)) or 0)
+                        uuid.UUID(str(vid)), ev_id) or 0)
                     ev_tabs = await conn.fetchval(
                         """SELECT COUNT(*) FROM tap_sessions ts
                            WHERE ts.venue_id=$1 AND ts.status='closed'
                            AND ts.meta->>'event_id' = $2""",
-                        vid, str(ev_id)) or 0
-                    ev_guests = await conn.fetchval(
-                        "SELECT COUNT(*) FROM event_guests WHERE venue_id=$1 AND event_id=$2",
-                        vid, ev_id) or 0
-                    ev_staff = await conn.fetchval(
-                        "SELECT COUNT(*) FROM event_staff WHERE venue_id=$1 AND event_id=$2",
-                        vid, ev_id) or 0
-                    events_data.append({
-                        "event_id": str(ev_id), "name": ev["name"],
-                        "venue_name": venue_name, "venue_id": str(vid),
-                        "event_date": ev["event_date"].isoformat() if ev["event_date"] else None,
-                        "status": ev["status"],
-                        "start_time": ev["start_time"] if ev["start_time"] else None,
-                        "end_time": ev["end_time"] if ev["end_time"] else None,
-                        "revenue": ev_rev, "tabs_closed": ev_tabs,
-                        "guests": ev_guests, "staff": ev_staff,
-                    })
-        # Sort by event_date desc
+                        uuid.UUID(str(vid)), ev_id) or 0
+                ev_guests = await db.event_guests.count_documents({"venue_id": str(vid), "event_id": ev_id})
+                ev_staff = await db.event_staff.count_documents({"venue_id": str(vid), "event_id": ev_id})
+                events_data.append({
+                    "event_id": ev_id, "name": ev.get("name", ""),
+                    "venue_name": venue_name, "venue_id": str(vid),
+                    "event_date": ev.get("start_at").isoformat() if ev.get("start_at") else None,
+                    "status": "active" if ev.get("is_active") else "ended",
+                    "start_time": None, "end_time": None,
+                    "revenue": ev_rev, "tabs_closed": ev_tabs,
+                    "guests": ev_guests, "staff": ev_staff,
+                })
         events_data.sort(key=lambda x: x["event_date"] or "", reverse=True)
         return {"view": "events", "events": events_data}
 
