@@ -168,7 +168,11 @@ export const ownerAPI = {
   getGrowth: () => api.get('/owner/growth'),
   getPeople: () => api.get('/owner/people'),
   getSystem: () => api.get('/owner/system'),
-  generateAIInsights: () => api.post('/owner/ai-insights'),
+  generateAIInsights: (question) => {
+    const fd = new FormData();
+    if (question) fd.append('question', question);
+    return api.post('/owner/ai-insights', fd);
+  },
 };
 
 export const ceoAPI = {
