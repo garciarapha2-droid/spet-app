@@ -9,10 +9,9 @@ SPETAP is a multi-tenant SaaS platform for venue operations (clubs, restaurants,
 
 ### Core Principles
 - Strict multi-tenant data isolation by `venue_id`
-- UI built for dark environments + queues + pressure
-- Guest PII isolated per venue; global person uses hashed IDs only
 - `session_id` is the canonical identifier (not `table_id`)
 - Void operations are ledger-safe (mark voided, never delete)
+- KDS Kanban always visible with 4 columns even when empty
 
 ### Tech Stack
 - **Frontend:** React + Tailwind CSS + Shadcn UI
@@ -24,122 +23,105 @@ SPETAP is a multi-tenant SaaS platform for venue operations (clubs, restaurants,
 
 ## What's Been Implemented
 
-### Venue Select (Post-Login) - COMPLETE
-- Calendar view with event highlights, create events on-the-fly
-- Login always redirects to `/venue/home`
-- **Module cards** below calendar: Pulse, TAP, Table, Kitchen (KDS), Manager, Owner
-- Owners (role_level >= 70) have access to all operational modules
+### Venue Home - COMPLETE
+- Calendar view with events, login redirects to `/venue/home`
+- **Modules dropdown in header** (not cards): Pulse, TAP, Table, Kitchen, Manager, Owner
+- CEO hidden from module list (access by specific email only)
+- Owners (role_level >= 70) see all operational modules
 
-### Navigation System - COMPLETE
-- Module dropdown in header (SPETAP → Demo Club → modules)
-- Pulse sub-tabs: Guest, Inside, Bar, Exit, Rewards
-- **Consistent header spacing** with `gap-4` + dividers across ALL pages
-- **ThemeToggle fixed** - removed `fixed` positioning, now in flex flow
+### Navigation & Headers - COMPLETE
+- Module dropdown in PulseHeader
+- **Consistent gap-4 + dividers** across ALL pages (fixed ThemeToggle `fixed` positioning)
+- Back-to-TAP / DISCO MODE toggle on Table page
 
 ### PULSE Module (C0-C3) - COMPLETE
-- C0: NFC scan + Manual Entry with camera
-- C1: Guest Intake with photo capture
-- C1.1: Deduplication
-- C2: Decision Card with risk/value chips
-- C3: Success + auto-reset
+- NFC scan + Manual Entry, Guest Intake with photo, Deduplication, Decision Card, Success
 
 ### Guest Profile - COMPLETE
-- Click guest → `/pulse/guest/:id` with 4 tabs
-- Block/Unblock wristband + red alert
-- Open tab warning with amount
+- Block/Unblock wristband + red alert, Open tab warning
 
 ### Inside Page - COMPLETE
-- Guests clickable → navigate to profile
-- 3-column grid with photo, entry time, VIP badge
-- Search functionality
+- Clickable guests → profile, search, 3-column grid
 
 ### Bar/Bartender Page - COMPLETE
-- NFC scan → identity confirmation (photo modal)
-- Blocked wristband → full-screen RED BLOCKED screen
-- Full catalog with category filters + custom drink addition
-- Cart with quantities + reward points assignment
-- Revenue display REMOVED per user request
+- NFC scan, blocked wristband screen, catalog + custom drinks, cart, revenue REMOVED
 
 ### Exit Page - COMPLETE
-- Open tab check → MODAL (red border, center screen) instead of toast
-- Blocked wristband → MODAL warning
-- All exits today with entry/exit times + duration
+- Open tab / blocked wristband → RED MODAL (center screen), exit history
 
 ### TAP Module - COMPLETE
-- DISCO MODE label + Table toggle switch
-- Barman selector (must select before adding items)
-- NFC scanner/search for guest lookup
-- Custom item addition, void/remove items (ledger-safe)
-- Revenue NOT shown in header (only Tabs count)
-- Open/close tabs, pay with card/cash/comp
+- DISCO MODE + Table toggle
+- **Barman Management**: CRUD from dropdown (add/edit pencil/delete trash)
+- Must select barman before adding items
+- Custom item addition, void/remove items (ledger-safe with reason)
+- Revenue NOT shown
 
 ### TABLE Module - COMPLETE
-- Table layout with zones (main, vip, patio, bar)
-- Open/Close tables, add items via `/table/{id}/add-item`
-- Void/remove items (ledger-safe with reason + voided_by_user_id)
-- Send to Kitchen/Bar (uses session_id as canonical)
-- **Back-to-TAP / DISCO MODE toggle** in header
-- Table management: Add/Edit/Delete tables
-- Guest name displayed on occupied tables (`session_guest`)
+- Table layout with zones, open/close, add items via `/table/{id}/add-item`
+- **Server/Waiter selection** when opening table (dropdown from barmen list)
+- Void items, Send to KDS, DISCO MODE toggle, table CRUD
 
 ### KDS Module - COMPLETE
-- Kitchen/Bar destination routing (alcohol → bar, food → kitchen)
-- 3-column Kanban: Pending → Preparing → Ready
-- Owners/managers always have KDS access (role_level check)
-- Correct table numbers displayed on tickets
-- Kitchen/Bar filter toggle in header
+- **4-Column Kanban**: Pending → Preparing → Ready → **Delayed**
+- All columns visible even when empty
+- **Live timers**: countdown when preparing ("28:55 left"), count-up when delayed ("+0:05 over!")
+- **Delayed order popup**: Full-screen modal with "ORDER DELAYED", details, "Mark Ready" / "Dismiss"
+- **"X delayed" badge** in header when orders are overdue
+- Kitchen/Bar toggle (food→kitchen, drinks→bar)
+- Chef sets estimated time when starting preparation
+- Owners/managers always have KDS access
+
+### Barman/Staff System - COMPLETE
+- CRUD API: GET/POST/PUT/DELETE `/api/staff/barmen`
+- Soft-delete (active=false), venue-scoped
+- Used in TAP dropdown and Table server selector
 
 ### Rewards System - COMPLETE
-- Points config, 4 tiers (Bronze/Silver/Gold/Platinum)
-- Configurable rewards catalog
+- Points config, 4 tiers, configurable rewards catalog
 
 ### Block Wristband System - COMPLETE
-- Block/Unblock from guest profile
-- Full-screen BLOCKED screen at bar scan
+- Block/Unblock from guest profile, full-screen BLOCKED screen at bar
 
 ---
 
 ## Prioritized Backlog
 
 ### P1 - Next
-- Manager Dashboard (cadastro de menu/catalog, barmen, venue settings) — blocked on user designs
+- Manager Dashboard (menu/catalog management, barmen, venue settings) — blocked on user designs
 - Owner Dashboard (multi-venue analytics) — blocked on user designs
-- Staff Management: register barmen via Manager
 
 ### P2
-- Restaurant vs Club mode
-- Menu/catalog management (create/edit/delete via Manager)
 - Event Wallet module (cashless events)
-- Loyalty add-on enhancements (reward redemption flow)
-- Tips system (proportional calculation by barman)
+- Loyalty add-on enhancements (reward redemption)
+- Tips system (proportional by barman)
+- Restaurant vs Club mode
 
 ### P3
 - Offline-first for staff apps
-- Stripe webhook handlers for subscriptions
+- Stripe webhook handlers
 - CEO Dashboard
 
 ---
 
 ## Architecture
 ```
-/app/
-├── backend/
-│   ├── server.py
-│   ├── routes/ (auth, billing, pulse, tap, table, kds, venue, rewards)
-│   ├── models/ (requests.py, responses.py)
-│   ├── middleware/ (auth_middleware.py)
-│   └── init_postgres.sql
-└── frontend/
-    ├── src/
-    │   ├── pages/ (venue/, pulse/, TapPage, TablePage, KitchenPage)
-    │   ├── components/ (PulseHeader, ThemeToggle, ui/)
-    │   └── services/ (api.js)
-    └── tailwind.config.js
+/app/backend/
+  server.py, database.py, config.py
+  routes/ (auth, billing, pulse, tap, table, kds, venue, rewards, barmen, manager, owner, ceo)
+  models/ (requests.py, responses.py)
+  middleware/ (auth_middleware.py)
+  init_postgres.sql
+
+/app/frontend/src/
+  pages/ (venue/, pulse/, TapPage, TablePage, KitchenPage)
+  components/ (PulseHeader, ThemeToggle, ui/)
+  services/ (api.js)
 ```
 
 ## Test User
 - Email: teste@teste.com | Password: 12345
-- Role: owner | Venue ID: 40a24e04-75b6-435d-bfff-ab0d469ce543
+- Venue ID: 40a24e04-75b6-435d-bfff-ab0d469ce543
 
 ## Test Results
-- iteration_9: 7/7 backend + 100% frontend (P0 bug fixes, header, modules, demo data) — 2026-02-27
+- iteration_9: 7/7 backend + 100% frontend (P0 bugs, modules, demo data)
+- iteration_10: 11/11 backend + 100% frontend (Barman CRUD, Table server, Modules dropdown, KDS 4-column Kanban)
