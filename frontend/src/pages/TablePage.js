@@ -23,17 +23,20 @@ export const TablePage = () => {
   const [newTable, setNewTable] = useState({ number: '', zone: 'main', capacity: 4 });
   const [editingTable, setEditingTable] = useState(null);
   const [showSettings, setShowSettings] = useState(false);
-  const [openForm, setOpenForm] = useState({ guestName: '' });
+  const [openForm, setOpenForm] = useState({ guestName: '', server: '' });
   const [loading, setLoading] = useState(false);
+  const [barmen, setBarmen] = useState([]);
 
   const loadData = useCallback(async () => {
     try {
-      const [tablesRes, catRes] = await Promise.all([
+      const [tablesRes, catRes, barmenRes] = await Promise.all([
         tableAPI.getTables(VENUE_ID()),
         tapAPI.getCatalog(VENUE_ID()),
+        staffAPI.getBarmen(VENUE_ID()),
       ]);
       setTables(tablesRes.data.tables || []);
       setCatalog(catRes.data.items || []);
+      setBarmen(barmenRes.data.barmen || []);
     } catch (err) { console.error(err); }
   }, []);
 
