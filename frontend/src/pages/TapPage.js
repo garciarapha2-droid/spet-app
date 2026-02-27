@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { tapAPI, pulseAPI, rewardsAPI } from '../services/api';
+import { tapAPI, pulseAPI, rewardsAPI, staffAPI } from '../services/api';
 import { toast } from 'sonner';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -8,7 +8,8 @@ import { ThemeToggle } from '../components/ThemeToggle';
 import {
   CreditCard, Banknote, Beer, Plus, X, Receipt,
   ScanLine, User, Search, ArrowLeft, LayoutGrid,
-  LogOut, DollarSign, Star, ChevronDown, Home
+  LogOut, DollarSign, Star, ChevronDown, Home,
+  Pencil, Trash2, Check
 } from 'lucide-react';
 
 const VENUE_ID = () => localStorage.getItem('active_venue_id') || '40a24e04-75b6-435d-bfff-ab0d469ce543';
