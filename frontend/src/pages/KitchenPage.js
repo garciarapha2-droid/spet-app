@@ -61,8 +61,18 @@ const TicketCard = ({ ticket, onStatusChange, onSetTime, isDelayed }) => {
   const [showEstimate, setShowEstimate] = useState(false);
   const elapsed = ticket.created_at ? Math.floor((Date.now() - new Date(ticket.created_at).getTime()) / 60000) : 0;
 
+  const handleDragStart = (e) => {
+    e.dataTransfer.setData('ticket_id', ticket.id);
+    e.dataTransfer.effectAllowed = 'move';
+    e.target.style.opacity = '0.5';
+  };
+  const handleDragEnd = (e) => { e.target.style.opacity = '1'; };
+
   return (
-    <div className={`rounded-xl border-2 p-5 transition-all ${colors.border} ${colors.bg} ${isDelayed ? 'ring-2 ring-red-500/30' : ''}`}
+    <div className={`rounded-xl border-2 p-5 transition-all cursor-grab active:cursor-grabbing ${colors.border} ${colors.bg} ${isDelayed ? 'ring-2 ring-red-500/30' : ''}`}
+      draggable="true"
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
       data-testid={`ticket-${ticket.id}`}>
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
