@@ -54,8 +54,10 @@ export const PulseHeader = ({ venue, onVenueChange }) => {
                   <button
                     key={tab.id}
                     onClick={() => navigate(tab.path)}
-                    className={`text-sm transition-colors hover:text-foreground ${
-                      isActive ? 'text-primary font-medium' : 'text-muted-foreground'
+                    className={`px-3 py-2 text-sm rounded-md transition-all ${
+                      isActive 
+                        ? 'bg-primary/10 text-primary font-medium border border-primary/20' 
+                        : 'text-muted-foreground hover:text-foreground hover:bg-accent'
                     }`}
                     data-testid={`tab-${tab.id}`}
                   >
