@@ -312,21 +312,34 @@ export const TablePage = () => {
 
           {/* Center: Kanban Menu */}
           <div className="col-span-6">
-            {/* Table Context Bar */}
+            {/* Table Context Bar — shows table, guest, server clearly */}
             {currentTable && tableDetail?.session && (
-              <div className="bg-card border border-border rounded-xl p-3 mb-4 flex items-center justify-between" data-testid="table-context-bar">
-                <div className="flex items-center gap-4">
-                  <div>
-                    <span className="font-bold text-sm">Table #{currentTable.table_number}</span>
-                    {tableDetail.session.tab_number && <span className="text-primary font-bold text-sm ml-2">Tab #{tableDetail.session.tab_number}</span>}
+              <div className="bg-card border border-border rounded-xl p-3 mb-4" data-testid="table-context-bar">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="bg-primary/10 text-primary font-bold px-3 py-1.5 rounded-lg text-sm" data-testid="ctx-table-name">
+                      Table #{currentTable.table_number}
+                    </div>
+                    <div className="text-sm">
+                      <span className="text-muted-foreground mr-1">Guest:</span>
+                      <span className="font-semibold" data-testid="ctx-guest-name">{tableDetail.session.guest_name}</span>
+                    </div>
+                    {tableDetail.session.tab_number && (
+                      <span className="text-primary font-bold text-sm" data-testid="ctx-tab-number">Tab #{tableDetail.session.tab_number}</span>
+                    )}
+                    <ElapsedTime openedAt={tableDetail.session.opened_at} />
                   </div>
-                  <ElapsedTime openedAt={tableDetail.session.opened_at} />
-                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                    <User className="h-3 w-3" />
-                    <span>{tableDetail.session.server_name || selectedServer || 'No server'}</span>
-                  </div>
+                  <span className="text-lg font-bold text-primary">${(tableDetail.session.total || 0).toFixed(2)}</span>
                 </div>
-                <span className="text-lg font-bold text-primary">${(tableDetail.session.total || 0).toFixed(2)}</span>
+                <div className="flex items-center gap-2 mt-2 pt-2 border-t border-border/50">
+                  <User className="h-3.5 w-3.5 text-blue-500" />
+                  <span className="text-xs font-semibold text-blue-600" data-testid="ctx-server-name">Server: {tableDetail.session.server_name || selectedServer || 'Not assigned'}</span>
+                  {tableDetail.session.id_verified && (
+                    <span className="flex items-center gap-1 bg-green-500/10 text-green-600 px-2 py-0.5 rounded-full text-[10px] font-medium ml-2" data-testid="id-verified-badge">
+                      <ShieldCheck className="h-3 w-3" /> ID verified
+                    </span>
+                  )}
+                </div>
               </div>
             )}
 
