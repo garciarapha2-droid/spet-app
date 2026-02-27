@@ -56,11 +56,16 @@ export const pulseAPI = {
   getTodayEntries: (venueId) => api.get('/pulse/entries/today', { params: { venue_id: venueId } }),
 };
 
+// TAP APIs
 export const tapAPI = {
-  createSession: (data) => api.post('/tap/session', data),
-  addItem: (sessionId, data) => api.post(`/tap/session/${sessionId}/items`, data),
-  addPayment: (sessionId, data) => api.post(`/tap/session/${sessionId}/payment`, data),
-  getSession: (sessionId) => api.get(`/tap/session/${sessionId}`)
+  getConfig: (venueId) => api.get('/tap/config', { params: { venue_id: venueId } }),
+  getStats: (venueId) => api.get('/tap/stats', { params: { venue_id: venueId } }),
+  getCatalog: (venueId) => api.get('/tap/catalog', { params: { venue_id: venueId } }),
+  openSession: (formData) => api.post('/tap/session/open', formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
+  listSessions: (venueId, status = 'open') => api.get('/tap/sessions', { params: { venue_id: venueId, status } }),
+  getSession: (sessionId) => api.get(`/tap/session/${sessionId}`),
+  addItem: (sessionId, formData) => api.post(`/tap/session/${sessionId}/add`, formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
+  closeSession: (sessionId, formData) => api.post(`/tap/session/${sessionId}/close`, formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
 };
 
 export const managerAPI = {
