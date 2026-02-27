@@ -3,156 +3,147 @@ from models.requests import LoginRequest, SignupRequest
 from models.responses import LoginResponse, UserResponse
 from utils.auth import hash_password, verify_password, create_access_token
 from middleware.auth_middleware import require_auth
-from database import get_mongo_db
+from database import get_postgres_pool
 from datetime import datetime, timezone
-import uuid
+import json
 
 router = APIRouter()
 
+
 @router.post("/login", response_model=LoginResponse)
 async def login(request: LoginRequest):
-    """User login endpoint"""
-    db = get_mongo_db()
-    
-    # Find user by email
-    user_doc = await db.users.find_one({"email": request.email.lower()})
-    
-    if not user_doc:
-        raise HTTPException(status_code=401, detail="Invalid credentials")
-    
-    # Verify password
-    if not verify_password(request.password, user_doc['password_hash']):
-        raise HTTPException(status_code=401, detail="Invalid credentials")
-    
-    # Check status
-    if user_doc['status'] != 'active':
-        raise HTTPException(status_code=403, detail="Account inactive")
-    
-    # Update last login
-    await db.users.update_one(
-        {"id": user_doc['id']},
-        {"$set": {"last_login_at": datetime.now(timezone.utc)}}
-    )
-    
-    # Get user access/roles
-    access_docs_cursor = db.user_access.find({"user_id": user_doc['id']})
-    access_docs = await access_docs_cursor.to_list(100)
-    
-    # Convert to plain dicts (remove MongoDB ObjectId)
-    access_roles = []
-    for doc in access_docs:
-        access_roles.append({
-            "user_id": doc.get('user_id'),
-            "company_id": doc.get('company_id'),
-            "venue_id": doc.get('venue_id'),
-            "role": doc.get('role'),
-            "permissions": doc.get('permissions', {})
-        })
-    
-    # Create JWT token
+    pool = get_postgres_pool()
+    async with pool.acquire() as conn:
+        user = await conn.fetchrow(
+            "SELECT id, email, password_hash, status, created_at FROM users WHERE email = $1",
+            request.email.lower(),
+        )
+
+        if not user:
+            raise HTTPException(status_code=401, detail="Invalid credentials")
+
+        if not verify_password(request.password, user["password_hash"]):
+            raise HTTPException(status_code=401, detail="Invalid credentials")
+
+        if user["status"] != "active":
+            raise HTTPException(status_code=403, detail="Account inactive")
+
+        await conn.execute(
+            "UPDATE users SET last_login_at = $1 WHERE id = $2",
+            datetime.now(timezone.utc),
+            user["id"],
+        )
+
+        rows = await conn.fetch(
+            "SELECT user_id, company_id, venue_id, role, permissions FROM user_access WHERE user_id = $1",
+            user["id"],
+        )
+
+    access_roles = [
+        {
+            "user_id": str(r["user_id"]),
+            "company_id": str(r["company_id"]) if r["company_id"] else None,
+            "venue_id": str(r["venue_id"]) if r["venue_id"] else None,
+            "role": r["role"],
+            "permissions": json.loads(r["permissions"]) if isinstance(r["permissions"], str) else r["permissions"],
+        }
+        for r in rows
+    ]
+
     token_data = {
-        "sub": user_doc['id'],
-        "email": user_doc['email'],
-        "roles": access_roles
+        "sub": str(user["id"]),
+        "email": user["email"],
+        "roles": access_roles,
     }
     access_token = create_access_token(token_data)
-    
-    # Determine next route
+
     next_route = "/modules"
     if len(access_roles) == 0:
         next_route = "/setup"
-    elif any(doc['role'] in ['platform_admin', 'ceo'] for doc in access_roles):
+    elif any(r["role"] in ("platform_admin", "ceo") for r in access_roles):
         next_route = "/ceo/dashboard"
     elif len(access_roles) == 1:
-        # Single context, redirect based on role
-        role = access_roles[0]['role']
-        if role == 'manager':
+        role = access_roles[0]["role"]
+        if role == "manager":
             next_route = "/manager/overview"
-        elif role == 'host':
+        elif role == "host":
             next_route = "/pulse/host"
-        elif role in ['tap', 'bartender', 'server']:
+        elif role in ("tap", "bartender", "server"):
             next_route = "/tap"
-        elif role == 'owner':
+        elif role == "owner":
             next_route = "/owner"
     else:
         next_route = "/select-context"
-    
-    user_response = UserResponse(
-        id=user_doc['id'],
-        email=user_doc['email'],
-        status=user_doc['status'],
-        created_at=user_doc.get('created_at', datetime.now(timezone.utc))
-    )
-    
+
     return LoginResponse(
         access_token=access_token,
-        user=user_response,
-        next={"type": "route", "route": next_route}
+        user=UserResponse(
+            id=str(user["id"]),
+            email=user["email"],
+            status=user["status"],
+            created_at=user["created_at"],
+        ),
+        next={"type": "route", "route": next_route},
     )
+
 
 @router.post("/signup")
 async def signup(request: SignupRequest):
-    """User signup endpoint"""
-    db = get_mongo_db()
-    
-    # Check if user exists
-    existing = await db.users.find_one({"email": request.email.lower()})
-    if existing:
-        raise HTTPException(status_code=400, detail="Email already registered")
-    
-    # Create user
-    user_id = str(uuid.uuid4())
-    hashed_password = hash_password(request.password)
-    
-    user_doc = {
-        "id": user_id,
-        "email": request.email.lower(),
-        "password_hash": hashed_password,
-        "status": "active",
-        "created_at": datetime.now(timezone.utc),
-        "updated_at": datetime.now(timezone.utc)
-    }
-    await db.users.insert_one(user_doc)
-    
-    # Create company if provided
-    if request.company_name:
-        company_id = str(uuid.uuid4())
-        company_doc = {
-            "id": company_id,
-            "name": request.company_name,
-            "status": "active",
-            "created_at": datetime.now(timezone.utc),
-            "updated_at": datetime.now(timezone.utc)
-        }
-        await db.companies.insert_one(company_doc)
-        
-        # Give user owner access to company
-        access_doc = {
-            "id": str(uuid.uuid4()),
-            "user_id": user_id,
-            "company_id": company_id,
-            "venue_id": None,
-            "role": "owner",
-            "permissions": {},
-            "created_at": datetime.now(timezone.utc)
-        }
-        await db.user_access.insert_one(access_doc)
-    
-    return {"message": "User created successfully", "user_id": user_id}
+    pool = get_postgres_pool()
+    async with pool.acquire() as conn:
+        existing = await conn.fetchrow(
+            "SELECT id FROM users WHERE email = $1", request.email.lower()
+        )
+        if existing:
+            raise HTTPException(status_code=400, detail="Email already registered")
+
+        hashed_password = hash_password(request.password)
+        now = datetime.now(timezone.utc)
+
+        user_row = await conn.fetchrow(
+            """INSERT INTO users (email, password_hash, status, created_at, updated_at)
+               VALUES ($1, $2, 'active', $3, $3) RETURNING id""",
+            request.email.lower(),
+            hashed_password,
+            now,
+        )
+        user_id = user_row["id"]
+
+        if request.company_name:
+            company_row = await conn.fetchrow(
+                """INSERT INTO companies (name, status, created_at, updated_at)
+                   VALUES ($1, 'active', $2, $2) RETURNING id""",
+                request.company_name,
+                now,
+            )
+            company_id = company_row["id"]
+
+            await conn.execute(
+                """INSERT INTO user_access (user_id, company_id, role, permissions, created_at)
+                   VALUES ($1, $2, 'owner', '{}', $3)""",
+                user_id,
+                company_id,
+                now,
+            )
+
+    return {"message": "User created successfully", "user_id": str(user_id)}
+
 
 @router.get("/me")
 async def get_current_user_info(user: dict = Depends(require_auth)):
-    """Get current user information"""
-    db = get_mongo_db()
-    
-    user_doc = await db.users.find_one({"id": user['sub']})
-    
-    if not user_doc:
-        raise HTTPException(status_code=404, detail="User not found")
-    
+    pool = get_postgres_pool()
+    async with pool.acquire() as conn:
+        user_row = await conn.fetchrow(
+            "SELECT id, email, status FROM users WHERE id = $1::uuid",
+            user["sub"],
+        )
+
+        if not user_row:
+            raise HTTPException(status_code=404, detail="User not found")
+
     return {
-        "id": user_doc['id'],
-        "email": user_doc['email'],
-        "status": user_doc['status'],
-        "roles": user.get('roles', [])
+        "id": str(user_row["id"]),
+        "email": user_row["email"],
+        "status": user_row["status"],
+        "roles": user.get("roles", []),
     }

@@ -57,11 +57,7 @@ def get_mongo_db():
         raise Exception("MongoDB not connected")
     return mongo_db
 
-async def get_postgres_conn():
+def get_postgres_pool() -> asyncpg.Pool:
     if postgres_pool is None:
         raise Exception("Postgres pool not initialized")
-    return await postgres_pool.acquire()
-
-async def release_postgres_conn(conn):
-    if postgres_pool:
-        await postgres_pool.release(conn)
+    return postgres_pool
