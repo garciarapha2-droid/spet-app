@@ -540,6 +540,8 @@ async def get_guest_profile(guest_id: str, venue_id: str, user: dict = Depends(r
         "history": history,
         "consumptions": consumptions,
         "sessions_count": len(sessions),
+        "wristband_blocked": doc.get("wristband_blocked", False),
+        "wristband_block_reason": doc.get("wristband_block_reason"),
         "created_at": doc["created_at"].isoformat() if isinstance(doc.get("created_at"), datetime) else None,
     }
 
