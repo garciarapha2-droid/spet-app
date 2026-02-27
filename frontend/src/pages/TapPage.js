@@ -116,10 +116,30 @@ export const TapPage = () => {
   useEffect(() => {
     if (!activeSessionId) { setActiveSession(null); return; }
     (async () => {
-      try { const res = await tapAPI.getSession(activeSessionId); setActiveSession(res.data); }
+      try {
+        const res = await tapAPI.getSession(activeSessionId);
+        setActiveSession(res.data);
+        // If session not confirmed yet, trigger modal
+        if (!confirmedSessions.has(activeSessionId)) {
+          setPendingConfirmSession(res.data);
+        }
+      }
       catch { setActiveSession(null); }
     })();
-  }, [activeSessionId]);
+  }, [activeSessionId, confirmedSessions]);
+
+  const handleConfirmGuest = () => {
+    if (pendingConfirmSession) {
+      setConfirmedSessions(prev => new Set(prev).add(activeSessionId));
+      setPendingConfirmSession(null);
+    }
+  };
+
+  const handleCancelConfirm = () => {
+    setPendingConfirmSession(null);
+    setActiveSessionId(null);
+    setActiveSession(null);
+  };
 
   const handleScan = async (e) => {
     e.preventDefault();
