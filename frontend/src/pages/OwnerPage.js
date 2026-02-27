@@ -1,37 +1,31 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { tapAPI } from '../services/api';
+import { ownerAPI } from '../services/api';
+import { toast } from 'sonner';
 import { Button } from '../components/ui/button';
 import { ThemeToggle } from '../components/ThemeToggle';
 import {
   ArrowLeft, Home, LogOut, Building2, BarChart3, Users,
-  DollarSign, TrendingUp, Clock, ChevronRight, Settings
+  DollarSign, TrendingUp, TrendingDown, Clock, Settings,
+  Shield, Lightbulb, ChevronRight, Heart, Activity, Server,
+  AlertTriangle, X, Zap, Target, PieChart
 } from 'lucide-react';
 
-const VENUE_ID = () => localStorage.getItem('active_venue_id') || '40a24e04-75b6-435d-bfff-ab0d469ce543';
-const VENUE_NAME = () => localStorage.getItem('active_venue_name') || 'Demo Club';
+const VNAME = () => localStorage.getItem('active_venue_name') || 'Demo Club';
+
+const TABS = [
+  { key: 'overview', label: 'Overview', icon: BarChart3 },
+  { key: 'venues', label: 'Performance', icon: Building2 },
+  { key: 'insights', label: 'AI Insights', icon: Lightbulb },
+  { key: 'finance', label: 'Finance & Risk', icon: DollarSign },
+  { key: 'growth', label: 'Growth & Loyalty', icon: Heart },
+  { key: 'people', label: 'People & Ops', icon: Users },
+  { key: 'system', label: 'System', icon: Server },
+];
 
 export const OwnerPage = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('overview');
-  const [stats, setStats] = useState({});
-
-  const loadData = useCallback(async () => {
-    try {
-      const res = await tapAPI.getStats(VENUE_ID());
-      setStats(res.data);
-    } catch {}
-  }, []);
-
-  useEffect(() => { loadData(); }, [loadData]);
-
-  const TABS = [
-    { key: 'overview', label: 'Overview', icon: BarChart3 },
-    { key: 'venues', label: 'Venues', icon: Building2 },
-    { key: 'analytics', label: 'Analytics', icon: TrendingUp },
-    { key: 'managers', label: 'Managers', icon: Users },
-    { key: 'settings', label: 'Settings', icon: Settings },
-  ];
 
   return (
     <div className="min-h-screen bg-background" data-testid="owner-page">
@@ -40,7 +34,7 @@ export const OwnerPage = () => {
           <Button variant="ghost" size="icon" onClick={() => navigate('/venue/home')} data-testid="back-btn"><ArrowLeft className="h-4 w-4" /></Button>
           <h1 className="text-lg font-bold tracking-tight">Owner Dashboard</h1>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
           <ThemeToggle />
           <div className="h-5 w-px bg-border" />
           <Button variant="ghost" size="icon" onClick={() => navigate('/venue/home')} data-testid="home-btn"><Home className="h-4 w-4" /></Button>
@@ -50,137 +44,560 @@ export const OwnerPage = () => {
       </header>
 
       <div className="flex">
-        <nav className="w-56 border-r border-border bg-card min-h-[calc(100vh-56px)] p-4 space-y-1">
+        <nav className="w-52 border-r border-border bg-card min-h-[calc(100vh-56px)] p-3 space-y-0.5">
           {TABS.map(tab => {
             const Icon = tab.icon;
             return (
               <button key={tab.key} onClick={() => setActiveTab(tab.key)}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${
-                  activeTab === tab.key ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-muted'}`}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                  activeTab === tab.key ? 'bg-primary/10 text-primary border-l-2 border-primary' : 'text-muted-foreground hover:bg-muted'}`}
                 data-testid={`owner-tab-${tab.key}`}>
-                <Icon className="h-4 w-4" /> {tab.label}
+                <Icon className="h-4 w-4 shrink-0" /> {tab.label}
               </button>
             );
           })}
         </nav>
 
-        <main className="flex-1 p-8">
-          {activeTab === 'overview' && (
-            <div>
-              <h2 className="text-2xl font-bold mb-6">Business Overview</h2>
-              <div className="grid grid-cols-4 gap-6 mb-8">
-                <div className="bg-card border border-border rounded-xl p-6">
-                  <div className="flex items-center gap-2 text-muted-foreground mb-2"><DollarSign className="h-4 w-4" /><span className="text-sm">Today's Revenue</span></div>
-                  <p className="text-3xl font-bold text-green-500">${(stats.revenue_today || 0).toFixed(0)}</p>
-                  <p className="text-xs text-muted-foreground mt-1">+12% from yesterday</p>
-                </div>
-                <div className="bg-card border border-border rounded-xl p-6">
-                  <div className="flex items-center gap-2 text-muted-foreground mb-2"><Clock className="h-4 w-4" /><span className="text-sm">Open Tabs</span></div>
-                  <p className="text-3xl font-bold">{stats.open_tabs || 0}</p>
-                  <p className="text-xs text-muted-foreground mt-1">${(stats.running_total || 0).toFixed(0)} running</p>
-                </div>
-                <div className="bg-card border border-border rounded-xl p-6">
-                  <div className="flex items-center gap-2 text-muted-foreground mb-2"><Users className="h-4 w-4" /><span className="text-sm">Tabs Closed Today</span></div>
-                  <p className="text-3xl font-bold">{stats.closed_today || 0}</p>
-                  <p className="text-xs text-muted-foreground mt-1">Avg $42 per tab</p>
-                </div>
-                <div className="bg-card border border-border rounded-xl p-6">
-                  <div className="flex items-center gap-2 text-muted-foreground mb-2"><TrendingUp className="h-4 w-4" /><span className="text-sm">Month to Date</span></div>
-                  <p className="text-3xl font-bold">$28,450</p>
-                  <p className="text-xs text-muted-foreground mt-1">+8% from last month</p>
-                </div>
-              </div>
-
-              {/* Venue card */}
-              <h3 className="text-lg font-semibold mb-4">Your Venues</h3>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-card border-2 border-primary/30 rounded-xl p-6 cursor-pointer hover:border-primary/60 transition-all" data-testid="venue-card-active">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center"><Building2 className="h-6 w-6 text-primary" /></div>
-                      <div>
-                        <h4 className="font-bold">{VENUE_NAME()}</h4>
-                        <p className="text-xs text-green-500 font-medium">Active Now</p>
-                      </div>
-                    </div>
-                    <ChevronRight className="h-5 w-5 text-muted-foreground" />
-                  </div>
-                  <div className="grid grid-cols-3 gap-4 mt-4 text-center">
-                    <div><p className="text-lg font-bold">{stats.open_tabs || 0}</p><p className="text-xs text-muted-foreground">Open Tabs</p></div>
-                    <div><p className="text-lg font-bold text-green-500">${(stats.revenue_today || 0).toFixed(0)}</p><p className="text-xs text-muted-foreground">Revenue</p></div>
-                    <div><p className="text-lg font-bold">3</p><p className="text-xs text-muted-foreground">Staff On</p></div>
-                  </div>
-                </div>
-
-                <div className="bg-card border-2 border-dashed border-border rounded-xl p-6 flex items-center justify-center text-muted-foreground cursor-pointer hover:border-primary/30 transition-all">
-                  <div className="text-center">
-                    <Building2 className="h-8 w-8 mx-auto mb-2 opacity-30" />
-                    <p className="font-medium">Add New Venue</p>
-                    <p className="text-xs">Expand your operations</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {activeTab === 'venues' && (
-            <div>
-              <h2 className="text-2xl font-bold mb-6">Venues</h2>
-              <div className="space-y-4">
-                <div className="bg-card border border-border rounded-xl p-6 flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center"><Building2 className="h-6 w-6 text-primary" /></div>
-                    <div><h4 className="font-bold">{VENUE_NAME()}</h4><p className="text-sm text-muted-foreground">Club / Disco — Active</p></div>
-                  </div>
-                  <Button variant="outline" onClick={() => navigate('/manager')}>Manage</Button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {activeTab === 'analytics' && (
-            <div>
-              <h2 className="text-2xl font-bold mb-6">Analytics</h2>
-              <div className="grid grid-cols-2 gap-6">
-                <div className="bg-card border border-border rounded-xl p-6 h-64 flex items-center justify-center text-muted-foreground">
-                  <div className="text-center"><BarChart3 className="h-12 w-12 mx-auto mb-2 opacity-20" /><p>Revenue Chart</p><p className="text-xs">Coming soon</p></div>
-                </div>
-                <div className="bg-card border border-border rounded-xl p-6 h-64 flex items-center justify-center text-muted-foreground">
-                  <div className="text-center"><TrendingUp className="h-12 w-12 mx-auto mb-2 opacity-20" /><p>Guest Flow Chart</p><p className="text-xs">Coming soon</p></div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {activeTab === 'managers' && (
-            <div>
-              <h2 className="text-2xl font-bold mb-6">Manager Access</h2>
-              <div className="bg-card border border-border rounded-xl p-6 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center"><Users className="h-5 w-5 text-primary" /></div>
-                  <div><p className="font-medium">teste@teste.com</p><p className="text-xs text-muted-foreground">Owner — Full Access</p></div>
-                </div>
-                <span className="text-xs bg-green-500/10 text-green-600 px-3 py-1 rounded-full font-medium">Active</span>
-              </div>
-            </div>
-          )}
-
-          {activeTab === 'settings' && (
-            <div>
-              <h2 className="text-2xl font-bold mb-6">Owner Settings</h2>
-              <div className="max-w-lg space-y-6">
-                <div className="space-y-2"><label className="text-sm font-medium">Company Name</label><input className="w-full h-10 rounded-md border border-input bg-muted/30 px-3 text-sm" defaultValue="Demo Club Inc." readOnly /></div>
-                <div className="space-y-2"><label className="text-sm font-medium">Subscription Plan</label>
-                  <div className="p-4 rounded-xl border border-primary/30 bg-primary/5">
-                    <p className="font-bold">Professional Plan</p>
-                    <p className="text-sm text-muted-foreground">All modules included — Pulse, TAP, Table, KDS</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
+        <main className="flex-1 p-6 overflow-y-auto max-h-[calc(100vh-56px)]">
+          {activeTab === 'overview' && <OverviewSection />}
+          {activeTab === 'venues' && <VenuesSection />}
+          {activeTab === 'insights' && <InsightsSection />}
+          {activeTab === 'finance' && <FinanceSection />}
+          {activeTab === 'growth' && <GrowthSection />}
+          {activeTab === 'people' && <PeopleSection />}
+          {activeTab === 'system' && <SystemSection />}
         </main>
       </div>
     </div>
   );
 };
+
+/* ═══════════════════════════════════════════════════════════════════
+   1. OVERVIEW
+   ═══════════════════════════════════════════════════════════════════ */
+function OverviewSection() {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    ownerAPI.getDashboard().then(r => setData(r.data)).catch(() => toast.error('Failed')).finally(() => setLoading(false));
+  }, []);
+
+  if (loading) return <Skeleton />;
+  if (!data) return <p className="text-muted-foreground">No data</p>;
+
+  const { kpis, venues } = data;
+
+  return (
+    <div data-testid="owner-overview">
+      <h2 className="text-xl font-bold mb-4">Business Overview</h2>
+
+      {/* Row 1: Revenue KPIs */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <BigKPI icon={DollarSign} label="Revenue Today" value={`$${kpis.revenue_today.toFixed(0)}`} accent="text-green-500" testid="kpi-rev-today" />
+        <BigKPI icon={DollarSign} label="Month to Date" value={`$${kpis.revenue_mtd.toFixed(0)}`} accent="text-emerald-500" testid="kpi-rev-mtd" />
+        <BigKPI icon={DollarSign} label="Year to Date" value={`$${kpis.revenue_ytd.toFixed(0)}`} accent="text-teal-500" testid="kpi-rev-ytd" />
+        <BigKPI icon={DollarSign} label="Est. Profit (MTD)" value={`$${kpis.estimated_profit.toFixed(0)}`} accent="text-blue-500" testid="kpi-profit" />
+      </div>
+
+      {/* Row 2: Performance KPIs */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <BigKPI icon={TrendingUp} label="Growth" value={`${kpis.growth_pct > 0 ? '+' : ''}${kpis.growth_pct}%`}
+          accent={kpis.growth_pct >= 0 ? 'text-green-500' : 'text-red-500'} testid="kpi-growth" />
+        <BigKPI icon={Target} label="ARPU" value={`$${kpis.arpu.toFixed(2)}`} accent="text-purple-500" testid="kpi-arpu" />
+        <BigKPI icon={Heart} label="Retention" value={`${kpis.retention_pct}%`} accent="text-pink-500" testid="kpi-retention" />
+        <BigKPI icon={Users} label="Guests Today" value={kpis.total_guests_today} testid="kpi-guests" />
+      </div>
+
+      {/* Row 3: Operational */}
+      <div className="grid grid-cols-3 gap-4 mb-6">
+        <div className="bg-card border border-border rounded-xl p-4" data-testid="kpi-tabs">
+          <p className="text-xs text-muted-foreground">Open Tabs</p>
+          <p className="text-2xl font-bold">{kpis.open_tabs}</p>
+          <p className="text-xs text-muted-foreground">${kpis.running_total.toFixed(0)} running</p>
+        </div>
+        <div className="bg-card border border-border rounded-xl p-4">
+          <p className="text-xs text-muted-foreground">Tabs Closed Today</p>
+          <p className="text-2xl font-bold">{kpis.closed_today}</p>
+        </div>
+        <div className="bg-card border border-border rounded-xl p-4">
+          <p className="text-xs text-muted-foreground">Avg Ticket</p>
+          <p className="text-2xl font-bold text-primary">${kpis.avg_ticket.toFixed(2)}</p>
+        </div>
+      </div>
+
+      {/* Venues Summary */}
+      <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">Your Venues</h3>
+      <div className="grid grid-cols-2 gap-4">
+        {venues.map(v => (
+          <div key={v.venue_id} className="bg-card border-2 border-primary/20 rounded-xl p-5 hover:border-primary/40 transition-colors" data-testid={`venue-card-${v.venue_id}`}>
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center"><Building2 className="h-5 w-5 text-primary" /></div>
+                <div>
+                  <h4 className="font-bold text-sm">{v.name}</h4>
+                  <HealthBadge health={v.health} />
+                </div>
+              </div>
+            </div>
+            <div className="grid grid-cols-3 gap-3 text-center">
+              <div><p className="text-lg font-bold text-green-500">${v.revenue_today.toFixed(0)}</p><p className="text-[10px] text-muted-foreground">Revenue</p></div>
+              <div><p className="text-lg font-bold">{v.open_tabs}</p><p className="text-[10px] text-muted-foreground">Tabs</p></div>
+              <div><p className="text-lg font-bold">{v.guests_today}</p><p className="text-[10px] text-muted-foreground">Guests</p></div>
+            </div>
+          </div>
+        ))}
+
+        <div className="border-2 border-dashed border-border rounded-xl p-5 flex items-center justify-center text-muted-foreground cursor-pointer hover:border-primary/30 transition-colors">
+          <div className="text-center">
+            <Building2 className="h-8 w-8 mx-auto mb-2 opacity-30" />
+            <p className="font-medium text-sm">Add New Venue</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   2. PERFORMANCE BY VENUE
+   ═══════════════════════════════════════════════════════════════════ */
+function VenuesSection() {
+  const [data, setData] = useState(null);
+  const [selected, setSelected] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    ownerAPI.getVenues().then(r => setData(r.data)).catch(() => toast.error('Failed')).finally(() => setLoading(false));
+  }, []);
+
+  if (loading) return <Skeleton />;
+  if (!data?.venues?.length) return <p className="text-muted-foreground">No venues</p>;
+
+  const selectedVenue = selected ? data.venues.find(v => v.venue_id === selected) : null;
+
+  return (
+    <div data-testid="venues-section">
+      <h2 className="text-xl font-bold mb-4">Performance by Venue</h2>
+
+      {/* Table */}
+      <div className="bg-card border border-border rounded-xl overflow-hidden mb-6">
+        <div className="grid grid-cols-8 gap-4 px-5 py-3 text-xs font-medium text-muted-foreground uppercase bg-muted/30">
+          <span>Venue</span><span>Health</span><span>Revenue Today</span><span>Revenue MTD</span><span>Tabs</span><span>Guests</span><span>Avg Ticket</span><span>Voids</span>
+        </div>
+        {data.venues.map(v => (
+          <div key={v.venue_id} onClick={() => setSelected(selected === v.venue_id ? null : v.venue_id)}
+            className={`grid grid-cols-8 gap-4 px-5 py-3 text-sm border-t border-border/50 cursor-pointer hover:bg-muted/20 transition-colors ${selected === v.venue_id ? 'bg-primary/5' : ''}`}
+            data-testid={`venue-row-${v.venue_id}`}>
+            <span className="font-medium">{v.name}</span>
+            <span><HealthBadge health={v.health} /></span>
+            <span className="text-green-500 font-bold">${v.revenue_today.toFixed(0)}</span>
+            <span className="font-medium">${v.revenue_month.toFixed(0)}</span>
+            <span>{v.tabs_open} open / {v.tabs_closed_today} closed</span>
+            <span>{v.guests_today}</span>
+            <span className="text-primary">${v.avg_ticket.toFixed(2)}</span>
+            <span className={v.voids_today > 3 ? 'text-red-500 font-bold' : ''}>{v.voids_today}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Drill-down */}
+      {selectedVenue && (
+        <div className="bg-card border border-primary/20 rounded-xl p-5" data-testid="venue-drilldown">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-bold">{selectedVenue.name} — Detail</h3>
+            <Button variant="ghost" size="sm" onClick={() => setSelected(null)}><X className="h-4 w-4" /></Button>
+          </div>
+          <div className="grid grid-cols-4 gap-4 mb-4">
+            <Stat label="Staff Active" value={selectedVenue.staff_count} />
+            <Stat label="Revenue Today" value={`$${selectedVenue.revenue_today.toFixed(0)}`} accent="text-green-500" />
+            <Stat label="Avg Ticket" value={`$${selectedVenue.avg_ticket.toFixed(2)}`} />
+            <Stat label="Guests" value={selectedVenue.guests_today} />
+          </div>
+          {selectedVenue.top_items?.length > 0 && (
+            <div>
+              <h4 className="text-xs font-semibold text-muted-foreground uppercase mb-2">Top Items Today</h4>
+              <div className="flex gap-3 flex-wrap">
+                {selectedVenue.top_items.map((item, i) => (
+                  <div key={i} className="bg-muted/30 rounded-lg px-3 py-2 text-sm">
+                    <span className="font-medium">{item.name}</span>
+                    <span className="text-green-500 ml-2 font-bold">${item.revenue.toFixed(0)}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   3. AI INSIGHTS
+   ═══════════════════════════════════════════════════════════════════ */
+function InsightsSection() {
+  const [insights, setInsights] = useState([]);
+  const [dismissed, setDismissed] = useState(new Set());
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    ownerAPI.getInsights().then(r => setInsights(r.data.insights || [])).catch(() => toast.error('Failed')).finally(() => setLoading(false));
+  }, []);
+
+  if (loading) return <Skeleton />;
+
+  const visible = insights.filter(i => !dismissed.has(i.id));
+
+  const typeStyles = {
+    critical: { border: 'border-red-500/40', bg: 'bg-red-500/5', icon: 'text-red-500', badge: 'bg-red-500/10 text-red-600' },
+    warning: { border: 'border-yellow-500/40', bg: 'bg-yellow-500/5', icon: 'text-yellow-500', badge: 'bg-yellow-500/10 text-yellow-600' },
+    info: { border: 'border-blue-500/40', bg: 'bg-blue-500/5', icon: 'text-blue-500', badge: 'bg-blue-500/10 text-blue-600' },
+  };
+
+  return (
+    <div data-testid="insights-section">
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <h2 className="text-xl font-bold">AI Insights</h2>
+          <p className="text-sm text-muted-foreground">Rule-based analysis of your operations</p>
+        </div>
+        <span className="text-xs text-muted-foreground">{visible.length} active insight{visible.length !== 1 ? 's' : ''}</span>
+      </div>
+
+      {visible.length === 0 ? (
+        <div className="bg-green-500/5 border border-green-500/30 rounded-xl p-8 text-center">
+          <Zap className="h-10 w-10 text-green-500 mx-auto mb-3" />
+          <p className="font-bold text-green-600">All Clear</p>
+          <p className="text-sm text-muted-foreground mt-1">No issues detected across your venues</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {visible.map(insight => {
+            const s = typeStyles[insight.type] || typeStyles.info;
+            return (
+              <div key={insight.id} className={`border rounded-xl p-5 ${s.border} ${s.bg}`} data-testid={`insight-${insight.id}`}>
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex items-center gap-3">
+                    <Lightbulb className={`h-5 w-5 ${s.icon}`} />
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${s.badge}`}>{insight.type}</span>
+                        <span className="text-xs text-muted-foreground">{insight.venue}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <Button variant="ghost" size="sm" onClick={() => setDismissed(prev => new Set(prev).add(insight.id))} data-testid={`dismiss-${insight.id}`}>
+                    <X className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+
+                <div className="space-y-2 ml-8">
+                  <div>
+                    <p className="text-xs font-semibold text-muted-foreground uppercase">Situation</p>
+                    <p className="text-sm font-medium">{insight.situation}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold text-muted-foreground uppercase">Impact</p>
+                    <p className="text-sm text-muted-foreground">{insight.impact}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold text-muted-foreground uppercase">Suggested Action</p>
+                    <p className="text-sm text-primary font-medium">{insight.suggestion}</p>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   4. FINANCE & RISK
+   ═══════════════════════════════════════════════════════════════════ */
+function FinanceSection() {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    ownerAPI.getFinance().then(r => setData(r.data)).catch(() => toast.error('Failed')).finally(() => setLoading(false));
+  }, []);
+
+  if (loading) return <Skeleton />;
+  if (!data) return null;
+
+  const riskColor = data.risk_score < 20 ? 'text-green-500' : data.risk_score < 50 ? 'text-yellow-500' : 'text-red-500';
+
+  return (
+    <div data-testid="finance-section">
+      <h2 className="text-xl font-bold mb-4">Finance & Risk</h2>
+
+      <div className="grid grid-cols-3 gap-4 mb-6">
+        <div className="bg-card border border-border rounded-xl p-5">
+          <p className="text-xs text-muted-foreground">Revenue MTD</p>
+          <p className="text-3xl font-bold text-green-500">${data.revenue_month.toFixed(0)}</p>
+        </div>
+        <div className="bg-card border border-border rounded-xl p-5">
+          <p className="text-xs text-muted-foreground">Risk Score</p>
+          <p className={`text-3xl font-bold ${riskColor}`}>{data.risk_score}/100</p>
+          <p className="text-xs text-muted-foreground mt-1">{data.risk_score < 20 ? 'Low Risk' : data.risk_score < 50 ? 'Moderate' : 'High Risk'}</p>
+        </div>
+        <div className="bg-card border border-border rounded-xl p-5">
+          <p className="text-xs text-muted-foreground">Chargebacks</p>
+          <p className="text-3xl font-bold">{data.chargebacks}</p>
+        </div>
+      </div>
+
+      {/* Payment Methods */}
+      <div className="bg-card border border-border rounded-xl p-5 mb-6">
+        <h3 className="text-sm font-semibold mb-3">Payment Methods (MTD)</h3>
+        {data.payments?.length > 0 ? (
+          <div className="grid grid-cols-3 gap-4">
+            {data.payments.map(p => (
+              <div key={p.method} className="text-center p-3 bg-muted/20 rounded-lg">
+                <p className="text-xl font-bold text-green-500">${p.total.toFixed(0)}</p>
+                <p className="text-sm capitalize font-medium">{p.method}</p>
+                <p className="text-xs text-muted-foreground">{p.count} tx</p>
+              </div>
+            ))}
+          </div>
+        ) : <p className="text-sm text-muted-foreground">No payments this month</p>}
+      </div>
+
+      {/* Voids Summary */}
+      <div className="bg-card border border-border rounded-xl p-5">
+        <h3 className="text-sm font-semibold mb-3">Voids & Exceptions</h3>
+        <div className="grid grid-cols-3 gap-4">
+          <Stat label="Total Voids" value={data.voids_summary?.count || 0} />
+          <Stat label="Void Amount" value={`$${(data.voids_summary?.amount || 0).toFixed(2)}`} accent="text-red-500" />
+          <Stat label="Void Rate" value={`${data.voids_summary?.rate_pct || 0}%`} accent={data.voids_summary?.rate_pct > 5 ? 'text-red-500' : ''} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   5. GROWTH & LOYALTY
+   ═══════════════════════════════════════════════════════════════════ */
+function GrowthSection() {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    ownerAPI.getGrowth().then(r => setData(r.data)).catch(() => toast.error('Failed')).finally(() => setLoading(false));
+  }, []);
+
+  if (loading) return <Skeleton />;
+  if (!data) return null;
+
+  return (
+    <div data-testid="growth-section">
+      <h2 className="text-xl font-bold mb-4">Growth & Loyalty</h2>
+
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <BigKPI icon={Users} label="New Guests" value={data.new_guests} accent="text-green-500" testid="new-guests" />
+        <BigKPI icon={Heart} label="Returning" value={data.returning_guests} accent="text-pink-500" testid="returning" />
+        <BigKPI icon={TrendingUp} label="Guest Growth" value={`${data.guest_growth_pct > 0 ? '+' : ''}${data.guest_growth_pct}%`}
+          accent={data.guest_growth_pct >= 0 ? 'text-green-500' : 'text-red-500'} testid="guest-growth" />
+        <BigKPI icon={Target} label="LTV" value={`$${data.ltv.toFixed(2)}`} accent="text-purple-500" testid="ltv" />
+      </div>
+
+      {/* Guest Comparison */}
+      <div className="bg-card border border-border rounded-xl p-5 mb-6">
+        <h3 className="text-sm font-semibold mb-3">Guest Comparison</h3>
+        <div className="grid grid-cols-2 gap-8">
+          <div className="text-center">
+            <p className="text-3xl font-bold">{data.unique_guests_month}</p>
+            <p className="text-sm text-muted-foreground">This Month</p>
+          </div>
+          <div className="text-center">
+            <p className="text-3xl font-bold text-muted-foreground">{data.unique_guests_prev_month}</p>
+            <p className="text-sm text-muted-foreground">Last Month</p>
+          </div>
+        </div>
+        <div className="mt-4 h-2 bg-muted rounded-full overflow-hidden">
+          <div className="h-full bg-primary rounded-full transition-all" style={{
+            width: `${Math.min(100, data.unique_guests_prev_month > 0 ? (data.unique_guests_month / data.unique_guests_prev_month * 100) : 100)}%`
+          }} />
+        </div>
+      </div>
+
+      {/* Loyalty */}
+      <div className="bg-card border border-border rounded-xl p-5">
+        <h3 className="text-sm font-semibold mb-3">Loyalty Program</h3>
+        <div className="grid grid-cols-2 gap-6">
+          <Stat label="Loyalty Members" value={data.loyalty_members} />
+          <Stat label="Total Points Issued" value={data.total_points_issued} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   6. PEOPLE & OPS
+   ═══════════════════════════════════════════════════════════════════ */
+function PeopleSection() {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    ownerAPI.getPeople().then(r => setData(r.data)).catch(() => toast.error('Failed')).finally(() => setLoading(false));
+  }, []);
+
+  if (loading) return <Skeleton />;
+  if (!data) return null;
+
+  return (
+    <div data-testid="people-section">
+      <h2 className="text-xl font-bold mb-4">People & Ops</h2>
+
+      <div className="bg-card border border-border rounded-xl p-5 mb-6">
+        <div className="flex items-center gap-4 mb-4">
+          <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center"><Users className="h-6 w-6 text-primary" /></div>
+          <div>
+            <p className="text-2xl font-bold">{data.total_staff}</p>
+            <p className="text-sm text-muted-foreground">Total Operational Staff</p>
+          </div>
+        </div>
+      </div>
+
+      <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">By Venue</h3>
+      <div className="space-y-2">
+        {data.venues?.map(v => (
+          <div key={v.venue_id} className="bg-card border border-border rounded-xl p-4 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Building2 className="h-5 w-5 text-primary" />
+              <div>
+                <p className="font-medium text-sm">{v.name}</p>
+                <p className="text-xs text-muted-foreground">{v.recent_shifts} recent shifts</p>
+              </div>
+            </div>
+            <div className="text-right">
+              <p className="text-lg font-bold">{v.staff_count}</p>
+              <p className="text-xs text-muted-foreground">staff</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   7. SYSTEM & EXPANSION
+   ═══════════════════════════════════════════════════════════════════ */
+function SystemSection() {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    ownerAPI.getSystem().then(r => setData(r.data)).catch(() => toast.error('Failed')).finally(() => setLoading(false));
+  }, []);
+
+  if (loading) return <Skeleton />;
+  if (!data) return null;
+
+  return (
+    <div data-testid="system-section">
+      <h2 className="text-xl font-bold mb-4">System & Expansion</h2>
+
+      <div className="grid grid-cols-3 gap-4 mb-6">
+        <div className="bg-card border border-border rounded-xl p-5">
+          <div className="flex items-center gap-2 mb-2"><Activity className="h-4 w-4 text-green-500" /><span className="text-xs text-muted-foreground">System Status</span></div>
+          <p className="text-xl font-bold text-green-500 capitalize">{data.system_status}</p>
+        </div>
+        <div className="bg-card border border-border rounded-xl p-5">
+          <div className="flex items-center gap-2 mb-2"><Server className="h-4 w-4 text-muted-foreground" /><span className="text-xs text-muted-foreground">Uptime</span></div>
+          <p className="text-xl font-bold">{data.uptime}</p>
+        </div>
+        <div className="bg-card border border-border rounded-xl p-5">
+          <div className="flex items-center gap-2 mb-2"><Building2 className="h-4 w-4 text-primary" /><span className="text-xs text-muted-foreground">Active Venues</span></div>
+          <p className="text-xl font-bold">{data.venues_count}</p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4 mb-6">
+        <div className="bg-card border border-border rounded-xl p-5">
+          <h3 className="text-sm font-semibold mb-3">Webhook Status</h3>
+          <div className="flex items-center gap-2">
+            {data.webhook_errors === 0 ? (
+              <><span className="w-2 h-2 rounded-full bg-green-500" /><span className="text-sm">All webhooks healthy</span></>
+            ) : (
+              <><span className="w-2 h-2 rounded-full bg-red-500" /><span className="text-sm text-red-500">{data.webhook_errors} errors</span></>
+            )}
+          </div>
+        </div>
+        <div className="bg-card border border-border rounded-xl p-5">
+          <h3 className="text-sm font-semibold mb-3">Expansion</h3>
+          <p className="text-sm text-muted-foreground">You can add new venues from the Overview tab.</p>
+          <p className="text-xs text-muted-foreground mt-2">Current: {data.venues_count} venue(s)</p>
+        </div>
+      </div>
+
+      {/* Subscriptions */}
+      {data.subscriptions?.length > 0 && (
+        <div className="bg-card border border-border rounded-xl p-5">
+          <h3 className="text-sm font-semibold mb-3">Subscriptions</h3>
+          {data.subscriptions.map((sub, i) => (
+            <div key={i} className="flex items-center justify-between p-3 bg-muted/20 rounded-lg">
+              <div>
+                <p className="text-sm font-medium capitalize">{sub.plan || 'Professional'} Plan</p>
+                <p className="text-xs text-muted-foreground">{sub.status}</p>
+              </div>
+              {sub.period_end && <span className="text-xs text-muted-foreground">Until {new Date(sub.period_end).toLocaleDateString()}</span>}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   SHARED COMPONENTS
+   ═══════════════════════════════════════════════════════════════════ */
+function BigKPI({ icon: Icon, label, value, accent = '', sub, testid }) {
+  return (
+    <div className="bg-card border border-border rounded-xl p-4" data-testid={testid}>
+      <div className="flex items-center gap-2 text-muted-foreground mb-1"><Icon className="h-3.5 w-3.5" /><span className="text-xs">{label}</span></div>
+      <p className={`text-2xl font-bold ${accent}`}>{value}</p>
+      {sub && <p className="text-xs text-muted-foreground mt-0.5">{sub}</p>}
+    </div>
+  );
+}
+
+function Stat({ label, value, accent = '' }) {
+  return (
+    <div className="text-center p-3 bg-muted/20 rounded-lg">
+      <p className={`text-xl font-bold ${accent}`}>{value}</p>
+      <p className="text-xs text-muted-foreground">{label}</p>
+    </div>
+  );
+}
+
+function HealthBadge({ health }) {
+  const styles = {
+    green: 'bg-green-500/10 text-green-600',
+    yellow: 'bg-yellow-500/10 text-yellow-600',
+    red: 'bg-red-500/10 text-red-600',
+  };
+  const labels = { green: 'Healthy', yellow: 'Warning', red: 'Critical' };
+  return <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${styles[health] || styles.green}`}>{labels[health] || 'OK'}</span>;
+}
+
+function Skeleton() {
+  return (
+    <div className="space-y-4 animate-pulse">
+      <div className="h-6 bg-muted rounded w-48" />
+      <div className="grid grid-cols-4 gap-4">
+        {[1, 2, 3, 4].map(i => <div key={i} className="h-24 bg-muted rounded-xl" />)}
+      </div>
+      <div className="h-40 bg-muted rounded-xl" />
+    </div>
+  );
+}
