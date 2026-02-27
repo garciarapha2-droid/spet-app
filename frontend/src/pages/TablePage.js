@@ -121,7 +121,7 @@ export const TablePage = () => {
     <div className="min-h-screen bg-background" data-testid="table-page">
       <header className="h-14 border-b border-border px-6 flex items-center justify-between bg-card">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate('/pulse/entry')}>
+          <Button variant="ghost" size="icon" onClick={() => navigate('/venue/home')} data-testid="back-to-home">
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <h1 className="text-xl font-bold tracking-tight">SPETAP</h1>
