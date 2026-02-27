@@ -1,0 +1,75 @@
+{
+  "summary": "Iteration 17: All 5 new features tested successfully. Backend 100% pass rate (11/11 tests). Frontend UI verified for all features and regression tests passed.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {
+        "component": "TablePage",
+        "issue": "Console warning: <button> cannot contain a nested <button> - ServerAssign button nested inside table button",
+        "selector": "[data-testid^='assign-server-']",
+        "priority": "LOW"
+      }
+    ],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "features_tested": {
+    "feature_1_pulse_tab_number": {
+      "status": "PASS",
+      "backend": "GET /api/pulse/entries/today returns tab_number for each entry",
+      "frontend": "PulseEntryPage shows #tab_number next to guest name (e.g., Maria Lopez #124)"
+    },
+    "feature_2_table_server_assignment": {
+      "status": "PASS",
+      "backend": "POST /api/table/assign-server accepts table_id and server_name, returns previous server. GET /api/table/tables returns server_name.",
+      "frontend": "Occupied tables show server name as clickable button, dropdown shows barmen list (Carlos Silva, Ana Perez, Marco Rossi)"
+    },
+    "feature_3_manager_funnel_drilldown": {
+      "status": "PASS",
+      "backend": "GET /api/manager/funnel-detail returns results for stages: entries, allowed, tabs_open, tabs_closed",
+      "frontend": "Clickable funnel stages open drill-down modals with guest details, tab numbers, server names"
+    },
+    "feature_4_tables_by_server": {
+      "status": "PASS",
+      "backend": "GET /api/manager/tables-by-server returns servers array with tables grouped, plus unassigned",
+      "frontend": "Manager sidebar has 'Tables by Server' tab showing tables grouped by server with revenue"
+    },
+    "feature_5_ai_insights": {
+      "status": "PASS",
+      "backend": "POST /api/owner/ai-insights generates real AI insights using GPT-5.2 with venue context",
+      "frontend": "Owner 'AI Insights' tab has Generate button, shows insight cards with Summary, What We See, Recommended Actions, priority badges (CRITICAL, WARNING, INFO), and disclaimer"
+    }
+  },
+  "regression_tests": {
+    "manager_overview": "PASS - KPIs (Revenue Today/Week/Month, Avg Ticket, Unique Guests, Open Tabs, Tabs Closed, Voids), Charts (Revenue by Hour, Top 10 Items), Guest Funnel all visible",
+    "owner_overview": "PASS - KPIs (Revenue Today, MTD, YTD, Growth, ARPU, Retention, Guests Today, Open Tabs, Tabs Closed, Avg Ticket), Venue cards visible"
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iteration17_five_features.py",
+    "/app/test_reports/pytest/iteration17_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "TablePage.js has nested button elements causing React hydration warning - ServerAssign button is nested inside table card button. Consider using a div with onClick instead of button for the outer element"
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_iteration17_five_features.py"
+  ],
+  "success_rate": {
+    "backend": "100% (11/11 tests passed)",
+    "frontend": "100% (all 5 features verified, regressions passed)"
+  },
+  "test_credentials": {
+    "email": "teste@teste.com",
+    "password": "12345",
+    "venue_id": "40a24e04-75b6-435d-bfff-ab0d469ce543"
+  },
+  "seed_data_creation": "N/A - used existing demo data",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "All 5 new features (Pulse tab_number, Table server assignment, Manager funnel drill-down, Tables by Server, AI Insights) are working. The assign-server endpoint was tested and changes server assignment successfully. AI Insights uses real GPT-5.2 via emergentintegrations and takes 10-15 seconds to generate. Demo data has 3 guests (John Smith #123, Alex Turner #126, Kevin Brown #125) and 2 occupied tables (T2, T3).",
+  "ai_insights_note": "AI Insights feature uses REAL GPT-5.2 via emergentintegrations - NO MOCKING. Response time is 10-15 seconds."
+}
