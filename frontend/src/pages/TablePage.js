@@ -414,3 +414,46 @@ export const TablePage = () => {
     </div>
   );
 };
+
+
+function ServerAssign({ tableId, currentServer, barmen, onAssigned }) {
+  const [open, setOpen] = useState(false);
+
+  const assign = async (name) => {
+    try {
+      const fd = new FormData();
+      fd.append('table_id', tableId);
+      fd.append('server_name', name);
+      await tableAPI.assignServer(fd);
+      toast.success(`Server: ${name}`);
+      setOpen(false);
+      onAssigned();
+    } catch { toast.error('Failed'); }
+  };
+
+  if (!open) {
+    return (
+      <button onClick={() => setOpen(true)}
+        className={`w-full text-[9px] font-semibold px-1.5 py-0.5 rounded transition-colors ${
+          currentServer
+            ? 'bg-blue-500/10 text-blue-600 hover:bg-blue-500/20'
+            : 'bg-red-500/10 text-red-500 hover:bg-red-500/20 animate-pulse'
+        }`} data-testid={`assign-server-${tableId}`}>
+        <User className="h-2.5 w-2.5 inline mr-0.5" />
+        {currentServer || 'Assign Server'}
+      </button>
+    );
+  }
+
+  return (
+    <div className="bg-card border border-primary/30 rounded-lg p-1 space-y-0.5">
+      {barmen.map(b => (
+        <button key={b.id} onClick={() => assign(b.name)}
+          className={`w-full text-left text-[9px] px-1.5 py-0.5 rounded hover:bg-primary/10 ${b.name === currentServer ? 'bg-primary/10 text-primary font-bold' : ''}`}>
+          {b.name}
+        </button>
+      ))}
+      <button onClick={() => setOpen(false)} className="w-full text-[9px] text-muted-foreground hover:text-foreground">Cancel</button>
+    </div>
+  );
+}
