@@ -12,9 +12,7 @@ load_dotenv(ROOT_DIR / '.env')
 # Import database connections
 from database import (
     connect_mongodb,
-    connect_postgres,
     disconnect_mongodb,
-    disconnect_postgres,
     get_mongo_db
 )
 
