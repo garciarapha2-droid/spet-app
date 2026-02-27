@@ -1330,55 +1330,141 @@ function ShiftOpsSection() {
         </div>
       </div>
 
-      {/* 6: AI Analysis */}
+      {/* 6: AI Analysis — Conversational */}
       <div className="bg-card border border-border rounded-xl p-5 mb-6" data-testid="shift-ai-section">
         <div className="flex items-center justify-between mb-3">
           <div>
-            <h3 className="text-sm font-semibold">AI Shift Analysis</h3>
-            <p className="text-xs text-muted-foreground">Powered by GPT-5.2</p>
+            <h3 className="text-sm font-semibold">AI Operations Partner</h3>
+            <p className="text-xs text-muted-foreground">Powered by GPT-5.2 — ask about this shift</p>
           </div>
         </div>
-        <div className="flex gap-3 mb-3">
-          <Input value={aiQuestion} onChange={e => setAiQuestion(e.target.value)} placeholder="Ask about this shift... (optional)" className="flex-1"
-            onKeyDown={e => e.key === 'Enter' && runAI()} />
-          <Button onClick={runAI} disabled={aiLoading} data-testid="shift-ai-btn">
-            {aiLoading ? <><Zap className="h-4 w-4 mr-1 animate-spin" /> Analyzing...</> : <><Zap className="h-4 w-4 mr-1" /> Analyze</>}
+
+        {/* Conversation Area */}
+        <div className="space-y-3 mb-3 max-h-[500px] overflow-y-auto pr-1">
+          {/* Empty State */}
+          {aiConversations.length === 0 && !aiLoading && (
+            <div className="border-2 border-dashed border-border rounded-xl p-6 text-center" data-testid="shift-ai-empty">
+              <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mx-auto mb-3">
+                <Lightbulb className="h-6 w-6 text-primary" />
+              </div>
+              <p className="text-sm font-medium mb-1">AI Shift Analysis</p>
+              <p className="text-xs text-muted-foreground mb-4 max-w-sm mx-auto">
+                Get an AI analysis of this shift or ask specific questions about staffing, costs, and performance.
+              </p>
+              <Button size="sm" onClick={() => runAI(null)} data-testid="shift-initial-ai-btn">
+                <Zap className="h-3.5 w-3.5 mr-1" /> Analyze This Shift
+              </Button>
+              <div className="flex flex-wrap gap-2 justify-center mt-3">
+                {[
+                  "Am I overstaffed for this shift?",
+                  "What is the cost per table?",
+                  "How can I improve margins?",
+                ].map((s, i) => (
+                  <button key={i} onClick={() => setAiQuestion(s)}
+                    className="text-xs px-2.5 py-1 rounded-full border border-primary/30 text-primary hover:bg-primary/10 transition-colors"
+                    data-testid={`shift-suggestion-${i}`}>
+                    {s}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Conversation Cards */}
+          {aiConversations.map((conv) => (
+            <div key={conv.id} className="space-y-2" data-testid={`shift-ai-conv-${conv.id}`}>
+              {/* User question */}
+              {conv.question && (
+                <div className="flex justify-end">
+                  <div className="bg-primary/10 border border-primary/20 rounded-lg px-3 py-2 max-w-md">
+                    <p className="text-sm font-medium">{conv.question}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* AI Response */}
+              {conv.insight && (
+                <div className={`border rounded-xl p-4 relative group ${
+                  conv.insight.classification === 'healthy' ? 'border-green-500/30 bg-green-500/5' :
+                  conv.insight.classification === 'tight' ? 'border-yellow-500/30 bg-yellow-500/5' :
+                  'border-red-500/30 bg-red-500/5'
+                }`} data-testid={`shift-ai-result-${conv.id}`}>
+                  {/* Delete button */}
+                  <button onClick={() => removeAiCard(conv.id)}
+                    className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-lg hover:bg-background/80"
+                    data-testid={`delete-shift-ai-${conv.id}`}>
+                    <X className="h-3.5 w-3.5 text-muted-foreground" />
+                  </button>
+
+                  <div className="flex items-center gap-2 mb-2">
+                    <Lightbulb className={`h-4 w-4 ${classColors[conv.insight.classification] || 'text-blue-500'}`} />
+                    <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${
+                      conv.insight.classification === 'healthy' ? 'bg-green-500/10 text-green-600' :
+                      conv.insight.classification === 'tight' ? 'bg-yellow-500/10 text-yellow-600' :
+                      'bg-red-500/10 text-red-600'
+                    }`}>{conv.insight.classification}</span>
+                  </div>
+
+                  <div className="space-y-2">
+                    <div><p className="text-xs font-semibold text-muted-foreground uppercase">Summary</p><p className="text-sm font-medium mt-0.5">{conv.insight.summary}</p></div>
+                    <div><p className="text-xs font-semibold text-muted-foreground uppercase">What We See</p><p className="text-sm mt-0.5">{conv.insight.what_we_see}</p></div>
+                    <div>
+                      <p className="text-xs font-semibold text-muted-foreground uppercase">Recommended Actions</p>
+                      <ul className="mt-1 space-y-0.5">
+                        {(conv.insight.recommended_actions || []).map((a, i) => (
+                          <li key={i} className="text-sm flex items-start gap-2"><ChevronRight className="h-3.5 w-3.5 mt-0.5 text-primary shrink-0" /><span>{a}</span></li>
+                        ))}
+                      </ul>
+                    </div>
+                    {conv.insight.reference && <div><p className="text-xs font-semibold text-muted-foreground uppercase">Reference</p><p className="text-xs text-muted-foreground mt-0.5 italic">{conv.insight.reference}</p></div>}
+
+                    {/* Next Steps — Clickable */}
+                    {conv.insight.next_steps && conv.insight.next_steps.length > 0 && (
+                      <div data-testid={`shift-next-steps-${conv.id}`}>
+                        <p className="text-xs font-semibold text-muted-foreground uppercase mb-1.5">Next Steps</p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {conv.insight.next_steps.map((step, si) => (
+                            <button key={si} onClick={() => handleAiNextStep(step)}
+                              className="text-xs px-2.5 py-1 rounded-full border border-primary/30 text-primary hover:bg-primary/10 transition-colors text-left"
+                              data-testid={`shift-next-step-${conv.id}-${si}`}>
+                              {step}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+
+          {/* Loading */}
+          {aiLoading && (
+            <div className="bg-primary/5 border border-primary/20 rounded-lg p-4 text-center animate-pulse" data-testid="shift-ai-loading">
+              <Zap className="h-5 w-5 text-primary mx-auto mb-1 animate-spin" />
+              <p className="text-xs text-primary font-medium">Analyzing shift data...</p>
+            </div>
+          )}
+        </div>
+
+        {/* Always-visible Input */}
+        <div className="flex gap-2 pt-2 border-t border-border/50">
+          <input
+            value={aiQuestion}
+            onChange={e => setAiQuestion(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && !aiLoading && runAI()}
+            placeholder="Ask about this shift — staffing, costs, performance..."
+            className="flex-1 h-9 rounded-lg border border-input bg-background px-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+            disabled={aiLoading}
+            data-testid="shift-ai-input"
+          />
+          <Button size="sm" onClick={() => runAI()} disabled={aiLoading || (!aiQuestion.trim() && aiConversations.length > 0)} data-testid="shift-ai-btn">
+            {aiLoading ? <><Zap className="h-3.5 w-3.5 mr-1 animate-spin" /> ...</> : <><Zap className="h-3.5 w-3.5 mr-1" /> Ask</>}
           </Button>
         </div>
 
-        {aiResult?.insight && !aiLoading && (
-          <div className={`border rounded-xl p-5 ${
-            aiResult.insight.classification === 'healthy' ? 'border-green-500/30 bg-green-500/5' :
-            aiResult.insight.classification === 'tight' ? 'border-yellow-500/30 bg-yellow-500/5' :
-            'border-red-500/30 bg-red-500/5'
-          }`} data-testid="shift-ai-result">
-            <div className="flex items-center gap-2 mb-3">
-              <Lightbulb className={`h-5 w-5 ${classColors[aiResult.insight.classification] || 'text-blue-500'}`} />
-              <span className={`text-xs font-bold uppercase px-2 py-0.5 rounded-full ${
-                aiResult.insight.classification === 'healthy' ? 'bg-green-500/10 text-green-600' :
-                aiResult.insight.classification === 'tight' ? 'bg-yellow-500/10 text-yellow-600' :
-                'bg-red-500/10 text-red-600'
-              }`}>{aiResult.insight.classification}</span>
-            </div>
-            <div className="space-y-3">
-              <div><p className="text-xs font-semibold text-muted-foreground uppercase">Summary</p><p className="text-sm font-medium mt-0.5">{aiResult.insight.summary}</p></div>
-              <div><p className="text-xs font-semibold text-muted-foreground uppercase">What We See in Your Operation</p><p className="text-sm mt-0.5">{aiResult.insight.what_we_see}</p></div>
-              <div>
-                <p className="text-xs font-semibold text-muted-foreground uppercase">Recommended Actions</p>
-                <ul className="mt-1 space-y-1">
-                  {(aiResult.insight.recommended_actions || []).map((a, i) => (
-                    <li key={i} className="text-sm flex items-start gap-2"><ChevronRight className="h-3.5 w-3.5 mt-0.5 text-primary shrink-0" /><span>{a}</span></li>
-                  ))}
-                </ul>
-              </div>
-              {aiResult.insight.reference && <div><p className="text-xs font-semibold text-muted-foreground uppercase">Reference</p><p className="text-xs text-muted-foreground mt-0.5 italic">{aiResult.insight.reference}</p></div>}
-            </div>
-          </div>
-        )}
-
-        <div className="mt-3 p-2 bg-muted/20 rounded-lg border border-border/50">
-          <p className="text-[10px] text-muted-foreground text-center">{aiResult?.disclaimer || "AI insights are based on your business data and external references when applicable. They may contain inaccuracies. Always validate decisions with your team."}</p>
-        </div>
+        <p className="text-[10px] text-muted-foreground text-center mt-2">AI insights are read-only. Always validate decisions with your team.</p>
       </div>
     </div>
   );
