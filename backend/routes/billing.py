@@ -13,39 +13,34 @@ settings = get_settings()
 @router.post("/checkout/session")
 async def create_checkout_session(request: CheckoutSessionRequest, user: dict = Depends(require_auth)):
     """Create Stripe checkout session for subscription"""
-    conn = await get_postgres_conn()
-    try:
-        # Initialize Stripe
-        stripe_checkout = StripeCheckout(
-            api_key=settings.stripe_api_key,
-            webhook_url=f"{request.success_url.split('?')[0].rsplit('/', 2)[0]}/api/webhook/stripe"
-        )
-        
-        # Create checkout session
-        session = await stripe_checkout.create_checkout_session(request)
-        
-        # Store transaction
-        company_id = request.metadata.get('company_id') if hasattr(request, 'metadata') else None
-        
-        await conn.execute(
-            """INSERT INTO payment_transactions 
-               (id, company_id, user_id, stripe_session_id, amount, currency, payment_status, metadata, created_at)
-               VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)""",
-            uuid.uuid4(),
-            uuid.UUID(company_id) if company_id else None,
-            uuid.UUID(user['sub']),
-            session.session_id,
-            request.amount if hasattr(request, 'amount') else 0,
-            request.currency if hasattr(request, 'currency') else 'usd',
-            'pending',
-            json.dumps(request.metadata if hasattr(request, 'metadata') else {}),
-            datetime.now(timezone.utc)
-        )
-        
-        return {"url": session.url, "session_id": session.session_id}
-        
-    finally:
-        await release_postgres_conn(conn)
+    db = get_mongo_db()
+    
+    # Initialize Stripe
+    stripe_checkout = StripeCheckout(
+        api_key=settings.stripe_api_key,
+        webhook_url=f"{request.success_url.split('?')[0].rsplit('/', 2)[0]}/api/webhook/stripe"
+    )
+    
+    # Create checkout session
+    session = await stripe_checkout.create_checkout_session(request)
+    
+    # Store transaction
+    company_id = request.metadata.get('company_id') if hasattr(request, 'metadata') else None
+    
+    transaction_doc = {
+        "id": str(uuid.uuid4()),
+        "company_id": company_id,
+        "user_id": user['sub'],
+        "stripe_session_id": session.session_id,
+        "amount": request.amount if hasattr(request, 'amount') else 0,
+        "currency": request.currency if hasattr(request, 'currency') else 'usd',
+        "payment_status": 'pending',
+        "metadata": request.metadata if hasattr(request, 'metadata') else {},
+        "created_at": datetime.now(timezone.utc)
+    }
+    await db.payment_transactions.insert_one(transaction_doc)
+    
+    return {"url": session.url, "session_id": session.session_id}
 
 @router.get("/checkout/status/{session_id}")
 async def get_checkout_status(session_id: str):
