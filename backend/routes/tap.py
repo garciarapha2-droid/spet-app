@@ -1,9 +1,10 @@
-from fastapi import APIRouter, HTTPException, Depends, Form
+from fastapi import APIRouter, HTTPException, Depends, Form, UploadFile, File
 from middleware.auth_middleware import require_auth
 from database import get_mongo_db, get_postgres_pool
 from datetime import datetime, timezone, date
 import uuid
 import json as json_mod
+import base64
 import logging
 
 logger = logging.getLogger(__name__)
