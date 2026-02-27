@@ -1054,6 +1054,316 @@ function TablesByServerSection() {
 
 
 /* ═══════════════════════════════════════════════════════════════════
+   SHIFT VS OPERATIONS
+   ═══════════════════════════════════════════════════════════════════ */
+function ShiftOpsSection() {
+  const [period, setPeriod] = useState('today');
+  const [dateFrom, setDateFrom] = useState(new Date().toISOString().slice(0, 10));
+  const [dateTo, setDateTo] = useState(new Date().toISOString().slice(0, 10));
+  const [overview, setOverview] = useState(null);
+  const [staffCosts, setStaffCosts] = useState(null);
+  const [history, setHistory] = useState([]);
+  const [chartData, setChartData] = useState([]);
+  const [roles, setRoles] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showCustomize, setShowCustomize] = useState(false);
+  const [editingStaff, setEditingStaff] = useState(null);
+  const [editRate, setEditRate] = useState('');
+  const [editRole, setEditRole] = useState('');
+  const [newRoleName, setNewRoleName] = useState('');
+  const [newRoleRate, setNewRoleRate] = useState('');
+  const [aiResult, setAiResult] = useState(null);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiQuestion, setAiQuestion] = useState('');
+
+  const getDateRange = useCallback(() => {
+    const today = new Date().toISOString().slice(0, 10);
+    if (period === 'today') return [today, today];
+    if (period === '7d') { const d = new Date(); d.setDate(d.getDate() - 7); return [d.toISOString().slice(0, 10), today]; }
+    if (period === '30d') { const d = new Date(); d.setDate(d.getDate() - 30); return [d.toISOString().slice(0, 10), today]; }
+    if (period === 'year') { return [new Date().getFullYear() + '-01-01', today]; }
+    if (period === 'custom') return [dateFrom, dateTo];
+    return [today, today];
+  }, [period, dateFrom, dateTo]);
+
+  const load = useCallback(() => {
+    const [df, dt] = getDateRange();
+    setLoading(true);
+    Promise.all([
+      managerAPI.getShiftOverview(VID(), df, dt),
+      managerAPI.getStaffCosts(VID(), df, dt),
+      managerAPI.getShiftHistory(VID(), period === 'year' ? 365 : 30),
+      managerAPI.getShiftChart(VID(), period, df, dt),
+      managerAPI.getStaffRoles(VID()),
+    ]).then(([ov, sc, hist, chart, rl]) => {
+      setOverview(ov.data);
+      setStaffCosts(sc.data);
+      setHistory(hist.data.history || []);
+      setChartData(chart.data.data || []);
+      setRoles(rl.data.roles || []);
+    }).catch(() => toast.error('Failed to load')).finally(() => setLoading(false));
+  }, [getDateRange, period]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const customizeStaffMember = async (id) => {
+    if (!editRate && !editRole) return;
+    const fd = new FormData();
+    if (editRole) fd.append('role', editRole);
+    if (editRate) fd.append('hourly_rate', editRate);
+    await managerAPI.customizeStaff(id, fd);
+    setEditingStaff(null); setEditRate(''); setEditRole(''); load(); toast.success('Updated');
+  };
+
+  const saveRole = async () => {
+    if (!newRoleName.trim() || !newRoleRate) return;
+    const fd = new FormData();
+    fd.append('venue_id', VID()); fd.append('name', newRoleName.trim()); fd.append('hourly_rate', newRoleRate);
+    await managerAPI.saveStaffRole(fd);
+    setNewRoleName(''); setNewRoleRate(''); load(); toast.success('Role created');
+  };
+
+  const deleteRole = async (id) => {
+    await managerAPI.deleteStaffRole(id, VID());
+    load(); toast.success('Role removed');
+  };
+
+  const snapshotToday = async () => {
+    const fd = new FormData(); fd.append('venue_id', VID());
+    await managerAPI.saveShiftSnapshot(fd);
+    toast.success('Shift costs snapshotted for today');
+  };
+
+  const runAI = async () => {
+    const [df, dt] = getDateRange();
+    setAiLoading(true);
+    try {
+      const fd = new FormData();
+      fd.append('venue_id', VID()); fd.append('date_from', df); fd.append('date_to', dt);
+      if (aiQuestion.trim()) fd.append('question', aiQuestion.trim());
+      const res = await managerAPI.shiftAI(fd);
+      setAiResult(res.data);
+    } catch { toast.error('AI analysis failed'); }
+    setAiLoading(false);
+  };
+
+  if (loading) return <Skeleton />;
+
+  const statusColors = { positive: 'text-green-500', tight: 'text-yellow-500', negative: 'text-red-500' };
+  const statusBg = { positive: 'bg-green-500/10', tight: 'bg-yellow-500/10', negative: 'bg-red-500/10' };
+  const classColors = { healthy: 'text-green-500', tight: 'text-yellow-500', underperforming: 'text-red-500' };
+
+  return (
+    <div data-testid="shift-ops-section">
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <h2 className="text-xl font-bold">Shift vs Operations</h2>
+          <p className="text-sm text-muted-foreground">Revenue, cost, and performance analysis</p>
+        </div>
+        <div className="flex items-center gap-2">
+          {['today', '7d', '30d', 'year', 'custom'].map(p => (
+            <button key={p} onClick={() => setPeriod(p)} className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${period === p ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-muted/80'}`} data-testid={`period-${p}`}>
+              {p === 'today' ? 'Today' : p === '7d' ? '7 Days' : p === '30d' ? '30 Days' : p === 'year' ? 'Year' : 'Custom'}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {period === 'custom' && (
+        <div className="flex gap-3 items-center mb-4 bg-card border border-border rounded-lg p-3">
+          <Input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="w-40" />
+          <span className="text-sm text-muted-foreground">to</span>
+          <Input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className="w-40" />
+          <Button size="sm" onClick={load}>Apply</Button>
+        </div>
+      )}
+
+      {/* 1: Shift Overview KPIs */}
+      {overview && (
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+          <KPICard icon={DollarSign} label="Revenue" value={`$${overview.revenue.toFixed(0)}`} accent="text-green-500" testid="shift-revenue" />
+          <KPICard icon={Check} label="Tables Closed" value={overview.tables_closed} testid="shift-tables" />
+          <KPICard icon={Users} label="Staff Cost" value={`$${overview.staff_cost.toFixed(0)}`} accent="text-orange-500" testid="shift-cost" />
+          <KPICard icon={TrendingUp} label="Avg Ticket" value={`$${overview.avg_ticket.toFixed(2)}`} accent="text-blue-500" testid="shift-avg" />
+          <div className={`bg-card border-2 rounded-xl p-4 ${overview.status === 'positive' ? 'border-green-500/40' : overview.status === 'tight' ? 'border-yellow-500/40' : 'border-red-500/40'}`} data-testid="shift-result">
+            <div className="flex items-center gap-2 text-muted-foreground mb-1"><Activity className="h-3.5 w-3.5" /><span className="text-xs">Net Result</span></div>
+            <p className={`text-2xl font-bold ${statusColors[overview.status]}`}>${overview.result.toFixed(0)}</p>
+            <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${statusBg[overview.status]} ${statusColors[overview.status]}`}>{overview.status}</span>
+          </div>
+        </div>
+      )}
+
+      {/* 2: Staff Earnings / Cost Breakdown */}
+      {staffCosts && (
+        <div className="bg-card border border-border rounded-xl p-5 mb-6">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-semibold">Staff Earnings / Cost Breakdown</h3>
+            <div className="flex gap-2">
+              <Button size="sm" variant="outline" onClick={snapshotToday} data-testid="snapshot-btn"><Clock className="h-3.5 w-3.5 mr-1" /> Snapshot</Button>
+              <Button size="sm" variant="outline" onClick={() => setShowCustomize(!showCustomize)} data-testid="customize-btn"><Settings className="h-3.5 w-3.5 mr-1" /> Customize</Button>
+            </div>
+          </div>
+          <div className="text-sm mb-3 font-bold text-orange-500">Total Cost: ${staffCosts.total_cost.toFixed(2)}</div>
+          <div className="grid grid-cols-6 gap-4 px-3 py-2 text-xs font-medium text-muted-foreground uppercase"><span>Name</span><span>Role</span><span>$/Hour</span><span>Hours</span><span>Earned</span><span></span></div>
+          {staffCosts.staff?.map(s => (
+            <div key={s.id} className="grid grid-cols-6 gap-4 px-3 py-2.5 text-sm border-b border-border/20 items-center">
+              {editingStaff === s.id ? (
+                <>
+                  <span className="font-medium">{s.name}</span>
+                  <Input value={editRole} onChange={e => setEditRole(e.target.value)} placeholder={s.role} className="h-7 text-xs" />
+                  <Input type="number" step="0.5" value={editRate} onChange={e => setEditRate(e.target.value)} placeholder={s.hourly_rate.toString()} className="h-7 text-xs" />
+                  <span className="text-muted-foreground">{s.hours_worked}h</span>
+                  <span />
+                  <div className="flex gap-1">
+                    <Button size="sm" variant="ghost" onClick={() => customizeStaffMember(s.id)}><Check className="h-3 w-3 text-green-500" /></Button>
+                    <Button size="sm" variant="ghost" onClick={() => setEditingStaff(null)}><X className="h-3 w-3" /></Button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <span className="font-medium">{s.name}</span>
+                  <span className="text-muted-foreground capitalize">{s.role}</span>
+                  <span className="font-medium">${s.hourly_rate.toFixed(2)}</span>
+                  <span className="text-muted-foreground">{s.hours_worked}h</span>
+                  <span className="font-bold text-orange-500">${s.earned.toFixed(2)}</span>
+                  <Button size="sm" variant="ghost" onClick={() => { setEditingStaff(s.id); setEditRate(s.hourly_rate.toString()); setEditRole(s.role); }}><Pencil className="h-3 w-3" /></Button>
+                </>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* 3: Customize Staff Roles */}
+      {showCustomize && (
+        <div className="bg-card border border-primary/20 rounded-xl p-5 mb-6" data-testid="customize-roles">
+          <h3 className="text-sm font-semibold mb-3">Custom Roles</h3>
+          <div className="space-y-1 mb-3">
+            {roles.map(r => (
+              <div key={r.id} className="flex items-center justify-between p-2 rounded-lg border border-border/50 hover:bg-muted/20">
+                <div><span className="font-medium text-sm">{r.name}</span><span className="text-xs text-muted-foreground ml-2">${r.hourly_rate}/hr</span></div>
+                <Button size="sm" variant="ghost" className="text-destructive" onClick={() => deleteRole(r.id)}><Trash2 className="h-3 w-3" /></Button>
+              </div>
+            ))}
+          </div>
+          <div className="flex gap-3 items-end">
+            <Input value={newRoleName} onChange={e => setNewRoleName(e.target.value)} placeholder="Role name" className="max-w-xs" />
+            <Input type="number" step="0.5" value={newRoleRate} onChange={e => setNewRoleRate(e.target.value)} placeholder="$/hour" className="w-24" />
+            <Button onClick={saveRole} disabled={!newRoleName || !newRoleRate} data-testid="add-role-btn"><Plus className="h-4 w-4 mr-1" /> Add Role</Button>
+          </div>
+        </div>
+      )}
+
+      {/* 4: Shift History / Day Performance */}
+      <div className="bg-card border border-border rounded-xl p-5 mb-6">
+        <h3 className="text-sm font-semibold mb-3">Day Performance History</h3>
+        {history.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No shift data available</p>
+        ) : (
+          <>
+            <div className="grid grid-cols-7 gap-3 px-3 py-2 text-xs font-medium text-muted-foreground uppercase"><span>Date</span><span>Day</span><span>Revenue</span><span>Staff Cost</span><span>Tabs</span><span>Result</span><span>Status</span></div>
+            <div className="max-h-60 overflow-y-auto">
+              {history.map(h => (
+                <div key={h.date} className="grid grid-cols-7 gap-3 px-3 py-2 text-sm border-b border-border/20 items-center" data-testid={`day-${h.date}`}>
+                  <span className="font-medium">{h.date}</span>
+                  <span className="text-muted-foreground">{h.day_name?.slice(0, 3)}</span>
+                  <span className="text-green-500 font-bold">${h.revenue.toFixed(0)}</span>
+                  <span className="text-orange-500">${h.staff_cost.toFixed(0)}</span>
+                  <span>{h.tabs_closed}</span>
+                  <span className={`font-bold ${statusColors[h.status]}`}>${h.result.toFixed(0)}</span>
+                  <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full inline-block w-fit ${statusBg[h.status]} ${statusColors[h.status]}`}>{h.status}</span>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* 5: Chart — Revenue × Cost */}
+      <div className="bg-card border border-border rounded-xl p-5 mb-6">
+        <h3 className="text-sm font-semibold mb-3">Revenue vs Operation Cost</h3>
+        {chartData.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No chart data</p>
+        ) : (
+          <div className="h-48 flex items-end gap-0.5">
+            {chartData.map((d, i) => {
+              const maxVal = Math.max(...chartData.map(x => Math.max(x.revenue, x.cost)), 1);
+              const revH = (d.revenue / maxVal) * 160;
+              const costH = (d.cost / maxVal) * 160;
+              return (
+                <div key={i} className="flex-1 flex flex-col items-center gap-0.5" title={`${d.label}: Rev $${d.revenue} | Cost $${d.cost}`}>
+                  <div className="w-full flex gap-px justify-center">
+                    <div className="w-1/2 bg-green-500/80 rounded-t" style={{ height: `${revH}px` }} />
+                    <div className="w-1/2 bg-orange-500/60 rounded-t" style={{ height: `${costH}px` }} />
+                  </div>
+                  <span className="text-[8px] text-muted-foreground truncate w-full text-center">{d.label?.slice(0, 6)}</span>
+                </div>
+              );
+            })}
+          </div>
+        )}
+        <div className="flex gap-4 mt-3 justify-center text-xs">
+          <span className="flex items-center gap-1"><span className="w-3 h-2 bg-green-500/80 rounded" /> Revenue</span>
+          <span className="flex items-center gap-1"><span className="w-3 h-2 bg-orange-500/60 rounded" /> Staff Cost</span>
+        </div>
+      </div>
+
+      {/* 6: AI Analysis */}
+      <div className="bg-card border border-border rounded-xl p-5 mb-6" data-testid="shift-ai-section">
+        <div className="flex items-center justify-between mb-3">
+          <div>
+            <h3 className="text-sm font-semibold">AI Shift Analysis</h3>
+            <p className="text-xs text-muted-foreground">Powered by GPT-5.2</p>
+          </div>
+        </div>
+        <div className="flex gap-3 mb-3">
+          <Input value={aiQuestion} onChange={e => setAiQuestion(e.target.value)} placeholder="Ask about this shift... (optional)" className="flex-1"
+            onKeyDown={e => e.key === 'Enter' && runAI()} />
+          <Button onClick={runAI} disabled={aiLoading} data-testid="shift-ai-btn">
+            {aiLoading ? <><Zap className="h-4 w-4 mr-1 animate-spin" /> Analyzing...</> : <><Zap className="h-4 w-4 mr-1" /> Analyze</>}
+          </Button>
+        </div>
+
+        {aiResult?.insight && !aiLoading && (
+          <div className={`border rounded-xl p-5 ${
+            aiResult.insight.classification === 'healthy' ? 'border-green-500/30 bg-green-500/5' :
+            aiResult.insight.classification === 'tight' ? 'border-yellow-500/30 bg-yellow-500/5' :
+            'border-red-500/30 bg-red-500/5'
+          }`} data-testid="shift-ai-result">
+            <div className="flex items-center gap-2 mb-3">
+              <Lightbulb className={`h-5 w-5 ${classColors[aiResult.insight.classification] || 'text-blue-500'}`} />
+              <span className={`text-xs font-bold uppercase px-2 py-0.5 rounded-full ${
+                aiResult.insight.classification === 'healthy' ? 'bg-green-500/10 text-green-600' :
+                aiResult.insight.classification === 'tight' ? 'bg-yellow-500/10 text-yellow-600' :
+                'bg-red-500/10 text-red-600'
+              }`}>{aiResult.insight.classification}</span>
+            </div>
+            <div className="space-y-3">
+              <div><p className="text-xs font-semibold text-muted-foreground uppercase">Summary</p><p className="text-sm font-medium mt-0.5">{aiResult.insight.summary}</p></div>
+              <div><p className="text-xs font-semibold text-muted-foreground uppercase">What We See in Your Operation</p><p className="text-sm mt-0.5">{aiResult.insight.what_we_see}</p></div>
+              <div>
+                <p className="text-xs font-semibold text-muted-foreground uppercase">Recommended Actions</p>
+                <ul className="mt-1 space-y-1">
+                  {(aiResult.insight.recommended_actions || []).map((a, i) => (
+                    <li key={i} className="text-sm flex items-start gap-2"><ChevronRight className="h-3.5 w-3.5 mt-0.5 text-primary shrink-0" /><span>{a}</span></li>
+                  ))}
+                </ul>
+              </div>
+              {aiResult.insight.reference && <div><p className="text-xs font-semibold text-muted-foreground uppercase">Reference</p><p className="text-xs text-muted-foreground mt-0.5 italic">{aiResult.insight.reference}</p></div>}
+            </div>
+          </div>
+        )}
+
+        <div className="mt-3 p-2 bg-muted/20 rounded-lg border border-border/50">
+          <p className="text-[10px] text-muted-foreground text-center">{aiResult?.disclaimer || "AI insights are based on your business data and external references when applicable. They may contain inaccuracies. Always validate decisions with your team."}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════
    SHARED COMPONENTS
    ═══════════════════════════════════════════════════════════════════ */
 function KPICard({ icon: Icon, label, value, accent = '', sub, testid }) {
