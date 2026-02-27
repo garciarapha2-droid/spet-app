@@ -6,7 +6,8 @@ import { toast } from 'sonner';
 import { Button } from '../../components/ui/button';
 import {
   ArrowLeft, Users, Clock, DollarSign, Calendar, Star,
-  LogIn, LogOut as LogOutIcon, ShieldAlert, Award
+  LogIn, LogOut as LogOutIcon, ShieldAlert, Award, Ban, ShieldCheck,
+  AlertTriangle
 } from 'lucide-react';
 
 const VENUE_ID = () => localStorage.getItem('active_venue_id') || '40a24e04-75b6-435d-bfff-ab0d469ce543';
@@ -18,21 +19,51 @@ export const GuestProfilePage = () => {
   const [points, setPoints] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('history');
+  const [tabStatus, setTabStatus] = useState(null);
+  const [blockLoading, setBlockLoading] = useState(false);
 
-  useEffect(() => {
-    const load = async () => {
-      try {
-        const [profileRes, pointsRes] = await Promise.all([
-          pulseAPI.getGuestProfile(guestId, VENUE_ID()),
-          rewardsAPI.getGuestPoints(guestId, VENUE_ID()).catch(() => ({ data: { points: 0, tier: 'None' } })),
-        ]);
-        setProfile(profileRes.data);
-        setPoints(pointsRes.data);
-      } catch (err) {
-        toast.error('Failed to load guest profile');
-      }
-      setLoading(false);
-    };
+  const loadData = async () => {
+    try {
+      const [profileRes, pointsRes, tabRes] = await Promise.all([
+        pulseAPI.getGuestProfile(guestId, VENUE_ID()),
+        rewardsAPI.getGuestPoints(guestId, VENUE_ID()).catch(() => ({ data: { points: 0, tier: 'None' } })),
+        pulseAPI.getTabStatus(guestId, VENUE_ID()).catch(() => ({ data: { has_open_tabs: false, open_tabs: [], total_owed: 0 } })),
+      ]);
+      setProfile(profileRes.data);
+      setPoints(pointsRes.data);
+      setTabStatus(tabRes.data);
+    } catch (err) {
+      toast.error('Failed to load guest profile');
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => { loadData(); }, [guestId]);
+
+  const handleBlock = async () => {
+    setBlockLoading(true);
+    try {
+      const fd = new FormData();
+      fd.append('venue_id', VENUE_ID());
+      fd.append('reason', 'lost');
+      await pulseAPI.blockWristband(guestId, fd);
+      toast.success('Wristband blocked');
+      await loadData();
+    } catch { toast.error('Failed to block'); }
+    setBlockLoading(false);
+  };
+
+  const handleUnblock = async () => {
+    setBlockLoading(true);
+    try {
+      const fd = new FormData();
+      fd.append('venue_id', VENUE_ID());
+      await pulseAPI.unblockWristband(guestId, fd);
+      toast.success('Wristband unblocked');
+      await loadData();
+    } catch { toast.error('Failed to unblock'); }
+    setBlockLoading(false);
+  };
     load();
   }, [guestId]);
 
