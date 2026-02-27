@@ -61,8 +61,53 @@ export const TapPage = () => {
   const [showCustomItem, setShowCustomItem] = useState(false);
   const [customItem, setCustomItem] = useState({ name: '', price: '', category: 'Drinks' });
 
-  // Barmen list (demo - in real app comes from manager config)
-  const barmen = ['Carlos', 'Maria', 'João', 'Ana'];
+  // Barmen loaded from API
+  const [barmen, setBarmen] = useState([]);
+  const [newBarmanName, setNewBarmanName] = useState('');
+  const [editingBarman, setEditingBarman] = useState(null);
+  const [editBarmanName, setEditBarmanName] = useState('');
+  const [showAddBarman, setShowAddBarman] = useState(false);
+
+  const loadBarmen = useCallback(async () => {
+    try {
+      const res = await staffAPI.getBarmen(VENUE_ID());
+      setBarmen(res.data.barmen || []);
+    } catch {}
+  }, []);
+
+  const handleAddBarman = async () => {
+    if (!newBarmanName.trim()) return;
+    try {
+      const fd = new FormData();
+      fd.append('venue_id', VENUE_ID());
+      fd.append('name', newBarmanName.trim());
+      await staffAPI.addBarman(fd);
+      setNewBarmanName('');
+      setShowAddBarman(false);
+      await loadBarmen();
+      toast.success('Barman added');
+    } catch { toast.error('Failed to add'); }
+  };
+
+  const handleEditBarman = async (id) => {
+    if (!editBarmanName.trim()) return;
+    try {
+      const fd = new FormData();
+      fd.append('name', editBarmanName.trim());
+      await staffAPI.updateBarman(id, fd);
+      setEditingBarman(null);
+      await loadBarmen();
+    } catch { toast.error('Failed to update'); }
+  };
+
+  const handleDeleteBarman = async (id) => {
+    try {
+      await staffAPI.deleteBarman(id);
+      if (selectedBarman && barmen.find(b => b.id === id)?.name === selectedBarman) setSelectedBarman('');
+      await loadBarmen();
+      toast.success('Barman removed');
+    } catch { toast.error('Failed to delete'); }
+  };
 
   const loadData = useCallback(async () => {
     try {
