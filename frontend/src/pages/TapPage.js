@@ -168,6 +168,7 @@ export const TapPage = () => {
   const handleAddItem = async (item) => {
     if (!activeSessionId) { toast.error('Select a tab first'); return; }
     if (!selectedBarman) { toast.error('Select barman first'); return; }
+    if (!confirmedSessions.has(activeSessionId)) { toast.error('Confirm guest first'); return; }
     try {
       const fd = new FormData(); fd.append('item_id', item.id); fd.append('qty', '1');
       await tapAPI.addItem(activeSessionId, fd);
