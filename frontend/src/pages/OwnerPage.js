@@ -382,63 +382,80 @@ function InsightsSection() {
               </div>
             )}
 
-            {/* AI Response Cards */}
+            {/* AI Response Cards — Redesigned */}
             {conv.insights.map((insight, idx) => {
               const s = typeStyles[insight.priority] || typeStyles.info;
               return (
-                <div key={idx} className={`border rounded-xl p-5 ${s.border} ${s.bg} relative group`} data-testid={`ai-insight-${conv.id}-${idx}`}>
-                  {/* Delete button */}
-                  <button onClick={() => removeCard(conv.id)}
-                    className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-lg hover:bg-background/80"
-                    data-testid={`delete-insight-${conv.id}`}>
-                    <X className="h-3.5 w-3.5 text-muted-foreground" />
-                  </button>
-
-                  <div className="flex items-start gap-3 mb-3">
-                    <Lightbulb className={`h-5 w-5 mt-0.5 shrink-0 ${s.icon}`} />
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${s.badge}`}>{insight.priority}</span>
-                      </div>
-                      <h4 className="font-bold text-sm">{insight.summary}</h4>
+                <div key={idx} className={`border rounded-xl overflow-hidden ${s.border}`} data-testid={`ai-insight-${conv.id}-${idx}`}>
+                  {/* Card Header */}
+                  <div className={`px-5 py-3 flex items-center justify-between ${s.bg}`}>
+                    <div className="flex items-center gap-2">
+                      <Lightbulb className={`h-4 w-4 ${s.icon}`} />
+                      <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${s.badge}`}>{insight.priority}</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <button onClick={() => copyInsight(`${conv.id}-${idx}`, insight)}
+                        className="p-1.5 rounded-lg hover:bg-background/80 transition-colors"
+                        title="Copy insight"
+                        data-testid={`copy-insight-${conv.id}-${idx}`}>
+                        {copiedId === `${conv.id}-${idx}`
+                          ? <ClipboardCheck className="h-3.5 w-3.5 text-green-500" />
+                          : <Copy className="h-3.5 w-3.5 text-muted-foreground" />}
+                      </button>
+                      <button onClick={() => removeCard(conv.id)}
+                        className="p-1.5 rounded-lg hover:bg-background/80 transition-colors"
+                        data-testid={`delete-insight-${conv.id}`}>
+                        <X className="h-3.5 w-3.5 text-muted-foreground" />
+                      </button>
                     </div>
                   </div>
 
-                  <div className="space-y-3 ml-8">
+                  {/* Card Body */}
+                  <div className="px-5 py-4 space-y-4 bg-card">
                     <div>
-                      <p className="text-xs font-semibold text-muted-foreground uppercase">What We See</p>
-                      <p className="text-sm mt-0.5">{insight.what_we_see}</p>
+                      <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">Summary</p>
+                      <p className="text-sm font-semibold leading-relaxed">{insight.summary}</p>
                     </div>
                     <div>
-                      <p className="text-xs font-semibold text-muted-foreground uppercase">Recommended Actions</p>
-                      <ul className="mt-1 space-y-1">
+                      <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">What We See</p>
+                      <p className="text-sm leading-relaxed text-foreground/90">{insight.what_we_see}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-2">Recommended Actions</p>
+                      <div className="space-y-1.5">
                         {(insight.recommended_actions || []).map((action, ai) => (
-                          <li key={ai} className="text-sm flex items-start gap-2">
-                            <ChevronRight className="h-3.5 w-3.5 mt-0.5 text-primary shrink-0" />
-                            <span>{action}</span>
-                          </li>
+                          <div key={ai} className="flex items-start gap-2.5 pl-1">
+                            <span className="w-5 h-5 rounded-full bg-primary/10 text-primary flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5">{ai+1}</span>
+                            <span className="text-sm leading-relaxed">{action}</span>
+                          </div>
                         ))}
-                      </ul>
+                      </div>
                     </div>
                     {insight.reference && (
-                      <div>
-                        <p className="text-xs font-semibold text-muted-foreground uppercase">Reference</p>
-                        <p className="text-xs text-muted-foreground mt-0.5 italic">{insight.reference}</p>
+                      <div className="text-xs text-muted-foreground italic border-l-2 border-border pl-3">
+                        {insight.reference}
                       </div>
                     )}
 
-                    {/* Next Steps — Clickable */}
+                    {/* Next Steps — Categorized */}
                     {insight.next_steps && insight.next_steps.length > 0 && (
-                      <div data-testid={`next-steps-${conv.id}-${idx}`}>
-                        <p className="text-xs font-semibold text-muted-foreground uppercase mb-1.5">Next Steps</p>
-                        <div className="flex flex-wrap gap-2">
-                          {insight.next_steps.map((step, si) => (
-                            <button key={si} onClick={() => handleNextStep(step)}
-                              className="text-xs px-3 py-1.5 rounded-full border border-primary/30 text-primary hover:bg-primary/10 transition-colors text-left"
-                              data-testid={`next-step-${conv.id}-${idx}-${si}`}>
-                              {step}
-                            </button>
-                          ))}
+                      <div className="pt-3 border-t border-border/50" data-testid={`next-steps-${conv.id}-${idx}`}>
+                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-2">Next Steps</p>
+                        <div className="space-y-2">
+                          {insight.next_steps.map((step, si) => {
+                            const cat = categorizeStep(step);
+                            return (
+                              <button key={si} onClick={() => handleNextStep(step)}
+                                className="w-full flex items-start gap-3 p-2.5 rounded-lg border border-border/50 hover:border-primary/30 hover:bg-primary/3 transition-all text-left group"
+                                data-testid={`next-step-${conv.id}-${idx}-${si}`}>
+                                <span className="w-5 h-5 rounded-full bg-muted flex items-center justify-center text-[10px] font-bold text-muted-foreground shrink-0 mt-0.5">{si+1}</span>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm leading-relaxed group-hover:text-primary transition-colors">{step}</p>
+                                </div>
+                                <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded-full border shrink-0 ${cat.color}`}>{cat.label}</span>
+                              </button>
+                            );
+                          })}
                         </div>
                       </div>
                     )}
