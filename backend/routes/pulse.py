@@ -235,7 +235,8 @@ async def get_guest_decision_card(guest_id: str, venue_id: str, user: dict = Dep
     if "flagged" in doc.get("flags", []):
         risk_chips.append({"type": "flagged", "label": "Flagged", "severity": "warning"})
 
-    # Check unpaid entries in PG
+    # Check for open tab
+    tab_number = None
     async with pool.acquire() as conn:
         unpaid = await conn.fetchval(
             """SELECT COUNT(*) FROM entry_events
@@ -243,6 +244,21 @@ async def get_guest_decision_card(guest_id: str, venue_id: str, user: dict = Dep
                AND cover_paid = false AND cover_amount > 0""",
             uuid.UUID(guest_id), uuid.UUID(venue_id),
         ) if doc.get("global_person_id") else 0
+        tab_row = await conn.fetchrow(
+            """SELECT meta FROM tap_sessions
+               WHERE guest_id = $1::uuid AND venue_id = $2::uuid AND status = 'open'
+               ORDER BY opened_at DESC LIMIT 1""",
+            uuid.UUID(guest_id), uuid.UUID(venue_id),
+        )
+        if tab_row and tab_row["meta"]:
+            import json as json_mod
+            meta = tab_row["meta"]
+            if isinstance(meta, str):
+                try:
+                    meta = json_mod.loads(meta)
+                except Exception:
+                    meta = {}
+            tab_number = meta.get("tab_number")
 
     if unpaid and unpaid > 0:
         risk_chips.append({"type": "unpaid", "label": f"Unpaid ({unpaid})", "severity": "warning"})
