@@ -12,11 +12,12 @@ SPETAP is a multi-tenant SaaS platform for venue operations (clubs, restaurants,
 - UI built for dark environments + queues + pressure
 - Guest PII isolated per venue; global person uses hashed IDs only
 - `session_id` is the canonical identifier (not `table_id`)
+- Void operations are ledger-safe (mark voided, never delete)
 
 ### Tech Stack
 - **Frontend:** React + Tailwind CSS + Shadcn UI
 - **Backend:** FastAPI (Python)
-- **Databases:** PostgreSQL (transactional) + MongoDB (configs, catalog)
+- **Databases:** PostgreSQL (transactional) + MongoDB (configs, catalog, barmen)
 - **Auth:** JWT-based, PostgreSQL
 
 ---
@@ -26,14 +27,17 @@ SPETAP is a multi-tenant SaaS platform for venue operations (clubs, restaurants,
 ### Venue Select (Post-Login) - COMPLETE
 - Calendar view with event highlights, create events on-the-fly
 - Login always redirects to `/venue/home`
+- **Module cards** below calendar: Pulse, TAP, Table, Kitchen (KDS), Manager, Owner
+- Owners (role_level >= 70) have access to all operational modules
 
 ### Navigation System - COMPLETE
 - Module dropdown in header (SPETAP → Demo Club → modules)
 - Pulse sub-tabs: Guest, Inside, Bar, Exit, Rewards
-- Consistent header spacing with dividers (gap-4) across all pages
+- **Consistent header spacing** with `gap-4` + dividers across ALL pages
+- **ThemeToggle fixed** - removed `fixed` positioning, now in flex flow
 
 ### PULSE Module (C0-C3) - COMPLETE
-- C0: NFC scan + Manual Entry with camera fix
+- C0: NFC scan + Manual Entry with camera
 - C1: Guest Intake with photo capture
 - C1.1: Deduplication
 - C2: Decision Card with risk/value chips
@@ -65,23 +69,25 @@ SPETAP is a multi-tenant SaaS platform for venue operations (clubs, restaurants,
 - DISCO MODE label + Table toggle switch
 - Barman selector (must select before adding items)
 - NFC scanner/search for guest lookup
-- Custom item addition, void/remove items
+- Custom item addition, void/remove items (ledger-safe)
 - Revenue NOT shown in header (only Tabs count)
 - Open/close tabs, pay with card/cash/comp
 
 ### TABLE Module - COMPLETE
 - Table layout with zones (main, vip, patio, bar)
 - Open/Close tables, add items via `/table/{id}/add-item`
-- Void/remove items (ledger-safe with reason)
+- Void/remove items (ledger-safe with reason + voided_by_user_id)
 - Send to Kitchen/Bar (uses session_id as canonical)
-- Back-to-TAP / DISCO MODE toggle in header
+- **Back-to-TAP / DISCO MODE toggle** in header
 - Table management: Add/Edit/Delete tables
+- Guest name displayed on occupied tables (`session_guest`)
 
 ### KDS Module - COMPLETE
 - Kitchen/Bar destination routing (alcohol → bar, food → kitchen)
 - 3-column Kanban: Pending → Preparing → Ready
-- Owners/managers always have KDS access
+- Owners/managers always have KDS access (role_level check)
 - Correct table numbers displayed on tickets
+- Kitchen/Bar filter toggle in header
 
 ### Rewards System - COMPLETE
 - Points config, 4 tiers (Bronze/Silver/Gold/Platinum)
@@ -96,8 +102,6 @@ SPETAP is a multi-tenant SaaS platform for venue operations (clubs, restaurants,
 ## Prioritized Backlog
 
 ### P1 - Next
-- Complete TAP/Bar feature requests: barman enforcement already done, revenue removed
-- KDS/Bar Order Routing: food→kitchen, drinks→bar (DONE in backend)
 - Manager Dashboard (cadastro de menu/catalog, barmen, venue settings) — blocked on user designs
 - Owner Dashboard (multi-venue analytics) — blocked on user designs
 - Staff Management: register barmen via Manager
@@ -121,14 +125,14 @@ SPETAP is a multi-tenant SaaS platform for venue operations (clubs, restaurants,
 /app/
 ├── backend/
 │   ├── server.py
-│   ├── routes/ (auth, billing, pulse, tap, table, kds, venue, rewards, manager, owner, ceo)
+│   ├── routes/ (auth, billing, pulse, tap, table, kds, venue, rewards)
 │   ├── models/ (requests.py, responses.py)
 │   ├── middleware/ (auth_middleware.py)
-│   └── utils/ (auth.py, hashing.py)
+│   └── init_postgres.sql
 └── frontend/
     ├── src/
-    │   ├── pages/ (venue/, pulse/, TapPage, TablePage, KitchenPage, Manager, Owner, CEO)
-    │   ├── components/ (PulseHeader, pulse/GuestIntakeForm, etc.)
+    │   ├── pages/ (venue/, pulse/, TapPage, TablePage, KitchenPage)
+    │   ├── components/ (PulseHeader, ThemeToggle, ui/)
     │   └── services/ (api.js)
     └── tailwind.config.js
 ```
@@ -138,8 +142,4 @@ SPETAP is a multi-tenant SaaS platform for venue operations (clubs, restaurants,
 - Role: owner | Venue ID: 40a24e04-75b6-435d-bfff-ab0d469ce543
 
 ## Test Results
-- iteration_5: 23/23 (Table, KDS, TAP, Pulse)
-- iteration_6: 10/10 (Venue Home, navigation)
-- iteration_7: 15/15 (Venue Select, Bar, Exit, Rewards, Guest Profile)
-- iteration_8: 16/16 (Block wristband, TAP features)
-- iteration_9: 7/7 backend + 100% frontend (Critical P0 bug fixes: KDS send, void item, exit modal, header spacing) — 2026-02-27
+- iteration_9: 7/7 backend + 100% frontend (P0 bug fixes, header, modules, demo data) — 2026-02-27
