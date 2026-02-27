@@ -1,0 +1,104 @@
+{
+  "summary": "Iteration 18: Shift vs Operations feature block fully tested. Backend 100% pass (15/15 tests). Frontend 100% pass - all UI elements verified.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "features_tested": {
+    "shift_overview_endpoint": {
+      "status": "PASS",
+      "endpoint": "GET /api/manager/shift-overview",
+      "returns": "revenue, tables_closed, avg_ticket, staff_cost, result, status, period"
+    },
+    "staff_costs_endpoint": {
+      "status": "PASS",
+      "endpoint": "GET /api/manager/staff-costs",
+      "returns": "total_cost and staff breakdown with name, role, hourly_rate, hours_worked, earned"
+    },
+    "staff_customize_endpoint": {
+      "status": "PASS",
+      "endpoint": "PUT /api/manager/staff-customize/{id}",
+      "function": "Updates staff role and/or hourly_rate"
+    },
+    "staff_roles_crud": {
+      "status": "PASS",
+      "endpoints": [
+        "GET /api/manager/staff-roles - returns custom roles",
+        "POST /api/manager/staff-roles - creates new role",
+        "DELETE /api/manager/staff-roles/{id} - soft-deletes role to history"
+      ]
+    },
+    "shift_history_endpoint": {
+      "status": "PASS",
+      "endpoint": "GET /api/manager/shift-history",
+      "returns": "per-day performance with date, day_name, revenue, staff_cost, tabs_closed, result, status"
+    },
+    "shift_chart_endpoint": {
+      "status": "PASS",
+      "endpoint": "GET /api/manager/shift-chart",
+      "returns": "chart data with date, label, revenue, cost per day",
+      "period_filters_tested": ["today", "7d", "30d", "year"]
+    },
+    "shift_snapshot_endpoint": {
+      "status": "PASS",
+      "endpoint": "POST /api/manager/shift-snapshot",
+      "function": "Saves staff cost snapshot for rate preservation"
+    },
+    "shift_ai_endpoint": {
+      "status": "PASS",
+      "endpoint": "POST /api/manager/shift-ai",
+      "returns": "AI analysis with insight (summary, what_we_see, recommended_actions, reference, classification) and disclaimer",
+      "model": "GPT-5.2 via emergentintegrations"
+    },
+    "frontend_shift_ops_section": {
+      "status": "PASS",
+      "verified": [
+        "Shift vs Ops tab in Manager sidebar",
+        "5 KPI cards (Revenue, Tables Closed, Staff Cost, Avg Ticket, Net Result with status badge)",
+        "Staff Earnings table with editable rates (pencil icon)",
+        "Snapshot button",
+        "Customize button opens Custom Roles panel",
+        "Custom Roles with create/delete",
+        "Day Performance History table with status badges",
+        "Revenue vs Cost chart (green=revenue, orange=cost)",
+        "Period filters (Today, 7 Days, 30 Days, Year, Custom)",
+        "AI Shift Analysis section with input and Analyze button",
+        "AI result shows classification badge (healthy/tight/underperforming)",
+        "Disclaimer always visible"
+      ]
+    }
+  },
+  "regression_tests": {
+    "manager_overview": "PASS - 8 KPIs visible, charts working",
+    "manager_staff": "PASS - Staff section loads, Add Staff button present",
+    "tables_by_server": "PASS - Shows 2 servers with grouped tables"
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iteration18_shift_ops.py",
+    "/app/test_reports/pytest/iteration18_shift_ops.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [],
+  "updated_files": [
+    "/app/backend/tests/test_iteration18_shift_ops.py"
+  ],
+  "success_rate": {
+    "backend": "100% (15/15 tests passed)",
+    "frontend": "100% (all features verified)"
+  },
+  "test_credentials": {
+    "email": "teste@teste.com",
+    "password": "12345",
+    "venue_id": "40a24e04-75b6-435d-bfff-ab0d469ce543"
+  },
+  "seed_data_creation": "N/A - used existing demo data (3 staff: Carlos Silva, Ana Perez, Marco Rossi at $15/hr)",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Shift vs Operations feature fully working. Backend has all shift-ops endpoints. Frontend shows KPIs (Revenue/Tables/Cost/Avg/Result), Staff Earnings with edit buttons, Custom Roles CRUD, Day Performance History, Revenue vs Cost chart, and AI Analysis using real GPT-5.2. AI takes 10-20 seconds to respond. Demo data shows negative result (-$518) due to low revenue ($22) vs high staff cost ($540). One custom role 'Head Bartender' at $22/hr exists.",
+  "ai_note": "AI Shift Analysis uses REAL GPT-5.2 via emergentintegrations - NO MOCKING. Generates classification (healthy/tight/underperforming), summary, what_we_see, recommended_actions."
+}
