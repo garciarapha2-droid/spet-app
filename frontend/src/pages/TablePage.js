@@ -187,15 +187,48 @@ export const TablePage = () => {
     } catch { toast.error('Failed'); }
   };
 
-  const handleCloseTable = async (method) => {
+  const [tableCloseStep, setTableCloseStep] = useState(null);
+  const [tableTipSession, setTableTipSession] = useState(null);
+  const [tableTipInput, setTableTipInput] = useState('');
+  const [tableTipType, setTableTipType] = useState('percent');
+  const [tableTipResult, setTableTipResult] = useState(null);
+
+  const handleCloseTable = async (method, location) => {
     if (!tableDetail?.session) return;
     setLoading(true);
     try {
-      const fd = new FormData(); fd.append('table_id', selectedTable); fd.append('payment_method', method);
+      const fd = new FormData();
+      fd.append('table_id', selectedTable);
+      fd.append('payment_method', method);
+      fd.append('payment_location', location);
       await tableAPI.closeTable(fd);
-      setTableDetail(null); await loadTables(); toast.success('Table closed');
+      if (location === 'pay_here') {
+        setTableTipSession({ id: tableDetail.session.id, total: tableDetail.session.total, guest_name: tableDetail.session.guest_name, tab_number: tableDetail.session.tab_number });
+        setTableCloseStep('tip');
+      } else {
+        setTableDetail(null); await loadTables(); toast.success('Table closed — payment at register');
+      }
     } catch { toast.error('Failed'); }
     setLoading(false);
+  };
+
+  const handleTableRecordTip = async () => {
+    if (!tableTipSession) return;
+    setLoading(true);
+    try {
+      const fd = new FormData();
+      if (tableTipType === 'amount') fd.append('tip_amount', parseFloat(tableTipInput).toString());
+      else fd.append('tip_percent', parseFloat(tableTipInput).toString());
+      const res = await tapAPI.recordTip(tableTipSession.id, fd);
+      setTableTipResult(res.data);
+      toast.success(`Tip $${res.data.tip_amount.toFixed(2)} recorded`);
+    } catch { toast.error('Failed'); }
+    setLoading(false);
+  };
+
+  const handleTableTipDone = () => {
+    setTableCloseStep(null); setTableTipSession(null); setTableTipInput(''); setTableTipResult(null);
+    setTableDetail(null); loadTables();
   };
 
   const handleAddCustomItem = async () => {
