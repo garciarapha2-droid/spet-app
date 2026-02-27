@@ -402,7 +402,6 @@ async def get_insights(user: dict = Depends(require_auth)):
 async def get_finance_risk(user: dict = Depends(require_auth)):
     """Finance & Risk — chargebacks, refund rate, thresholds."""
     pool = get_postgres_pool()
-    today = _today_start()
     month = _month_start()
     user_id = user["sub"]
 
