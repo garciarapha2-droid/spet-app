@@ -636,7 +636,6 @@ async def record_tip(
 ):
     """Record tip from receipt. Server enters $ amount or %. System distributes proportionally."""
     pool = get_postgres_pool()
-    db = get_mongo_db()
     sid = uuid.UUID(session_id)
     staff_id = uuid.UUID(user["sub"])
     now = datetime.now(timezone.utc)
