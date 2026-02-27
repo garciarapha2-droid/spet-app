@@ -246,8 +246,8 @@ class TestTableDetail:
         
         table_id = tables[0]["id"]
         
-        # Get table detail
-        detail_response = requests.get(f"{BASE_URL}/api/table/tables/{table_id}", headers=auth_headers)
+        # Get table detail - endpoint is /api/table/{table_id}
+        detail_response = requests.get(f"{BASE_URL}/api/table/{table_id}", headers=auth_headers)
         assert detail_response.status_code == 200
         data = detail_response.json()
         assert "table_number" in data
