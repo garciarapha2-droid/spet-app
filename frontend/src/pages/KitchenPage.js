@@ -290,7 +290,7 @@ export const KitchenPage = () => {
                 onClick={() => { handleStatusChange(delayedPopup.id, 'ready'); setDelayedPopup(null); }}>
                 <CheckCircle className="h-4 w-4 mr-1" /> Mark Ready
               </Button>
-              <Button variant="outline" onClick={() => setDelayedPopup(null)}>
+              <Button variant="outline" onClick={() => { setDismissedIds(prev => new Set(prev).add(delayedPopup.id)); setDelayedPopup(null); }}>
                 Dismiss
               </Button>
             </div>
