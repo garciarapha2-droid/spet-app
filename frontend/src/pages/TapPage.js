@@ -229,15 +229,49 @@ export const TapPage = () => {
     } catch { toast.error('Failed'); }
   };
 
-  const handleCloseTab = async (method) => {
+  const [closeStep, setCloseStep] = useState(null); // null, 'choose', 'tip'
+  const [closedSessionForTip, setClosedSessionForTip] = useState(null);
+  const [tipInput, setTipInput] = useState('');
+  const [tipType, setTipType] = useState('percent'); // 'percent' or 'amount'
+  const [tipResult, setTipResult] = useState(null);
+
+  const handleCloseTab = async (method, location) => {
     if (!activeSessionId) return;
     setLoading(true);
     try {
-      const fd = new FormData(); fd.append('payment_method', method);
-      await tapAPI.closeSession(activeSessionId, fd);
-      setActiveSessionId(null); setActiveSession(null); await loadData(); toast.success('Tab closed');
+      const fd = new FormData();
+      fd.append('payment_method', method);
+      fd.append('payment_location', location);
+      const res = await tapAPI.closeSession(activeSessionId, fd);
+      if (location === 'pay_here') {
+        setClosedSessionForTip({ id: activeSessionId, total: res.data.total, guest_name: activeSession?.guest_name, tab_number: activeSession?.tab_number });
+        setCloseStep('tip');
+      } else {
+        setActiveSessionId(null); setActiveSession(null);
+        toast.success('Tab closed — payment at register');
+      }
+      await loadData();
     } catch { toast.error('Failed'); }
     setLoading(false);
+  };
+
+  const handleRecordTip = async () => {
+    if (!closedSessionForTip) return;
+    setLoading(true);
+    try {
+      const fd = new FormData();
+      if (tipType === 'amount') fd.append('tip_amount', parseFloat(tipInput).toString());
+      else fd.append('tip_percent', parseFloat(tipInput).toString());
+      const res = await tapAPI.recordTip(closedSessionForTip.id, fd);
+      setTipResult(res.data);
+      toast.success(`Tip $${res.data.tip_amount} recorded`);
+    } catch { toast.error('Failed to record tip'); }
+    setLoading(false);
+  };
+
+  const handleCloseTipFlow = () => {
+    setCloseStep(null); setClosedSessionForTip(null); setTipInput(''); setTipResult(null);
+    setActiveSessionId(null); setActiveSession(null);
   };
 
   const filteredItems = catalog.filter(i => i.category === selectedCategory);
