@@ -9,95 +9,71 @@ SPETAP is a multi-tenant SaaS platform for venue operations (clubs, restaurants,
 
 ### Core Principles
 - Strict multi-tenant data isolation by `venue_id`
-- Global person record uses hashed identifiers only
-- Venue-specific guest PII remains isolated
 - UI built for dark environments + queues + pressure
-
-### Product Modes
-- **PULSE (Entry & Identity):** Club/Restaurant Host modes, guest registration, photo capture, risk/value signals
-- **TAP (Consumption/Bar):** Bar modes, tabs, checkout, Table Mode
-- **EVENT WALLET:** Cashless event module (planned)
-
-### Paid Add-ons
-- **LOYALTY:** Points and rewards (IMPLEMENTED)
-- **RESTAURANT (KDS):** Kitchen Display System (IMPLEMENTED)
+- Guest PII isolated per venue; global person uses hashed IDs only
 
 ### Tech Stack
 - **Frontend:** React + Tailwind CSS + Shadcn UI
 - **Backend:** FastAPI (Python)
-- **Databases:** PostgreSQL (transactional SOT) + MongoDB (configs, logs, read models, catalog)
-- **Billing:** Stripe (test mode, setup only)
-- **Auth:** JWT-based, PostgreSQL users table
+- **Databases:** PostgreSQL (transactional) + MongoDB (configs, catalog)
+- **Auth:** JWT-based, PostgreSQL
 
 ---
 
 ## What's Been Implemented
 
-### Core Architecture - COMPLETE
-- Hybrid database (PostgreSQL + MongoDB)
-- Full PostgreSQL schema with 20+ tables
-- JWT-based auth via PostgreSQL
-- Tailwind CSS design system with CSS variable tokens
-
-### Venue Select (Post-Login) - COMPLETE (2026-02-27)
+### Venue Select (Post-Login) - COMPLETE
+- Calendar view with event highlights, create events on-the-fly
 - Login always redirects to `/venue/home`
-- Calendar view showing current month with event highlights
-- Create events on-the-fly or pre-scheduled
-- Venue selector (for multi-venue users)
-- "Enter Venue" button → navigates to module
 
-### Navigation System - COMPLETE (2026-02-27)
-- Module dropdown in header (click venue name → shows all modules)
+### Navigation System - COMPLETE
+- Module dropdown in header (SPETAP → Demo Club ▼ → modules)
 - Pulse sub-tabs: Guest, Inside, Bar, Exit, Rewards
-- Module access respects roles + permissions
-- Venue Home accessible from any page
-
-### Auth Module - COMPLETE
-- Login/Signup via PostgreSQL
-- Super admin user (teste@teste.com / 12345)
-- Forgot Password link (placeholder)
+- Logout button properly spaced from theme toggle
 
 ### PULSE Module (C0-C3) - COMPLETE
-- C0: NFC scan + Manual Entry
-- C1: Guest Intake (Name, Email, Phone, DOB, Photo)
-- C1.1: Deduplication (SHA-256 hashes)
-- C2: Decision Card (Risk/Value chips, Allow/Deny)
+- C0: NFC scan + Manual Entry with camera fix
+- C1: Guest Intake with photo capture (camera readyState check)
+- C1.1: Deduplication
+- C2: Decision Card with risk/value chips
 - C3: Success + auto-reset
 
-### Guest Profile - COMPLETE (2026-02-27)
-- Click guest in "Guests Today" → full profile page `/pulse/guest/:id`
-- Tabs: History, Consumptions, Events, Rewards
-- Entry/exit history with timestamps
-- Spending breakdown with item-level detail
-- Events attended at venue
-- Reward points + tier status
+### Guest Profile - COMPLETE
+- Click guest → `/pulse/guest/:id` with 4 tabs (History, Consumptions, Events, Rewards)
+- Block/Unblock wristband button + red alert banner
+- Open tab warning with amount
+- Stats: entries, exits, total spent, reward tier
 
-### Bar/Bartender Page - COMPLETE (2026-02-27)
-- NFC scanner → photo identity confirmation modal
-- Full catalog with category filters (Beer, Cocktails, Food, Non-Alcohol, Spirits)
-- Custom drink/item addition (name + price + category)
-- Cart with quantity management
-- Reward points assignment at checkout
-- Open tabs sidebar
-
-### Exit Page - COMPLETE (2026-02-27)
-- Inside guests list with exit buttons
-- All exits today panel with entry/exit times + duration
+### Inside Page - COMPLETE
+- Guests are clickable → navigate to profile
+- 3-column grid with photo, entry time, VIP badge, exit button
 - Search functionality
 
-### Rewards System - COMPLETE (2026-02-27)
-- Points configuration (points per R$ spent)
-- 4-tier system: Bronze, Silver, Gold, Platinum
-- Configurable tier names, min points, colors, perks
-- Available rewards catalog with point costs
-- Edit configuration mode
-- Points assignment from bar page
-- Guest rewards tab in profile
+### Bar/Bartender Page - COMPLETE
+- NFC scan → identity confirmation (photo modal)
+- Blocked wristband → full-screen RED BLOCKED screen
+- Full catalog with category filters + custom drink addition
+- Cart with quantities + reward points assignment
+- Revenue total displayed
 
-### TAP Module (B0-B5) - COMPLETE
-- Catalog, Sessions, Items, Payments
-- Custom items support
-- Active sessions listing
+### Exit Page - COMPLETE
+- Open tab check before exit (toast warning with amount)
+- All exits today with entry/exit times + duration
+- Search functionality
+
+### TAP Module - COMPLETE
+- Back button + Home button in header
+- DISCO MODE label + Table toggle switch
+- Barman selector dropdown (Carlos, Maria, João, Ana)
+- NFC scanner/search for guest lookup
+- Custom item addition (name + price + category)
+- Revenue displayed in header (Tabs: X, Revenue: R$X)
+- Open/close tabs, add items, pay with card/cash/comp
+
+### Rewards System - COMPLETE
+- Points config, 4 tiers (Bronze/Silver/Gold/Platinum)
+- Configurable rewards catalog
+- Points assignment from bar page
 
 ### TABLE Module - COMPLETE
 - 9 venue tables across 4 zones
@@ -105,23 +81,32 @@ SPETAP is a multi-tenant SaaS platform for venue operations (clubs, restaurants,
 
 ### KDS Module - COMPLETE
 - Kitchen/Bar destination routing
-- 3-column Kanban: Pending/Preparing/Ready
-- Ticket lifecycle management
+- 3-column Kanban lifecycle
+
+### Block Wristband System - COMPLETE
+- Block from guest profile (reason: lost)
+- Red alert in profile when blocked
+- Full-screen red BLOCKED screen when scanned at bar
+- Unblock functionality
 
 ---
 
 ## Prioritized Backlog
 
 ### P1 - Next
-- Manager/Owner/CEO Dashboards (data aggregation + visualization)
+- Manager Dashboard (cadastro de menu/catalog, barmen, venue settings)
+- Owner Dashboard (multi-venue analytics)
+- Tips system (proportional calculation by barman)
 
 ### P2
+- Restaurant vs Club mode (venue select adapts)
+- Menu/catalog management (create/edit/delete items via Manager)
+- Barman registration (via Manager)
 - Event Wallet module (cashless events)
-- Offline-first for staff apps
 
 ### P3
-- Stripe webhook handlers for subscription lifecycle
-- Restaurant Host mode
+- Offline-first for staff apps
+- Stripe webhook handlers
 
 ---
 
@@ -129,20 +114,13 @@ SPETAP is a multi-tenant SaaS platform for venue operations (clubs, restaurants,
 ```
 /app/
 ├── backend/
-│   ├── server.py (FastAPI entry, CORS, routes)
-│   ├── database.py (MongoDB + PostgreSQL connections)
+│   ├── server.py
 │   ├── routes/ (auth, billing, pulse, tap, table, kds, venue, rewards, manager, owner, ceo)
-│   ├── utils/ (auth.py, hashing.py)
-│   └── middleware/ (auth_middleware.py)
+│   └── utils/ (auth.py, hashing.py)
 └── frontend/
     ├── src/
-    │   ├── App.js (Router with 15+ routes)
-    │   ├── pages/
-    │   │   ├── venue/ (VenueHomePage - select page)
-    │   │   ├── pulse/ (Entry, Inside, Bar, Exit, Rewards, GuestProfile)
-    │   │   ├── TapPage, TablePage, KitchenPage
-    │   │   └── ManagerPage, OwnerPage, CEOPage
-    │   ├── components/ (PulseHeader with module dropdown, ProtectedRoute, ThemeToggle)
+    │   ├── pages/ (venue/, pulse/, TapPage, TablePage, KitchenPage, Manager, Owner, CEO)
+    │   ├── components/ (PulseHeader, pulse/GuestIntakeForm, etc.)
     │   └── services/ (api.js)
     └── tailwind.config.js
 ```
@@ -154,4 +132,5 @@ SPETAP is a multi-tenant SaaS platform for venue operations (clubs, restaurants,
 ## Test Results
 - iteration_5: 23/23 (Table, KDS, TAP, Pulse)
 - iteration_6: 10/10 (Venue Home, navigation)
-- iteration_7: 15/15 (Venue Select, Bar, Exit, Rewards, Guest Profile, Events) — 2026-02-27
+- iteration_7: 15/15 (Venue Select, Bar, Exit, Rewards, Guest Profile)
+- iteration_8: 16/16 (Block wristband, TAP NFC/barman/table toggle, Inside clickable, Exit tab warning) — 2026-02-27
