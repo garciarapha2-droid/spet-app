@@ -93,7 +93,9 @@ export const tableAPI = {
 // KDS
 export const kdsAPI = {
   getTickets: (venueId, dest) => api.get('/kds/tickets', { params: { venue_id: venueId, destination: dest } }),
-  updateStatus: (ticketId, fd) => api.post(`/kds/tickets/${ticketId}/status`, fd),
+  listTickets: (venueId, dest) => api.get('/kds/tickets', { params: { venue_id: venueId, destination: dest } }),
+  updateStatus: (ticketId, fd) => api.post(`/kds/ticket/${ticketId}/status`, fd),
+  sendToKDS: (fd) => api.post('/kds/send', fd),
   getEstimate: (venueId) => api.get('/kds/estimate', { params: { venue_id: venueId } }),
 };
 

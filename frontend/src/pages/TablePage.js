@@ -8,7 +8,7 @@ import { ThemeToggle } from '../components/ThemeToggle';
 import {
   ArrowLeft, LayoutGrid, Plus, Users, X, Trash2,
   Edit, Check, Home, LogOut, CreditCard, Banknote,
-  Beer, UtensilsCrossed, Settings
+  Beer, UtensilsCrossed, Settings, Disc
 } from 'lucide-react';
 
 const VENUE_ID = () => localStorage.getItem('active_venue_id') || '40a24e04-75b6-435d-bfff-ab0d469ce543';
