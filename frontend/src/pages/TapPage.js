@@ -7,11 +7,46 @@ import { Button } from '../components/ui/button';
 import { ThemeToggle } from '../components/ThemeToggle';
 import {
   ArrowLeft, Plus, X, CreditCard, Banknote, Beer, User, ChevronDown, ScanLine,
-  Home, LogOut, LayoutGrid, Pencil, Trash2, Check, Receipt, Camera, Upload
+  Home, LogOut, LayoutGrid, Pencil, Trash2, Check, Receipt, Camera, Upload, ShieldCheck
 } from 'lucide-react';
 
 const VENUE_ID = () => localStorage.getItem('active_venue_id') || '40a24e04-75b6-435d-bfff-ab0d469ce543';
 const CATEGORIES = ['Beers', 'Cocktails', 'Spirits', 'Non-alcoholic', 'Snacks', 'Starters', 'Mains', 'Plates'];
+
+/* ─── Guest Confirmation Modal (Bar/Tap ONLY — NOT ID verification) ── */
+function GuestConfirmModal({ session, onConfirm, onCancel }) {
+  if (!session) return null;
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" data-testid="guest-confirm-modal">
+      <div className="bg-card border border-border rounded-2xl shadow-2xl w-full max-w-md p-6 text-center">
+        {/* Guest Photo */}
+        {session.guest_photo ? (
+          <img src={session.guest_photo} alt="" className="w-24 h-24 rounded-full object-cover mx-auto mb-4 border-4 border-primary/20" />
+        ) : (
+          <div className="w-24 h-24 rounded-full bg-muted flex items-center justify-center mx-auto mb-4 border-4 border-primary/20">
+            <User className="h-10 w-10 text-muted-foreground" />
+          </div>
+        )}
+
+        <h2 className="text-xl font-bold mb-1" data-testid="confirm-guest-name">{session.guest_name}</h2>
+        {session.tab_number && (
+          <span className="inline-block bg-primary/10 text-primary font-bold px-3 py-1 rounded-full text-sm mb-4" data-testid="confirm-tab-number">Tab #{session.tab_number}</span>
+        )}
+
+        <p className="text-sm text-muted-foreground mb-6">Confirm this is the correct guest before proceeding.</p>
+
+        <div className="flex gap-3">
+          <Button variant="outline" className="flex-1 h-11" onClick={onCancel} data-testid="confirm-cancel-btn">
+            Cancel
+          </Button>
+          <Button className="flex-1 h-11" onClick={onConfirm} data-testid="confirm-guest-btn">
+            <ShieldCheck className="h-4 w-4 mr-2" /> Confirm this guest
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export const TapPage = () => {
   const navigate = useNavigate();
