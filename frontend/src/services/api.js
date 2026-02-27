@@ -109,6 +109,14 @@ export const rewardsAPI = {
   getGuestPoints: (guestId, venueId) => api.get(`/rewards/guest/${guestId}/points`, { params: { venue_id: venueId } }),
 };
 
+// Staff / Barmen
+export const staffAPI = {
+  getBarmen: (venueId) => api.get('/staff/barmen', { params: { venue_id: venueId } }),
+  addBarman: (fd) => api.post('/staff/barmen', fd),
+  updateBarman: (barmanId, fd) => api.put(`/staff/barmen/${barmanId}`, fd),
+  deleteBarman: (barmanId) => api.delete(`/staff/barmen/${barmanId}`),
+};
+
 // Manager / Owner / CEO
 export const managerAPI = {
   getDashboard: (venueId) => api.get('/manager/dashboard', { params: { venue_id: venueId } }),
