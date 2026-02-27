@@ -106,7 +106,66 @@ async def add_catalog_item(
     }
     await db.venue_catalog.insert_one(item)
     item.pop("_id", None)
-    return {"id": item["id"], "name": name, "price": price, "category": category}
+    return {"id": item["id"], "name": name, "price": price, "category": category, "image_url": image_url}
+
+
+@router.put("/catalog/{item_id}")
+async def update_catalog_item(
+    item_id: str,
+    user: dict = Depends(require_auth),
+    name: str = Form(None),
+    category: str = Form(None),
+    price: float = Form(None),
+    is_alcohol: bool = Form(None),
+    image_url: str = Form(None),
+):
+    db = get_mongo_db()
+    update = {}
+    if name is not None:
+        update["name"] = name
+    if category is not None:
+        update["category"] = category
+    if price is not None:
+        update["price"] = price
+    if is_alcohol is not None:
+        update["is_alcohol"] = is_alcohol
+    if image_url is not None:
+        update["image_url"] = image_url
+    if not update:
+        raise HTTPException(400, "Nothing to update")
+    result = await db.venue_catalog.update_one({"id": item_id}, {"$set": update})
+    if result.matched_count == 0:
+        raise HTTPException(404, "Item not found")
+    return {"id": item_id, "updated": True}
+
+
+@router.delete("/catalog/{item_id}")
+async def delete_catalog_item(item_id: str, user: dict = Depends(require_auth)):
+    db = get_mongo_db()
+    result = await db.venue_catalog.delete_one({"id": item_id})
+    if result.deleted_count == 0:
+        raise HTTPException(404, "Item not found")
+    return {"id": item_id, "deleted": True}
+
+
+@router.post("/catalog/{item_id}/photo")
+async def upload_catalog_photo(
+    item_id: str,
+    user: dict = Depends(require_auth),
+    photo: UploadFile = File(...),
+):
+    """Upload photo for a catalog item — store as base64 data URL."""
+    db = get_mongo_db()
+    content = await photo.read()
+    if len(content) > 5 * 1024 * 1024:
+        raise HTTPException(400, "File too large (max 5MB)")
+    b64 = base64.b64encode(content).decode()
+    ct = photo.content_type or "image/jpeg"
+    data_url = f"data:{ct};base64,{b64}"
+    result = await db.venue_catalog.update_one({"id": item_id}, {"$set": {"image_url": data_url}})
+    if result.matched_count == 0:
+        raise HTTPException(404, "Item not found")
+    return {"id": item_id, "image_url": data_url}
 
 
 # ─── B1: Tab (session) management — ALL in PostgreSQL ─────────────
