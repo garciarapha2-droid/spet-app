@@ -20,13 +20,14 @@ TEST_PASSWORD = "12345"
 @pytest.fixture(scope="module")
 def auth_token():
     """Get authentication token"""
-    response = requests.post(f"{BASE_URL}/api/auth/login", data={
-        "email": TEST_EMAIL,
-        "password": TEST_PASSWORD
-    })
+    response = requests.post(
+        f"{BASE_URL}/api/auth/login",
+        json={"email": TEST_EMAIL, "password": TEST_PASSWORD},
+        headers={"Content-Type": "application/json"}
+    )
     if response.status_code == 200:
-        return response.json().get("token")
-    pytest.skip(f"Authentication failed - status {response.status_code}")
+        return response.json().get("access_token")
+    pytest.skip(f"Authentication failed - status {response.status_code}: {response.text}")
 
 
 @pytest.fixture(scope="module")
