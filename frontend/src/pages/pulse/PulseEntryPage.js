@@ -431,7 +431,12 @@ export const PulseEntryPage = () => {
                         </div>
                       )}
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium truncate">{entry.guest_name}</p>
+                        <div className="flex items-center gap-2">
+                          <p className="font-medium truncate">{entry.guest_name}</p>
+                          {entry.tab_number && (
+                            <span className="text-sm font-bold text-primary" data-testid={`tab-num-${entry.guest_id}`}>#{entry.tab_number}</span>
+                          )}
+                        </div>
                         <p className="text-xs text-muted-foreground">
                           {new Date(entry.created_at).toLocaleTimeString()}
                         </p>
