@@ -177,6 +177,8 @@ async def get_table_detail(table_id: str, user: dict = Depends(require_auth)):
                 "id": str(session["id"]),
                 "total": float(session["total"]),
                 "guest_name": meta.get("guest_name", "Guest"),
+                "tab_number": meta.get("tab_number"),
+                "server_name": meta.get("server_name"),
                 "covers": meta.get("covers", 1),
                 "opened_at": session["opened_at"].isoformat() if session["opened_at"] else None,
             }
