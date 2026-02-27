@@ -610,8 +610,30 @@ async def get_inside_guests(venue_id: str, user: dict = Depends(require_auth)):
     for r in rows:
         if r["decision"] == "allowed" and r["entry_type"] != "exit":
             guest_doc = await db.venue_guests.find_one(
-                {"id": str(r["guest_id"])}, {"_id": 0, "name": 1, "photo": 1, "tags": 1}
+                {"id": str(r["guest_id"])}, {"_id": 0, "name": 1, "photo": 1, "tags": 1, "wristband_blocked": 1}
             )
+            # Check for open tab
+            tab_info = None
+            async with pool.acquire() as conn2:
+                tab_row = await conn2.fetchrow(
+                    """SELECT id, meta, total, status FROM tap_sessions
+                       WHERE venue_id = $1::uuid AND guest_id = $2::uuid AND status = 'open'
+                       ORDER BY opened_at DESC LIMIT 1""",
+                    uuid.UUID(venue_id), r["guest_id"],
+                )
+            if tab_row:
+                meta = tab_row["meta"] or {}
+                tab_info = {
+                    "session_id": str(tab_row["id"]),
+                    "tab_number": meta.get("tab_number"),
+                    "total": float(tab_row["total"] or 0),
+                    "status": tab_row["status"],
+                }
+            guest_status = "Open"
+            if guest_doc and guest_doc.get("wristband_blocked"):
+                guest_status = "Blocked"
+            elif tab_info and tab_info["status"] == "closed":
+                guest_status = "Paid"
             inside.append({
                 "guest_id": str(r["guest_id"]),
                 "guest_name": guest_doc["name"] if guest_doc else "Unknown",
@@ -619,6 +641,9 @@ async def get_inside_guests(venue_id: str, user: dict = Depends(require_auth)):
                 "tags": guest_doc.get("tags", []) if guest_doc else [],
                 "entry_type": r["entry_type"],
                 "entered_at": r["created_at"].isoformat(),
+                "tab_number": tab_info["tab_number"] if tab_info else None,
+                "tab_total": tab_info["total"] if tab_info else None,
+                "guest_status": guest_status,
             })
 
     return {"guests": inside, "total": len(inside)}
