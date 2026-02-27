@@ -61,9 +61,10 @@ export const TablePage = () => {
       fd.append('venue_id', VENUE_ID());
       fd.append('table_id', selectedTable);
       fd.append('guest_name', openForm.guestName.trim());
+      if (openForm.server) fd.append('server_name', openForm.server);
       await tableAPI.openTable(fd);
       toast.success('Table opened');
-      setOpenForm({ guestName: '' });
+      setOpenForm({ guestName: '', server: '' });
       await loadData();
       const res = await tableAPI.getTableDetail(selectedTable);
       setTableDetail(res.data);
