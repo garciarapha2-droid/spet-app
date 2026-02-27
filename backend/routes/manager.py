@@ -754,15 +754,20 @@ async def _calc_staff_cost(db, venue_id: str, start: datetime, end: datetime):
     staff_breakdown = []
     for s in staff:
         rate = s.get("hourly_rate", 0)
-        earned = round(rate * shift_hours, 2)
-        total_cost += earned
+        wages = round(rate * shift_hours, 2)
+        tips = 0  # Future: tip-splitting logic
+        total = round(wages + tips, 2)
+        total_cost += total
         staff_breakdown.append({
             "id": s["id"],
             "name": s["name"],
             "role": s.get("role", "server"),
             "hourly_rate": rate,
             "hours_worked": round(shift_hours, 1),
-            "earned": earned,
+            "wages": wages,
+            "tips": tips,
+            "total": total,
+            "earned": total,
         })
     return total_cost, staff_breakdown
 
