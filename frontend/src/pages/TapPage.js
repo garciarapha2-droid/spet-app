@@ -137,6 +137,7 @@ export const TapPage = () => {
 
   const handleAddItem = async (item) => {
     if (!activeSessionId) { toast.error('Select or open a tab first'); return; }
+    if (!selectedBarman) { toast.error('Select a barman first'); return; }
     setLoading(true);
     try {
       const fd = new FormData();
@@ -152,6 +153,7 @@ export const TapPage = () => {
 
   const handleAddCustomItem = async () => {
     if (!activeSessionId) { toast.error('Select or open a tab first'); return; }
+    if (!selectedBarman) { toast.error('Select a barman first'); return; }
     if (!customItem.name || !customItem.price) { toast.error('Name and price required'); return; }
     setLoading(true);
     try {
