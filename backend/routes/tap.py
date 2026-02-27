@@ -122,9 +122,17 @@ async def open_tab(
     vid = uuid.UUID(venue_id)
     staff_id = uuid.UUID(user["sub"])
 
-    meta_json = json_mod.dumps({"guest_name": guest_name})
-
     async with pool.acquire() as conn:
+        # Generate sequential tab number for today
+        today_start = datetime.combine(date.today(), datetime.min.time()).replace(tzinfo=timezone.utc)
+        count = await conn.fetchval(
+            "SELECT COUNT(*) FROM tap_sessions WHERE venue_id = $1 AND opened_at >= $2",
+            vid, today_start
+        )
+        tab_number = 100 + count + 1
+
+        meta_json = json_mod.dumps({"guest_name": guest_name, "tab_number": tab_number})
+
         row = await conn.fetchrow(
             """INSERT INTO tap_sessions
                (venue_id, guest_id, nfc_card_id, table_id, session_type,
@@ -143,6 +151,7 @@ async def open_tab(
     return {
         "session_id": str(row["id"]),
         "guest_name": guest_name,
+        "tab_number": tab_number,
         "status": "open",
         "opened_at": row["opened_at"].isoformat(),
     }
