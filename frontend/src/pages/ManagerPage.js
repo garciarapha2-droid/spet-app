@@ -1134,17 +1134,35 @@ function ShiftOpsSection() {
     toast.success('Shift costs snapshotted for today');
   };
 
-  const runAI = async () => {
+  const runAI = async (questionText) => {
+    const q = questionText || aiQuestion.trim();
+    if (!q && aiConversations.length > 0) return;
     const [df, dt] = getDateRange();
     setAiLoading(true);
+    setAiQuestion('');
     try {
       const fd = new FormData();
       fd.append('venue_id', VID()); fd.append('date_from', df); fd.append('date_to', dt);
-      if (aiQuestion.trim()) fd.append('question', aiQuestion.trim());
+      if (q) fd.append('question', q);
       const res = await managerAPI.shiftAI(fd);
-      setAiResult(res.data);
+      const entry = {
+        id: Date.now(),
+        question: q || null,
+        insight: res.data.insight,
+        data: res.data.data,
+        timestamp: new Date().toISOString(),
+      };
+      setAiConversations(prev => [...prev, entry]);
     } catch { toast.error('AI analysis failed'); }
     setAiLoading(false);
+  };
+
+  const removeAiCard = (id) => {
+    setAiConversations(prev => prev.filter(c => c.id !== id));
+  };
+
+  const handleAiNextStep = (step) => {
+    setAiQuestion(step);
   };
 
   if (loading) return <Skeleton />;
