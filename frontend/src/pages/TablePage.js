@@ -473,13 +473,17 @@ export const TablePage = () => {
                     ) : (
                       <div className="space-y-3 max-w-xs mx-auto text-left" data-testid="open-table-form">
                         <Input value={guestName} onChange={e => setGuestName(e.target.value)} placeholder="Guest name" autoFocus data-testid="open-table-guest-name" />
-                        <select value={selectedServer} onChange={e => setSelectedServer(e.target.value)}
-                          className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm" data-testid="open-table-server">
-                          <option value="">Select server...</option>
-                          {barmen.map(b => <option key={b.id} value={b.name}>{b.name}</option>)}
-                        </select>
+                        <div>
+                          <select value={selectedServer} onChange={e => setSelectedServer(e.target.value)}
+                            className={`w-full h-10 rounded-md border bg-background px-3 text-sm ${!selectedServer ? 'border-red-500/50 ring-1 ring-red-500/20' : 'border-input'}`}
+                            data-testid="open-table-server">
+                            <option value="">Select server (required)...</option>
+                            {barmen.map(b => <option key={b.id} value={b.name}>{b.name}</option>)}
+                          </select>
+                          {!selectedServer && <p className="text-[10px] text-red-500 mt-1">Server must be selected before opening table</p>}
+                        </div>
                         <div className="flex gap-2">
-                          <Button className="flex-1" onClick={handleOpenTable} disabled={!guestName.trim() || loading}>Open</Button>
+                          <Button className="flex-1" onClick={handleOpenTable} disabled={!guestName.trim() || !selectedServer || loading} data-testid="open-table-submit-btn">Open</Button>
                           <Button variant="outline" onClick={() => setShowOpenForm(false)}><X className="h-4 w-4" /></Button>
                         </div>
                       </div>
