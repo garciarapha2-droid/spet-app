@@ -30,8 +30,8 @@ export default api;
 // Auth
 export const authAPI = {
   login: (email, password) => api.post('/auth/login', { email, password }),
-  signup: (data) => api.post('/auth/signup', data),
-  me: () => api.get('/auth/me'),
+  signup: (email, password, company_name) => api.post('/auth/signup', { email, password, company_name }),
+  getMe: () => api.get('/auth/me'),
 };
 
 // Venue
