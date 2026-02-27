@@ -124,7 +124,7 @@ export const GuestProfilePage = () => {
           <div className="mb-6 p-5 rounded-2xl bg-yellow-500/10 border-2 border-yellow-500/30 flex items-center gap-4" data-testid="open-tab-alert">
             <AlertTriangle className="h-8 w-8 text-yellow-600 flex-shrink-0" />
             <div className="flex-1">
-              <p className="font-bold text-yellow-700">Open Tab — R${tabStatus.total_owed.toFixed(2)}</p>
+              <p className="font-bold text-yellow-700">Open Tab — ${tabStatus.total_owed.toFixed(2)}</p>
               <p className="text-sm text-yellow-600/80">Guest has {tabStatus.open_tabs.length} open tab{tabStatus.open_tabs.length > 1 ? 's' : ''}. Must pay before exit.</p>
             </div>
           </div>
@@ -174,7 +174,7 @@ export const GuestProfilePage = () => {
               </div>
               <div className="bg-card border border-border rounded-xl p-4 text-center">
                 <DollarSign className="h-5 w-5 text-green-600 mx-auto mb-1" />
-                <p className="text-2xl font-bold" data-testid="stat-spent">R${(profile.total_spent || 0).toFixed(0)}</p>
+                <p className="text-2xl font-bold" data-testid="stat-spent">${(profile.total_spent || 0).toFixed(0)}</p>
                 <p className="text-xs text-muted-foreground">Spent</p>
               </div>
               <div className="bg-card border border-border rounded-xl p-4 text-center">
@@ -237,7 +237,7 @@ export const GuestProfilePage = () => {
                   <p className="text-xs text-muted-foreground">{evt.entry_type?.replace(/_/g, ' ')}</p>
                 </div>
                 {evt.cover_amount > 0 && (
-                  <span className="text-sm text-muted-foreground">R${evt.cover_amount}</span>
+                  <span className="text-sm text-muted-foreground">${evt.cover_amount}</span>
                 )}
                 <span className="text-sm text-muted-foreground">
                   <Clock className="h-3 w-3 inline mr-1" />
@@ -271,8 +271,8 @@ export const GuestProfilePage = () => {
                         <td className="px-5 py-3 font-medium">{c.name}</td>
                         <td className="px-5 py-3 text-muted-foreground text-sm">{c.category}</td>
                         <td className="px-5 py-3 text-right">{c.qty}</td>
-                        <td className="px-5 py-3 text-right text-muted-foreground">R${c.unit_price?.toFixed(2)}</td>
-                        <td className="px-5 py-3 text-right font-medium">R${c.total?.toFixed(2)}</td>
+                        <td className="px-5 py-3 text-right text-muted-foreground">${c.unit_price?.toFixed(2)}</td>
+                        <td className="px-5 py-3 text-right font-medium">${c.total?.toFixed(2)}</td>
                         <td className="px-5 py-3 text-right text-xs text-muted-foreground">
                           {c.date ? new Date(c.date).toLocaleDateString() : '-'}
                         </td>
@@ -283,7 +283,7 @@ export const GuestProfilePage = () => {
                     <tr className="bg-muted/30">
                       <td colSpan="4" className="px-5 py-3 font-semibold text-right">Total</td>
                       <td className="px-5 py-3 text-right font-bold text-lg">
-                        R${profile.consumptions.reduce((sum, c) => sum + (c.total || 0), 0).toFixed(2)}
+                        ${profile.consumptions.reduce((sum, c) => sum + (c.total || 0), 0).toFixed(2)}
                       </td>
                       <td></td>
                     </tr>
@@ -327,7 +327,7 @@ export const GuestProfilePage = () => {
               </div>
               <div className="bg-card border border-border rounded-xl p-6 text-center">
                 <DollarSign className="h-8 w-8 text-green-500 mx-auto mb-2" />
-                <p className="text-xl font-bold">R${(profile.total_spent || 0).toFixed(0)}</p>
+                <p className="text-xl font-bold">${(profile.total_spent || 0).toFixed(0)}</p>
                 <p className="text-sm text-muted-foreground">Lifetime Spend</p>
               </div>
             </div>

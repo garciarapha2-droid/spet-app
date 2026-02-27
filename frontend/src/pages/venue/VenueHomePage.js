@@ -300,13 +300,13 @@ export const VenueSelectPage = () => {
                       data-testid="event-name-input" />
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <label className="text-xs text-muted-foreground">Cover (R$)</label>
+                        <label className="text-xs text-muted-foreground">Cover ($)</label>
                         <input type="number" value={newEvent.cover_price}
                           onChange={(e) => setNewEvent(p => ({ ...p, cover_price: parseFloat(e.target.value) || 0 }))}
                           className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" />
                       </div>
                       <div>
-                        <label className="text-xs text-muted-foreground">Cover + Consum. (R$)</label>
+                        <label className="text-xs text-muted-foreground">Cover + Consum. ($)</label>
                         <input type="number" value={newEvent.cover_consumption_price}
                           onChange={(e) => setNewEvent(p => ({ ...p, cover_consumption_price: parseFloat(e.target.value) || 0 }))}
                           className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" />
@@ -332,8 +332,8 @@ export const VenueSelectPage = () => {
                       <div key={evt.id} className="bg-card border border-border rounded-xl p-5 hover:border-primary/30 transition-colors">
                         <h4 className="font-semibold mb-1">{evt.name}</h4>
                         <div className="flex gap-4 text-sm text-muted-foreground">
-                          {evt.cover_price > 0 && <span>Cover: R${evt.cover_price}</span>}
-                          {evt.cover_consumption_price > 0 && <span>Cover+Cons: R${evt.cover_consumption_price}</span>}
+                          {evt.cover_price > 0 && <span>Cover: ${evt.cover_price}</span>}
+                          {evt.cover_consumption_price > 0 && <span>Cover+Cons: ${evt.cover_consumption_price}</span>}
                         </div>
                       </div>
                     ))}

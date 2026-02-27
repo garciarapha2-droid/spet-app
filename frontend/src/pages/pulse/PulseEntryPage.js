@@ -276,7 +276,7 @@ export const PulseEntryPage = () => {
                     {guestHistory.guest_email && <p className="text-sm text-muted-foreground">{guestHistory.guest_email}</p>}
                     <div className="flex gap-4 text-sm text-muted-foreground mt-1">
                       <span>{guestHistory.visits} visits</span>
-                      <span>R${(guestHistory.spend_total || 0).toFixed(0)} spent</span>
+                      <span>${(guestHistory.spend_total || 0).toFixed(0)} spent</span>
                     </div>
                   </div>
                 </div>

@@ -119,7 +119,7 @@ export const PulseRewardsPage = () => {
             <Star className="h-5 w-5 text-yellow-500" /> Points Configuration
           </h3>
           <div className="flex items-center gap-4">
-            <span className="text-sm text-muted-foreground">Points earned per R$1 spent:</span>
+            <span className="text-sm text-muted-foreground">Points earned per $1 spent:</span>
             {editing ? (
               <Input type="number" value={pointsPerReal}
                 onChange={e => setPointsPerReal(parseInt(e.target.value) || 1)}

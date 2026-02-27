@@ -166,7 +166,7 @@ export const PulseBarPage = () => {
         await rewardsAPI.addPoints(ptsFd);
       }
 
-      toast.success(`Order added! R$${cartTotal.toFixed(2)} for ${scanResult.name}`);
+      toast.success(`Order added! $${cartTotal.toFixed(2)} for ${scanResult.name}`);
       setCart([]);
       setRewardPoints(0);
       await refreshSessions();
@@ -293,7 +293,7 @@ export const PulseBarPage = () => {
                 {activeSessions.map((s) => (
                   <div key={s.id || s.session_id} className="p-3 bg-card border border-border rounded-lg text-sm">
                     <p className="font-medium">{s.guest_name || 'Tab'}</p>
-                    <p className="text-xs text-muted-foreground">R${(s.total || 0).toFixed(2)}</p>
+                    <p className="text-xs text-muted-foreground">${(s.total || 0).toFixed(2)}</p>
                   </div>
                 ))}
               </div>
@@ -337,7 +337,7 @@ export const PulseBarPage = () => {
                     placeholder="Drink name..." data-testid="custom-name" />
                 </div>
                 <div className="w-28">
-                  <label className="text-xs text-muted-foreground">Price (R$)</label>
+                  <label className="text-xs text-muted-foreground">Price ($)</label>
                   <Input type="number" step="0.01" value={customItem.price}
                     onChange={e => setCustomItem(p => ({ ...p, price: e.target.value }))}
                     placeholder="0.00" data-testid="custom-price" />
@@ -378,7 +378,7 @@ export const PulseBarPage = () => {
                     )}
                     <CatIcon className="h-5 w-5 text-muted-foreground mb-2" />
                     <p className="font-medium text-sm truncate">{item.name}</p>
-                    <p className="text-primary font-bold">R${item.price?.toFixed(2)}</p>
+                    <p className="text-primary font-bold">${item.price?.toFixed(2)}</p>
                   </button>
                 );
               })}
@@ -398,7 +398,7 @@ export const PulseBarPage = () => {
                     <div key={item.id} className="flex items-center gap-2 p-2 rounded-lg bg-muted/30">
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium truncate">{item.name}</p>
-                        <p className="text-xs text-muted-foreground">R${item.price?.toFixed(2)} x {item.qty}</p>
+                        <p className="text-xs text-muted-foreground">${item.price?.toFixed(2)} x {item.qty}</p>
                       </div>
                       <div className="flex items-center gap-1">
                         <button onClick={() => removeFromCart(item.id)} className="w-7 h-7 rounded-full bg-muted flex items-center justify-center hover:bg-destructive/10">
@@ -429,7 +429,7 @@ export const PulseBarPage = () => {
               <div className="border-t border-border pt-4">
                 <div className="flex justify-between text-lg font-bold mb-4">
                   <span>Total</span>
-                  <span data-testid="cart-total">R${cartTotal.toFixed(2)}</span>
+                  <span data-testid="cart-total">${cartTotal.toFixed(2)}</span>
                 </div>
                 <Button className="w-full h-12 text-base font-semibold" disabled={!scanResult || scanResult.blocked || cart.length === 0 || loading}
                   onClick={handleSubmitOrder} data-testid="submit-order-btn">

@@ -188,7 +188,7 @@ export const PulseExitPage = () => {
                   </div>
                   <h3 className="text-xl font-bold text-destructive mb-2">Open Tab Pending</h3>
                   <p className="text-lg font-semibold mb-1">{exitModal.guest.guestName}</p>
-                  <p className="text-3xl font-bold text-destructive mb-3">R${exitModal.data.total_owed.toFixed(2)}</p>
+                  <p className="text-3xl font-bold text-destructive mb-3">${exitModal.data.total_owed.toFixed(2)}</p>
                   <p className="text-muted-foreground mb-6">
                     {exitModal.data.open_tabs.length} open tab{exitModal.data.open_tabs.length > 1 ? 's' : ''}. 
                     Must go to the cashier and pay before leaving.
