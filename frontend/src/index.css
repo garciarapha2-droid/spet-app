@@ -1,107 +1,90 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 /* SPETAP Design System - Token-based Light/Dark theme */
+@layer base {
+  :root {
+    --font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    letter-spacing: -0.01em;
+  }
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+  /* Light Mode - default */
+  :root, [data-theme="light"] {
+    --background: 0 0% 98%;
+    --foreground: 224 20% 12%;
+    --card: 0 0% 100%;
+    --card-foreground: 224 20% 12%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 224 20% 12%;
+    --primary: 253 100% 64%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 220 14% 96%;
+    --secondary-foreground: 224 20% 12%;
+    --muted: 220 14% 96%;
+    --muted-foreground: 220 8% 46%;
+    --accent: 253 80% 64%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 253 100% 68%;
+    --radius: 0.375rem;
+    --sidebar-background: 225 14% 8%;
+    --sidebar-foreground: 210 15% 75%;
+    --sidebar-primary: 253 100% 68%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 225 10% 13%;
+    --sidebar-accent-foreground: 210 15% 75%;
+    --sidebar-border: 225 10% 14%;
+    --sidebar-ring: 253 100% 68%;
+  }
 
-:root {
-  --font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  letter-spacing: -0.01em;
-}
+  /* Dark Mode */
+  [data-theme="dark"] {
+    --background: 225 14% 7%;
+    --foreground: 210 20% 93%;
+    --card: 225 12% 10%;
+    --card-foreground: 210 20% 93%;
+    --popover: 225 14% 9%;
+    --popover-foreground: 210 20% 93%;
+    --primary: 253 100% 68%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 225 10% 14%;
+    --secondary-foreground: 210 15% 75%;
+    --muted: 225 10% 13%;
+    --muted-foreground: 220 8% 50%;
+    --accent: 253 80% 64%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 62% 30%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 225 10% 16%;
+    --input: 225 10% 16%;
+    --ring: 253 100% 68%;
+    --radius: 0.375rem;
+    --sidebar-background: 225 14% 8%;
+    --sidebar-foreground: 210 15% 75%;
+    --sidebar-primary: 253 100% 68%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 225 10% 13%;
+    --sidebar-accent-foreground: 210 15% 75%;
+    --sidebar-border: 225 10% 14%;
+    --sidebar-ring: 253 100% 68%;
+  }
 
-/* Light Mode - default */
-:root, [data-theme="light"] {
-  --background: 0 0% 98%;
-  --foreground: 224 20% 12%;
-  
-  --card: 0 0% 100%;
-  --card-foreground: 224 20% 12%;
-  
-  --popover: 0 0% 100%;
-  --popover-foreground: 224 20% 12%;
-  
-  --primary: 253 100% 64%;
-  --primary-foreground: 0 0% 100%;
-  
-  --secondary: 225 10% 14%;
-  --secondary-foreground: 210 15% 75%;
-  
-  --muted: 225 10% 13%;
-  --muted-foreground: 220 8% 50%;
-  
-  --accent: 253 80% 64%;
-  --accent-foreground: 0 0% 100%;
-  
-  --border: 225 10% 16%;
-  --input: 225 10% 16%;
-  --ring: 253 100% 68%;
-  
-  --radius: 0.375rem;
-  
-  --sidebar-background: 225 14% 8%;
-  --sidebar-foreground: 210 15% 75%;
-  --sidebar-primary: 253 100% 68%;
-  --sidebar-primary-foreground: 0 0% 100%;
-  --sidebar-accent: 225 10% 13%;
-  --sidebar-accent-foreground: 210 15% 75%;
-  --sidebar-border: 225 10% 14%;
-  --sidebar-ring: 253 100% 68%;
-}
+  * {
+    @apply border-border;
+  }
 
-/* Dark Mode */
-[data-theme="dark"] {
-  --background: 225 14% 7%;
-  --foreground: 210 20% 93%;
-  
-  --card: 225 12% 10%;
-  --card-foreground: 210 20% 93%;
-  
-  --popover: 225 14% 9%;
-  --popover-foreground: 210 20% 93%;
-  
-  --primary: 253 100% 68%;
-  --primary-foreground: 0 0% 100%;
-  
-  --secondary: 225 10% 14%;
-  --secondary-foreground: 210 15% 75%;
-  
-  --muted: 225 10% 13%;
-  --muted-foreground: 220 8% 50%;
-  
-  --accent: 253 80% 64%;
-  --accent-foreground: 0 0% 100%;
-  
-  --border: 225 10% 16%;
-  --input: 225 10% 16%;
-  --ring: 253 100% 68%;
-  
-  --radius: 0.375rem;
-  
-  --sidebar-background: 225 14% 8%;
-  --sidebar-foreground: 210 15% 75%;
-  --sidebar-primary: 253 100% 68%;
-  --sidebar-primary-foreground: 0 0% 100%;
-  --sidebar-accent: 225 10% 13%;
-  --sidebar-accent-foreground: 210 15% 75%;
-  --sidebar-border: 225 10% 14%;
-  --sidebar-ring: 253 100% 68%;
-}
-
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
-body {
-  font-family: var(--font-family);
-  background-color: hsl(var(--background));
-  color: hsl(var(--foreground));
-  line-height: 1.6;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  body {
+    @apply bg-background text-foreground;
+    font-family: var(--font-family);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
 }
 
 h1, h2, h3, h4, h5, h6 {
