@@ -421,7 +421,7 @@ export const PulseEntryPage = () => {
                     return (
                     <div key={entry.guest_id}
                       className="flex items-center gap-4 px-4 py-3 rounded-lg hover:bg-muted/50 transition-colors cursor-pointer"
-                      onClick={() => handleSelectExisting(entry.guest_id)}
+                      onClick={() => navigate(`/pulse/guest/${entry.guest_id}`)}
                       data-testid={`entry-row-${entry.guest_id}`}>
                       {entry.guest_photo ? (
                         <img src={entry.guest_photo} alt="" className="w-10 h-10 rounded-full object-cover" />
