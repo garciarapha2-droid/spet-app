@@ -122,6 +122,7 @@ export const TablePage = () => {
 
   const handleOpenTable = async () => {
     if (!guestName.trim()) { toast.error('Enter guest name'); return; }
+    if (!selectedServer) { toast.error('Select a server first — mandatory'); return; }
     setLoading(true);
     try {
       const fd = new FormData();
@@ -137,6 +138,7 @@ export const TablePage = () => {
 
   const handleAddItem = async (item) => {
     if (!tableDetail?.session) { toast.error('Open the table first'); return; }
+    if (!tableDetail.session.server_name && !selectedServer) { toast.error('Select a server first'); return; }
     // Check if item is alcohol and session not ID-verified
     if (item.is_alcohol && !tableDetail.session.id_verified) {
       setPendingAlcoholItem(item);
