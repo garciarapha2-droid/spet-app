@@ -121,7 +121,6 @@ async def open_tab(
     vid = uuid.UUID(venue_id)
     staff_id = uuid.UUID(user["sub"])
 
-    import json as json_mod
     meta_json = json_mod.dumps({"guest_name": guest_name})
 
     async with pool.acquire() as conn:
