@@ -386,3 +386,128 @@ async def get_today_entries(venue_id: str, user: dict = Depends(require_auth)):
         "allowed": sum(1 for e in entries if e["decision"] == "allowed"),
         "denied": sum(1 for e in entries if e["decision"] == "denied"),
     }
+
+
+# ─── Guest History ────────────────────────────────────────────────
+@router.get("/guest/{guest_id}/history")
+async def get_guest_history(guest_id: str, venue_id: str, user: dict = Depends(require_auth)):
+    """All entry/exit events for a guest at this venue."""
+    pool = get_postgres_pool()
+    db = get_mongo_db()
+
+    guest_doc = await db.venue_guests.find_one(
+        {"id": guest_id, "venue_id": venue_id}, {"_id": 0, "name": 1, "photo": 1, "email": 1, "phone": 1, "visits": 1, "spend_total": 1}
+    )
+
+    async with pool.acquire() as conn:
+        rows = await conn.fetch(
+            """SELECT id, decision, entry_type, cover_amount, cover_paid, created_at
+               FROM entry_events
+               WHERE guest_id = $1::uuid AND venue_id = $2::uuid
+               ORDER BY created_at DESC""",
+            uuid.UUID(guest_id), uuid.UUID(venue_id),
+        )
+
+    history = [
+        {
+            "entry_id": str(r["id"]),
+            "decision": r["decision"],
+            "entry_type": r["entry_type"],
+            "cover_amount": float(r["cover_amount"]) if r["cover_amount"] else 0,
+            "cover_paid": r["cover_paid"],
+            "created_at": r["created_at"].isoformat(),
+        }
+        for r in rows
+    ]
+
+    return {
+        "guest_id": guest_id,
+        "guest_name": guest_doc["name"] if guest_doc else "Unknown",
+        "guest_photo": guest_doc.get("photo") if guest_doc else None,
+        "guest_email": guest_doc.get("email") if guest_doc else None,
+        "guest_phone": guest_doc.get("phone") if guest_doc else None,
+        "visits": guest_doc.get("visits", 0) if guest_doc else 0,
+        "spend_total": guest_doc.get("spend_total", 0) if guest_doc else 0,
+        "history": history,
+        "total": len(history),
+    }
+
+
+# ─── Inside: Currently inside guests ─────────────────────────────
+@router.get("/inside")
+async def get_inside_guests(venue_id: str, user: dict = Depends(require_auth)):
+    """Guests currently inside the venue (allowed entry, no exit after)."""
+    pool = get_postgres_pool()
+    db = get_mongo_db()
+    today_start = datetime.combine(date.today(), datetime.min.time()).replace(tzinfo=timezone.utc)
+
+    async with pool.acquire() as conn:
+        # Guests with "allowed" entry today, whose last event is NOT "exit"
+        rows = await conn.fetch(
+            """SELECT DISTINCT ON (guest_id) guest_id, decision, entry_type, created_at
+               FROM entry_events
+               WHERE venue_id = $1::uuid AND created_at >= $2
+               ORDER BY guest_id, created_at DESC""",
+            uuid.UUID(venue_id), today_start,
+        )
+
+    inside = []
+    for r in rows:
+        if r["decision"] == "allowed" and r["entry_type"] != "exit":
+            guest_doc = await db.venue_guests.find_one(
+                {"id": str(r["guest_id"])}, {"_id": 0, "name": 1, "photo": 1, "tags": 1}
+            )
+            inside.append({
+                "guest_id": str(r["guest_id"]),
+                "guest_name": guest_doc["name"] if guest_doc else "Unknown",
+                "guest_photo": guest_doc.get("photo") if guest_doc else None,
+                "tags": guest_doc.get("tags", []) if guest_doc else [],
+                "entry_type": r["entry_type"],
+                "entered_at": r["created_at"].isoformat(),
+            })
+
+    return {"guests": inside, "total": len(inside)}
+
+
+# ─── Exit: Register guest exit ────────────────────────────────────
+@router.post("/exit")
+async def register_exit(
+    user: dict = Depends(require_auth),
+    guest_id: str = Form(...),
+    venue_id: str = Form(...),
+):
+    """Record a guest exiting the venue."""
+    pool = get_postgres_pool()
+    db = get_mongo_db()
+    now = datetime.now(timezone.utc)
+
+    guest_doc = await db.venue_guests.find_one({"id": guest_id, "venue_id": venue_id}, {"_id": 0})
+    if not guest_doc:
+        raise HTTPException(404, "Guest not found")
+
+    gp_id = guest_doc.get("global_person_id")
+    staff_id = user.get("sub")
+
+    async with pool.acquire() as conn:
+        entry_row = await conn.fetchrow(
+            """INSERT INTO entry_events
+               (venue_id, event_id, guest_id, global_person_id,
+                entry_type, cover_amount, cover_paid, decision,
+                staff_user_id, created_at)
+               VALUES ($1::uuid, $1::uuid, $2::uuid, $3,
+                       'exit', 0, false, 'exit',
+                       $4::uuid, $5)
+               RETURNING id""",
+            uuid.UUID(venue_id),
+            uuid.UUID(guest_id),
+            uuid.UUID(gp_id) if gp_id else None,
+            uuid.UUID(staff_id),
+            now,
+        )
+
+    return {
+        "entry_id": str(entry_row["id"]),
+        "guest_id": guest_id,
+        "decision": "exit",
+        "created_at": now.isoformat(),
+    }
