@@ -293,7 +293,7 @@ export const TablePage = () => {
                   }`} data-testid={`menu-${item.id}`}>
                   <p className="font-medium text-sm truncate">{item.name}</p>
                   <div className="flex items-center justify-between mt-1">
-                    <span className="text-primary font-bold text-sm">R${item.price?.toFixed(2)}</span>
+                    <span className="text-primary font-bold text-sm">${item.price?.toFixed(2)}</span>
                     {item.is_alcohol ? <Beer className="h-3 w-3 text-muted-foreground" /> : <UtensilsCrossed className="h-3 w-3 text-muted-foreground" />}
                   </div>
                 </button>
@@ -334,7 +334,7 @@ export const TablePage = () => {
                   <>
                     <p className="text-sm text-muted-foreground mb-1">{tableDetail.session?.guest_name}</p>
                     <p className="text-2xl font-bold text-primary mb-4" data-testid="table-total">
-                      R${(tableDetail.session?.total || 0).toFixed(2)}
+                      ${(tableDetail.session?.total || 0).toFixed(2)}
                     </p>
 
                     {/* Items */}
@@ -345,7 +345,7 @@ export const TablePage = () => {
                             <span className="font-medium">{item.name}</span>
                             <span className="text-muted-foreground ml-2">x{item.qty}</span>
                           </div>
-                          <span className="font-medium mr-2">R${item.line_total.toFixed(2)}</span>
+                          <span className="font-medium mr-2">${item.line_total.toFixed(2)}</span>
                           <button onClick={() => handleVoidItem(item.id)}
                             className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-all"
                             data-testid={`void-table-item-${item.id}`}>
