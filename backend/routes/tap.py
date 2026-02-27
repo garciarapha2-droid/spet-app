@@ -399,8 +399,10 @@ async def close_tab(
     session_id: str,
     user: dict = Depends(require_auth),
     payment_method: str = Form("card"),
+    payment_location: str = Form("pay_here"),
 ):
-    """B1 — Close tab: update session + record payment in PG."""
+    """B1 — Close tab: update session + record payment in PG.
+    payment_location: 'pay_here' (server's card machine) or 'pay_at_register' (cashier)."""
     pool = get_postgres_pool()
     sid = uuid.UUID(session_id)
     staff_id = uuid.UUID(user["sub"])
@@ -408,19 +410,25 @@ async def close_tab(
 
     async with pool.acquire() as conn:
         session = await conn.fetchrow(
-            "SELECT id, venue_id, total, status FROM tap_sessions WHERE id = $1", sid
+            "SELECT id, venue_id, total, status, meta FROM tap_sessions WHERE id = $1", sid
         )
         if not session:
             raise HTTPException(404, "Session not found")
         if session["status"] != "open":
             raise HTTPException(400, "Tab already closed")
 
+        # Update meta with payment info
+        meta = _parse_meta(session["meta"])
+        meta["payment_location"] = payment_location
+        meta["tip_amount"] = 0
+        meta["tip_recorded"] = False
+
         # Close session
         await conn.execute(
             """UPDATE tap_sessions
-               SET status = 'closed', closed_at = $1, closed_by_user_id = $2
-               WHERE id = $3""",
-            now, staff_id, sid,
+               SET status = 'closed', closed_at = $1, closed_by_user_id = $2, meta = $3::jsonb
+               WHERE id = $4""",
+            now, staff_id, json_mod.dumps(meta), sid,
         )
 
         # Record payment
@@ -436,7 +444,9 @@ async def close_tab(
         "status": "closed",
         "total": float(session["total"]),
         "payment_method": payment_method,
+        "payment_location": payment_location,
         "closed_at": now.isoformat(),
+        "tip_pending": payment_location == "pay_here",
     }
 
 
