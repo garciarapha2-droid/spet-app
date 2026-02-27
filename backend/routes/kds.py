@@ -65,7 +65,7 @@ async def list_kds_tickets(
     else:
         query += " AND k.status NOT IN ('completed')"
 
-    query += " ORDER BY CASE k.status WHEN 'pending' THEN 0 WHEN 'preparing' THEN 1 WHEN 'ready' THEN 2 ELSE 3 END, k.created_at"
+    query += " ORDER BY CASE k.status WHEN 'pending' THEN 0 WHEN 'preparing' THEN 1 WHEN 'ready' THEN 2 WHEN 'delivered' THEN 3 WHEN 'delayed' THEN 4 ELSE 5 END, k.created_at"
 
     async with pool.acquire() as conn:
         rows = await conn.fetch(query, *params)
