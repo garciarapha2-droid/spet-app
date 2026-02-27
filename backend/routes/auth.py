@@ -73,7 +73,7 @@ async def login(request: LoginRequest):
         elif role in ['tap', 'bartender', 'server']:
             next_route = "/tap"
         elif role == 'owner':
-            next_route = "/owner/dashboard"
+            next_route = "/owner"
     else:
         next_route = "/select-context"
     
