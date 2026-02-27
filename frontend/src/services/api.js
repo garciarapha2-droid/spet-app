@@ -70,6 +70,7 @@ export const tapAPI = {
   addCustomItem: (sessionId, fd) => api.post(`/tap/session/${sessionId}/add-custom`, fd),
   getSession: (sessionId) => api.get(`/tap/session/${sessionId}`),
   closeSession: (sessionId, fd) => api.post(`/tap/session/${sessionId}/close`, fd),
+  voidItem: (sessionId, fd) => api.post(`/tap/session/${sessionId}/void-item`, fd),
   getActiveSessions: (venueId) => api.get('/tap/sessions/active', { params: { venue_id: venueId } }),
   listSessions: (venueId, status) => api.get('/tap/sessions/active', { params: { venue_id: venueId, status } }),
 };
@@ -84,6 +85,9 @@ export const tableAPI = {
   getTable: (tableId) => api.get(`/table/${tableId}`),
   addTableItem: (tableId, fd) => api.post(`/table/${tableId}/add-item`, fd),
   sendToKDS: (fd) => api.post('/kds/send', fd),
+  addTable: (fd) => api.post('/table/tables/add', fd),
+  editTable: (tableId, fd) => api.post(`/table/tables/${tableId}/edit`, fd),
+  deleteTable: (tableId) => api.delete(`/table/tables/${tableId}`),
 };
 
 // KDS
