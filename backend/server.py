@@ -44,7 +44,7 @@ logger = logging.getLogger(__name__)
 api_router = APIRouter(prefix="/api")
 
 # Import route modules
-from routes import auth, billing, pulse, tap, table, kds, manager, owner, ceo, venue
+from routes import auth, billing, pulse, tap, table, kds, manager, owner, ceo, venue, rewards
 
 # Include routers
 api_router.include_router(auth.router, prefix="/auth", tags=["auth"])
@@ -57,6 +57,7 @@ api_router.include_router(manager.router, prefix="/manager", tags=["manager"])
 api_router.include_router(owner.router, prefix="/owner", tags=["owner"])
 api_router.include_router(ceo.router, prefix="/ceo", tags=["ceo"])
 api_router.include_router(venue.router, prefix="/venue", tags=["venue"])
+api_router.include_router(rewards.router, prefix="/rewards", tags=["rewards"])
 
 # Health check
 @api_router.get("/health")
