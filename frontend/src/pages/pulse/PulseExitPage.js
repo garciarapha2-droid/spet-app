@@ -107,7 +107,10 @@ export const PulseExitPage = () => {
                       </div>
                     )}
                     <div className="flex-1 min-w-0">
-                      <p className="font-semibold truncate">{g.guest_name}</p>
+                      <div className="flex items-center gap-2">
+                        <p className="font-semibold truncate">{g.guest_name}</p>
+                        {g.tab_number && <span className="text-primary font-bold text-sm" data-testid={`exit-tab-${g.guest_id}`}>#{g.tab_number}</span>}
+                      </div>
                       <p className="text-xs text-muted-foreground flex items-center gap-1">
                         <ArrowUpRight className="h-3 w-3 text-green-500" />
                         In since {new Date(g.entered_at).toLocaleTimeString()} — {g.entry_type?.replace(/_/g, ' ')}
