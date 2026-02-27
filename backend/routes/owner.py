@@ -578,8 +578,11 @@ Return ONLY a valid JSON array of insight objects. No markdown outside JSON."""
 
 
 @router.post("/ai-insights")
-async def generate_ai_insights(user: dict = Depends(require_auth)):
-    """Generate AI-powered insights using GPT-5.2 with real venue data."""
+async def generate_ai_insights(
+    user: dict = Depends(require_auth),
+    question: str = Form(None),
+):
+    """Generate AI-powered insights using GPT-5.2 with real venue data. Accepts optional question for conversational flow."""
     pool = get_postgres_pool()
     db = get_mongo_db()
     today = _today_start()
@@ -656,12 +659,22 @@ VENUE: {venue_name} (Type: {bar_mode})
 """)
 
     context = "\n".join(context_parts)
-    user_message = f"""Analyze the following real-time operational data and provide 2-4 actionable insights.
+
+    if question and question.strip():
+        user_message = f"""Based on the following real-time operational data, answer the owner's question.
+
+{context}
+
+Owner's question: {question.strip()}
+
+Return ONLY a valid JSON array with 1-2 insight objects focused on answering this question. Each must include: summary, what_we_see, recommended_actions, next_steps, reference, priority."""
+    else:
+        user_message = f"""Analyze the following real-time operational data and provide 2-4 actionable insights.
 Focus on what matters MOST right now for the business owner.
 
 {context}
 
-Return ONLY a valid JSON array of insight objects with fields: summary, what_we_see, recommended_actions (array of strings), reference (string or null), priority (critical/warning/info)."""
+Return ONLY a valid JSON array of insight objects with fields: summary, what_we_see, recommended_actions (array of strings), next_steps (array of 3-5 follow-up questions), reference (string or null), priority (critical/warning/info)."""
 
     try:
         llm_key = os.environ.get("EMERGENT_LLM_KEY")
@@ -692,12 +705,13 @@ Return ONLY a valid JSON array of insight objects with fields: summary, what_we_
             "summary": "Unable to generate AI insights at this time",
             "what_we_see": str(e),
             "recommended_actions": ["Check LLM configuration", "Try again later"],
+            "next_steps": ["Try generating insights again", "Check if the LLM key is valid"],
             "reference": None,
             "priority": "info",
         }]
 
     return {
         "insights": insights,
-        "disclaimer": "AI insights are based on your business data and external references when applicable. They may contain inaccuracies. Always validate decisions with your team.",
+        "disclaimer": "AI insights are read-only and based on your business data. They may contain inaccuracies. Always validate with your team.",
         "generated_at": now.isoformat(),
     }
