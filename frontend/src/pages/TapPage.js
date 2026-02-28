@@ -340,6 +340,9 @@ export const TapPage = () => {
 
   return (
     <div className="min-h-screen bg-background" data-testid="tap-page">
+      {/* Camera Modal */}
+      {showCamera && <CameraModal onCapture={file => setCustomPhoto(file)} onClose={() => setShowCamera(false)} />}
+
       {/* Guest Confirmation Modal */}
       {pendingConfirmSession && (
         <GuestConfirmModal
