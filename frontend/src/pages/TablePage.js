@@ -260,7 +260,7 @@ export const TablePage = () => {
     } catch { toast.error('Failed'); }
   };
 
-  const filteredItems = catalog.filter(i => i.category === selectedCategory);
+  const filteredItems = catalog.filter(i => i.category === selectedCategory).sort((a, b) => a.name.localeCompare(b.name));
   const currentTable = tables.find(t => t.id === selectedTable);
 
   return (
