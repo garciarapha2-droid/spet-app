@@ -226,7 +226,7 @@ export const PulseBarPage = () => {
     if (!confirmedGuest?.session_id) { toast.error('No active session'); return; }
     try {
       const fd = new FormData();
-      fd.append('payment_method', 'card'); fd.append('payment_destination', 'pay_here');
+      fd.append('payment_method', 'card'); fd.append('payment_location', 'pay_here');
       const res = await tapAPI.closeSession(confirmedGuest.session_id, fd);
       setOrderTotal(res.data?.total || cartTotal);
       setCheckoutStep('tip');
