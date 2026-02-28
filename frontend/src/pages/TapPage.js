@@ -500,9 +500,8 @@ export const TapPage = () => {
                   </label>
                 </div>
                 <div className="flex gap-2 items-center">
-                  <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={e => e.target.files[0] && setCustomPhoto(e.target.files[0])} />
                   <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={e => e.target.files[0] && setCustomPhoto(e.target.files[0])} />
-                  <Button type="button" size="sm" variant="outline" onClick={() => cameraInputRef.current?.click()} data-testid="take-photo-btn"><Camera className="h-3.5 w-3.5 mr-1" /> Photo</Button>
+                  <Button type="button" size="sm" variant="outline" onClick={() => setShowCamera(true)} data-testid="take-photo-btn"><Camera className="h-3.5 w-3.5 mr-1" /> Photo</Button>
                   <Button type="button" size="sm" variant="outline" onClick={() => fileInputRef.current?.click()} data-testid="upload-photo-btn"><Upload className="h-3.5 w-3.5 mr-1" /> Upload</Button>
                   {customPhoto && <span className="text-xs text-green-600 truncate max-w-[100px]">{customPhoto.name}</span>}
                 </div>
