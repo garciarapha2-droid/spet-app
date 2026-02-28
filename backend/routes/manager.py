@@ -1032,8 +1032,7 @@ async def get_shift_overview(
             "SELECT COALESCE(AVG(total),0) FROM tap_sessions WHERE venue_id=$1 AND status='closed' AND closed_at>=$2 AND closed_at<=$3",
             vid, start, end) or 0)
 
-    staff_cost, staff_breakdown = await _calc_staff_cost(db, venue_id, start, end)
-    total_tips = sum(s["tips"] for s in staff_breakdown)
+    staff_cost, staff_breakdown, total_tips = await _calc_staff_cost(db, venue_id, start, end)
     result = revenue - staff_cost
     status = "positive" if result > 0 else ("tight" if result > -50 else "negative")
 
