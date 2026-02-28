@@ -19,8 +19,8 @@ const STATUS_COLORS = {
   delayed: { border: 'border-red-500/50', bg: 'bg-red-500/5', badge: 'bg-red-500/20 text-red-600', dot: 'bg-red-500' },
 };
 
-const NEXT_STATUS = { pending: 'preparing', preparing: 'ready', ready: 'delivered' };
-const ACTION_LABELS = { pending: 'Start Preparing', preparing: 'Mark Ready', ready: 'Delivered' };
+const NEXT_STATUS = { pending: 'preparing', preparing: 'ready', ready: 'delivered', delayed: 'ready' };
+const ACTION_LABELS = { pending: 'Start Preparing', preparing: 'Mark Ready', ready: 'Delivered', delayed: 'Mark Ready' };
 const STATUS_LABELS = { pending: 'Pending', preparing: 'Preparing', ready: 'Ready', delivered: 'Delivered', delayed: 'Delayed' };
 
 // Timer hook for live countdown/countup
