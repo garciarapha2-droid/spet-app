@@ -875,20 +875,45 @@ def _parse_date_range(date_from: str = None, date_to: str = None):
 
 
 async def _calc_staff_cost(db, venue_id: str, start: datetime, end: datetime):
-    """Calculate total staff cost for a period based on active staff and their hourly rates."""
+    """Calculate total staff cost for a period based on active staff and their hourly rates.
+    Also queries actual tips from tap_sessions.meta for the period."""
+    pool = get_postgres_pool()
     cursor = db.venue_barmen.find({"venue_id": venue_id, "active": True}, {"_id": 0})
     staff = await cursor.to_list(100)
     hours_in_period = max((end - start).total_seconds() / 3600, 1)
-    # Cap at reasonable shift length per person
     shift_hours = min(hours_in_period, 12)
+
+    # Query actual tip data from closed sessions in this period
+    tips_by_staff = {}
+    vid = uuid.UUID(venue_id)
+    async with pool.acquire() as conn:
+        rows = await conn.fetch(
+            """SELECT meta FROM tap_sessions
+               WHERE venue_id=$1 AND status='closed'
+               AND closed_at>=$2 AND closed_at<=$3""",
+            vid, start, end)
+    for r in rows:
+        meta = _parse_meta(r["meta"])
+        if meta.get("tip_recorded") and meta.get("tip_amount", 0) > 0:
+            distribution = meta.get("tip_distribution", [])
+            if distribution:
+                for d in distribution:
+                    sid = d.get("staff_id", "")
+                    tips_by_staff[sid] = tips_by_staff.get(sid, 0) + d.get("tip", 0)
+            else:
+                # No distribution — attribute to the recorder
+                recorder = meta.get("tip_recorded_by", "")
+                if recorder:
+                    tips_by_staff[recorder] = tips_by_staff.get(recorder, 0) + meta.get("tip_amount", 0)
+
     total_cost = 0
     staff_breakdown = []
     for s in staff:
         rate = s.get("hourly_rate", 0)
         wages = round(rate * shift_hours, 2)
-        tips = 0  # Future: tip-splitting logic
+        tips = round(tips_by_staff.get(s["id"], 0), 2)
         total = round(wages + tips, 2)
-        total_cost += total
+        total_cost += wages  # Cost is wages only; tips are earnings
         staff_breakdown.append({
             "id": s["id"],
             "name": s["name"],
