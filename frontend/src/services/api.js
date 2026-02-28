@@ -168,6 +168,7 @@ export const managerAPI = {
   deleteStaffRole: (id, venueId) => api.delete(`/manager/staff-roles/${id}`, { params: { venue_id: venueId } }),
   customizeStaff: (id, fd) => api.put(`/manager/staff-customize/${id}`, fd),
   getShiftOverview: (venueId, dateFrom, dateTo) => api.get('/manager/shift-overview', { params: { venue_id: venueId, date_from: dateFrom, date_to: dateTo } }),
+  getShiftDrilldown: (venueId, kpi, dateFrom, dateTo) => api.get('/manager/shift-drilldown', { params: { venue_id: venueId, kpi, date_from: dateFrom, date_to: dateTo } }),
   getStaffCosts: (venueId, dateFrom, dateTo) => api.get('/manager/staff-costs', { params: { venue_id: venueId, date_from: dateFrom, date_to: dateTo } }),
   getShiftHistory: (venueId, days) => api.get('/manager/shift-history', { params: { venue_id: venueId, days } }),
   getShiftChart: (venueId, period, dateFrom, dateTo) => api.get('/manager/shift-chart', { params: { venue_id: venueId, period, date_from: dateFrom, date_to: dateTo } }),
