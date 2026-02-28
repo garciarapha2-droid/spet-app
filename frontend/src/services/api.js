@@ -160,6 +160,8 @@ export const managerAPI = {
   getAudit: (venueId) => api.get('/manager/audit', { params: { venue_id: venueId } }),
   getFunnelDetail: (venueId, stage) => api.get('/manager/funnel-detail', { params: { venue_id: venueId, stage } }),
   getTablesByServer: (venueId) => api.get('/manager/tables-by-server', { params: { venue_id: venueId } }),
+  getTableDetail: (tableId) => api.get(`/manager/table-detail/${tableId}`),
+  voidTableItem: (fd) => api.post('/manager/table-void-item', fd),
   // Shift vs Operations
   getStaffRoles: (venueId) => api.get('/manager/staff-roles', { params: { venue_id: venueId } }),
   saveStaffRole: (fd) => api.post('/manager/staff-roles', fd),
