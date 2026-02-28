@@ -1,62 +1,56 @@
 # SPETAP — Product Requirements Document
 
 ## Original Problem Statement
-Multi-tenant SaaS platform for venue operations (nightclubs, restaurants, bars). Core modules: Pulse (entry/identity), TAP (bar tabs), Table (restaurant), KDS (kitchen display), Owner/Manager/CEO Dashboards with AI insights.
+Multi-tenant SaaS platform for venue operations (nightclubs, bars, restaurants). Modules: Pulse (entrance), Tap (bar), Table (restaurant), KDS (kitchen display), Manager, Owner, and CEO dashboards.
 
-## User Personas
-- **CEO/Founder**: Strategic business oversight, targets, growth pipeline
-- **Owner**: Multi-venue operator, aggregated business insights
-- **Manager**: Venue-level operations, staff management, guest analytics
-- **Staff**: Bartenders, servers, kitchen crew
+## Core Requirements
+- Real-time venue operations management
+- Multi-module architecture (Pulse, Tap, Table, KDS)
+- Role-based dashboards (Manager, Owner, CEO)
+- Demo-first approach: always presentable with seeded data
 
 ## Architecture
-- **Frontend**: React + Tailwind + Shadcn UI
+- **Frontend**: React + Tailwind CSS + Shadcn UI
 - **Backend**: FastAPI (Python)
-- **Databases**: PostgreSQL (transactional), MongoDB (configs, guests, events, staff, targets)
-- **Auth**: JWT (email/password)
-- **AI**: OpenAI GPT-5.2 via emergentintegrations + Emergent LLM Key
-- **Credentials**: teste@teste.com / 12345
+- **Databases**: PostgreSQL (transactional), MongoDB (documents/guests/events)
+- **Auth**: JWT in localStorage
+- **LLM**: OpenAI GPT-5.2 via emergentintegrations
 
-## NON-REGRESSION RULE (Absolute - Feb 2026)
-- Nothing built can be removed/altered without explicit user approval
-- All flows remain intact: Bar/Tap confirmation, Table ID verification, Server mandatory, Close flow, Tips flow, Event/Guest memory, Dashboards
-- Product grows by ADDITION only
+## What's Been Implemented
 
-## Completed Features (as of Feb 28, 2026)
-- [x] Auth + JWT
-- [x] Home page with active event filtering + preview/enter
-- [x] Pulse, TAP, Table, KDS modules
-- [x] Guest confirmation modal (TAP + Pulse Bar)
-- [x] ID verification for alcohol (Table) with cache + badge
-- [x] Mandatory server selection (Table)
-- [x] Unified Close Flow + Tip Recording
-- [x] Conversational AI Assistant (Owner + Manager)
-- [x] Tab search without "#" prefix (Pulse + TAP)
-- [x] AI input: Enter = new line, button = submit
-- [x] Manager Dashboard > Guests: Sorted by highest spender + profile modal
-- [x] Owner Dashboard > Overview: View switcher (Business/Venue/Event)
-- [x] Owner Dashboard > People & Ops: Clickable cards with staff drill-down
-- [x] Demo Tables: 8 tables seeded at startup (3 occupied, 5 available)
-- [x] **Pulse/Bar search fix**: barSearch endpoint supports tab_number (with/without #) and guest name, opens BarGuestConfirmModal with photo/name/tab#
-- [x] **CEO Dashboard (Founder View)**: Complete implementation with 7 sections:
-  - Company Health: 8 KPI cards (MRR, Gross Revenue, Net Profit, Active Companies, Active Venues, Churn Rate, Activation Rate, Avg Rev/Company) with color-coded status
-  - Revenue vs Profit: Bar chart with week/month/year period switcher
-  - Targets/Goals Panel: Left sidebar with weekly/monthly/annual goals, progress bars, pace needed, editable
-  - Active Companies & Venues: Table with company/venues/status/MRR/modules
-  - Module Adoption: Per-module adoption % with progress bars
-  - Risk & Alerts: Severity-sorted actionable alerts
-  - Growth Pipeline: 6-stage funnel (Leads → Paid → Activated → Active → At Risk → Cancelled)
+### Core Modules (Complete)
+- Pulse (Entrance) + Bar search
+- Tap (Bar) with full order lifecycle
+- Table (Restaurant) with server assignments
+- KDS (Kitchen Display) with Kanban board + drag & drop
 
-## Backlog
-### P1
-- Per-Event Dashboard (Manager) — single event analysis (top spenders, top-selling items, team performance)
-- CEO Access Control within Company Profile (status management, module toggles, user management)
+### Dashboards (Complete)
+- Manager Dashboard: Overview, Staff, Menu, Shifts, Guests, Reports, Loyalty, Settings, Tables by Server, Shift Ops
+- Owner Dashboard: Overview (Business/Venue/Events), Performance, AI Insights, Finance, Growth & Loyalty, People & Ops, System
+- CEO Dashboard: KPIs, revenue charts, target tracking, company management
 
-### P2
-- KDS/Bar Order Routing
-- Push notifications
+### 12-Point Refinement Block (COMPLETE — Feb 28, 2026)
+1. TABLE - Mandatory Server + Seats fields on open ✅
+2. TAP/BAR - Persistent bartender across categories ✅
+3. TAP/BAR - Cancel Order (red) + Confirm Order (green) buttons ✅
+4. TAP/BAR - Clean slate after order confirmation ✅
+5. KDS - Demo delayed ticket + alert bug fix ✅
+6. MANAGER - Tables by Server drill-down (view/void items) ✅
+7. MENU - Two-level sorting (category order + alphabetical) ✅
+8. OWNER - Multi-venue selector ✅
+9. OWNER - Past + active events visible ✅
+10. OWNER - Performance by Venue above Performance by Event ✅
+11. OWNER - Growth & Loyalty (New vs Recurring + Total Sign-ups) ✅
+12. OWNER - Active Modules display (ON/OFF status) ✅
 
-### P3
-- Stripe Webhooks for subscriptions
-- Offline-First capabilities
-- Event Wallet Module
+## Prioritized Backlog
+- (P1) Per-Event Dashboard (Manager View) for single-event analysis
+- (P2) KDS / Bar Order Routing (food vs drink split)
+- (P2) Push notifications for real-time alerts
+- (P3) Stripe Webhooks for subscriptions
+- (P3) Offline-First Capabilities
+- (P3) Event Wallet Module
+
+## Credentials
+- Email: teste@teste.com
+- Password: 12345
