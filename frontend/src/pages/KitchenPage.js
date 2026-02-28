@@ -332,6 +332,38 @@ export const KitchenPage = () => {
         </div>
       )}
 
+      {/* ETA Modal — appears when moving Pending → Preparing */}
+      {etaModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" data-testid="eta-modal">
+          <div className="bg-card border-2 border-primary rounded-2xl p-8 max-w-sm w-full mx-4 shadow-2xl animate-in zoom-in-95">
+            <h2 className="text-xl font-bold mb-2">Estimated Time</h2>
+            <p className="text-sm text-muted-foreground mb-5">Set preparation time before starting</p>
+            <div className="flex items-center gap-3 mb-5">
+              <input
+                type="number" min="1" max="120" autoFocus
+                value={etaModal.etaValue}
+                onChange={e => setEtaModal(prev => ({ ...prev, etaValue: e.target.value }))}
+                placeholder="Minutes"
+                className="flex-1 h-14 text-center text-2xl font-bold rounded-xl border-2 border-border bg-background focus:border-primary focus:outline-none"
+                data-testid="eta-minutes-input"
+              />
+              <span className="text-lg text-muted-foreground font-medium">min</span>
+            </div>
+            <div className="flex gap-3">
+              <Button className="flex-1 h-12 bg-green-600 hover:bg-green-700 text-lg font-bold"
+                disabled={!etaModal.etaValue || parseInt(etaModal.etaValue) < 1}
+                onClick={handleConfirmEta}
+                data-testid="eta-confirm-btn">
+                <CheckCircle className="h-5 w-5 mr-2" /> Confirm
+              </Button>
+              <Button variant="outline" className="h-12" onClick={() => setEtaModal(null)}>
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <header className="h-14 border-b border-border px-6 flex items-center justify-between bg-card">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
