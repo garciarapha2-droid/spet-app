@@ -50,7 +50,6 @@ async def _get_all_venue_ids(pool):
 async def get_company_health(user: dict = Depends(require_auth)):
     """CEO KPIs — MRR, Revenue, Profit, Companies, Venues, Churn, Activation."""
     pool = get_postgres_pool()
-    db = get_mongo_db()
     today = _today_start()
     month = _month_start()
     year = _year_start()
