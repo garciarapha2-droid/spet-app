@@ -1054,70 +1054,168 @@ function SettingsSection() {
 function TablesByServerSection() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [selectedTableId, setSelectedTableId] = useState(null);
+  const [tableDetail, setTableDetail] = useState(null);
+  const [detailLoading, setDetailLoading] = useState(false);
 
   useEffect(() => {
     managerAPI.getTablesByServer(VID()).then(r => setData(r.data)).catch(() => toast.error('Failed')).finally(() => setLoading(false));
   }, []);
 
+  const handleTableClick = async (tableId) => {
+    setSelectedTableId(tableId);
+    setDetailLoading(true);
+    try {
+      const res = await managerAPI.getTableDetail(tableId);
+      setTableDetail(res.data);
+    } catch { toast.error('Failed to load table'); setTableDetail(null); }
+    setDetailLoading(false);
+  };
+
+  const handleVoidItem = async (sessionId, itemId) => {
+    try {
+      const fd = new FormData();
+      fd.append('session_id', sessionId);
+      fd.append('item_id', itemId);
+      await managerAPI.voidTableItem(fd);
+      toast.success('Item voided');
+      // Refresh detail
+      const res = await managerAPI.getTableDetail(selectedTableId);
+      setTableDetail(res.data);
+    } catch { toast.error('Failed to void item'); }
+  };
+
   if (loading) return <Skeleton />;
   if (!data) return <p className="text-muted-foreground">No data</p>;
+
+  const TableCard = ({ t, borderClass = 'border-border' }) => (
+    <div key={t.table_id}
+      onClick={() => handleTableClick(t.table_id)}
+      className={`bg-card border ${borderClass} rounded-xl p-3 cursor-pointer hover:ring-2 hover:ring-primary/30 transition-all ${selectedTableId === t.table_id ? 'ring-2 ring-primary' : ''}`}
+      data-testid={`server-table-${t.table_number}`}>
+      <div className="flex items-center justify-between mb-1">
+        <span className="font-bold text-sm">Table #{t.table_number}</span>
+        {t.tab_number && <span className="text-xs text-primary font-bold">#{t.tab_number}</span>}
+      </div>
+      <p className="text-xs text-muted-foreground truncate">{t.guest_name}</p>
+      <p className="text-sm font-bold text-green-500 mt-1">${t.total.toFixed(2)}</p>
+    </div>
+  );
 
   return (
     <div data-testid="tables-server-section">
       <div className="flex items-center justify-between mb-4">
         <div>
           <h2 className="text-xl font-bold">Tables by Server</h2>
-          <p className="text-sm text-muted-foreground">{data.total_tables} occupied tables</p>
+          <p className="text-sm text-muted-foreground">{data.total_tables} occupied tables — click a table to see order</p>
         </div>
       </div>
 
-      {data.servers?.map(server => (
-        <div key={server.server_name} className="mb-6">
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-2">
-              <User className="h-4 w-4 text-primary" />
-              <span className="font-bold text-sm">{server.server_name}</span>
-              <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">{server.table_count} tables</span>
+      <div className="grid grid-cols-12 gap-6">
+        {/* Left: Server groups */}
+        <div className="col-span-7 space-y-6">
+          {data.servers?.map(server => (
+            <div key={server.server_name}>
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <User className="h-4 w-4 text-primary" />
+                  <span className="font-bold text-sm">{server.server_name}</span>
+                  <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">{server.table_count} tables</span>
+                </div>
+                <span className="text-sm font-bold text-green-500">${server.total_revenue.toFixed(0)} running</span>
+              </div>
+              <div className="grid grid-cols-3 gap-3">
+                {server.tables.map(t => <TableCard key={t.table_id} t={t} />)}
+              </div>
             </div>
-            <span className="text-sm font-bold text-green-500">${server.total_revenue.toFixed(0)} running</span>
-          </div>
-          <div className="grid grid-cols-4 gap-3">
-            {server.tables.map(t => (
-              <div key={t.table_id} className="bg-card border border-border rounded-xl p-3" data-testid={`server-table-${t.table_number}`}>
-                <div className="flex items-center justify-between mb-1">
-                  <span className="font-bold text-sm">Table #{t.table_number}</span>
-                  {t.tab_number && <span className="text-xs text-primary font-bold">#{t.tab_number}</span>}
-                </div>
-                <p className="text-xs text-muted-foreground truncate">{t.guest_name}</p>
-                <p className="text-sm font-bold text-green-500 mt-1">${t.total.toFixed(2)}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      ))}
+          ))}
 
-      {data.unassigned?.length > 0 && (
-        <div>
-          <div className="flex items-center gap-2 mb-2">
-            <AlertTriangle className="h-4 w-4 text-red-500" />
-            <span className="font-bold text-sm text-red-500">Unassigned Tables</span>
-            <span className="text-xs text-muted-foreground bg-red-500/10 text-red-600 px-2 py-0.5 rounded-full">{data.unassigned.length}</span>
-          </div>
-          <div className="grid grid-cols-4 gap-3">
-            {data.unassigned.map(t => (
-              <div key={t.table_id} className="bg-card border-2 border-red-500/30 rounded-xl p-3" data-testid={`unassigned-table-${t.table_number}`}>
-                <div className="flex items-center justify-between mb-1">
-                  <span className="font-bold text-sm">Table #{t.table_number}</span>
-                  {t.tab_number && <span className="text-xs text-primary font-bold">#{t.tab_number}</span>}
-                </div>
-                <p className="text-xs text-muted-foreground truncate">{t.guest_name}</p>
-                <p className="text-sm font-bold text-green-500 mt-1">${t.total.toFixed(2)}</p>
-                <p className="text-[10px] text-red-500 font-medium mt-1">Needs server assignment</p>
+          {data.unassigned?.length > 0 && (
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <AlertTriangle className="h-4 w-4 text-red-500" />
+                <span className="font-bold text-sm text-red-500">Unassigned Tables</span>
+                <span className="text-xs text-muted-foreground bg-red-500/10 text-red-600 px-2 py-0.5 rounded-full">{data.unassigned.length}</span>
               </div>
-            ))}
-          </div>
+              <div className="grid grid-cols-3 gap-3">
+                {data.unassigned.map(t => <TableCard key={t.table_id} t={t} borderClass="border-2 border-red-500/30" />)}
+              </div>
+            </div>
+          )}
         </div>
-      )}
+
+        {/* Right: Table Detail Drill-down */}
+        <div className="col-span-5 border-l border-border pl-6">
+          {selectedTableId ? (
+            detailLoading ? (
+              <div className="py-10 text-center text-muted-foreground">Loading...</div>
+            ) : tableDetail ? (
+              <div data-testid="table-drilldown-detail">
+                <div className="flex items-center justify-between mb-3">
+                  <div>
+                    <h3 className="text-lg font-bold">Table #{tableDetail.table_number}</h3>
+                    <p className="text-xs text-muted-foreground">{tableDetail.zone} — {tableDetail.capacity} seats — {tableDetail.status}</p>
+                  </div>
+                  <button onClick={() => { setSelectedTableId(null); setTableDetail(null); }}
+                    className="p-1.5 rounded hover:bg-muted"><X className="h-4 w-4" /></button>
+                </div>
+
+                {tableDetail.session ? (
+                  <>
+                    <div className="bg-primary/5 border border-primary/20 rounded-xl p-3 mb-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <span className="font-semibold">{tableDetail.session.guest_name}</span>
+                          {tableDetail.session.tab_number && <span className="text-primary font-bold ml-2">#{tableDetail.session.tab_number}</span>}
+                        </div>
+                        <span className="text-lg font-bold text-primary">${tableDetail.session.total.toFixed(2)}</span>
+                      </div>
+                      <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
+                        <span>Server: {tableDetail.session.server_name || '—'}</span>
+                        <span>Opened: {tableDetail.session.opened_at ? new Date(tableDetail.session.opened_at).toLocaleTimeString() : '—'}</span>
+                      </div>
+                    </div>
+
+                    <h4 className="text-sm font-semibold mb-2">Order Items ({tableDetail.items.length})</h4>
+                    <div className="space-y-1 max-h-[400px] overflow-y-auto">
+                      {tableDetail.items.length === 0 ? (
+                        <p className="text-sm text-muted-foreground py-4 text-center">No items</p>
+                      ) : tableDetail.items.map(item => (
+                        <div key={item.id} className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-muted/30 text-sm border border-transparent hover:border-border">
+                          <div className="flex-1">
+                            <span className="font-medium">{item.name}</span>
+                            <span className="text-xs text-muted-foreground ml-2">{item.category}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-muted-foreground">x{item.qty}</span>
+                            <span className="font-medium w-16 text-right">${item.line_total.toFixed(2)}</span>
+                            <button onClick={() => handleVoidItem(tableDetail.session.id, item.id)}
+                              className="p-1.5 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive"
+                              data-testid={`mgr-void-${item.id}`}>
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                ) : (
+                  <div className="py-10 text-center text-muted-foreground">
+                    <p className="text-sm">Table is available — no active session</p>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="py-10 text-center text-muted-foreground">Failed to load</div>
+            )
+          ) : (
+            <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
+              <Eye className="h-10 w-10 mb-3 opacity-30" />
+              <p className="text-sm">Click a table to view order details</p>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
