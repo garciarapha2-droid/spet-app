@@ -342,6 +342,19 @@ async def add_item_to_table(
         )
         new_total = await conn.fetchval("SELECT total FROM tap_sessions WHERE id = $1", sid)
 
+    # Auto-route item to KDS (Kitchen or Bar)
+    try:
+        from routes.tap import _auto_route_to_kds, _parse_meta as _tap_parse_meta
+        async with pool.acquire() as conn2:
+            sess = await conn2.fetchrow("SELECT meta FROM tap_sessions WHERE id = $1", sid)
+        meta = _tap_parse_meta(sess["meta"]) if sess else {}
+        await _auto_route_to_kds(
+            pool, table["venue_id"], sid, item_row["id"],
+            catalog_item["name"], qty, catalog_item.get("is_alcohol", False),
+            staff_id, tid, meta.get("guest_name", "Guest"))
+    except Exception as e:
+        logger.warning(f"KDS auto-route from Table failed: {e}")
+
     return {
         "line_item_id": str(item_row["id"]),
         "name": catalog_item["name"],
