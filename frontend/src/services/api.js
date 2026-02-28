@@ -186,6 +186,7 @@ export const ownerAPI = {
   getVenueStaff: (venueId) => api.get(`/owner/people/${venueId}/staff`),
   getEventStaff: (eventId) => api.get(`/owner/people/event/${eventId}/staff`),
   getSystem: () => api.get('/owner/system'),
+  getModules: () => api.get('/owner/modules'),
   generateAIInsights: (question) => {
     const fd = new FormData();
     if (question) fd.append('question', question);
