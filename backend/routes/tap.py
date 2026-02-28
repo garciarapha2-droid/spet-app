@@ -391,16 +391,25 @@ async def add_item_to_tab(
         )
         new_total = await conn.fetchval("SELECT total FROM tap_sessions WHERE id = $1", sid)
 
+    # Auto-route to KDS
+    try:
+        async with pool.acquire() as conn2:
+            sess = await conn2.fetchrow("SELECT table_id, meta FROM tap_sessions WHERE id = $1", sid)
+        meta = _parse_meta(sess["meta"]) if sess else {}
+        await _auto_route_to_kds(
+            pool, session["venue_id"], sid, item_row["id"],
+            catalog_item["name"], qty, catalog_item.get("is_alcohol", False),
+            staff_id, sess["table_id"] if sess else None, meta.get("guest_name", "Guest"))
+    except Exception as e:
+        logger.warning(f"KDS auto-route failed: {e}")
+
     return {
         "line_item_id": str(item_row["id"]),
         "name": catalog_item["name"],
         "qty": qty,
         "line_total": float(line_total),
         "session_total": float(new_total),
-    }
-
-
-async def _auto_route_to_kds(pool, venue_id, session_id, item_row_id, item_name, qty, is_alcohol, staff_id, table_id=None, guest_name=None):
+    }(pool, venue_id, session_id, item_row_id, item_name, qty, is_alcohol, staff_id, table_id=None, guest_name=None):
     """Auto-route a single item to KDS. Alcohol→bar, Non-alcohol→kitchen."""
     destination = "bar" if is_alcohol else "kitchen"
     meta_json = json_mod.dumps({"guest_name": guest_name or "Guest"})
