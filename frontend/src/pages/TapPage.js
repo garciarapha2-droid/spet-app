@@ -69,6 +69,7 @@ export const TapPage = () => {
   const [editForm, setEditForm] = useState({ name: '', price: '', category: '' });
   const fileInputRef = useRef(null);
   const cameraInputRef = useRef(null);
+  const [showCamera, setShowCamera] = useState(false);
   const [barmen, setBarmen] = useState([]);
   const [newBarmanName, setNewBarmanName] = useState('');
   const [editingBarman, setEditingBarman] = useState(null);
