@@ -589,8 +589,17 @@ export const TablePage = () => {
                           </select>
                           {!selectedServer && <p className="text-[10px] text-red-500 mt-1">Server must be selected before opening table</p>}
                         </div>
+                        <div>
+                          <select value={seatCount} onChange={e => setSeatCount(e.target.value)}
+                            className={`w-full h-10 rounded-md border bg-background px-3 text-sm ${!seatCount ? 'border-red-500/50 ring-1 ring-red-500/20' : 'border-input'}`}
+                            data-testid="open-table-seats">
+                            <option value="">Seats (required)...</option>
+                            {[1,2,3,4,5,6,7,8,10,12].map(n => <option key={n} value={n}>{n} {n === 1 ? 'seat' : 'seats'}</option>)}
+                          </select>
+                          {!seatCount && <p className="text-[10px] text-red-500 mt-1">Number of seats must be selected</p>}
+                        </div>
                         <div className="flex gap-2">
-                          <Button className="flex-1" onClick={handleOpenTable} disabled={!guestName.trim() || !selectedServer || loading} data-testid="open-table-submit-btn">Open</Button>
+                          <Button className="flex-1" onClick={handleOpenTable} disabled={!guestName.trim() || !selectedServer || !seatCount || loading} data-testid="open-table-submit-btn">Open</Button>
                           <Button variant="outline" onClick={() => setShowOpenForm(false)}><X className="h-4 w-4" /></Button>
                         </div>
                       </div>
