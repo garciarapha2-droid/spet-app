@@ -718,7 +718,7 @@ export const VenueSelectPage = () => {
               {showModulesMenu && (
                 <div className="absolute top-full right-0 mt-1 bg-card border border-border rounded-lg shadow-lg z-50 min-w-[200px] py-1" data-testid="modules-menu">
                   {data.modules
-                    .filter(m => m.enabled && m.key !== 'ceo')
+                    .filter(m => m.enabled)
                     .map(mod => {
                       const Icon = MODULE_ICONS[mod.key] || Sparkles;
                       return (
