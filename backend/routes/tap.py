@@ -78,8 +78,14 @@ async def get_catalog(venue_id: str, user: dict = Depends(require_auth)):
     db = get_mongo_db()
     cursor = db.venue_catalog.find(
         {"venue_id": venue_id, "active": True}, {"_id": 0}
-    ).sort("category", 1)
+    )
     items = await cursor.to_list(200)
+    # Sort by fixed category order, then alphabetically within each category
+    CATEGORY_ORDER = {
+        "Beers": 0, "Cocktails": 1, "Spirits": 2, "Non-alcoholic": 3,
+        "Snacks": 4, "Starters": 5, "Mains": 6, "Plates": 7,
+    }
+    items.sort(key=lambda x: (CATEGORY_ORDER.get(x.get("category", ""), 99), x.get("name", "").lower()))
     return {"items": items}
 
 
