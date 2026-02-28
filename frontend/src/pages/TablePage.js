@@ -124,13 +124,15 @@ export const TablePage = () => {
   const handleOpenTable = async () => {
     if (!guestName.trim()) { toast.error('Enter guest name'); return; }
     if (!selectedServer) { toast.error('Select a server first — mandatory'); return; }
+    if (!seatCount) { toast.error('Select number of seats — mandatory'); return; }
     setLoading(true);
     try {
       const fd = new FormData();
       fd.append('venue_id', VENUE_ID()); fd.append('table_id', selectedTable);
       fd.append('guest_name', guestName.trim()); fd.append('server_name', selectedServer);
+      fd.append('seats', seatCount);
       await tableAPI.openTable(fd);
-      setGuestName(''); setShowOpenForm(false); await loadTables();
+      setGuestName(''); setSeatCount(''); setShowOpenForm(false); await loadTables();
       const res = await tableAPI.getTableDetail(selectedTable); setTableDetail(res.data);
       toast.success('Table opened');
     } catch { toast.error('Failed'); }
