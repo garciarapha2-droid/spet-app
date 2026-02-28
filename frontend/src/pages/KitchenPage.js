@@ -298,7 +298,9 @@ export const KitchenPage = () => {
     <div className="min-h-screen bg-background" data-testid="kds-page">
       {/* Delayed Order Popup */}
       {delayedPopup && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" data-testid="delayed-popup">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
+          onClick={(e) => { if (e.target === e.currentTarget) { setDismissedIds(prev => new Set(prev).add(delayedPopup.id)); setDelayedPopup(null); } }}
+          data-testid="delayed-popup">
           <div className="bg-card border-4 border-red-500 rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl animate-in zoom-in-95">
             <div className="flex items-center gap-3 mb-4">
               <AlertTriangle className="h-10 w-10 text-red-500 animate-pulse" />
