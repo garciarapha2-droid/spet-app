@@ -291,7 +291,7 @@ export const TapPage = () => {
     toast('Order cancelled');
   };
 
-  const filteredItems = catalog.filter(i => i.category === selectedCategory);
+  const filteredItems = catalog.filter(i => i.category === selectedCategory).sort((a, b) => a.name.localeCompare(b.name));
 
   return (
     <div className="min-h-screen bg-background" data-testid="tap-page">
