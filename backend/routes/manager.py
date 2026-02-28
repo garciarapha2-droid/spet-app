@@ -1016,6 +1016,92 @@ async def get_shift_overview(
     }
 
 
+# ─── SHIFT KPI DRILL-DOWN ─────────────────────────────────────────
+@router.get("/shift-drilldown")
+async def get_shift_drilldown(
+    venue_id: str,
+    kpi: str,
+    date_from: str = None,
+    date_to: str = None,
+    user: dict = Depends(require_auth),
+):
+    """Drill-down for a specific KPI: revenue, tables, staff_cost, tips."""
+    pool = get_postgres_pool()
+    db = get_mongo_db()
+    vid = _vid(venue_id)
+    start, end = _parse_date_range(date_from, date_to)
+
+    if kpi == "revenue":
+        async with pool.acquire() as conn:
+            rows = await conn.fetch(
+                """SELECT id, total, meta, closed_at
+                   FROM tap_sessions WHERE venue_id=$1 AND status='closed'
+                   AND closed_at>=$2 AND closed_at<=$3 ORDER BY closed_at DESC""",
+                vid, start, end)
+        items = []
+        for r in rows:
+            meta = _parse_meta(r["meta"])
+            items.append({
+                "session_id": str(r["id"]),
+                "guest_name": meta.get("guest_name", "Guest"),
+                "tab_number": meta.get("tab_number"),
+                "total": float(r["total"]),
+                "closed_at": r["closed_at"].isoformat() if r["closed_at"] else None,
+            })
+        return {"kpi": "revenue", "items": items, "count": len(items)}
+
+    elif kpi == "tables":
+        async with pool.acquire() as conn:
+            rows = await conn.fetch(
+                """SELECT s.id, s.total, s.meta, s.closed_at, vt.table_number
+                   FROM tap_sessions s
+                   LEFT JOIN venue_tables vt ON vt.current_session_id = s.id OR vt.id = s.table_id
+                   WHERE s.venue_id=$1 AND s.status='closed' AND s.session_type='table'
+                   AND s.closed_at>=$2 AND s.closed_at<=$3 ORDER BY s.closed_at DESC""",
+                vid, start, end)
+        items = []
+        for r in rows:
+            meta = _parse_meta(r["meta"])
+            items.append({
+                "session_id": str(r["id"]),
+                "table_number": r["table_number"] or "—",
+                "guest_name": meta.get("guest_name", "Guest"),
+                "server_name": meta.get("server_name", "—"),
+                "total": float(r["total"]),
+                "closed_at": r["closed_at"].isoformat() if r["closed_at"] else None,
+            })
+        return {"kpi": "tables", "items": items, "count": len(items)}
+
+    elif kpi == "staff_cost":
+        _, breakdown = await _calc_staff_cost(db, venue_id, start, end)
+        return {"kpi": "staff_cost", "items": breakdown, "count": len(breakdown)}
+
+    elif kpi == "tips":
+        async with pool.acquire() as conn:
+            rows = await conn.fetch(
+                """SELECT id, total, meta, closed_at
+                   FROM tap_sessions WHERE venue_id=$1 AND status='closed'
+                   AND closed_at>=$2 AND closed_at<=$3""",
+                vid, start, end)
+        tip_items = []
+        for r in rows:
+            meta = _parse_meta(r["meta"])
+            if meta.get("tip_recorded") and meta.get("tip_amount", 0) > 0:
+                tip_items.append({
+                    "session_id": str(r["id"]),
+                    "guest_name": meta.get("guest_name", "Guest"),
+                    "tab_number": meta.get("tab_number"),
+                    "total": float(r["total"]),
+                    "tip_amount": meta.get("tip_amount", 0),
+                    "tip_percent": meta.get("tip_percent", 0),
+                    "closed_at": r["closed_at"].isoformat() if r["closed_at"] else None,
+                })
+        return {"kpi": "tips", "items": tip_items, "count": len(tip_items)}
+
+    raise HTTPException(400, "kpi must be: revenue, tables, staff_cost, or tips")
+
+
+
 # ─── STAFF COSTS BREAKDOWN ────────────────────────────────────────
 @router.get("/staff-costs")
 async def get_staff_costs(
