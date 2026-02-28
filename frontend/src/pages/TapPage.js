@@ -272,6 +272,23 @@ export const TapPage = () => {
   const handleCloseTipFlow = () => {
     setCloseStep(null); setClosedSessionForTip(null); setTipInput(''); setTipResult(null);
     setActiveSessionId(null); setActiveSession(null);
+    setSelectedBarman(''); // Clean slate: clear bartender for next order
+    setConfirmedSessions(new Set()); // Clear confirmed sessions
+  };
+
+  const handleConfirmOrder = () => {
+    // Confirm order flow: clear ALL context for clean slate
+    setActiveSessionId(null); setActiveSession(null);
+    setSelectedBarman(''); setConfirmedSessions(new Set());
+    setCloseStep(null); setClosedSessionForTip(null); setTipInput(''); setTipResult(null);
+    toast.success('Order confirmed — ready for next customer');
+  };
+
+  const handleCancelOrder = () => {
+    // Cancel the current order interaction (deselect tab, go back)
+    setActiveSessionId(null); setActiveSession(null);
+    setConfirmedSessions(prev => { const next = new Set(prev); if (activeSessionId) next.delete(activeSessionId); return next; });
+    toast('Order cancelled');
   };
 
   const filteredItems = catalog.filter(i => i.category === selectedCategory);
