@@ -383,6 +383,19 @@ async def seed():
             ticket3["id"],
         )
 
+        # Ticket 3b: Kitchen — Fish & Chips (pending, for ETA modal testing)
+        ticket3b = await conn.fetchrow(
+            """INSERT INTO kds_tickets (venue_id, tap_session_id, table_id, destination, status, created_by_user_id, created_at, meta)
+               VALUES ($1::uuid, $2, $3, 'kitchen', 'pending', $4, $5, $6::jsonb) RETURNING id""",
+            uuid.UUID(VENUE_ID), sess1_id, table_ids["2"], staff_id, now - timedelta(minutes=2),
+            json.dumps({"guest_name": "John Smith"}),
+        )
+        await conn.execute(
+            """INSERT INTO kds_ticket_items (ticket_id, item_name, qty)
+               VALUES ($1, 'Fish & Chips', 1)""",
+            ticket3b["id"],
+        )
+
         # Ticket 4: Ready ticket (kitchen)
         ticket4 = await conn.fetchrow(
             """INSERT INTO kds_tickets (venue_id, tap_session_id, destination, status, created_by_user_id, started_at, ready_at, created_at, meta)
