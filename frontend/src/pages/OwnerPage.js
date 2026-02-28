@@ -1036,10 +1036,17 @@ function PeopleSection() {
    ═══════════════════════════════════════════════════════════════════ */
 function SystemSection() {
   const [data, setData] = useState(null);
+  const [modulesData, setModulesData] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    ownerAPI.getSystem().then(r => setData(r.data)).catch(() => toast.error('Failed')).finally(() => setLoading(false));
+    Promise.all([
+      ownerAPI.getSystem(),
+      ownerAPI.getModules(),
+    ]).then(([sysRes, modRes]) => {
+      setData(sysRes.data);
+      setModulesData(modRes.data);
+    }).catch(() => toast.error('Failed')).finally(() => setLoading(false));
   }, []);
 
   if (loading) return <Skeleton />;
@@ -1063,6 +1070,42 @@ function SystemSection() {
           <p className="text-xl font-bold">{data.venues_count}</p>
         </div>
       </div>
+
+      {/* Active Modules per Venue */}
+      {modulesData?.venues_modules?.length > 0 && (
+        <div className="mb-6" data-testid="modules-display">
+          <h3 className="text-sm font-semibold uppercase text-muted-foreground tracking-wider mb-3">Licensed Modules</h3>
+          <div className="space-y-4">
+            {modulesData.venues_modules.map(vm => (
+              <div key={vm.venue_id} className="bg-card border border-border rounded-xl p-5">
+                <div className="flex items-center gap-2 mb-3">
+                  <Building2 className="h-4 w-4 text-primary" />
+                  <span className="font-bold text-sm">{vm.venue_name}</span>
+                </div>
+                <div className="grid grid-cols-5 gap-3">
+                  {vm.modules.map(mod => (
+                    <div key={mod.key} className={`flex items-center gap-2 p-3 rounded-lg border ${
+                      mod.active ? 'border-green-500/30 bg-green-500/5' : 'border-border bg-muted/20 opacity-60'
+                    }`} data-testid={`module-${vm.venue_id}-${mod.key}`}>
+                      {mod.active ? (
+                        <ToggleRight className="h-5 w-5 text-green-500 shrink-0" />
+                      ) : (
+                        <ToggleLeft className="h-5 w-5 text-muted-foreground shrink-0" />
+                      )}
+                      <div>
+                        <p className="text-xs font-medium">{mod.name}</p>
+                        <p className={`text-[10px] font-bold ${mod.active ? 'text-green-600' : 'text-muted-foreground'}`}>
+                          {mod.active ? 'ON' : 'OFF'}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-2 gap-4 mb-6">
         <div className="bg-card border border-border rounded-xl p-5">
