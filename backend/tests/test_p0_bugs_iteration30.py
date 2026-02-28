@@ -25,7 +25,9 @@ def auth_token():
         "password": TEST_PASSWORD
     })
     assert response.status_code == 200, f"Login failed: {response.text}"
-    return response.json().get("token")
+    data = response.json()
+    # API returns access_token, not token
+    return data.get("access_token") or data.get("token")
 
 
 @pytest.fixture(scope="module")
