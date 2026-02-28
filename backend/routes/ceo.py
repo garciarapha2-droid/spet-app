@@ -257,7 +257,7 @@ async def get_companies(user: dict = Depends(require_auth)):
     month = _month_start()
 
     async with pool.acquire() as conn:
-        users = await conn.fetch("SELECT id, email, full_name, role, created_at FROM users ORDER BY created_at DESC")
+        users = await conn.fetch("SELECT id, email, created_at FROM users ORDER BY created_at DESC")
 
     companies = []
     for u in users:
@@ -279,8 +279,8 @@ async def get_companies(user: dict = Depends(require_auth)):
             venue_list.append({"venue_id": str(v["venue_id"]), "name": venue_name, "mrr": v_rev, "modules": modules})
         status = "active" if total_mrr > 0 else "pending"
         companies.append({
-            "user_id": str(u["id"]), "name": u["full_name"] or u["email"], "email": u["email"],
-            "role": u["role"], "created_at": u["created_at"].isoformat() if u["created_at"] else None,
+            "user_id": str(u["id"]), "name": u["email"].split("@")[0].replace(".", " ").title(), "email": u["email"],
+            "role": "owner", "created_at": u["created_at"].isoformat() if u["created_at"] else None,
             "venues": venue_list, "venue_count": len(venue_list), "mrr": total_mrr, "status": status,
         })
 
