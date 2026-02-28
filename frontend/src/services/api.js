@@ -68,6 +68,7 @@ export const pulseAPI = {
   unblockWristband: (guestId, fd) => api.post(`/pulse/guest/${guestId}/unblock`, fd),
   getTabStatus: (guestId, venueId) => api.get(`/pulse/guest/${guestId}/tab-status`, { params: { venue_id: venueId } }),
   searchGuests: (venueId, q) => api.get('/pulse/guests/search', { params: { venue_id: venueId, q } }),
+  barSearch: (venueId, q) => api.get('/pulse/bar/search', { params: { venue_id: venueId, q } }),
 };
 
 // TAP
