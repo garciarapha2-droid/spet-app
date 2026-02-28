@@ -7,11 +7,53 @@ import { Button } from '../components/ui/button';
 import { ThemeToggle } from '../components/ThemeToggle';
 import {
   ArrowLeft, Plus, X, CreditCard, Banknote, Beer, User, ChevronDown, ScanLine,
-  Home, LogOut, LayoutGrid, Pencil, Trash2, Check, Receipt, Camera, Upload, ShieldCheck
+  Home, LogOut, LayoutGrid, Pencil, Trash2, Check, Receipt, Camera, Upload, ShieldCheck, Video
 } from 'lucide-react';
 
 const VENUE_ID = () => localStorage.getItem('active_venue_id') || '40a24e04-75b6-435d-bfff-ab0d469ce543';
 const CATEGORIES = ['Beers', 'Cocktails', 'Spirits', 'Non-alcoholic', 'Snacks', 'Starters', 'Mains', 'Plates'];
+
+/* Camera Capture Modal */
+function CameraModal({ onCapture, onClose }) {
+  const videoRef = useRef(null);
+  const canvasRef = useRef(null);
+  const [stream, setStream] = useState(null);
+  useEffect(() => {
+    let ms = null;
+    (async () => {
+      try {
+        ms = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+        setStream(ms);
+        if (videoRef.current) videoRef.current.srcObject = ms;
+      } catch { toast.error('Camera unavailable'); onClose(); }
+    })();
+    return () => { if (ms) ms.getTracks().forEach(t => t.stop()); };
+  }, [onClose]);
+  const capture = () => {
+    if (!videoRef.current || !canvasRef.current) return;
+    const v = videoRef.current, c = canvasRef.current;
+    c.width = v.videoWidth; c.height = v.videoHeight;
+    c.getContext('2d').drawImage(v, 0, 0);
+    c.toBlob(blob => { if (blob) onCapture(new File([blob], 'capture.jpg', { type: 'image/jpeg' })); }, 'image/jpeg', 0.8);
+    if (stream) stream.getTracks().forEach(t => t.stop());
+    onClose();
+  };
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80" data-testid="camera-modal">
+      <div className="bg-card rounded-2xl p-4 max-w-lg w-full mx-4 shadow-2xl">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="font-bold flex items-center gap-2"><Video className="h-4 w-4" /> Take Photo</h3>
+          <Button variant="ghost" size="icon" onClick={() => { if (stream) stream.getTracks().forEach(t => t.stop()); onClose(); }}><X className="h-4 w-4" /></Button>
+        </div>
+        <div className="relative rounded-xl overflow-hidden bg-black mb-3">
+          <video ref={videoRef} autoPlay playsInline muted className="w-full h-64 object-cover" />
+          <canvas ref={canvasRef} className="hidden" />
+        </div>
+        <Button className="w-full h-12" onClick={capture} data-testid="camera-capture-btn"><Camera className="h-5 w-5 mr-2" /> Capture</Button>
+      </div>
+    </div>
+  );
+}
 
 /* ─── Guest Confirmation Modal (Bar/Tap ONLY — NOT ID verification) ── */
 function GuestConfirmModal({ session, onConfirm, onCancel }) {
