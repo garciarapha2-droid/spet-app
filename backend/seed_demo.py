@@ -162,6 +162,7 @@ async def seed():
         {"id": GUEST_JOHN, "name": "John Smith", "email": "john@demo.com", "phone": "+1555123001", "dob": "1992-05-15", "tags": ["vip"], "flags": [], "visits": 12, "spend_total": 450, "wristband_blocked": False},
         {"id": GUEST_MARIA, "name": "Maria Lopez", "email": "maria@demo.com", "phone": "+1555123002", "dob": "1995-08-22", "tags": [], "flags": [], "visits": 5, "spend_total": 180, "wristband_blocked": False},
         {"id": GUEST_KEVIN, "name": "Kevin Brown", "email": "kevin@demo.com", "phone": "+1555123003", "dob": "1990-01-10", "tags": [], "flags": ["flagged"], "visits": 3, "spend_total": 90, "wristband_blocked": True, "wristband_block_reason": "Security concern"},
+        {"id": "a0000004-0000-0000-0000-000000000004", "name": "Alex Turner", "email": "alex@demo.com", "phone": "+1555123004", "dob": "1993-11-08", "tags": [], "flags": [], "visits": 2, "spend_total": 40, "wristband_blocked": False},
     ]
     for g in guests:
         await db.venue_guests.insert_one({
