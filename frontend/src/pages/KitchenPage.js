@@ -205,15 +205,28 @@ export const KitchenPage = () => {
   useEffect(() => {
     const checkDelayed = () => {
       const now = Date.now();
-      const delayed = tickets.filter(t => {
+      const delayedTickets = tickets.filter(t => {
+        // Explicitly delayed status
+        if (t.status === 'delayed') return true;
+        // Preparing but over time
         if (t.status !== 'preparing' || !t.estimated_minutes || !t.started_at) return false;
         const started = new Date(t.started_at).getTime();
         const deadline = started + t.estimated_minutes * 60000;
         return now > deadline;
       });
-      const unDismissed = delayed.filter(t => !dismissedIds.has(t.id));
+      const unDismissed = delayedTickets.filter(t => !dismissedIds.has(t.id));
+      // If current popup was dismissed, clear it
+      if (delayedPopup && dismissedIds.has(delayedPopup.id)) {
+        setDelayedPopup(null);
+        return;
+      }
+      // Show next undismissed delayed order
       if (unDismissed.length > 0 && !delayedPopup) {
         setDelayedPopup(unDismissed[0]);
+      }
+      // Clear popup if no more delayed orders
+      if (unDismissed.length === 0 && delayedPopup) {
+        setDelayedPopup(null);
       }
     };
     const iv = setInterval(checkDelayed, 5000);
