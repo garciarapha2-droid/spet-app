@@ -254,15 +254,15 @@ class TestHomePageEvents:
     """Non-regression: Home page shows active events."""
     
     def test_venue_events_list(self, auth_headers):
-        """GET /api/venue/events returns venue events."""
+        """GET /api/venue/{venue_id}/events returns venue events."""
         response = requests.get(
-            f"{BASE_URL}/api/venue/events?venue_id={VENUE_ID}",
+            f"{BASE_URL}/api/venue/{VENUE_ID}/events",
             headers=auth_headers
         )
         assert response.status_code == 200
         data = response.json()
         # Just ensure the endpoint works
-        assert isinstance(data, dict)
+        assert "events" in data
 
 
 class TestHealthCheck:
