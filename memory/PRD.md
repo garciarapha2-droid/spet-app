@@ -45,6 +45,12 @@ Multi-tenant SaaS platform for venue operations (nightclubs, bars, restaurants).
 5. State sync: Single source of truth, no isolated module logic ✅
 6. Tips → Manager automatic (shift-drilldown reads tip_amount from meta) ✅
 
+### Block 4 — 3 P0 Critical Sync Patch (DONE — Feb 28, 2026)
+1. Staff Sync (Manager → Pulse/Tap/Table): Verified single source of truth via venue_barmen collection. All modules use staffAPI.getBarmen() correctly ✅
+2. Pay Here Flow (Tap): Fixed PulseBarPage.js field name (payment_destination → payment_location) and recordTip call signature. Route decorator in tap.py verified present ✅
+3. Tips → Manager Shift Overview: Fixed _calc_staff_cost in manager.py to query actual tips from tap_sessions.meta. Added 'tips' field to shift-overview response. Tips distributed proportionally among active staff ✅
+   - Testing: 100% pass rate (11/11 backend, all frontend verified via Playwright)
+
 ## Key Non-Negotiable Rules
 - **Non-regression**: Nothing existing can be removed/simplified without approval
 - **Flow order**: Pay → Tip → Confirm (never confirm before paying)
