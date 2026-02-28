@@ -383,7 +383,7 @@ async def seed():
             ticket3["id"],
         )
 
-        # Ticket 4: Ready ticket
+        # Ticket 4: Ready ticket (kitchen)
         ticket4 = await conn.fetchrow(
             """INSERT INTO kds_tickets (venue_id, tap_session_id, destination, status, created_by_user_id, started_at, ready_at, created_at, meta)
                VALUES ($1::uuid, $2, 'kitchen', 'ready', $3, $4, $5, $6, $7::jsonb) RETURNING id""",
@@ -396,7 +396,35 @@ async def seed():
                VALUES ($1, 'Chicken Wings', 1)""",
             ticket4["id"],
         )
-        print("  Seeded 4 KDS tickets")
+
+        # Ticket 5: Bar — Cocktail (Delayed, started 12 min ago, estimate was 5)
+        ticket5 = await conn.fetchrow(
+            """INSERT INTO kds_tickets (venue_id, tap_session_id, destination, status, estimated_minutes, created_by_user_id, started_at, created_at, meta)
+               VALUES ($1::uuid, $2, 'bar', 'delayed', 5, $3, $4, $5, $6::jsonb) RETURNING id""",
+            uuid.UUID(VENUE_ID), sess3_id, staff_id,
+            now - timedelta(minutes=12), now - timedelta(minutes=13),
+            json.dumps({"guest_name": "Kevin Brown"}),
+        )
+        await conn.execute(
+            """INSERT INTO kds_ticket_items (ticket_id, item_name, qty)
+               VALUES ($1, 'Mojito', 1)""",
+            ticket5["id"],
+        )
+
+        # Ticket 6: Bar — Preparing (normal, 3 min estimate)
+        ticket6 = await conn.fetchrow(
+            """INSERT INTO kds_tickets (venue_id, tap_session_id, destination, status, estimated_minutes, created_by_user_id, started_at, created_at, meta)
+               VALUES ($1::uuid, $2, 'bar', 'preparing', 3, $3, $4, $5, $6::jsonb) RETURNING id""",
+            uuid.UUID(VENUE_ID), sess1_id, staff_id,
+            now - timedelta(minutes=2), now - timedelta(minutes=3),
+            json.dumps({"guest_name": "John Smith"}),
+        )
+        await conn.execute(
+            """INSERT INTO kds_ticket_items (ticket_id, item_name, qty)
+               VALUES ($1, 'Caipirinha', 1)""",
+            ticket6["id"],
+        )
+        print("  Seeded 6 KDS tickets (Kitchen + Bar, including Delayed)")
 
     print("\n=== DEMO DATA COMPLETE ===")
     print("Login: teste@teste.com / 12345")
