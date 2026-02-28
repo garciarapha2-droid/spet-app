@@ -624,6 +624,25 @@ export const TablePage = () => {
                         </div>
                       </div>
                     )}
+
+                    {/* Cancel + Confirm Order (blocked until payment done) */}
+                    {!tableCloseStep && !tableTipResult && (
+                      <div className="grid grid-cols-2 gap-3 pt-4 mt-auto border-t border-border" data-testid="table-order-action-buttons">
+                        <Button variant="destructive" className="h-12 text-sm font-semibold" onClick={handleTableCancelOrder} data-testid="table-cancel-order-btn">
+                          <X className="h-4 w-4 mr-1.5" /> Cancel Order
+                        </Button>
+                        <Button
+                          className={`h-12 text-sm font-semibold ${tablePaymentDone ? 'bg-green-600 hover:bg-green-700 text-white' : 'bg-muted text-muted-foreground cursor-not-allowed'}`}
+                          onClick={handleTableConfirmOrder}
+                          disabled={!tablePaymentDone}
+                          data-testid="table-confirm-order-btn">
+                          <Check className="h-4 w-4 mr-1.5" /> Confirm
+                        </Button>
+                        {!tablePaymentDone && (
+                          <p className="col-span-2 text-[10px] text-muted-foreground text-center">Choose payment method above before confirming</p>
+                        )}
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <div className="text-center py-10" data-testid="open-table-panel">
