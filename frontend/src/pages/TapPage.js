@@ -119,6 +119,7 @@ export const TapPage = () => {
   const [showAddBarman, setShowAddBarman] = useState(false);
   const [confirmedSessions, setConfirmedSessions] = useState(new Set());
   const [pendingConfirmSession, setPendingConfirmSession] = useState(null);
+  const [paymentProcessed, setPaymentProcessed] = useState(false); // Tracks if payment was done for current order
 
   const loadBarmen = useCallback(async () => {
     try { const res = await staffAPI.getBarmen(VENUE_ID()); setBarmen(res.data.barmen || []); } catch {}
