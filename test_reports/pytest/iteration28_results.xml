@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="10" skipped="0" tests="14" time="2.103" timestamp="2026-02-28T01:55:55.806256+00:00" hostname="agent-env-81b3f6fd-b8f2-4917-8b7c-6fe1fc34aeb0"><testcase classname="backend.tests.test_iteration28_kds_tap_features.TestKDSFeatures" name="test_kds_get_tickets" time="0.203"><failure message="assert 401 == 200&#10; +  where 401 = &lt;Response [401]&gt;.status_code">backend/tests/test_iteration28_kds_tap_features.py:25: in test_kds_get_tickets
+    assert response.status_code == 200
+E   assert 401 == 200
+E    +  where 401 = &lt;Response [401]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_iteration28_kds_tap_features.TestKDSFeatures" name="test_kds_filter_by_destination_kitchen" time="0.102"><failure message="assert 401 == 200&#10; +  where 401 = &lt;Response [401]&gt;.status_code">backend/tests/test_iteration28_kds_tap_features.py:33: in test_kds_filter_by_destination_kitchen
+    assert response.status_code == 200
+E   assert 401 == 200
+E    +  where 401 = &lt;Response [401]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_iteration28_kds_tap_features.TestKDSFeatures" name="test_kds_filter_by_destination_bar" time="0.126"><failure message="assert 401 == 200&#10; +  where 401 = &lt;Response [401]&gt;.status_code">backend/tests/test_iteration28_kds_tap_features.py:42: in test_kds_filter_by_destination_bar
+    assert response.status_code == 200
+E   assert 401 == 200
+E    +  where 401 = &lt;Response [401]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_iteration28_kds_tap_features.TestKDSFeatures" name="test_kds_delayed_tickets_exist" time="0.143"><failure message="assert 401 == 200&#10; +  where 401 = &lt;Response [401]&gt;.status_code">backend/tests/test_iteration28_kds_tap_features.py:51: in test_kds_delayed_tickets_exist
+    assert response.status_code == 200
+E   assert 401 == 200
+E    +  where 401 = &lt;Response [401]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_iteration28_kds_tap_features.TestTapFeatures" name="test_tap_get_tabs" time="0.124"><failure message="assert 404 == 200&#10; +  where 404 = &lt;Response [404]&gt;.status_code">backend/tests/test_iteration28_kds_tap_features.py:67: in test_tap_get_tabs
+    assert response.status_code == 200
+E   assert 404 == 200
+E    +  where 404 = &lt;Response [404]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_iteration28_kds_tap_features.TestTapFeatures" name="test_tap_get_bartenders" time="0.128"><failure message="assert 404 == 200&#10; +  where 404 = &lt;Response [404]&gt;.status_code">backend/tests/test_iteration28_kds_tap_features.py:76: in test_tap_get_bartenders
+    assert response.status_code == 200
+E   assert 404 == 200
+E    +  where 404 = &lt;Response [404]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_iteration28_kds_tap_features.TestTapFeatures" name="test_tap_get_menu" time="0.117"><failure message="assert 404 == 200&#10; +  where 404 = &lt;Response [404]&gt;.status_code">backend/tests/test_iteration28_kds_tap_features.py:85: in test_tap_get_menu
+    assert response.status_code == 200
+E   assert 404 == 200
+E    +  where 404 = &lt;Response [404]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_iteration28_kds_tap_features.TestManagerFeatures" name="test_manager_shift_ops" time="0.108"><failure message="assert 404 == 200&#10; +  where 404 = &lt;Response [404]&gt;.status_code">backend/tests/test_iteration28_kds_tap_features.py:107: in test_manager_shift_ops
+    assert response.status_code == 200
+E   assert 404 == 200
+E    +  where 404 = &lt;Response [404]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_iteration28_kds_tap_features.TestManagerFeatures" name="test_manager_shift_drilldown" time="0.105" /><testcase classname="backend.tests.test_iteration28_kds_tap_features.TestOwnerFeatures" name="test_owner_get_venues" time="0.114"><failure message="assert 401 == 200&#10; +  where 401 = &lt;Response [401]&gt;.status_code">backend/tests/test_iteration28_kds_tap_features.py:130: in test_owner_get_venues
+    assert response.status_code == 200
+E   assert 401 == 200
+E    +  where 401 = &lt;Response [401]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_iteration28_kds_tap_features.TestOwnerFeatures" name="test_owner_growth_stats" time="0.193" /><testcase classname="backend.tests.test_iteration28_kds_tap_features.TestOwnerFeatures" name="test_owner_venue_modules" time="0.137" /><testcase classname="backend.tests.test_iteration28_kds_tap_features.TestTableFeatures" name="test_table_get_tables" time="0.157"><failure message="assert 404 == 200&#10; +  where 404 = &lt;Response [404]&gt;.status_code">backend/tests/test_iteration28_kds_tap_features.py:161: in test_table_get_tables
+    assert response.status_code == 200
+E   assert 404 == 200
+E    +  where 404 = &lt;Response [404]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_iteration28_kds_tap_features.TestPulseBarFeatures" name="test_pulse_get_sessions" time="0.228" /></testsuite></testsuites>
