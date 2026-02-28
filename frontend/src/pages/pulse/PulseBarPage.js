@@ -147,45 +147,37 @@ export const PulseBarPage = () => {
   return (
     <div className="min-h-screen bg-background" data-testid="bar-page">
       <PulseHeader title="BAR" activeTab="bar" />
+      {/* Guest Confirmation Modal */}
+      <BarGuestConfirmModal result={pendingConfirm} onConfirm={handleConfirmGuest} onCancel={handleCancelConfirm} />
 
       <main className="w-full px-6 py-4">
         <div className="grid grid-cols-12 gap-6">
           {/* Left: Scan + Guest + Tabs */}
           <div className="col-span-2 space-y-4">
             <form onSubmit={handleScan} className="space-y-2">
-              <div className="flex items-center gap-1.5 text-xs text-muted-foreground"><ScanLine className="h-3.5 w-3.5" /> Scan NFC</div>
-              <Input value={scanInput} onChange={e => setScanInput(e.target.value)} placeholder="Name..." className="h-9 text-sm" data-testid="bar-scan-input" />
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground"><ScanLine className="h-3.5 w-3.5" /> Scan / Search</div>
+              <Input value={scanInput} onChange={e => setScanInput(e.target.value)} placeholder="Tab # or name..." className="h-9 text-sm" data-testid="bar-scan-input" />
             </form>
 
-            {/* Identity Confirm */}
-            {confirmingIdentity && scanResult && (
-              <div className="bg-card border-2 border-yellow-500/30 rounded-xl p-3" data-testid="identity-confirmation">
-                <p className="text-sm font-medium mb-1">Confirm:</p>
-                <p className="font-bold">{scanResult.name}</p>
-                {scanResult.tab_number && <p className="text-primary font-semibold text-sm">Tab #{scanResult.tab_number}</p>}
-                <div className="flex gap-2 mt-2">
-                  <Button size="sm" onClick={() => setConfirmingIdentity(false)}><Check className="h-3.5 w-3.5 mr-1" /> Yes</Button>
-                  <Button size="sm" variant="outline" onClick={() => { setScanResult(null); setConfirmingIdentity(false); }}><X className="h-3.5 w-3.5" /></Button>
-                </div>
-              </div>
-            )}
-
             {/* Confirmed Guest */}
-            {scanResult && !confirmingIdentity && !scanResult.blocked && (
+            {confirmedGuest && (
               <div className="bg-card border-2 border-primary/30 rounded-xl p-3" data-testid="current-guest-card">
                 <div className="flex items-center gap-2 mb-1">
-                  <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                    <User className="h-4 w-4 text-primary" />
-                  </div>
+                  {confirmedGuest.guest_photo ? (
+                    <img src={confirmedGuest.guest_photo} alt="" className="w-8 h-8 rounded-full object-cover flex-shrink-0 border-2 border-primary/20" />
+                  ) : (
+                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                      <User className="h-4 w-4 text-primary" />
+                    </div>
+                  )}
                   <div className="min-w-0">
-                    <p className="font-bold text-sm leading-tight" data-testid="guest-name">{scanResult.name}</p>
-                    {scanResult.tab_number && <p className="text-primary font-semibold text-xs" data-testid="guest-tab-number">Tab #{scanResult.tab_number}</p>}
+                    <p className="font-bold text-sm leading-tight" data-testid="guest-name">{confirmedGuest.guest_name}</p>
+                    {confirmedGuest.tab_number && <p className="text-primary font-semibold text-xs" data-testid="guest-tab-number">Tab #{confirmedGuest.tab_number}</p>}
                   </div>
                 </div>
-                <div className="flex gap-1 text-xs mt-1">
-                  <span className="px-1.5 py-0.5 rounded bg-muted text-muted-foreground">{scanResult.visits || 0} visits</span>
-                  {scanResult.tags?.includes('vip') && <span className="px-1.5 py-0.5 rounded bg-yellow-500/10 text-yellow-600">VIP</span>}
-                </div>
+                <p className="text-xs text-green-600 font-medium flex items-center gap-1 mt-1">
+                  <ShieldCheck className="h-3 w-3" /> Confirmed
+                </p>
               </div>
             )}
 
