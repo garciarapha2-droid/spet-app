@@ -801,12 +801,46 @@ function GrowthSection() {
     <div data-testid="growth-section">
       <h2 className="text-xl font-bold mb-4">Growth & Loyalty</h2>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
         <BigKPI icon={Users} label="New Guests" value={data.new_guests} accent="text-green-500" testid="new-guests" />
         <BigKPI icon={Heart} label="Returning" value={data.returning_guests} accent="text-pink-500" testid="returning" />
+        <BigKPI icon={UserPlus} label="Total Sign-ups" value={data.total_signups || 0} accent="text-blue-500" testid="total-signups" />
         <BigKPI icon={TrendingUp} label="Guest Growth" value={`${data.guest_growth_pct > 0 ? '+' : ''}${data.guest_growth_pct}%`}
           accent={data.guest_growth_pct >= 0 ? 'text-green-500' : 'text-red-500'} testid="guest-growth" />
         <BigKPI icon={Target} label="LTV" value={`$${data.ltv.toFixed(2)}`} accent="text-purple-500" testid="ltv" />
+      </div>
+
+      {/* New vs Recurring Visual */}
+      <div className="bg-card border border-border rounded-xl p-5 mb-6" data-testid="new-vs-recurring">
+        <h3 className="text-sm font-semibold mb-4">New vs Recurring Guests</h3>
+        <div className="grid grid-cols-2 gap-6">
+          <div className="text-center">
+            <div className="w-20 h-20 rounded-full border-4 border-green-500 flex items-center justify-center mx-auto mb-2">
+              <span className="text-2xl font-bold text-green-500">{data.new_guests}</span>
+            </div>
+            <p className="text-sm font-medium text-green-600">New Guests</p>
+            <p className="text-xs text-muted-foreground">First visit this period</p>
+          </div>
+          <div className="text-center">
+            <div className="w-20 h-20 rounded-full border-4 border-pink-500 flex items-center justify-center mx-auto mb-2">
+              <span className="text-2xl font-bold text-pink-500">{data.returning_guests}</span>
+            </div>
+            <p className="text-sm font-medium text-pink-600">Recurring Guests</p>
+            <p className="text-xs text-muted-foreground">Returned this period</p>
+          </div>
+        </div>
+        {(data.new_guests + data.returning_guests) > 0 && (
+          <div className="mt-4">
+            <div className="h-3 bg-muted rounded-full overflow-hidden flex">
+              <div className="h-full bg-green-500 transition-all" style={{ width: `${(data.new_guests / (data.new_guests + data.returning_guests) * 100)}%` }} />
+              <div className="h-full bg-pink-500 transition-all" style={{ width: `${(data.returning_guests / (data.new_guests + data.returning_guests) * 100)}%` }} />
+            </div>
+            <div className="flex justify-between text-xs text-muted-foreground mt-1">
+              <span>New ({Math.round(data.new_guests / (data.new_guests + data.returning_guests) * 100)}%)</span>
+              <span>Recurring ({Math.round(data.returning_guests / (data.new_guests + data.returning_guests) * 100)}%)</span>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Guest Comparison */}
