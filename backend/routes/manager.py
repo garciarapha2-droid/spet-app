@@ -884,8 +884,8 @@ async def _calc_staff_cost(db, venue_id: str, start: datetime, end: datetime):
     shift_hours = min(hours_in_period, 12)
 
     # Query actual tip data from closed sessions in this period
-    tips_by_staff = {}
     vid = uuid.UUID(venue_id)
+    total_tips_period = 0
     async with pool.acquire() as conn:
         rows = await conn.fetch(
             """SELECT meta FROM tap_sessions
@@ -895,25 +895,20 @@ async def _calc_staff_cost(db, venue_id: str, start: datetime, end: datetime):
     for r in rows:
         meta = _parse_meta(r["meta"])
         if meta.get("tip_recorded") and meta.get("tip_amount", 0) > 0:
-            distribution = meta.get("tip_distribution", [])
-            if distribution:
-                for d in distribution:
-                    sid = d.get("staff_id", "")
-                    tips_by_staff[sid] = tips_by_staff.get(sid, 0) + d.get("tip", 0)
-            else:
-                # No distribution — attribute to the recorder
-                recorder = meta.get("tip_recorded_by", "")
-                if recorder:
-                    tips_by_staff[recorder] = tips_by_staff.get(recorder, 0) + meta.get("tip_amount", 0)
+            total_tips_period += meta.get("tip_amount", 0)
+
+    # Distribute tips proportionally among active staff
+    staff_count = len(staff) if staff else 1
+    tip_per_staff = round(total_tips_period / staff_count, 2) if staff_count > 0 else 0
 
     total_cost = 0
     staff_breakdown = []
     for s in staff:
         rate = s.get("hourly_rate", 0)
         wages = round(rate * shift_hours, 2)
-        tips = round(tips_by_staff.get(s["id"], 0), 2)
+        tips = tip_per_staff
         total = round(wages + tips, 2)
-        total_cost += wages  # Cost is wages only; tips are earnings
+        total_cost += wages  # Cost = wages only; tips are earnings
         staff_breakdown.append({
             "id": s["id"],
             "name": s["name"],
@@ -925,7 +920,7 @@ async def _calc_staff_cost(db, venue_id: str, start: datetime, end: datetime):
             "total": total,
             "earned": total,
         })
-    return total_cost, staff_breakdown
+    return total_cost, staff_breakdown, round(total_tips_period, 2)
 
 
 # ─── STAFF ROLES (Customizable) ───────────────────────────────────
