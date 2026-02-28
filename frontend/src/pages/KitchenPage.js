@@ -264,13 +264,14 @@ export const KitchenPage = () => {
   // Categorize tickets
   const now = Date.now();
   const isTimeDelayed = (t) => {
+    if (t.status === 'delayed') return true;
     if (t.status !== 'preparing' || !t.estimated_minutes || !t.started_at) return false;
     return now > new Date(t.started_at).getTime() + t.estimated_minutes * 60000;
   };
 
   const pending = tickets.filter(t => t.status === 'pending');
   const preparing = tickets.filter(t => t.status === 'preparing' && !isTimeDelayed(t));
-  const delayed = tickets.filter(t => t.status === 'delayed' || isTimeDelayed(t));
+  const delayed = tickets.filter(t => isTimeDelayed(t));
   const ready = tickets.filter(t => t.status === 'ready');
   const delivered = tickets.filter(t => t.status === 'delivered');
 
