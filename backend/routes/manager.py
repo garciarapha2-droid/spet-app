@@ -1105,7 +1105,7 @@ async def get_shift_drilldown(
         return {"kpi": "tables", "items": items, "count": len(items)}
 
     elif kpi == "staff_cost":
-        _, breakdown = await _calc_staff_cost(db, venue_id, start, end)
+        _, breakdown, _ = await _calc_staff_cost(db, venue_id, start, end)
         return {"kpi": "staff_cost", "items": breakdown, "count": len(breakdown)}
 
     elif kpi == "tips":
@@ -1145,7 +1145,7 @@ async def get_staff_costs(
     """Staff Earnings / Cost Breakdown for the period."""
     db = get_mongo_db()
     start, end = _parse_date_range(date_from, date_to)
-    total_cost, breakdown = await _calc_staff_cost(db, venue_id, start, end)
+    total_cost, breakdown, _ = await _calc_staff_cost(db, venue_id, start, end)
     return {
         "total_cost": round(total_cost, 2),
         "staff": breakdown,
@@ -1185,7 +1185,7 @@ async def get_shift_history(
         if shift_snap:
             cost = shift_snap.get("staff_cost", 0)
         else:
-            cost, _ = await _calc_staff_cost(db, venue_id, day_start, day_end)
+            cost, _, _ = await _calc_staff_cost(db, venue_id, day_start, day_end)
 
         result = rev - cost
         status = "positive" if result > 50 else ("tight" if result > -50 else "negative")
@@ -1249,7 +1249,7 @@ async def get_shift_chart(
         shift_snap = await db.shift_snapshots.find_one({"venue_id": venue_id, "date": d.isoformat()}, {"_id": 0})
         cost = shift_snap.get("staff_cost", 0) if shift_snap else 0
         if not shift_snap:
-            cost_calc, _ = await _calc_staff_cost(db, venue_id, day_start, day_end)
+            cost_calc, _, _ = await _calc_staff_cost(db, venue_id, day_start, day_end)
             cost = cost_calc
 
         if rev > 0 or cost > 0:
@@ -1277,7 +1277,7 @@ async def save_shift_snapshot(
     d = target_date or date.today().isoformat()
     day_start = datetime.fromisoformat(d).replace(tzinfo=timezone.utc)
     day_end = day_start + timedelta(hours=24)
-    total_cost, breakdown = await _calc_staff_cost(db, venue_id, day_start, day_end)
+    total_cost, breakdown, _ = await _calc_staff_cost(db, venue_id, day_start, day_end)
 
     snapshot = {
         "venue_id": venue_id,
@@ -1353,7 +1353,7 @@ async def shift_ai_analysis(
             "SELECT COUNT(*) FROM tap_items WHERE venue_id=$1 AND voided_at>=$2 AND voided_at<=$3",
             vid, start, end) or 0
 
-    total_cost, staff_breakdown = await _calc_staff_cost(db, venue_id, start, end)
+    total_cost, staff_breakdown, _ = await _calc_staff_cost(db, venue_id, start, end)
     result = revenue - total_cost
     cost_per_table = round(total_cost / tables_closed, 2) if tables_closed > 0 else 0
     rev_per_staff = round(revenue / len(staff_breakdown), 2) if staff_breakdown else 0
