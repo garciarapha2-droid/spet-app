@@ -1,0 +1,120 @@
+{
+  "summary": "Iteration 24: P0 Features Testing - Owner Dashboard View Switcher, Owner People & Ops Drill-down, Manager Guests Sorted by Spend with Profile Modal. All features PASS.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "features_tested": {
+    "login_teste_teste_com": {
+      "status": "PASS",
+      "description": "Login with teste@teste.com / 12345 works, redirects to /venue/home"
+    },
+    "owner_dashboard_view_switcher": {
+      "status": "PASS",
+      "description": "View switcher shows Business Overview / By Venue / By Event tabs. All three views load correctly with data-testid selectors."
+    },
+    "owner_dashboard_business_view": {
+      "status": "PASS",
+      "description": "GET /api/owner/dashboard?view=business returns KPIs (revenue_today, revenue_mtd, revenue_ytd, growth_pct, etc.)"
+    },
+    "owner_dashboard_venue_view": {
+      "status": "PASS",
+      "description": "GET /api/owner/dashboard?view=venue returns per-venue financials (revenue_today, revenue_mtd, revenue_ytd, avg_ticket, staff_count)"
+    },
+    "owner_dashboard_events_view": {
+      "status": "PASS",
+      "description": "GET /api/owner/dashboard?view=events returns per-event data (revenue, tabs_closed, guests, staff)"
+    },
+    "owner_people_ops_section": {
+      "status": "PASS",
+      "description": "GET /api/owner/people returns venues and events with staff counts. Shows 'BY VENUE' and 'BY EVENT' sections with clickable cards."
+    },
+    "owner_venue_drilldown_modal": {
+      "status": "PASS",
+      "description": "Clicking venue card opens drill-down modal showing 3 staff members. GET /api/owner/people/{venue_id}/staff works."
+    },
+    "owner_event_drilldown_modal": {
+      "status": "PASS",
+      "description": "Clicking event card opens drill-down modal showing assigned staff. GET /api/owner/people/event/{event_id}/staff works."
+    },
+    "owner_drilldown_close_button": {
+      "status": "PASS",
+      "description": "Drill-down modal closes with X button (data-testid='close-drilldown')"
+    },
+    "manager_guests_sorted_by_spend": {
+      "status": "PASS",
+      "description": "GET /api/manager/guests returns guests sorted by spend_total desc. UI shows 'sorted by highest spender' and displays $450, $180, $90, $0"
+    },
+    "manager_guest_profile_modal": {
+      "status": "PASS",
+      "description": "Clicking guest row opens profile modal with spend summary (total_spend, total_sessions, avg_spend), event history, and recent tabs"
+    },
+    "manager_guest_profile_close": {
+      "status": "PASS",
+      "description": "Guest profile modal closes with X button (data-testid='close-guest-modal')"
+    },
+    "api_owner_dashboard_business": {
+      "status": "PASS",
+      "description": "API GET /api/owner/dashboard?view=business returns 200 with correct structure"
+    },
+    "api_owner_dashboard_venue": {
+      "status": "PASS",
+      "description": "API GET /api/owner/dashboard?view=venue returns 200 with per-venue financials"
+    },
+    "api_owner_dashboard_events": {
+      "status": "PASS",
+      "description": "API GET /api/owner/dashboard?view=events returns 200 with per-event data"
+    },
+    "api_owner_people": {
+      "status": "PASS",
+      "description": "API GET /api/owner/people returns 200 with venues and events arrays"
+    },
+    "api_owner_venue_staff": {
+      "status": "PASS",
+      "description": "API GET /api/owner/people/{venue_id}/staff returns 200 with staff list"
+    },
+    "api_owner_event_staff": {
+      "status": "PASS",
+      "description": "API GET /api/owner/people/event/{event_id}/staff returns 200 with event staff"
+    },
+    "api_manager_guests": {
+      "status": "PASS",
+      "description": "API GET /api/manager/guests returns 200 with guests sorted by spend_total desc"
+    },
+    "api_manager_guest_detail": {
+      "status": "PASS",
+      "description": "API GET /api/manager/guests/{guest_id} returns 200 with spend_summary, entries, sessions, events"
+    }
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iteration24_p0_features.py",
+    "/app/test_reports/pytest/iteration24_p0_features.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [],
+  "updated_files": [
+    "/app/backend/tests/test_iteration24_p0_features.py"
+  ],
+  "success_rate": {
+    "backend": "100% (13/13 pytest tests passed)",
+    "frontend": "100% (All P0 UI features verified)"
+  },
+  "test_credentials": {
+    "email": "teste@teste.com",
+    "password": "12345",
+    "venue_id": "40a24e04-75b6-435d-bfff-ab0d469ce543"
+  },
+  "seed_data_used": {
+    "guests": "4 guests in DB: John Smith ($450 VIP), Maria Lopez ($180), Kevin Brown (Blocked, $90), Juliano ($0)",
+    "staff": "3 operational staff at Demo Club Updated venue",
+    "events": "Multiple test events including TEST_Wizard_Event_2026-02-27 (3 staff), Test Event (1 staff)"
+  },
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Iteration 24 P0 features fully verified: (1) Owner Dashboard has view switcher with Business Overview / By Venue / By Event tabs - all working. (2) Owner People & Ops shows BY VENUE and BY EVENT sections with clickable cards that open drill-down modals showing staff members. Close button works. (3) Manager Dashboard Guests tab shows guests sorted by highest spender (descending by spend_total). Clicking guest row opens profile modal with spend_summary (total_spend, total_sessions, avg_spend), event history, and recent tabs. All APIs return correct data structures. UI data-testid attributes are properly set for automated testing."
+}
