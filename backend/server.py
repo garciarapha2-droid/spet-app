@@ -77,6 +77,8 @@ async def startup_event():
     await connect_postgres()
     # Ensure protected system account exists
     await ensure_system_account()
+    # Ensure demo tables exist for product demos
+    await ensure_demo_tables()
     logger.info("SPETAP API started successfully")
 
 
