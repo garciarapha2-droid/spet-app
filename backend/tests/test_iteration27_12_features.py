@@ -22,22 +22,26 @@ BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://spetap-ops-1.preview
 VENUE_ID = '40a24e04-75b6-435d-bfff-ab0d469ce543'
 
 
+def get_token():
+    """Get auth token"""
+    response = requests.post(f"{BASE_URL}/api/auth/login", json={
+        "email": "teste@teste.com",
+        "password": "12345"
+    })
+    assert response.status_code == 200, f"Login failed: {response.text}"
+    data = response.json()
+    return data.get("access_token") or data.get("token")
+
+
+@pytest.fixture(scope="module")
+def auth_headers():
+    """Shared auth headers for all tests"""
+    token = get_token()
+    return {"Authorization": f"Bearer {token}"}
+
+
 class TestAuth:
     """Authentication tests"""
-    
-    @pytest.fixture(scope="class")
-    def token(self):
-        """Get auth token"""
-        response = requests.post(f"{BASE_URL}/api/auth/login", json={
-            "email": "teste@teste.com",
-            "password": "12345"
-        })
-        assert response.status_code == 200, f"Login failed: {response.text}"
-        return response.json().get("token")
-    
-    @pytest.fixture
-    def auth_headers(self, token):
-        return {"Authorization": f"Bearer {token}"}
     
     def test_login_success(self):
         """Test login with valid credentials"""
@@ -47,24 +51,12 @@ class TestAuth:
         })
         assert response.status_code == 200
         data = response.json()
-        assert "token" in data
+        assert "access_token" in data or "token" in data
         print(f"SUCCESS: Login returns token")
 
 
 class TestTapCatalogSorting:
     """Feature 7: Menu sorting - items sorted alphabetically within category"""
-    
-    @pytest.fixture(scope="class")
-    def token(self):
-        response = requests.post(f"{BASE_URL}/api/auth/login", json={
-            "email": "teste@teste.com",
-            "password": "12345"
-        })
-        return response.json().get("token")
-    
-    @pytest.fixture
-    def auth_headers(self, token):
-        return {"Authorization": f"Bearer {token}"}
     
     def test_catalog_beers_alphabetically_sorted(self, auth_headers):
         """Test that Beers category items are sorted alphabetically"""
@@ -97,18 +89,6 @@ class TestTapCatalogSorting:
 class TestKDSDelayed:
     """Feature 5: KDS - Delayed column shows tickets"""
     
-    @pytest.fixture(scope="class")
-    def token(self):
-        response = requests.post(f"{BASE_URL}/api/auth/login", json={
-            "email": "teste@teste.com",
-            "password": "12345"
-        })
-        return response.json().get("token")
-    
-    @pytest.fixture
-    def auth_headers(self, token):
-        return {"Authorization": f"Bearer {token}"}
-    
     def test_kds_tickets_endpoint(self, auth_headers):
         """Test KDS tickets endpoint returns valid response"""
         response = requests.get(
@@ -129,18 +109,6 @@ class TestKDSDelayed:
 class TestManagerTablesByServer:
     """Feature 6: Manager - Tables by Server with drill-down"""
     
-    @pytest.fixture(scope="class")
-    def token(self):
-        response = requests.post(f"{BASE_URL}/api/auth/login", json={
-            "email": "teste@teste.com",
-            "password": "12345"
-        })
-        return response.json().get("token")
-    
-    @pytest.fixture
-    def auth_headers(self, token):
-        return {"Authorization": f"Bearer {token}"}
-    
     def test_tables_by_server_endpoint(self, auth_headers):
         """Test tables-by-server endpoint"""
         response = requests.get(
@@ -159,44 +127,17 @@ class TestManagerTablesByServer:
     
     def test_table_detail_endpoint(self, auth_headers):
         """Test table-detail endpoint for drill-down"""
-        # First get a table ID from tables-by-server
-        response = requests.get(
-            f"{BASE_URL}/api/manager/tables-by-server",
+        # First get a table ID from tables list
+        tables_resp = requests.get(
+            f"{BASE_URL}/api/table/tables",
             params={"venue_id": VENUE_ID},
             headers=auth_headers
         )
-        assert response.status_code == 200
-        data = response.json()
+        assert tables_resp.status_code == 200
+        tables = tables_resp.json().get("tables", [])
         
-        # Try to get a table ID
-        table_id = None
-        for server in data.get("servers", []):
-            for table in server.get("tables", []):
-                table_id = table.get("table_id")
-                if table_id:
-                    break
-            if table_id:
-                break
-        
-        if not table_id:
-            for table in data.get("unassigned", []):
-                table_id = table.get("table_id")
-                if table_id:
-                    break
-        
-        if not table_id:
-            # Get from tables list directly
-            tables_resp = requests.get(
-                f"{BASE_URL}/api/table/tables",
-                params={"venue_id": VENUE_ID},
-                headers=auth_headers
-            )
-            if tables_resp.status_code == 200:
-                tables = tables_resp.json().get("tables", [])
-                if tables:
-                    table_id = tables[0].get("id")
-        
-        if table_id:
+        if tables:
+            table_id = tables[0].get("id")
             # Test table detail endpoint
             detail_response = requests.get(
                 f"{BASE_URL}/api/manager/table-detail/{table_id}",
@@ -206,33 +147,15 @@ class TestManagerTablesByServer:
             detail = detail_response.json()
             
             assert "table_number" in detail
-            print(f"SUCCESS: table-detail endpoint works for table {detail.get('table_number')}")
+            print(f"SUCCESS: table-detail endpoint works for table #{detail.get('table_number')}")
             print(f"  - Status: {detail.get('status')}")
             print(f"  - Items: {len(detail.get('items', []))}")
         else:
             print("INFO: No tables found to test drill-down")
-    
-    def test_void_item_endpoint_exists(self, auth_headers):
-        """Test table-void-item endpoint exists"""
-        # Just verify the endpoint path is correct - we won't actually void anything
-        # The endpoint POST /api/manager/table-void-item should exist
-        print("INFO: table-void-item endpoint structure verified in manager.py")
 
 
 class TestOwnerDashboard:
     """Features 8-12: Owner Dashboard tests"""
-    
-    @pytest.fixture(scope="class")
-    def token(self):
-        response = requests.post(f"{BASE_URL}/api/auth/login", json={
-            "email": "teste@teste.com",
-            "password": "12345"
-        })
-        return response.json().get("token")
-    
-    @pytest.fixture
-    def auth_headers(self, token):
-        return {"Authorization": f"Bearer {token}"}
     
     def test_owner_venues_endpoint(self, auth_headers):
         """Feature 8: Test venues endpoint (for venue selector)"""
@@ -327,18 +250,6 @@ class TestOwnerDashboard:
 class TestTableOpenForm:
     """Feature 1: Open table form requires Server AND Seats"""
     
-    @pytest.fixture(scope="class")
-    def token(self):
-        response = requests.post(f"{BASE_URL}/api/auth/login", json={
-            "email": "teste@teste.com",
-            "password": "12345"
-        })
-        return response.json().get("token")
-    
-    @pytest.fixture
-    def auth_headers(self, token):
-        return {"Authorization": f"Bearer {token}"}
-    
     def test_tables_endpoint(self, auth_headers):
         """Test tables endpoint returns tables"""
         response = requests.get(
@@ -359,18 +270,6 @@ class TestTableOpenForm:
 
 class TestTapBarFeatures:
     """Features 2-4: TAP/BAR features - Bartender persistence, Cancel/Confirm buttons, Clean slate"""
-    
-    @pytest.fixture(scope="class")
-    def token(self):
-        response = requests.post(f"{BASE_URL}/api/auth/login", json={
-            "email": "teste@teste.com",
-            "password": "12345"
-        })
-        return response.json().get("token")
-    
-    @pytest.fixture
-    def auth_headers(self, token):
-        return {"Authorization": f"Bearer {token}"}
     
     def test_tap_sessions_endpoint(self, auth_headers):
         """Test TAP sessions endpoint"""
@@ -421,18 +320,6 @@ class TestTapBarFeatures:
 
 class TestOwnerPerformance:
     """Feature 10: Owner Performance tab - Venue ABOVE Event"""
-    
-    @pytest.fixture(scope="class")
-    def token(self):
-        response = requests.post(f"{BASE_URL}/api/auth/login", json={
-            "email": "teste@teste.com",
-            "password": "12345"
-        })
-        return response.json().get("token")
-    
-    @pytest.fixture
-    def auth_headers(self, token):
-        return {"Authorization": f"Bearer {token}"}
     
     def test_owner_venues_performance(self, auth_headers):
         """Test venues performance endpoint"""
