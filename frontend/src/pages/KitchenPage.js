@@ -234,15 +234,34 @@ export const KitchenPage = () => {
     return () => clearInterval(iv);
   }, [tickets, delayedPopup, dismissedIds]);
 
-  const handleStatusChange = async (ticketId, newStatus) => {
+  const [etaModal, setEtaModal] = useState(null); // { ticketId, etaValue }
+
+  const handleStatusChange = async (ticketId, newStatus, etaMinutes) => {
     try {
       const fd = new FormData();
       fd.append('status', newStatus);
+      if (etaMinutes) fd.append('estimated_minutes', etaMinutes.toString());
       await kdsAPI.updateStatus(ticketId, fd);
       if (delayedPopup?.id === ticketId) setDelayedPopup(null);
       setDismissedIds(prev => { const next = new Set(prev); next.delete(ticketId); return next; });
       await loadTickets();
     } catch { toast.error('Failed to update'); }
+  };
+
+  // Intercept: when moving from pending→preparing, show ETA modal first
+  const handleRequestStatusChange = (ticketId, newStatus) => {
+    const ticket = tickets.find(t => t.id === ticketId);
+    if (ticket && ticket.status === 'pending' && newStatus === 'preparing') {
+      setEtaModal({ ticketId, etaValue: '' });
+      return;
+    }
+    handleStatusChange(ticketId, newStatus);
+  };
+
+  const handleConfirmEta = () => {
+    if (!etaModal || !etaModal.etaValue) return;
+    handleStatusChange(etaModal.ticketId, 'preparing', parseInt(etaModal.etaValue));
+    setEtaModal(null);
   };
 
   const handleSetTime = async (ticketId, minutes) => {
