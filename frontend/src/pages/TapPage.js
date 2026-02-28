@@ -282,12 +282,12 @@ export const TapPage = () => {
   const handleCloseTab = async (method, location) => {
     if (!activeSessionId) return;
     if (location === 'pay_at_register') {
-      // Pay at Register: tab stays OPEN, just clear UI context
-      toast.success('Sent to register — tab stays open');
-      handleConfirmOrder();
+      // Pay at Register: tab stays OPEN, mark payment as processed
+      setPaymentProcessed(true);
+      toast.success('Sent to register — tab stays open. Now you can Confirm.');
       return;
     }
-    // Pay Here: actually close the tab and show tip flow
+    // Pay Here: close the tab and show tip flow
     setLoading(true);
     try {
       const fd = new FormData();
@@ -296,6 +296,7 @@ export const TapPage = () => {
       const res = await tapAPI.closeSession(activeSessionId, fd);
       setClosedSessionForTip({ id: activeSessionId, total: res.data.total, guest_name: activeSession?.guest_name, tab_number: activeSession?.tab_number });
       setCloseStep('tip');
+      setPaymentProcessed(true);
       await loadData();
     } catch { toast.error('Failed'); }
     setLoading(false);
