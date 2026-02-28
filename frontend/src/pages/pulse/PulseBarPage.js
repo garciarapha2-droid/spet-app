@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PulseHeader } from '../../components/PulseHeader';
-import { pulseAPI, tapAPI } from '../../services/api';
+import { pulseAPI, tapAPI, staffAPI } from '../../services/api';
 import { toast } from 'sonner';
 import {
   ShoppingCart, User, ScanLine, Plus, X, Check, Beer, Trash2, Pencil,
