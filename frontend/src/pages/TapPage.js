@@ -318,22 +318,27 @@ export const TapPage = () => {
   const handleCloseTipFlow = () => {
     setCloseStep(null); setClosedSessionForTip(null); setTipInput(''); setTipResult(null);
     setActiveSessionId(null); setActiveSession(null);
-    setSelectedBarman(''); // Clean slate: clear bartender for next order
-    setConfirmedSessions(new Set()); // Clear confirmed sessions
+    setSelectedBarman(''); setConfirmedSessions(new Set());
+    setPaymentProcessed(false);
   };
 
   const handleConfirmOrder = () => {
-    // Confirm order flow: clear ALL context for clean slate
+    if (!paymentProcessed) {
+      toast.error('Choose payment method first (Pay Here or Pay at Register)');
+      return;
+    }
+    // Clean slate after confirmed order
     setActiveSessionId(null); setActiveSession(null);
     setSelectedBarman(''); setConfirmedSessions(new Set());
     setCloseStep(null); setClosedSessionForTip(null); setTipInput(''); setTipResult(null);
+    setPaymentProcessed(false);
     toast.success('Order confirmed — ready for next customer');
   };
 
   const handleCancelOrder = () => {
-    // Cancel the current order interaction (deselect tab, go back)
     setActiveSessionId(null); setActiveSession(null);
-    setConfirmedSessions(prev => { const next = new Set(prev); if (activeSessionId) next.delete(activeSessionId); return next; });
+    setPaymentProcessed(false);
+    setCloseStep(null); setClosedSessionForTip(null); setTipInput(''); setTipResult(null);
     toast('Order cancelled');
   };
 
