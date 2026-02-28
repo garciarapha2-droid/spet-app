@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="7" skipped="3" tests="11" time="1.589" timestamp="2026-02-28T02:54:20.560730+00:00" hostname="agent-env-aa8e9705-7a69-4f2b-a237-e3aa9673dcaf"><testcase classname="backend.tests.test_p0_bugs_iteration30.TestBug1StaffSync" name="test_create_staff_via_manager" time="0.639"><failure message="AssertionError: Create staff failed: {&quot;detail&quot;:&quot;Not authenticated&quot;}&#10;assert 401 == 200&#10; +  where 401 = &lt;Response [401]&gt;.status_code">backend/tests/test_p0_bugs_iteration30.py:52: in test_create_staff_via_manager
+    assert response.status_code == 200, f"Create staff failed: {response.text}"
+E   AssertionError: Create staff failed: {"detail":"Not authenticated"}
+E   assert 401 == 200
+E    +  where 401 = &lt;Response [401]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_p0_bugs_iteration30.TestBug1StaffSync" name="test_staff_appears_in_barmen_dropdown" time="0.124"><failure message="AssertionError: Get barmen failed: {&quot;detail&quot;:&quot;Not authenticated&quot;}&#10;assert 401 == 200&#10; +  where 401 = &lt;Response [401]&gt;.status_code">backend/tests/test_p0_bugs_iteration30.py:69: in test_staff_appears_in_barmen_dropdown
+    assert response.status_code == 200, f"Get barmen failed: {response.text}"
+E   AssertionError: Get barmen failed: {"detail":"Not authenticated"}
+E   assert 401 == 200
+E    +  where 401 = &lt;Response [401]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_p0_bugs_iteration30.TestBug1StaffSync" name="test_cleanup_created_staff" time="0.000" /><testcase classname="backend.tests.test_p0_bugs_iteration30.TestBug2PayHereFlow" name="test_open_tab" time="0.121"><failure message="AssertionError: Open tab failed: {&quot;detail&quot;:&quot;Not authenticated&quot;}&#10;assert 401 == 200&#10; +  where 401 = &lt;Response [401]&gt;.status_code">backend/tests/test_p0_bugs_iteration30.py:108: in test_open_tab
+    assert response.status_code == 200, f"Open tab failed: {response.text}"
+E   AssertionError: Open tab failed: {"detail":"Not authenticated"}
+E   assert 401 == 200
+E    +  where 401 = &lt;Response [401]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_p0_bugs_iteration30.TestBug2PayHereFlow" name="test_get_catalog_items" time="0.119"><failure message="AssertionError: Get catalog failed: {&quot;detail&quot;:&quot;Not authenticated&quot;}&#10;assert 401 == 200&#10; +  where 401 = &lt;Response [401]&gt;.status_code">backend/tests/test_p0_bugs_iteration30.py:124: in test_get_catalog_items
+    assert response.status_code == 200, f"Get catalog failed: {response.text}"
+E   AssertionError: Get catalog failed: {"detail":"Not authenticated"}
+E   assert 401 == 200
+E    +  where 401 = &lt;Response [401]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_p0_bugs_iteration30.TestBug2PayHereFlow" name="test_add_item_to_tab" time="0.000"><skipped type="pytest.skip" message="No session or item from previous tests">/app/backend/tests/test_p0_bugs_iteration30.py:138: No session or item from previous tests</skipped></testcase><testcase classname="backend.tests.test_p0_bugs_iteration30.TestBug2PayHereFlow" name="test_close_tab_with_pay_here" time="0.000"><skipped type="pytest.skip" message="No session from previous tests">/app/backend/tests/test_p0_bugs_iteration30.py:160: No session from previous tests</skipped></testcase><testcase classname="backend.tests.test_p0_bugs_iteration30.TestBug3TipSync" name="test_record_tip" time="0.000"><skipped type="pytest.skip" message="No session from Pay Here test">/app/backend/tests/test_p0_bugs_iteration30.py:194: No session from Pay Here test</skipped></testcase><testcase classname="backend.tests.test_p0_bugs_iteration30.TestBug3TipSync" name="test_shift_overview_shows_tips" time="0.127"><failure message="AssertionError: Get shift overview failed: {&quot;detail&quot;:&quot;Not authenticated&quot;}&#10;assert 401 == 200&#10; +  where 401 = &lt;Response [401]&gt;.status_code">backend/tests/test_p0_bugs_iteration30.py:220: in test_shift_overview_shows_tips
+    assert response.status_code == 200, f"Get shift overview failed: {response.text}"
+E   AssertionError: Get shift overview failed: {"detail":"Not authenticated"}
+E   assert 401 == 200
+E    +  where 401 = &lt;Response [401]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_p0_bugs_iteration30.TestBug3TipSync" name="test_staff_costs_shows_tips" time="0.107"><failure message="AssertionError: Get staff costs failed: {&quot;detail&quot;:&quot;Not authenticated&quot;}&#10;assert 401 == 200&#10; +  where 401 = &lt;Response [401]&gt;.status_code">backend/tests/test_p0_bugs_iteration30.py:244: in test_staff_costs_shows_tips
+    assert response.status_code == 200, f"Get staff costs failed: {response.text}"
+E   AssertionError: Get staff costs failed: {"detail":"Not authenticated"}
+E   assert 401 == 200
+E    +  where 401 = &lt;Response [401]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_p0_bugs_iteration30.TestE2EFullFlow" name="test_full_e2e_flow" time="0.125"><failure message="AssertionError: Create staff failed: {&quot;detail&quot;:&quot;Not authenticated&quot;}&#10;assert 401 == 200&#10; +  where 401 = &lt;Response [401]&gt;.status_code">backend/tests/test_p0_bugs_iteration30.py:279: in test_full_e2e_flow
+    assert create_staff.status_code == 200, f"Create staff failed: {create_staff.text}"
+E   AssertionError: Create staff failed: {"detail":"Not authenticated"}
+E   assert 401 == 200
+E    +  where 401 = &lt;Response [401]&gt;.status_code</failure></testcase></testsuite></testsuites>
