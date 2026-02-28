@@ -676,9 +676,16 @@ export const TapPage = () => {
                     <Button variant="destructive" className="h-12 text-sm font-semibold" onClick={handleCancelOrder} data-testid="cancel-order-btn">
                       <X className="h-4 w-4 mr-1.5" /> Cancel Order
                     </Button>
-                    <Button className="h-12 text-sm font-semibold bg-green-600 hover:bg-green-700 text-white" onClick={handleConfirmOrder} data-testid="confirm-order-btn">
+                    <Button
+                      className={`h-12 text-sm font-semibold ${paymentProcessed ? 'bg-green-600 hover:bg-green-700 text-white' : 'bg-muted text-muted-foreground cursor-not-allowed'}`}
+                      onClick={handleConfirmOrder}
+                      disabled={!paymentProcessed}
+                      data-testid="confirm-order-btn">
                       <Check className="h-4 w-4 mr-1.5" /> Confirm Order
                     </Button>
+                    {!paymentProcessed && (
+                      <p className="col-span-2 text-[10px] text-muted-foreground text-center">Choose payment method above before confirming</p>
+                    )}
                   </div>
                 )}
               </div>
