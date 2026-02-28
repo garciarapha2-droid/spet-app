@@ -7,11 +7,44 @@ import { Button } from '../components/ui/button';
 import { ThemeToggle } from '../components/ThemeToggle';
 import {
   ArrowLeft, LayoutGrid, Plus, Users, X, Trash2, CreditCard, Banknote, Beer,
-  Home, LogOut, Pencil, Check, Camera, Upload, User, ChevronDown, Clock, ShieldCheck, ShieldAlert
+  Home, LogOut, Pencil, Check, Camera, Upload, User, ChevronDown, Clock, ShieldCheck, ShieldAlert, Video
 } from 'lucide-react';
 
 const VENUE_ID = () => localStorage.getItem('active_venue_id') || '40a24e04-75b6-435d-bfff-ab0d469ce543';
 const CATEGORIES = ['Beers', 'Cocktails', 'Spirits', 'Non-alcoholic', 'Snacks', 'Starters', 'Mains', 'Plates'];
+
+/* Camera Capture Modal */
+function CameraModal({ onCapture, onClose }) {
+  const vRef = useRef(null), cRef = useRef(null);
+  const [stream, setStream] = useState(null);
+  useEffect(() => {
+    let ms = null;
+    (async () => {
+      try { ms = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } }); setStream(ms); if (vRef.current) vRef.current.srcObject = ms; }
+      catch { toast.error('Camera unavailable'); onClose(); }
+    })();
+    return () => { if (ms) ms.getTracks().forEach(t => t.stop()); };
+  }, [onClose]);
+  const capture = () => {
+    if (!vRef.current || !cRef.current) return;
+    cRef.current.width = vRef.current.videoWidth; cRef.current.height = vRef.current.videoHeight;
+    cRef.current.getContext('2d').drawImage(vRef.current, 0, 0);
+    cRef.current.toBlob(b => { if (b) onCapture(new File([b], 'capture.jpg', { type: 'image/jpeg' })); }, 'image/jpeg', 0.8);
+    if (stream) stream.getTracks().forEach(t => t.stop()); onClose();
+  };
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80" data-testid="camera-modal">
+      <div className="bg-card rounded-2xl p-4 max-w-lg w-full mx-4 shadow-2xl">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="font-bold flex items-center gap-2"><Video className="h-4 w-4" /> Take Photo</h3>
+          <Button variant="ghost" size="icon" onClick={() => { if (stream) stream.getTracks().forEach(t => t.stop()); onClose(); }}><X className="h-4 w-4" /></Button>
+        </div>
+        <div className="rounded-xl overflow-hidden bg-black mb-3"><video ref={vRef} autoPlay playsInline muted className="w-full h-64 object-cover" /><canvas ref={cRef} className="hidden" /></div>
+        <Button className="w-full h-12" onClick={capture} data-testid="camera-capture-btn"><Camera className="h-5 w-5 mr-2" /> Capture</Button>
+      </div>
+    </div>
+  );
+}
 
 /* ─── ID Verification Modal (Table ONLY — alcohol compliance) ─────── */
 function IDVerificationModal({ onConfirm, onCancel }) {
