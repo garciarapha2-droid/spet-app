@@ -116,6 +116,69 @@ async def ensure_system_account():
             await conn.execute("UPDATE users SET status = 'active' WHERE email = 'teste@teste.com'")
             logger.info("Protected system account teste@teste.com verified")
 
+
+async def ensure_demo_tables():
+    """Ensure demo tables exist for product demonstrations — ADDITIVE ONLY."""
+    from database import get_postgres_pool
+    import json as _json
+    import uuid as _uuid
+    pool = get_postgres_pool()
+    vid = _uuid.UUID("40a24e04-75b6-435d-bfff-ab0d469ce543")
+    now = datetime.now(timezone.utc)
+    async with pool.acquire() as conn:
+        existing = await conn.fetchval("SELECT COUNT(*) FROM venue_tables WHERE venue_id=$1", vid)
+        if existing > 0:
+            logger.info(f"Demo tables already present ({existing}). Skipping seed.")
+            return
+        # Get user for session ownership
+        user_row = await conn.fetchrow("SELECT id FROM users WHERE email='teste@teste.com'")
+        if not user_row:
+            logger.warning("No test user found — cannot seed demo tables.")
+            return
+        user_id = user_row["id"]
+        # Create 8 tables across zones
+        table_defs = [
+            ("1", "main", 4), ("2", "main", 2), ("3", "main", 6), ("4", "main", 4),
+            ("5", "patio", 4), ("6", "patio", 2), ("7", "vip", 8), ("8", "vip", 6),
+        ]
+        table_ids = {}
+        for tn, zone, cap in table_defs:
+            tid = _uuid.uuid4()
+            await conn.execute(
+                """INSERT INTO venue_tables (id, venue_id, table_number, zone, capacity, status, created_at, updated_at)
+                   VALUES ($1, $2, $3, $4, $5, 'available', $6, $6)""",
+                tid, vid, tn, zone, cap, now,
+            )
+            table_ids[tn] = tid
+        # Occupy Table 2
+        sess_2 = _uuid.uuid4()
+        meta_2 = _json.dumps({"guest_name": "Maria Santos", "tab_number": 201, "server_name": "Carlos Silva"})
+        await conn.execute(
+            """INSERT INTO tap_sessions (id, venue_id, status, session_type, table_id, opened_by_user_id, opened_at, subtotal, total, meta)
+               VALUES ($1, $2, 'open', 'table', $3, $4, $5, 45.00, 45.00, $6::jsonb)""",
+            sess_2, vid, table_ids["2"], user_id, now, meta_2,
+        )
+        await conn.execute("UPDATE venue_tables SET status='occupied', current_session_id=$1 WHERE id=$2", sess_2, table_ids["2"])
+        # Occupy Table 3
+        sess_3 = _uuid.uuid4()
+        meta_3 = _json.dumps({"guest_name": "Ricardo Almeida", "tab_number": 305, "server_name": "Ana Perez"})
+        await conn.execute(
+            """INSERT INTO tap_sessions (id, venue_id, status, session_type, table_id, opened_by_user_id, opened_at, subtotal, total, meta)
+               VALUES ($1, $2, 'open', 'table', $3, $4, $5, 128.50, 128.50, $6::jsonb)""",
+            sess_3, vid, table_ids["3"], user_id, now, meta_3,
+        )
+        await conn.execute("UPDATE venue_tables SET status='occupied', current_session_id=$1 WHERE id=$2", sess_3, table_ids["3"])
+        # Occupy Table 7 (VIP)
+        sess_7 = _uuid.uuid4()
+        meta_7 = _json.dumps({"guest_name": "Fernando VIP", "tab_number": 701, "server_name": "Marco Rossi"})
+        await conn.execute(
+            """INSERT INTO tap_sessions (id, venue_id, status, session_type, table_id, opened_by_user_id, opened_at, subtotal, total, meta)
+               VALUES ($1, $2, 'open', 'table', $3, $4, $5, 350.00, 350.00, $6::jsonb)""",
+            sess_7, vid, table_ids["7"], user_id, now, meta_7,
+        )
+        await conn.execute("UPDATE venue_tables SET status='occupied', current_session_id=$1 WHERE id=$2", sess_7, table_ids["7"])
+        logger.info("Demo tables seeded: 8 tables (3 occupied)")
+
 # Shutdown event
 @app.on_event("shutdown")
 async def shutdown_event():
