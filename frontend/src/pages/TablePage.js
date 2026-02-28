@@ -95,6 +95,7 @@ export const TablePage = () => {
   const [barmen, setBarmen] = useState([]);
   const fileInputRef = useRef(null);
   const cameraInputRef = useRef(null);
+  const [showCamera, setShowCamera] = useState(false);
   const [pendingAlcoholItem, setPendingAlcoholItem] = useState(null);
   const [showIdModal, setShowIdModal] = useState(false);
 
