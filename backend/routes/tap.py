@@ -429,6 +429,9 @@ async def _auto_route_to_kds(pool, venue_id, session_id, item_row_id, item_name,
                VALUES ($1, $2, $3, $4, $5)""",
             ticket["id"], item_row_id, item_name, qty, None,
         )
+
+
+@router.post("/session/{session_id}/close")
 async def close_tab(
     session_id: str,
     user: dict = Depends(require_auth),
