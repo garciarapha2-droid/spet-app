@@ -833,3 +833,66 @@ async def search_guests(
     cursor = db.venue_guests.find(query, {"_id": 0, "id": 1, "name": 1, "photo": 1, "email": 1, "phone": 1, "visits": 1, "spend_total": 1, "tags": 1}).limit(20)
     guests = await cursor.to_list(20)
     return {"guests": guests}
+
+
+
+# ─── Bar Tab Search (by tab_number or guest name) ─────────────────
+@router.get("/bar/search")
+async def bar_tab_search(
+    venue_id: str,
+    q: str = "",
+    user: dict = Depends(require_auth),
+):
+    """Search open tap sessions by tab_number (with or without #) or guest name."""
+    pool = get_postgres_pool()
+    db = get_mongo_db()
+    vid = uuid.UUID(venue_id)
+    raw = q.strip()
+    if not raw:
+        return {"results": []}
+
+    cleaned = raw.lstrip("#")
+    is_numeric = cleaned.isdigit()
+
+    results = []
+    async with pool.acquire() as conn:
+        if is_numeric:
+            # Search by tab_number in meta JSONB
+            rows = await conn.fetch(
+                """SELECT id, guest_id, status, total, meta, opened_at
+                   FROM tap_sessions
+                   WHERE venue_id=$1 AND status='open'
+                   AND (meta->>'tab_number')::text = $2
+                   ORDER BY opened_at DESC LIMIT 10""",
+                vid, cleaned,
+            )
+        else:
+            # Search by guest name in meta JSONB
+            rows = await conn.fetch(
+                """SELECT id, guest_id, status, total, meta, opened_at
+                   FROM tap_sessions
+                   WHERE venue_id=$1 AND status='open'
+                   AND meta->>'guest_name' ILIKE $2
+                   ORDER BY opened_at DESC LIMIT 10""",
+                vid, f"%{raw}%",
+            )
+
+        for r in rows:
+            meta = r["meta"] if isinstance(r["meta"], dict) else json_mod.loads(r["meta"]) if r["meta"] else {}
+            guest_photo = None
+            if r["guest_id"]:
+                guest_doc = await db.venue_guests.find_one({"id": str(r["guest_id"])}, {"_id": 0, "photo": 1})
+                if guest_doc:
+                    guest_photo = guest_doc.get("photo")
+            results.append({
+                "session_id": str(r["id"]),
+                "guest_id": str(r["guest_id"]) if r["guest_id"] else None,
+                "guest_name": meta.get("guest_name", ""),
+                "guest_photo": guest_photo,
+                "tab_number": meta.get("tab_number"),
+                "total": float(r["total"]),
+                "status": r["status"],
+                "opened_at": r["opened_at"].isoformat() if r["opened_at"] else None,
+            })
+
+    return {"results": results}
