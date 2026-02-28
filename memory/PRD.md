@@ -17,6 +17,12 @@ Multi-tenant SaaS platform for venue operations (nightclubs, restaurants, bars).
 - **AI**: OpenAI GPT-5.2 via emergentintegrations + Emergent LLM Key
 - **Credentials**: teste@teste.com / 12345
 
+## NON-REGRESSION RULE (Absolute - Feb 2026)
+- Nothing that has been built can be removed, altered or "simplified" without explicit user approval
+- All flows remain intact: Bar/Tap confirmation, Table ID verification, Server mandatory, Close flow, Tips flow, Event/Guest memory, Dashboards
+- Product grows by ADDITION only, never by substitution
+- Any doubt → ask before deciding
+
 ## Core Requirements
 1. Home page shows active events only (single-click = preview, double-click = enter)
 2. Pulse: Entry management with guest identity
@@ -27,8 +33,9 @@ Multi-tenant SaaS platform for venue operations (nightclubs, restaurants, bars).
 7. Owner Dashboard: Multi-venue KPIs, financial analytics, AI insights, view switcher, people drill-down
 8. Unified Close Flow: Pay here / Pay at register
 9. Semi-automatic tip recording: Manual input → automatic distribution
+10. Demo Mode: Product must always have visible demo data for commercial demonstrations
 
-## Completed Features (as of Feb 2026)
+## Completed Features (as of Feb 28, 2026)
 - [x] Auth + JWT
 - [x] Home page with active event filtering + preview/enter
 - [x] Pulse, TAP, Table, KDS modules
@@ -39,13 +46,23 @@ Multi-tenant SaaS platform for venue operations (nightclubs, restaurants, bars).
 - [x] Conversational AI Assistant (Owner + Manager)
 - [x] Tab search without "#" prefix
 - [x] AI input: Enter = new line, button = submit
-- [x] **Manager Dashboard > Guests: Sorted by highest spender + profile modal (total spend, event history, tabs)**
-- [x] **Owner Dashboard > Overview: View switcher (Business Overview / By Venue / By Event)**
-- [x] **Owner Dashboard > People & Ops: Clickable cards with staff drill-down modal**
+- [x] Manager Dashboard > Guests: Sorted by highest spender + profile modal
+- [x] Owner Dashboard > Overview: View switcher (Business Overview / By Venue / By Event)
+- [x] Owner Dashboard > People & Ops: Clickable cards with staff drill-down modal
+- [x] **Demo Tables**: 8 tables seeded at startup (3 occupied, 5 available) for demo mode
 
 ## Backlog
 ### P0 (Next)
-- CEO Dashboard (Founder View) with KPIs, revenue vs profit, targets, growth pipeline
+- CEO Dashboard (Founder View):
+  - KPIs: MRR, Net Profit, Active Companies, Churn
+  - Revenue vs Profit chart
+  - Module adoption
+  - Risk & alerts
+  - Growth pipeline
+  - Targets Panel (left sidebar, ChatGPT-style):
+    - Weekly / Monthly / Annual goals
+    - Goals in $ and/or licenses
+    - Auto-calculated: progress %, licenses remaining, required pace (sales/day)
 
 ### P1
 - Per-Event Dashboard (Manager) — single event analysis
