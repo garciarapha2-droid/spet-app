@@ -337,10 +337,17 @@ function EventsView({ events }) {
 function VenuesSection() {
   const [data, setData] = useState(null);
   const [selected, setSelected] = useState(null);
+  const [eventsData, setEventsData] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    ownerAPI.getVenues().then(r => setData(r.data)).catch(() => toast.error('Failed')).finally(() => setLoading(false));
+    Promise.all([
+      ownerAPI.getVenues(),
+      ownerAPI.getDashboard('events'),
+    ]).then(([vRes, eRes]) => {
+      setData(vRes.data);
+      setEventsData(eRes.data);
+    }).catch(() => toast.error('Failed')).finally(() => setLoading(false));
   }, []);
 
   if (loading) return <Skeleton />;
@@ -350,9 +357,9 @@ function VenuesSection() {
 
   return (
     <div data-testid="venues-section">
+      {/* ── Performance by Venue (ABOVE) ── */}
       <h2 className="text-xl font-bold mb-4">Performance by Venue</h2>
 
-      {/* Table */}
       <div className="bg-card border border-border rounded-xl overflow-hidden mb-6">
         <div className="grid grid-cols-8 gap-4 px-5 py-3 text-xs font-medium text-muted-foreground uppercase bg-muted/30">
           <span>Venue</span><span>Health</span><span>Revenue Today</span><span>Revenue MTD</span><span>Tabs</span><span>Guests</span><span>Avg Ticket</span><span>Voids</span>
@@ -373,9 +380,9 @@ function VenuesSection() {
         ))}
       </div>
 
-      {/* Drill-down */}
+      {/* Venue Drill-down */}
       {selectedVenue && (
-        <div className="bg-card border border-primary/20 rounded-xl p-5" data-testid="venue-drilldown">
+        <div className="bg-card border border-primary/20 rounded-xl p-5 mb-6" data-testid="venue-drilldown">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-bold">{selectedVenue.name} — Detail</h3>
             <Button variant="ghost" size="sm" onClick={() => setSelected(null)}><X className="h-4 w-4" /></Button>
@@ -399,6 +406,53 @@ function VenuesSection() {
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {/* ── Performance by Event (BELOW) ── */}
+      <h2 className="text-xl font-bold mb-4 mt-8">Performance by Event</h2>
+      {eventsData?.events?.length > 0 ? (
+        <div className="space-y-3">
+          {eventsData.events.map(ev => (
+            <div key={ev.event_id} className="bg-card border border-border rounded-xl p-5" data-testid={`perf-event-${ev.event_id}`}>
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center"><Activity className="h-5 w-5 text-primary" /></div>
+                  <div>
+                    <h4 className="font-bold text-sm">{ev.name}</h4>
+                    <p className="text-xs text-muted-foreground">{ev.venue_name} — {ev.event_date ? new Date(ev.event_date).toLocaleDateString() : ''}</p>
+                  </div>
+                </div>
+                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                  ev.status === 'active' ? 'bg-green-500/10 text-green-600' :
+                  ev.status === 'ended' ? 'bg-muted text-muted-foreground' :
+                  'bg-blue-500/10 text-blue-600'}`}>{ev.status}</span>
+              </div>
+              <div className="grid grid-cols-4 gap-4">
+                <div className="text-center p-3 bg-green-500/5 rounded-lg border border-green-500/20">
+                  <p className="text-xl font-bold text-green-500">${ev.revenue.toFixed(0)}</p>
+                  <p className="text-[10px] text-muted-foreground">Revenue</p>
+                </div>
+                <div className="text-center p-3 bg-muted/30 rounded-lg">
+                  <p className="text-xl font-bold">{ev.tabs_closed}</p>
+                  <p className="text-[10px] text-muted-foreground">Tabs Closed</p>
+                </div>
+                <div className="text-center p-3 bg-muted/30 rounded-lg">
+                  <p className="text-xl font-bold">{ev.guests}</p>
+                  <p className="text-[10px] text-muted-foreground">Guests</p>
+                </div>
+                <div className="text-center p-3 bg-muted/30 rounded-lg">
+                  <p className="text-xl font-bold">{ev.staff}</p>
+                  <p className="text-[10px] text-muted-foreground">Staff</p>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="bg-card border-2 border-dashed border-border rounded-xl p-8 text-center">
+          <Activity className="h-10 w-10 mx-auto mb-3 text-muted-foreground opacity-30" />
+          <p className="text-sm text-muted-foreground">No events with financial data</p>
         </div>
       )}
     </div>
