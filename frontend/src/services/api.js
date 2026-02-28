@@ -192,6 +192,12 @@ export const ownerAPI = {
 };
 
 export const ceoAPI = {
-  getDashboard: () => api.get('/ceo/dashboard'),
+  getHealth: () => api.get('/ceo/health'),
+  getRevenue: (period) => api.get('/ceo/revenue', { params: { period: period || 'month' } }),
+  getTargets: () => api.get('/ceo/targets'),
+  updateTargets: (fd) => api.post('/ceo/targets', fd),
   getCompanies: () => api.get('/ceo/companies'),
+  getModules: () => api.get('/ceo/modules'),
+  getAlerts: () => api.get('/ceo/alerts'),
+  getPipeline: () => api.get('/ceo/pipeline'),
 };
