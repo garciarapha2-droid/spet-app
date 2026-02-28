@@ -82,6 +82,7 @@ export const TablePage = () => {
   const [showOpenForm, setShowOpenForm] = useState(false);
   const [guestName, setGuestName] = useState('');
   const [selectedServer, setSelectedServer] = useState('');
+  const [seatCount, setSeatCount] = useState('');
   const [showServerMenu, setShowServerMenu] = useState(false);
   const [loading, setLoading] = useState(false);
   const [catalog, setCatalog] = useState([]);
