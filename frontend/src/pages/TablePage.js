@@ -411,9 +411,8 @@ export const TablePage = () => {
                     className="h-9 rounded-md border border-input bg-background px-2 text-sm flex-1">
                     {CATEGORIES.map(c => <option key={c}>{c}</option>)}
                   </select>
-                  <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={e => e.target.files[0] && setCustomPhoto(e.target.files[0])} />
                   <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={e => e.target.files[0] && setCustomPhoto(e.target.files[0])} />
-                  <Button type="button" size="sm" variant="outline" onClick={() => cameraInputRef.current?.click()}><Camera className="h-3.5 w-3.5 mr-1" /> Photo</Button>
+                  <Button type="button" size="sm" variant="outline" onClick={() => setShowCamera(true)}><Camera className="h-3.5 w-3.5 mr-1" /> Photo</Button>
                   <Button type="button" size="sm" variant="outline" onClick={() => fileInputRef.current?.click()}><Upload className="h-3.5 w-3.5 mr-1" /> Upload</Button>
                 </div>
                 <Button size="sm" onClick={handleAddCustomItem} disabled={!customItem.name.trim() || !customItem.price} className="w-full">Add to Menu</Button>
