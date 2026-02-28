@@ -762,6 +762,90 @@ async def get_tables_by_server(venue_id: str, user: dict = Depends(require_auth)
     }
 
 
+
+# ─── Table Detail Drill-down (Manager) ────────────────────────────
+@router.get("/table-detail/{table_id}")
+async def get_table_detail_for_manager(table_id: str, user: dict = Depends(require_auth)):
+    """Get current order items for a table — used in Tables by Server drill-down."""
+    pool = get_postgres_pool()
+    tid = uuid.UUID(table_id)
+
+    async with pool.acquire() as conn:
+        table = await conn.fetchrow(
+            "SELECT id, table_number, zone, capacity, status, current_session_id FROM venue_tables WHERE id = $1", tid)
+        if not table:
+            raise HTTPException(404, "Table not found")
+
+        session = None
+        items = []
+        if table["current_session_id"]:
+            sess = await conn.fetchrow(
+                "SELECT id, total, meta, opened_at, status FROM tap_sessions WHERE id = $1",
+                table["current_session_id"])
+            if sess:
+                meta = sess["meta"] if isinstance(sess["meta"], dict) else json_mod.loads(sess["meta"]) if sess["meta"] else {}
+                session = {
+                    "id": str(sess["id"]),
+                    "total": float(sess["total"]) if sess["total"] else 0,
+                    "guest_name": meta.get("guest_name", "Guest"),
+                    "tab_number": meta.get("tab_number"),
+                    "server_name": meta.get("server_name"),
+                    "opened_at": sess["opened_at"].isoformat() if sess["opened_at"] else None,
+                    "status": sess["status"],
+                }
+                item_rows = await conn.fetch(
+                    """SELECT id, item_name, category, qty, line_total, unit_price, voided_at
+                       FROM tap_items WHERE tap_session_id = $1 AND voided_at IS NULL
+                       ORDER BY created_at""",
+                    sess["id"])
+                items = [{
+                    "id": str(r["id"]),
+                    "name": r["item_name"],
+                    "category": r["category"],
+                    "qty": r["qty"],
+                    "line_total": float(r["line_total"]),
+                    "unit_price": float(r["unit_price"]),
+                } for r in item_rows]
+
+    return {
+        "table_id": str(table["id"]),
+        "table_number": table["table_number"],
+        "zone": table["zone"],
+        "capacity": table["capacity"],
+        "status": table["status"],
+        "session": session,
+        "items": items,
+    }
+
+
+@router.post("/table-void-item")
+async def manager_void_item(
+    user: dict = Depends(require_auth),
+    session_id: str = Form(...),
+    item_id: str = Form(...),
+):
+    """Manager voids an item from a table order."""
+    pool = get_postgres_pool()
+    sid = uuid.UUID(session_id)
+    iid = uuid.UUID(item_id)
+    now = datetime.now(timezone.utc)
+
+    async with pool.acquire() as conn:
+        item = await conn.fetchrow(
+            "SELECT id, line_total FROM tap_items WHERE id = $1 AND tap_session_id = $2 AND voided_at IS NULL",
+            iid, sid)
+        if not item:
+            raise HTTPException(404, "Item not found or already voided")
+        await conn.execute(
+            "UPDATE tap_items SET voided_at = $1, voided_by_user_id = $2 WHERE id = $3",
+            now, uuid.UUID(user["sub"]), iid)
+        await conn.execute(
+            "UPDATE tap_sessions SET total = GREATEST(0, total - $1), subtotal = GREATEST(0, subtotal - $1) WHERE id = $2",
+            item["line_total"], sid)
+
+    return {"status": "voided", "item_id": str(iid)}
+
+
 # ═══════════════════════════════════════════════════════════════════
 # SHIFT VS OPERATIONS
 # ═══════════════════════════════════════════════════════════════════
