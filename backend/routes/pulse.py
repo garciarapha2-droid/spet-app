@@ -878,7 +878,7 @@ async def bar_tab_search(
             )
 
         for r in rows:
-            meta = r["meta"] if isinstance(r["meta"], dict) else json_mod.loads(r["meta"]) if r["meta"] else {}
+            meta = r["meta"] if isinstance(r["meta"], dict) else json.loads(r["meta"]) if r["meta"] else {}
             guest_photo = None
             if r["guest_id"]:
                 guest_doc = await db.venue_guests.find_one({"id": str(r["guest_id"])}, {"_id": 0, "photo": 1})
