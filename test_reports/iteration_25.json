@@ -1,0 +1,101 @@
+{
+  "summary": "Iteration 25: Demo Tables + Non-Regression Testing. ALL TESTS PASS. Demo data verified: 8 tables visible on left panel (3 occupied: Table #2 Maria Santos, Table #3 Ricardo Almeida, Table #7 Fernando VIP; 5 available: #1, #4, #5, #6, #8). All existing P0 features verified working without regression.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "features_tested": {
+    "login_teste_teste_com": {
+      "status": "PASS",
+      "description": "Login with teste@teste.com / 12345 works, redirects to /venue/home"
+    },
+    "table_page_shows_8_tables": {
+      "status": "PASS",
+      "description": "Table page left panel shows 8 tables (#1-#8) with demo data from ensure_demo_tables()"
+    },
+    "occupied_tables_with_guest_info": {
+      "status": "PASS",
+      "description": "3 occupied tables show guest names, tab numbers, servers: Table #2 (Maria Santos, #201, Carlos Silva), Table #3 (Ricardo Almeida, #305, Ana Perez), Table #7 (Fernando VIP, #701, Marco Rossi)"
+    },
+    "available_tables": {
+      "status": "PASS",
+      "description": "5 available tables (#1, #4, #5, #6, #8) show green 'Available' badges"
+    },
+    "server_selector": {
+      "status": "PASS",
+      "description": "Server Selector in header opens dropdown with 3 servers (Carlos Silva, Ana Perez, Marco Rossi). Mandatory server rule preserved."
+    },
+    "table_context_bar": {
+      "status": "PASS",
+      "description": "Clicking occupied Table #2 shows context bar with: Table #2, Guest: Maria Santos, Tab #201, elapsed time, Server: Carlos Silva, $45.00"
+    },
+    "open_available_table_form": {
+      "status": "PASS",
+      "description": "Clicking available table shows open form with Guest name input + Server selection dropdown. Validation message: 'Server must be selected before opening table'"
+    },
+    "catalog_items_display": {
+      "status": "PASS",
+      "description": "Center column shows catalog items (Beers, Cocktails, etc.) with category tabs. Shows IPA Draft $9.00, Lager $8.00, Pilsner $8.00, Stout $9.00"
+    },
+    "owner_dashboard_view_switcher": {
+      "status": "PASS",
+      "description": "View switcher works: Business Overview (KPIs), By Venue (per-venue financials), By Event (per-event data)"
+    },
+    "owner_people_ops_drilldown": {
+      "status": "PASS",
+      "description": "People & Ops shows 3 Total Operational Staff. BY VENUE and BY EVENT sections with clickable cards. Drill-down modal shows staff: Carlos Silva, Ana Perez, Marco Rossi (all Servers)"
+    },
+    "manager_guests_sorted_by_spend": {
+      "status": "PASS",
+      "description": "NFC & Guests shows '4 total guests — sorted by highest spender'. Order: John Smith VIP $450, Maria Lopez $180, Kevin Brown Blocked $90, Juliano $0"
+    },
+    "manager_guest_profile_modal": {
+      "status": "PASS",
+      "description": "Clicking guest row opens profile modal with SPEND SUMMARY (Total Spend, Total Tabs, Avg Spend, Visits, Points), EVENT HISTORY, RECENT TABS"
+    },
+    "home_page_venue_calendar": {
+      "status": "PASS",
+      "description": "Home page shows venue (Demo Club Updated), calendar for date selection, + New Event button, Enter venue button"
+    },
+    "api_table_tables": {
+      "status": "PASS",
+      "description": "GET /api/table/tables returns 8 tables with correct status (3 occupied, 5 available), session_guest, tab_number, server_name"
+    }
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iteration25_demo_tables.py",
+    "/app/test_reports/pytest/iteration25_demo_tables.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [],
+  "updated_files": [
+    "/app/backend/tests/test_iteration25_demo_tables.py"
+  ],
+  "success_rate": {
+    "backend": "100% (14/14 pytest tests passed)",
+    "frontend": "100% (All UI features verified via Playwright)"
+  },
+  "test_credentials": {
+    "email": "teste@teste.com",
+    "password": "12345",
+    "venue_id": "40a24e04-75b6-435d-bfff-ab0d469ce543"
+  },
+  "demo_tables_seed_data": {
+    "table_1": {"table_number": "1", "zone": "main", "capacity": 4, "status": "available"},
+    "table_2": {"table_number": "2", "zone": "main", "capacity": 2, "status": "occupied", "guest": "Maria Santos", "tab": 201, "server": "Carlos Silva"},
+    "table_3": {"table_number": "3", "zone": "main", "capacity": 6, "status": "occupied", "guest": "Ricardo Almeida", "tab": 305, "server": "Ana Perez"},
+    "table_4": {"table_number": "4", "zone": "main", "capacity": 4, "status": "available"},
+    "table_5": {"table_number": "5", "zone": "patio", "capacity": 4, "status": "available"},
+    "table_6": {"table_number": "6", "zone": "patio", "capacity": 2, "status": "available"},
+    "table_7": {"table_number": "7", "zone": "vip", "capacity": 8, "status": "occupied", "guest": "Fernando VIP", "tab": 701, "server": "Marco Rossi"},
+    "table_8": {"table_number": "8", "zone": "vip", "capacity": 6, "status": "available"}
+  },
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Iteration 25: Demo data addition + non-regression test PASSED. The ensure_demo_tables() function in server.py seeds 8 tables at startup if venue_tables is empty for the demo venue. 3 tables are occupied with active tap_sessions (Maria Santos Tab#201, Ricardo Almeida Tab#305, Fernando VIP Tab#701). All P0 features from previous iterations remain intact: Owner Dashboard view switcher, People & Ops drill-down, Manager Guests sorted by spend with profile modal. Server selection is mandatory for opening tables."
+}
