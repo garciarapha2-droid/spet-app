@@ -327,13 +327,13 @@ async def seed():
                 item_name, cat, price, qty, price * qty, is_alc, staff_id, now - timedelta(minutes=30),
             )
 
-        # Session 4: "Guest" at Table 3 — Tab #126 — Open (needs payment scenario)
+        # Session 4: Alex Turner at Table 3 — Tab #126 — Open (needs payment scenario)
         meta_guest = json.dumps({"guest_name": "Alex Turner", "tab_number": 126, "server_name": "Ana Perez"})
         sess4 = await conn.fetchrow(
-            """INSERT INTO tap_sessions (venue_id, table_id, session_type, opened_by_user_id, status, meta, opened_at, subtotal, total)
-               VALUES ($1::uuid, $2, 'table', $3, 'open', $4::jsonb, $5, 15.0, 15.0) RETURNING id""",
-            uuid.UUID(VENUE_ID), table_ids["3"], staff_id,
-            meta_guest, now - timedelta(hours=1),
+            """INSERT INTO tap_sessions (venue_id, guest_id, table_id, session_type, opened_by_user_id, status, meta, opened_at, subtotal, total)
+               VALUES ($1::uuid, $2::uuid, $3, 'table', $4, 'open', $5::jsonb, $6, 15.0, 15.0) RETURNING id""",
+            uuid.UUID(VENUE_ID), uuid.UUID("a0000004-0000-0000-0000-000000000004"), table_ids["3"], staff_id,
+            meta_guest, now - timedelta(minutes=55),
         )
         sess4_id = sess4["id"]
         await conn.execute(
