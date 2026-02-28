@@ -12,6 +12,14 @@ import os
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
+
+def _parse_meta(raw):
+    if isinstance(raw, dict): return raw
+    if isinstance(raw, str):
+        try: return json_mod.loads(raw)
+        except Exception: return {}
+    return {}
+
 PROTECTED_EMAILS = {"teste@teste.com"}
 
 
