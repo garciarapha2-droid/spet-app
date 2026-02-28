@@ -409,7 +409,10 @@ async def add_item_to_tab(
         "qty": qty,
         "line_total": float(line_total),
         "session_total": float(new_total),
-    }(pool, venue_id, session_id, item_row_id, item_name, qty, is_alcohol, staff_id, table_id=None, guest_name=None):
+    }
+
+
+async def _auto_route_to_kds(pool, venue_id, session_id, item_row_id, item_name, qty, is_alcohol, staff_id, table_id=None, guest_name=None):
     """Auto-route a single item to KDS. Alcohol→bar, Non-alcohol→kitchen."""
     destination = "bar" if is_alcohol else "kitchen"
     meta_json = json_mod.dumps({"guest_name": guest_name or "Guest"})
