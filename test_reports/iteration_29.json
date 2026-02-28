@@ -1,0 +1,86 @@
+{
+  "summary": "Iteration 29: P0 CONSISTENCY PATCH - ALL 10 CRITICAL FIXES VERIFIED. Backend 11/11 pytest tests passed. Frontend Playwright tests all passed for TAP flow, TABLE flow, Owner Dashboard, Pulse Bar, KDS, and Menu Sort.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "features_tested": {
+    "test_1_tap_flow_order": {
+      "status": "VERIFIED",
+      "description": "TAP page Pay→Tip→Confirm flow working correctly. Confirm Order button is DISABLED (bg-muted, cursor-not-allowed) until payment method chosen. Hint text 'Choose payment method above before confirming' displayed. After clicking 'Pay at Register' → Confirm becomes GREEN (bg-green-600) and enabled. Cancel Order always enabled. Toast shows 'Sent to register — tab stays open. Now you can Confirm.'"
+    },
+    "test_2_table_flow_order": {
+      "status": "VERIFIED",
+      "description": "TABLE page Pay→Confirm flow working correctly. Confirm button disabled (bg-muted, cursor-not-allowed) with hint text until Pay at register clicked. After payment → Confirm turns GREEN and enabled. Cancel Order always enabled."
+    },
+    "test_3_table_total_matches": {
+      "status": "VERIFIED",
+      "description": "Backend pytest verified: Table #2 John Smith session total $45.00 = Classic Burger x2 ($36.00) + IPA Draft x1 ($9.00). API /api/manager/table-detail/{table_id} returns correct total matching items sum."
+    },
+    "test_4_owner_dashboard_automatic": {
+      "status": "VERIFIED",
+      "description": "Owner Dashboard (/owner) shows REAL PostgreSQL data: Open Tabs=3 ($77 running), Revenue Today=$22, Guests Today=4, Tabs Closed Today=1, Avg Ticket=$22.00. ARPU=$5.50, Retention=50%. Demo Club Updated venue shows $22 revenue, 3 tabs, 4 guests."
+    },
+    "test_5_guest_sync_inside_list": {
+      "status": "VERIFIED",
+      "description": "Backend pytest verified: /api/pulse/inside returns 4 guests (John, Maria, Kevin, Alex). /api/tap/sessions returns 3 open sessions. All session guests appear in Inside list."
+    },
+    "test_6_guest_sync_pulse_bar": {
+      "status": "VERIFIED",
+      "description": "PulseBarPage (/pulse/bar) shows INSIDE TABS (3): Kevin Brown #125 $17.00, Alex Turner #126 $15.00, John Smith #123 $45.00. All 3 open session guests correctly displayed."
+    },
+    "test_7_tips_integration": {
+      "status": "VERIFIED",
+      "description": "Backend pytest verified: /api/manager/shift-drilldown?kpi=tips endpoint returns tip records from closed sessions with tip_amount in meta."
+    },
+    "test_8_owner_events": {
+      "status": "VERIFIED",
+      "description": "Owner Dashboard 'By Event' view shows BOTH active (green badge) AND ended (gray badge) events. Active: TEST_Event_1772171324.699667, Test Friday Night. Ended: TEST_Event_1772171295.463399, Test Event, TEST_End_Event."
+    },
+    "test_9_menu_sort": {
+      "status": "VERIFIED",
+      "description": "Beers category items sorted alphabetically: IPA Draft $9.00 → Lager $8.00 → Pilsner $8.00 → Stout $9.00. Order confirmed via Playwright text position analysis."
+    },
+    "test_10_kds_eta": {
+      "status": "VERIFIED",
+      "description": "KDS page shows Pending tickets. Clicking 'Start Preparing' opens ETA modal (data-testid='eta-modal') with 'Estimated Time' title, minutes input field, and Confirm/Cancel buttons. Delayed popup also working with 'ORDER DELAYED' message."
+    }
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iteration29_p0_consistency.py",
+    "/app/test_reports/pytest/iteration29_p0_consistency.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [],
+  "updated_files": [
+    "/app/backend/tests/test_iteration29_p0_consistency.py"
+  ],
+  "success_rate": {
+    "backend": "100% (11/11 pytest tests passed)",
+    "frontend": "100% (10/10 P0 consistency features verified via Playwright)"
+  },
+  "test_credentials": {
+    "email": "teste@teste.com",
+    "password": "12345",
+    "venue_id": "40a24e04-75b6-435d-bfff-ab0d469ce543"
+  },
+  "seed_data_verification": {
+    "inside_guests": 4,
+    "open_sessions": 3,
+    "open_sessions_detail": [
+      "John Smith #123 $45.00 (Table 2)",
+      "Kevin Brown #125 $17.00",
+      "Alex Turner #126 $15.00 (Table 3)"
+    ],
+    "closed_sessions": 1,
+    "closed_session_detail": "Maria Lopez #124 $22.00"
+  },
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Iteration 29: ALL P0 CONSISTENCY PATCH FIXES VERIFIED. (1) TAP flow: Confirm disabled until payment, hint text shown, turns green after Pay at Register. (2) TABLE flow: Same behavior - Confirm disabled until payment selected. (3) Table total = items sum verified via API. (4) Owner Dashboard shows real PG data: 3 open tabs, $77 running, $22 revenue, 4 guests. (5) Guest sync working - all session guests in Inside list. (6) PulseBar shows 3 Inside Tabs matching open sessions. (7) Tips drilldown working. (8) Owner Events shows active+ended events. (9) Menu sorted alphabetically. (10) KDS ETA modal appears on Start Preparing. No issues found."
+}
