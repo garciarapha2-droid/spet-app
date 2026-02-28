@@ -8,7 +8,8 @@ Multi-tenant SaaS platform for venue operations (nightclubs, bars, restaurants).
 - Multi-module architecture (Pulse, Tap, Table, KDS)
 - Role-based dashboards (Manager, Owner, CEO)
 - Demo-first approach: always presentable with seeded data
-- All modules must communicate: Pulse <-> Tap <-> Table <-> KDS <-> Manager
+- All modules MUST communicate: Pulse <-> Tap <-> Table <-> KDS <-> Manager <-> Owner
+- Single source of truth for all data (PostgreSQL for transactions, MongoDB for documents)
 
 ## Architecture
 - **Frontend**: React + Tailwind CSS + Shadcn UI
@@ -21,45 +22,37 @@ Multi-tenant SaaS platform for venue operations (nightclubs, bars, restaurants).
 
 ### Core Modules (Complete)
 - Pulse (Entrance) + Bar with bartender selector + tips + Inside guest filtering
-- Tap (Bar) with full order lifecycle + camera + cancel/confirm + pay at register
-- Table (Restaurant) with server assignments + seats mandatory + auto KDS routing
+- Tap (Bar) with full order lifecycle + camera + cancel/confirm + pay flow
+- Table (Restaurant) with server + seats + auto KDS routing + cancel/confirm
 - KDS (Kitchen Display) with Kitchen/Bar tabs + ETA modal + delayed handling
 
 ### Dashboards (Complete)
 - Manager Dashboard: All tabs + Tables by Server drill-down + Shift KPI drill-down
-- Owner Dashboard: Multi-venue selector + Growth & Loyalty + Modules display
+- Owner Dashboard: Multi-venue selector + Growth & Loyalty + Modules display + automatic real data
 - CEO Dashboard: KPIs, revenue charts, target tracking
 
-### Block 1 — 12 Refinements (COMPLETE — Feb 28, 2026)
-1. TABLE - Mandatory Server + Seats ✅
-2. TAP/BAR - Persistent bartender ✅
-3. TAP/BAR - Cancel/Confirm buttons ✅
-4. TAP/BAR - Clean slate after confirmation ✅
-5. KDS - Demo delayed ticket + alert bug fix ✅
-6. MANAGER - Tables by Server drill-down ✅
-7. MENU - Category + alphabetical sorting ✅
-8. OWNER - Multi-venue selector ✅
-9. OWNER - Past + active events ✅
-10. OWNER - Venue perf above Event perf ✅
-11. OWNER - Growth & Loyalty enhanced ✅
-12. OWNER - Active Modules display ✅
+### Block 1 — 12 Refinements (DONE)
+1-12: All completed (Table mandatory fields, Tap persistence, KDS fix, Manager drill-down, Owner features, etc.)
 
-### Block 2 — 12 P0 Corrections (COMPLETE — Feb 28, 2026)
-1. TABLE → KDS: Kitchen items auto-route to KDS ✅
-2. ROUTING: Kitchen→Kitchen KDS, Bar→Bar KDS ✅
-3. PHOTO: Camera getUserMedia + Upload file picker ✅
-4. PULSE/BAR: Only "Inside" guests shown ✅
-5. BAR/TAP: Inside guests eligible for tabs ✅
-6. PULSE/BAR: Bartender selector required ✅
-7. PULSE: Checkout with tips (18%/20%/22%/Custom) ✅
-8. KDS: Demo data for Kitchen + Bar with Delayed ✅
-9. KDS: ETA modal required before Preparing ✅
-10. MANAGER: Shift KPIs clickable with drill-down ✅
-11. TAP: Pay at Register keeps tab open ✅
-12. DATA: Guest persistence across events ✅
+### Block 2 — 12 P0 Corrections (DONE)
+1-12: All completed (KDS routing, camera getUserMedia, Pulse/Bar integration, ETA modal, Manager drilldown, Tap flow, data persistence)
+
+### Block 3 — 6 P0 Consistency Patch (DONE — Feb 28, 2026)
+1. Flow order: Pay → Tip → Confirm (Confirm blocked until payment chosen) ✅
+2. Table total = items sum (seed fix: $45 matches) ✅
+3. Owner Dashboard automatic real data (4 guests, 3 tabs, $22 revenue) ✅
+4. Guest sync: 4 Inside guests across all modules (Pulse/Bar/Tap) ✅
+5. State sync: Single source of truth, no isolated module logic ✅
+6. Tips → Manager automatic (shift-drilldown reads tip_amount from meta) ✅
+
+## Key Non-Negotiable Rules
+- **Non-regression**: Nothing existing can be removed/simplified without approval
+- **Flow order**: Pay → Tip → Confirm (never confirm before paying)
+- **Data consistency**: Same numbers everywhere, single source of truth
+- **Demo-first**: All screens must be populated with realistic demo data
 
 ## Prioritized Backlog
-- (P0) Demo checklist + UX polish (next)
+- (P0) Checklist final de demo e operação + UX polish
 - (P1) Per-Event Dashboard (Manager View)
 - (P2) KDS / Bar Order Routing refinement
 - (P2) Push notifications
