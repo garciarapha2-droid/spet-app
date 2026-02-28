@@ -20,7 +20,7 @@ import { TablePage } from './pages/TablePage';
 import { KitchenPage } from './pages/KitchenPage';
 import { ManagerPage } from './pages/ManagerPage';
 import { OwnerPage } from './pages/OwnerPage';
-import { CEOPage } from './pages/CEOPage';
+import { CEOPage } from './pages/CeoPage';
 
 function App() {
   return (
