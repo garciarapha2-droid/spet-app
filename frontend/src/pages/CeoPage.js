@@ -1,0 +1,565 @@
+import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { ceoAPI } from '../services/api';
+import { toast } from 'sonner';
+import { Input } from '../components/ui/input';
+import { Button } from '../components/ui/button';
+import {
+  ArrowLeft, DollarSign, TrendingUp, Users, Building2, Activity,
+  Target, AlertTriangle, ChevronRight, BarChart3, ShieldAlert,
+  Zap, ArrowUpRight, ArrowDownRight, X, Check, Layers
+} from 'lucide-react';
+
+const TABS = [
+  { key: 'health', label: 'Company Health', icon: Activity },
+  { key: 'revenue', label: 'Revenue & Profit', icon: DollarSign },
+  { key: 'companies', label: 'Companies', icon: Building2 },
+  { key: 'modules', label: 'Module Adoption', icon: Layers },
+  { key: 'alerts', label: 'Risk & Alerts', icon: AlertTriangle },
+  { key: 'pipeline', label: 'Growth Pipeline', icon: TrendingUp },
+];
+
+export default function CeoPage() {
+  const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState('health');
+  const [targets, setTargets] = useState(null);
+  const [targetsLoading, setTargetsLoading] = useState(true);
+  const [editingTargets, setEditingTargets] = useState(false);
+  const [targetForm, setTargetForm] = useState({ weekly: '', monthly: '', annual: '' });
+
+  const loadTargets = useCallback(() => {
+    setTargetsLoading(true);
+    ceoAPI.getTargets().then(r => setTargets(r.data.targets)).catch(() => {}).finally(() => setTargetsLoading(false));
+  }, []);
+
+  useEffect(() => { loadTargets(); }, [loadTargets]);
+
+  const handleSaveTargets = async () => {
+    const fd = new FormData();
+    if (targetForm.weekly) { fd.append('weekly_value', targetForm.weekly); fd.append('weekly_type', 'revenue'); }
+    if (targetForm.monthly) { fd.append('monthly_value', targetForm.monthly); fd.append('monthly_type', 'revenue'); }
+    if (targetForm.annual) { fd.append('annual_value', targetForm.annual); fd.append('annual_type', 'revenue'); }
+    try {
+      await ceoAPI.updateTargets(fd);
+      toast.success('Targets updated');
+      setEditingTargets(false);
+      loadTargets();
+    } catch { toast.error('Failed'); }
+  };
+
+  return (
+    <div className="min-h-screen bg-background" data-testid="ceo-dashboard">
+      {/* Header */}
+      <header className="h-14 border-b border-border bg-card px-6 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="icon" onClick={() => navigate('/venue/home')} data-testid="ceo-back-btn">
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <span className="text-lg font-bold tracking-tight">CEO DASHBOARD</span>
+          <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">Founder View</span>
+        </div>
+      </header>
+
+      <div className="flex">
+        {/* Left Sidebar: Targets Panel */}
+        <aside className="w-72 border-r border-border bg-card/50 min-h-[calc(100vh-3.5rem)] p-4 flex-shrink-0" data-testid="targets-panel">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-sm font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+              <Target className="h-4 w-4 text-primary" /> Targets
+            </h2>
+            <button onClick={() => { setEditingTargets(!editingTargets); if (!editingTargets && targets) { setTargetForm({ weekly: targets.weekly?.goal || '', monthly: targets.monthly?.goal || '', annual: targets.annual?.goal || '' }); } }}
+              className="text-xs text-primary hover:underline" data-testid="edit-targets-btn">
+              {editingTargets ? 'Cancel' : 'Edit'}
+            </button>
+          </div>
+
+          {editingTargets ? (
+            <div className="space-y-3" data-testid="targets-edit-form">
+              <div>
+                <label className="text-xs text-muted-foreground">Weekly Goal ($)</label>
+                <Input type="number" value={targetForm.weekly} onChange={e => setTargetForm(p => ({ ...p, weekly: e.target.value }))} className="h-8 text-sm" />
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground">Monthly Goal ($)</label>
+                <Input type="number" value={targetForm.monthly} onChange={e => setTargetForm(p => ({ ...p, monthly: e.target.value }))} className="h-8 text-sm" />
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground">Annual Goal ($)</label>
+                <Input type="number" value={targetForm.annual} onChange={e => setTargetForm(p => ({ ...p, annual: e.target.value }))} className="h-8 text-sm" />
+              </div>
+              <Button size="sm" className="w-full" onClick={handleSaveTargets} data-testid="save-targets-btn">
+                <Check className="h-3 w-3 mr-1" /> Save
+              </Button>
+            </div>
+          ) : targetsLoading ? (
+            <div className="space-y-4 animate-pulse">
+              <div className="h-24 bg-muted rounded-xl" />
+              <div className="h-24 bg-muted rounded-xl" />
+              <div className="h-24 bg-muted rounded-xl" />
+            </div>
+          ) : targets ? (
+            <div className="space-y-3">
+              <TargetCard label="Weekly" data={targets.weekly} color="blue" />
+              <TargetCard label="Monthly" data={targets.monthly} color="emerald" />
+              <TargetCard label="Annual" data={targets.annual} color="purple" />
+            </div>
+          ) : null}
+
+          {/* Nav Tabs */}
+          <div className="mt-6 space-y-1">
+            {TABS.map(t => {
+              const Icon = t.icon;
+              return (
+                <button key={t.key} onClick={() => setActiveTab(t.key)}
+                  className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                    activeTab === t.key ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'}`}
+                  data-testid={`ceo-tab-${t.key}`}>
+                  <Icon className="h-4 w-4" /> {t.label}
+                </button>
+              );
+            })}
+          </div>
+        </aside>
+
+        {/* Main Content */}
+        <main className="flex-1 p-6 overflow-y-auto max-h-[calc(100vh-3.5rem)]">
+          {activeTab === 'health' && <HealthSection />}
+          {activeTab === 'revenue' && <RevenueSection />}
+          {activeTab === 'companies' && <CompaniesSection />}
+          {activeTab === 'modules' && <ModulesSection />}
+          {activeTab === 'alerts' && <AlertsSection />}
+          {activeTab === 'pipeline' && <PipelineSection />}
+        </main>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Target Card ─── */
+function TargetCard({ label, data, color }) {
+  if (!data) return null;
+  const pct = data.pct || 0;
+  const colorMap = { blue: 'bg-blue-500', emerald: 'bg-emerald-500', purple: 'bg-purple-500' };
+  const textMap = { blue: 'text-blue-500', emerald: 'text-emerald-500', purple: 'text-purple-500' };
+  const bgMap = { blue: 'bg-blue-500/10', emerald: 'bg-emerald-500/10', purple: 'bg-purple-500/10' };
+
+  return (
+    <div className={`rounded-xl border border-border p-3 ${bgMap[color]}`} data-testid={`target-${label.toLowerCase()}`}>
+      <div className="flex items-center justify-between mb-1">
+        <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{label}</span>
+        <span className={`text-xs font-bold ${textMap[color]}`}>{pct}%</span>
+      </div>
+      <div className="w-full h-2 bg-muted rounded-full mb-2">
+        <div className={`h-2 rounded-full transition-all ${colorMap[color]}`} style={{ width: `${Math.min(pct, 100)}%` }} />
+      </div>
+      <div className="grid grid-cols-2 gap-1 text-xs">
+        <div>
+          <span className="text-muted-foreground">Actual: </span>
+          <span className="font-bold">${(data.actual || 0).toLocaleString()}</span>
+        </div>
+        <div>
+          <span className="text-muted-foreground">Goal: </span>
+          <span className="font-bold">${(data.goal || 0).toLocaleString()}</span>
+        </div>
+        <div>
+          <span className="text-muted-foreground">Left: </span>
+          <span className="font-bold">${(data.remaining || 0).toLocaleString()}</span>
+        </div>
+        <div>
+          <span className="text-muted-foreground">Pace: </span>
+          <span className={`font-bold ${textMap[color]}`}>${(data.pace_needed || 0).toLocaleString()}/day</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─── 1. Company Health ─── */
+function HealthSection() {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    ceoAPI.getHealth().then(r => setData(r.data.kpis)).catch(() => toast.error('Failed')).finally(() => setLoading(false));
+  }, []);
+
+  if (loading) return <Skeleton />;
+  if (!data) return <p className="text-muted-foreground">No data</p>;
+
+  const kpis = [
+    { label: 'MRR', value: `$${(data.mrr || 0).toLocaleString()}`, icon: DollarSign, accent: 'text-green-500', status: data.mrr > 0 ? 'green' : 'red' },
+    { label: 'Gross Revenue', value: `$${(data.gross_revenue || 0).toLocaleString()}`, icon: BarChart3, accent: 'text-emerald-500', status: 'green' },
+    { label: 'Net Profit', value: `$${(data.net_profit || 0).toLocaleString()}`, icon: DollarSign, accent: 'text-blue-500', status: data.net_profit > 0 ? 'green' : 'yellow' },
+    { label: 'Active Companies', value: data.active_companies, icon: Building2, accent: 'text-purple-500', status: 'green' },
+    { label: 'Active Venues', value: data.active_venues, icon: Building2, accent: 'text-indigo-500', status: 'green' },
+    { label: 'Churn Rate', value: `${data.churn_rate}%`, icon: AlertTriangle, accent: data.churn_rate > 5 ? 'text-red-500' : 'text-green-500', status: data.churn_rate > 5 ? 'red' : data.churn_rate > 2 ? 'yellow' : 'green' },
+    { label: 'Activation Rate', value: `${data.activation_rate}%`, icon: Zap, accent: data.activation_rate > 50 ? 'text-green-500' : 'text-yellow-500', status: data.activation_rate > 50 ? 'green' : 'yellow' },
+    { label: 'Avg Rev/Company', value: `$${(data.avg_rev_company || 0).toLocaleString()}`, icon: TrendingUp, accent: 'text-teal-500', status: 'green' },
+  ];
+
+  return (
+    <div data-testid="ceo-health-section">
+      <h2 className="text-xl font-bold mb-5">Company Health</h2>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {kpis.map((k, i) => {
+          const Icon = k.icon;
+          const statusColor = k.status === 'green' ? 'border-green-500/30' : k.status === 'yellow' ? 'border-yellow-500/30' : 'border-red-500/30';
+          const dotColor = k.status === 'green' ? 'bg-green-500' : k.status === 'yellow' ? 'bg-yellow-500' : 'bg-red-500';
+          return (
+            <div key={i} className={`bg-card border-2 ${statusColor} rounded-xl p-4 hover:shadow-md transition-all cursor-pointer`}
+              data-testid={`ceo-kpi-${k.label.toLowerCase().replace(/[^a-z]/g, '-')}`}>
+              <div className="flex items-center justify-between mb-2">
+                <div className={`w-8 h-8 rounded-lg bg-muted flex items-center justify-center`}>
+                  <Icon className={`h-4 w-4 ${k.accent}`} />
+                </div>
+                <div className={`w-2.5 h-2.5 rounded-full ${dotColor}`} />
+              </div>
+              <p className={`text-2xl font-bold ${k.accent}`}>{k.value}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">{k.label}</p>
+            </div>
+          );
+        })}
+      </div>
+      {/* Growth indicator */}
+      <div className="mt-6 bg-card border border-border rounded-xl p-5 flex items-center justify-between" data-testid="ceo-growth-banner">
+        <div className="flex items-center gap-4">
+          <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${data.growth_pct >= 0 ? 'bg-green-500/10' : 'bg-red-500/10'}`}>
+            {data.growth_pct >= 0 ? <ArrowUpRight className="h-6 w-6 text-green-500" /> : <ArrowDownRight className="h-6 w-6 text-red-500" />}
+          </div>
+          <div>
+            <p className="text-sm text-muted-foreground">Month-over-Month Growth</p>
+            <p className={`text-3xl font-bold ${data.growth_pct >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+              {data.growth_pct > 0 ? '+' : ''}{data.growth_pct}%
+            </p>
+          </div>
+        </div>
+        <div className="text-right">
+          <p className="text-sm text-muted-foreground">Revenue Today</p>
+          <p className="text-2xl font-bold">${(data.revenue_today || 0).toLocaleString()}</p>
+          <p className="text-xs text-muted-foreground">YTD: ${(data.revenue_ytd || 0).toLocaleString()}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─── 2. Revenue & Profit ─── */
+function RevenueSection() {
+  const [data, setData] = useState(null);
+  const [period, setPeriod] = useState('month');
+  const [loading, setLoading] = useState(true);
+
+  const load = useCallback((p) => {
+    setLoading(true);
+    ceoAPI.getRevenue(p || period).then(r => setData(r.data)).catch(() => toast.error('Failed')).finally(() => setLoading(false));
+  }, [period]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const switchPeriod = (p) => { setPeriod(p); load(p); };
+
+  if (loading) return <Skeleton />;
+
+  const chart = data?.chart || [];
+  const maxRev = Math.max(...chart.map(c => c.revenue), 1);
+  const totalRev = chart.reduce((s, c) => s + c.revenue, 0);
+  const totalProfit = chart.reduce((s, c) => s + c.profit, 0);
+  const totalFees = chart.reduce((s, c) => s + c.fees, 0);
+
+  return (
+    <div data-testid="ceo-revenue-section">
+      <div className="flex items-center justify-between mb-5">
+        <h2 className="text-xl font-bold">Revenue vs Profit</h2>
+        <div className="flex items-center bg-muted/50 rounded-lg p-1" data-testid="revenue-period-switcher">
+          {['week', 'month', 'year'].map(p => (
+            <button key={p} onClick={() => switchPeriod(p)}
+              className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${
+                period === p ? 'bg-card text-primary shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+              data-testid={`period-${p}`}>
+              {p.charAt(0).toUpperCase() + p.slice(1)}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Summary KPIs */}
+      <div className="grid grid-cols-4 gap-4 mb-6">
+        <div className="bg-card border border-border rounded-xl p-4">
+          <p className="text-xs text-muted-foreground">Gross Revenue</p>
+          <p className="text-2xl font-bold text-green-500">${totalRev.toLocaleString()}</p>
+        </div>
+        <div className="bg-card border border-border rounded-xl p-4">
+          <p className="text-xs text-muted-foreground">Net Revenue</p>
+          <p className="text-2xl font-bold text-emerald-500">${(totalRev - totalFees).toLocaleString()}</p>
+        </div>
+        <div className="bg-card border border-border rounded-xl p-4">
+          <p className="text-xs text-muted-foreground">Est. Net Profit</p>
+          <p className="text-2xl font-bold text-blue-500">${totalProfit.toLocaleString()}</p>
+        </div>
+        <div className="bg-card border border-border rounded-xl p-4">
+          <p className="text-xs text-muted-foreground">Avg Rev/Company</p>
+          <p className="text-2xl font-bold text-purple-500">${totalRev > 0 ? totalRev.toLocaleString() : '0'}</p>
+        </div>
+      </div>
+
+      {/* Bar Chart */}
+      {chart.length > 0 ? (
+        <div className="bg-card border border-border rounded-xl p-5" data-testid="revenue-chart">
+          <div className="flex items-end gap-1 h-48">
+            {chart.map((c, i) => {
+              const revH = (c.revenue / maxRev) * 100;
+              const profH = (c.profit / maxRev) * 100;
+              const label = period === 'year'
+                ? new Date(c.period).toLocaleDateString('en', { month: 'short' })
+                : new Date(c.period).toLocaleDateString('en', { day: 'numeric', month: 'short' });
+              return (
+                <div key={i} className="flex-1 flex flex-col items-center gap-0.5" data-testid={`chart-bar-${i}`}>
+                  <div className="w-full flex gap-0.5 items-end h-40">
+                    <div className="flex-1 bg-green-500/80 rounded-t" style={{ height: `${revH}%` }} title={`Rev: $${c.revenue}`} />
+                    <div className="flex-1 bg-blue-500/80 rounded-t" style={{ height: `${profH}%` }} title={`Profit: $${c.profit}`} />
+                  </div>
+                  <span className="text-[9px] text-muted-foreground truncate w-full text-center">{label}</span>
+                </div>
+              );
+            })}
+          </div>
+          <div className="flex items-center justify-center gap-4 mt-3">
+            <span className="flex items-center gap-1 text-xs"><div className="w-3 h-3 rounded bg-green-500/80" /> Revenue</span>
+            <span className="flex items-center gap-1 text-xs"><div className="w-3 h-3 rounded bg-blue-500/80" /> Profit</span>
+          </div>
+        </div>
+      ) : (
+        <div className="bg-card border-2 border-dashed border-border rounded-xl p-8 text-center">
+          <BarChart3 className="h-10 w-10 mx-auto mb-3 text-muted-foreground opacity-30" />
+          <p className="text-sm text-muted-foreground">No revenue data for this period</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ─── 3. Companies & Venues ─── */
+function CompaniesSection() {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    ceoAPI.getCompanies().then(r => setData(r.data)).catch(() => toast.error('Failed')).finally(() => setLoading(false));
+  }, []);
+
+  if (loading) return <Skeleton />;
+
+  return (
+    <div data-testid="ceo-companies-section">
+      <h2 className="text-xl font-bold mb-5">Active Companies & Venues</h2>
+      <div className="bg-card border border-border rounded-xl overflow-hidden">
+        <table className="w-full text-sm" data-testid="companies-table">
+          <thead>
+            <tr className="border-b border-border bg-muted/30">
+              <th className="text-left p-3 font-semibold text-xs uppercase text-muted-foreground">Company</th>
+              <th className="text-left p-3 font-semibold text-xs uppercase text-muted-foreground">Venues</th>
+              <th className="text-left p-3 font-semibold text-xs uppercase text-muted-foreground">Status</th>
+              <th className="text-right p-3 font-semibold text-xs uppercase text-muted-foreground">MRR</th>
+              <th className="text-left p-3 font-semibold text-xs uppercase text-muted-foreground">Modules</th>
+            </tr>
+          </thead>
+          <tbody>
+            {data?.companies?.map((c, i) => (
+              <tr key={c.user_id} className="border-b border-border last:border-0 hover:bg-muted/20 cursor-pointer" data-testid={`company-row-${i}`}>
+                <td className="p-3">
+                  <p className="font-medium">{c.name}</p>
+                  <p className="text-xs text-muted-foreground">{c.email}</p>
+                </td>
+                <td className="p-3">{c.venue_count}</td>
+                <td className="p-3">
+                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                    c.status === 'active' ? 'bg-green-500/10 text-green-600' : 'bg-yellow-500/10 text-yellow-600'}`}>
+                    {c.status}
+                  </span>
+                </td>
+                <td className="p-3 text-right font-bold text-green-500">${c.mrr.toLocaleString()}</td>
+                <td className="p-3">
+                  <div className="flex gap-1 flex-wrap">
+                    {c.venues?.flatMap(v => v.modules || []).filter((m, idx, arr) => arr.indexOf(m) === idx).map(m => (
+                      <span key={m} className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded capitalize">{m}</span>
+                    ))}
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+/* ─── 4. Module Adoption ─── */
+function ModulesSection() {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    ceoAPI.getModules().then(r => setData(r.data)).catch(() => toast.error('Failed')).finally(() => setLoading(false));
+  }, []);
+
+  if (loading) return <Skeleton />;
+
+  const modules = data?.modules || [];
+  const moduleColors = { pulse: 'bg-pink-500', tap: 'bg-blue-500', table: 'bg-emerald-500', kds: 'bg-orange-500' };
+  const moduleTextColors = { pulse: 'text-pink-500', tap: 'text-blue-500', table: 'text-emerald-500', kds: 'text-orange-500' };
+
+  return (
+    <div data-testid="ceo-modules-section">
+      <h2 className="text-xl font-bold mb-5">Module Adoption</h2>
+      <div className="grid grid-cols-2 gap-4">
+        {modules.map(m => (
+          <div key={m.key} className="bg-card border border-border rounded-xl p-5 hover:shadow-md transition-all cursor-pointer" data-testid={`module-${m.key}`}>
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-3">
+                <div className={`w-10 h-10 rounded-xl ${moduleColors[m.key] || 'bg-primary'} bg-opacity-10 flex items-center justify-center`}>
+                  <Layers className={`h-5 w-5 ${moduleTextColors[m.key] || 'text-primary'}`} />
+                </div>
+                <div>
+                  <h3 className="font-bold">{m.name}</h3>
+                  <p className="text-xs text-muted-foreground">{m.active} active companies</p>
+                </div>
+              </div>
+              <span className={`text-2xl font-bold ${moduleTextColors[m.key] || 'text-primary'}`}>{m.adoption_pct}%</span>
+            </div>
+            <div className="w-full h-2 bg-muted rounded-full">
+              <div className={`h-2 rounded-full ${moduleColors[m.key] || 'bg-primary'}`} style={{ width: `${m.adoption_pct}%` }} />
+            </div>
+          </div>
+        ))}
+      </div>
+      <p className="text-xs text-muted-foreground mt-3">Total venues: {data?.total_venues || 0}</p>
+    </div>
+  );
+}
+
+/* ─── 5. Risk & Alerts ─── */
+function AlertsSection() {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    ceoAPI.getAlerts().then(r => setData(r.data)).catch(() => toast.error('Failed')).finally(() => setLoading(false));
+  }, []);
+
+  if (loading) return <Skeleton />;
+
+  const alerts = data?.alerts || [];
+
+  return (
+    <div data-testid="ceo-alerts-section">
+      <h2 className="text-xl font-bold mb-5">Risk & Alerts</h2>
+      {alerts.length === 0 ? (
+        <div className="bg-card border-2 border-green-500/30 rounded-xl p-8 text-center" data-testid="no-alerts">
+          <ShieldAlert className="h-10 w-10 mx-auto mb-3 text-green-500" />
+          <p className="text-sm font-medium text-green-600">All clear! No risk alerts.</p>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {alerts.map((a, i) => (
+            <div key={i} className={`flex items-center gap-4 p-4 rounded-xl border cursor-pointer hover:shadow-sm transition-all ${
+              a.severity === 'critical' ? 'border-red-500/30 bg-red-500/5' : 'border-yellow-500/30 bg-yellow-500/5'
+            }`} data-testid={`alert-${i}`}>
+              <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                a.severity === 'critical' ? 'bg-red-500/10' : 'bg-yellow-500/10'}`}>
+                <AlertTriangle className={`h-5 w-5 ${a.severity === 'critical' ? 'text-red-500' : 'text-yellow-500'}`} />
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-medium">{a.message}</p>
+                <p className="text-xs text-muted-foreground capitalize">{a.type.replace('_', ' ')} — {a.venue_name}</p>
+              </div>
+              <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ─── 6. Growth Pipeline ─── */
+function PipelineSection() {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    ceoAPI.getPipeline().then(r => setData(r.data.pipeline)).catch(() => toast.error('Failed')).finally(() => setLoading(false));
+  }, []);
+
+  if (loading) return <Skeleton />;
+  if (!data) return null;
+
+  const stages = [
+    { key: 'leads', label: 'Leads', color: 'bg-gray-400', text: 'text-gray-500' },
+    { key: 'paid', label: 'Paid', color: 'bg-blue-500', text: 'text-blue-500' },
+    { key: 'activated', label: 'Activated', color: 'bg-emerald-500', text: 'text-emerald-500' },
+    { key: 'active', label: 'Active', color: 'bg-green-500', text: 'text-green-500' },
+    { key: 'at_risk', label: 'At Risk', color: 'bg-yellow-500', text: 'text-yellow-500' },
+    { key: 'cancelled', label: 'Cancelled', color: 'bg-red-500', text: 'text-red-500' },
+  ];
+
+  const maxVal = Math.max(...stages.map(s => data[s.key] || 0), 1);
+
+  return (
+    <div data-testid="ceo-pipeline-section">
+      <h2 className="text-xl font-bold mb-5">Growth Pipeline</h2>
+
+      {/* Funnel visualization */}
+      <div className="bg-card border border-border rounded-xl p-6 mb-6" data-testid="pipeline-funnel">
+        <div className="space-y-3">
+          {stages.map((s, i) => {
+            const val = data[s.key] || 0;
+            const width = Math.max((val / maxVal) * 100, 8);
+            return (
+              <div key={s.key} className="flex items-center gap-4 cursor-pointer hover:bg-muted/20 rounded-lg p-2 transition-all" data-testid={`pipeline-${s.key}`}>
+                <span className="text-sm font-medium w-24 text-right text-muted-foreground">{s.label}</span>
+                <div className="flex-1 relative">
+                  <div className={`h-8 ${s.color} rounded-lg flex items-center justify-end px-3 transition-all`} style={{ width: `${width}%` }}>
+                    <span className="text-white text-sm font-bold">{val}</span>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Summary Cards */}
+      <div className="grid grid-cols-3 gap-4">
+        <div className="bg-green-500/5 border border-green-500/20 rounded-xl p-4 text-center">
+          <p className="text-3xl font-bold text-green-500">{data.active || 0}</p>
+          <p className="text-xs text-muted-foreground">Active Customers</p>
+        </div>
+        <div className="bg-yellow-500/5 border border-yellow-500/20 rounded-xl p-4 text-center">
+          <p className="text-3xl font-bold text-yellow-500">{data.at_risk || 0}</p>
+          <p className="text-xs text-muted-foreground">At Risk</p>
+        </div>
+        <div className="bg-blue-500/5 border border-blue-500/20 rounded-xl p-4 text-center">
+          <p className="text-3xl font-bold text-blue-500">{data.leads - data.paid}</p>
+          <p className="text-xs text-muted-foreground">Unconverted Leads</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Helpers ─── */
+function Skeleton() {
+  return (
+    <div className="space-y-4 animate-pulse">
+      <div className="h-8 w-48 bg-muted rounded" />
+      <div className="grid grid-cols-4 gap-4">
+        <div className="h-28 bg-muted rounded-xl" />
+        <div className="h-28 bg-muted rounded-xl" />
+        <div className="h-28 bg-muted rounded-xl" />
+        <div className="h-28 bg-muted rounded-xl" />
+      </div>
+      <div className="h-40 bg-muted rounded-xl" />
+    </div>
+  );
+}
