@@ -20,7 +20,8 @@ import { TablePage } from './pages/TablePage';
 import { KitchenPage } from './pages/KitchenPage';
 import { ManagerPage } from './pages/ManagerPage';
 import { OwnerPage } from './pages/OwnerPage';
-import { CEOPage } from './pages/CeoPage';
+import CeoPage from './pages/CeoPage';
+const CEOPage = CeoPage;
 
 function App() {
   return (
