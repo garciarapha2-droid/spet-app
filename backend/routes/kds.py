@@ -199,6 +199,9 @@ async def update_ticket_status(
         idx = 3
 
         if status == "preparing":
+            # Require ETA when moving to preparing
+            if estimated_minutes is None:
+                raise HTTPException(400, "estimated_minutes is required when moving to preparing")
             set_clauses.append(f"started_at = ${idx}")
             params.append(now)
             idx += 1
