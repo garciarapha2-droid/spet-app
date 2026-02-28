@@ -187,23 +187,30 @@ async def seed():
             uuid.UUID(VENUE_ID), today_start,
         )
 
-        # John Smith — allowed in (Open)
+        # John Smith — allowed in (Inside)
         await conn.execute(
             """INSERT INTO entry_events (venue_id, event_id, guest_id, entry_type, cover_amount, cover_paid, decision, staff_user_id, created_at)
                VALUES ($1::uuid, $1::uuid, $2::uuid, 'vip', 0, true, 'allowed', $3, $4)""",
-            uuid.UUID(VENUE_ID), uuid.UUID(GUEST_JOHN), staff_id, now - timedelta(hours=2),
+            uuid.UUID(VENUE_ID), uuid.UUID(GUEST_JOHN), staff_id, now - timedelta(minutes=90),
         )
-        # Maria Lopez — allowed in, then exited (Paid)
+        # Maria Lopez — allowed in (Inside, closed tab but still present)
         await conn.execute(
             """INSERT INTO entry_events (venue_id, event_id, guest_id, entry_type, cover_amount, cover_paid, decision, staff_user_id, created_at)
                VALUES ($1::uuid, $1::uuid, $2::uuid, 'cover', 20, true, 'allowed', $3, $4)""",
-            uuid.UUID(VENUE_ID), uuid.UUID(GUEST_MARIA), staff_id, now - timedelta(hours=3),
+            uuid.UUID(VENUE_ID), uuid.UUID(GUEST_MARIA), staff_id, now - timedelta(minutes=60),
         )
         # Kevin Brown — allowed in (Blocked wristband, but still inside)
         await conn.execute(
             """INSERT INTO entry_events (venue_id, event_id, guest_id, entry_type, cover_amount, cover_paid, decision, staff_user_id, created_at)
                VALUES ($1::uuid, $1::uuid, $2::uuid, 'consumption_only', 0, false, 'allowed', $3, $4)""",
-            uuid.UUID(VENUE_ID), uuid.UUID(GUEST_KEVIN), staff_id, now - timedelta(hours=1),
+            uuid.UUID(VENUE_ID), uuid.UUID(GUEST_KEVIN), staff_id, now - timedelta(minutes=45),
+        )
+        # Alex Turner — allowed in (no registered guest, walk-in)
+        alex_id = "a0000004-0000-0000-0000-000000000004"
+        await conn.execute(
+            """INSERT INTO entry_events (venue_id, event_id, guest_id, entry_type, cover_amount, cover_paid, decision, staff_user_id, created_at)
+               VALUES ($1::uuid, $1::uuid, $2::uuid, 'cover', 20, true, 'allowed', $3, $4)""",
+            uuid.UUID(VENUE_ID), uuid.UUID(alex_id), staff_id, now - timedelta(minutes=55),
         )
         print("  Seeded entry events for 3 guests")
 
