@@ -1,63 +1,60 @@
 # SPETAP — Product Requirements Document
 
 ## Original Problem Statement
-Multi-tenant SaaS platform for venue operations (clubs, bars, restaurants). Named **SPETAP**.
+Multi-tenant SaaS platform for venue operations (nightclubs, restaurants, bars). Core modules: Pulse (entry/identity), TAP (bar tabs), Table (restaurant), KDS (kitchen display), Owner/Manager Dashboards with AI insights.
+
+## User Personas
+- **Owner**: Multi-venue operator, needs aggregated business insights
+- **Manager**: Venue-level operations, staff management, guest analytics
+- **Staff**: Bartenders, servers, kitchen crew
+- **CEO**: Strategic business oversight (upcoming)
 
 ## Architecture
-- **Frontend**: React + Tailwind CSS + Shadcn/UI
+- **Frontend**: React + Tailwind + Shadcn UI
 - **Backend**: FastAPI (Python)
-- **Databases**: PostgreSQL (transactional), MongoDB (configs, guests, catalog, roles, events, snapshots)
-- **Auth**: JWT (localStorage: `spetap_token`)
-- **LLM**: GPT-5.2 via emergentintegrations (Emergent LLM Key)
-- **Credential**: `teste@teste.com` / `12345` (Protected System Account)
+- **Databases**: PostgreSQL (transactional), MongoDB (configs, guests, events, staff)
+- **Auth**: JWT (email/password)
+- **AI**: OpenAI GPT-5.2 via emergentintegrations + Emergent LLM Key
+- **Credentials**: teste@teste.com / 12345
 
----
+## Core Requirements
+1. Home page shows active events only (single-click = preview, double-click = enter)
+2. Pulse: Entry management with guest identity
+3. TAP: Bar tab management with NFC cards, guest confirmation, unified close flow
+4. Table: Restaurant table management, mandatory server selection, ID verification for alcohol
+5. KDS: Kitchen display system
+6. Manager Dashboard: Staff management, analytics, AI insights, guest profiles
+7. Owner Dashboard: Multi-venue KPIs, financial analytics, AI insights, view switcher, people drill-down
+8. Unified Close Flow: Pay here / Pay at register
+9. Semi-automatic tip recording: Manual input → automatic distribution
 
-## Implemented Features
-
-### Table: Server Mandatory (Feb 27, 2026) ✅
-- Server selection required before opening table (red border + error if missing)
-- Open button disabled until both guest name + server selected
-- Context bar shows: Table #, Guest name, Tab #, Server name, ID badge
-- Server selector in header pulses red when unset
-- `handleAddItem` also checks for server
-
-### Manager AI Redesign (Feb 27, 2026) ✅
-- Card redesign: header with classification badge + copy + delete buttons
-- Clear typography: SUMMARY → WHAT WE SEE → RECOMMENDED ACTIONS → NEXT STEPS
-- Numbered actions with circle indicators
-- Copy button copies full insight text to clipboard
-- Next Steps: numbered, full-width clickable cards with category labels (Revenue/Ops/Staff)
-- Same improvements applied to Owner Dashboard AI (labels: Revenue/Staff/Growth/Strategy)
-
-### P0 Product Rules (Feb 27, 2026) ✅
-- Bar/Tap Guest Confirmation Modal (photo, name, tab#)
-- Table ID Verification (alcohol only, checkbox 21+, cached, badge, audit)
-- Event vs Guest Memory (event_guests temporal, Pulse global)
-- Staff per Event (role + hourly_rate snapshot)
-- Tap search accepts tab number with/without `#`
-
-### Conversational AI Assistant (Feb 27, 2026) ✅
-- Owner/Manager: conversational AI with empty state, input, deletable cards, next steps
-- Staff Breakdown: Wages, Tips, Total columns
-
-### Earlier ✅
-- Manager Dashboard (8 sections), Owner Dashboard (7 sections)
-- Shift vs Operations (6 sub-sections), Event creation wizard
-- Pulse, Tap, Bar, Table, KDS core modules
-- System Account Protection, KDS Dismiss fix
-
----
-
-## Key Endpoints
-- `POST /api/tap/session/{id}/verify-id` — ID verification + audit
-- `GET /api/pulse/guests/search?venue_id=X&q=Y` — Guest search
-- Event Guests/Staff CRUD: `/api/venue/{vid}/events/{eid}/guests|staff`
-- `POST /api/venue/{vid}/events/{eid}/end` — End event
-
----
+## Completed Features (as of Feb 2026)
+- [x] Auth + JWT
+- [x] Home page with active event filtering + preview/enter
+- [x] Pulse, TAP, Table, KDS modules
+- [x] Guest confirmation modal (TAP)
+- [x] ID verification for alcohol (Table)
+- [x] Mandatory server selection (Table)
+- [x] Unified Close Flow + Tip Recording
+- [x] Conversational AI Assistant (Owner + Manager)
+- [x] Tab search without "#" prefix
+- [x] AI input: Enter = new line, button = submit
+- [x] **Manager Dashboard > Guests: Sorted by highest spender + profile modal (total spend, event history, tabs)**
+- [x] **Owner Dashboard > Overview: View switcher (Business Overview / By Venue / By Event)**
+- [x] **Owner Dashboard > People & Ops: Clickable cards with staff drill-down modal**
 
 ## Backlog
-- **P1**: Per Event Dashboard (Overview, Top Spenders, Consumo, Staff Performance, Timeline, AI, Next Steps)
-- **P2**: KDS/Bar Order Routing, Tip-Splitting, Push Notifications
-- **P3**: Stripe Webhooks, Offline-First, Event Wallet
+### P0 (Next)
+- CEO Dashboard (Founder View) with KPIs, revenue vs profit, targets, growth pipeline
+
+### P1
+- Per-Event Dashboard (Manager) — single event analysis
+
+### P2
+- KDS/Bar Order Routing
+- Push notifications
+
+### P3
+- Stripe Webhooks for subscriptions
+- Offline-First capabilities
+- Event Wallet Module
