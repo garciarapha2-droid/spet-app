@@ -512,9 +512,9 @@ export const TapPage = () => {
           </div>
 
           {/* Right: Active Tab */}
-          <div className="col-span-4 border-l border-border pl-6">
+          <div className="col-span-4 border-l border-border pl-6 flex flex-col">
             {activeSession ? (
-              <div data-testid="active-tab-detail">
+              <div data-testid="active-tab-detail" className="flex flex-col h-full">
                 <div className="flex items-center justify-between mb-4">
                   <div>
                     <div className="flex items-center gap-2">
@@ -526,7 +526,7 @@ export const TapPage = () => {
                   <span className="text-2xl font-bold text-primary" data-testid="tab-total">${activeSession.total.toFixed(2)}</span>
                 </div>
 
-                <div className="space-y-1 mb-6 max-h-[350px] overflow-y-auto">
+                <div className="space-y-1 mb-4 flex-1 max-h-[350px] overflow-y-auto">
                   {(activeSession.items || []).length === 0 ? (
                     <p className="text-sm text-muted-foreground py-4 text-center">No items — add from menu</p>
                   ) : activeSession.items.map(item => (
@@ -613,6 +613,18 @@ export const TapPage = () => {
                       )}
                       <Button size="sm" className="mt-3 w-full" onClick={handleCloseTipFlow} data-testid="done-tip-btn">Done</Button>
                     </div>
+                  </div>
+                )}
+
+                {/* Always visible: Cancel Order (red) + Confirm Order (green) */}
+                {activeSession.status === 'open' && !closeStep && !tipResult && (
+                  <div className="grid grid-cols-2 gap-3 pt-4 mt-auto border-t border-border" data-testid="order-action-buttons">
+                    <Button variant="destructive" className="h-12 text-sm font-semibold" onClick={handleCancelOrder} data-testid="cancel-order-btn">
+                      <X className="h-4 w-4 mr-1.5" /> Cancel Order
+                    </Button>
+                    <Button className="h-12 text-sm font-semibold bg-green-600 hover:bg-green-700 text-white" onClick={handleConfirmOrder} data-testid="confirm-order-btn">
+                      <Check className="h-4 w-4 mr-1.5" /> Confirm Order
+                    </Button>
                   </div>
                 )}
               </div>
