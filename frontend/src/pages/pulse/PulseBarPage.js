@@ -158,7 +158,7 @@ export const PulseBarPage = () => {
 
   const loadBarmen = useCallback(async () => {
     try {
-      const res = await tapAPI.getBarmen(VENUE_ID());
+      const res = await staffAPI.getBarmen(VENUE_ID());
       setBarmen(res.data.barmen || []);
     } catch { }
   }, []);
