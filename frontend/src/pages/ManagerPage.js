@@ -1334,6 +1334,14 @@ function ShiftOpsSection() {
   };
 
   const [copiedId, setCopiedId] = useState(null);
+  const [drilldownData, setDrilldownData] = useState(null);
+
+  const handleKpiDrilldown = async (kpi) => {
+    try {
+      const res = await managerAPI.getShiftDrilldown(VID(), kpi, dateFrom || undefined, dateTo || undefined);
+      setDrilldownData(res.data);
+    } catch { toast.error('Failed to load drill-down'); }
+  };
   const copyInsight = (conv) => {
     const insight = conv.insight;
     const text = [
