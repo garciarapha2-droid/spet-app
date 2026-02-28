@@ -503,6 +503,11 @@ async def get_growth_loyalty(user: dict = Depends(require_auth)):
 
     guest_growth_pct = round(((unique_this - unique_prev) / unique_prev * 100) if unique_prev > 0 else 0, 1)
 
+    # Total sign-ups (all guests ever registered across venues)
+    total_signups = 0
+    for vid in venue_ids:
+        total_signups += await db.venue_guests.count_documents({"venue_id": str(vid)})
+
     return {
         "new_guests": new_guests,
         "returning_guests": returning,
@@ -512,6 +517,7 @@ async def get_growth_loyalty(user: dict = Depends(require_auth)):
         "ltv": round(ltv, 2),
         "loyalty_members": total_loyalty,
         "total_points_issued": total_points,
+        "total_signups": total_signups,
     }
 
 
