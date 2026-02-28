@@ -342,12 +342,12 @@ async def seed():
         print("  Seeded 4 tab sessions with items")
 
         # ─── 9. PG: KDS Tickets ───────────────────────────
-        # Ticket 1: Table 2 — Burger x2 (Preparing, 8 min estimate)
+        # Ticket 1: Table 2 — Burger x2 (Preparing, 15 min estimate, started 3 min ago — NOT delayed)
         ticket1 = await conn.fetchrow(
             """INSERT INTO kds_tickets (venue_id, tap_session_id, table_id, destination, status, estimated_minutes, created_by_user_id, started_at, created_at, meta)
-               VALUES ($1::uuid, $2, $3, 'kitchen', 'preparing', 8, $4, $5, $6, $7::jsonb) RETURNING id""",
+               VALUES ($1::uuid, $2, $3, 'kitchen', 'preparing', 15, $4, $5, $6, $7::jsonb) RETURNING id""",
             uuid.UUID(VENUE_ID), sess1_id, table_ids["2"], staff_id,
-            now - timedelta(minutes=5), now - timedelta(minutes=6),
+            now - timedelta(minutes=3), now - timedelta(minutes=4),
             json.dumps({"guest_name": "John Smith"}),
         )
         await conn.execute(
