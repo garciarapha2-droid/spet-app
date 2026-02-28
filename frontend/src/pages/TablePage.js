@@ -230,8 +230,17 @@ export const TablePage = () => {
   const [tableTipType, setTableTipType] = useState('percent');
   const [tableTipResult, setTableTipResult] = useState(null);
 
+  const [tablePaymentDone, setTablePaymentDone] = useState(false);
+
   const handleCloseTable = async (method, location) => {
     if (!tableDetail?.session) return;
+    if (location === 'pay_at_register') {
+      // Pay at Register: table stays open, mark payment done
+      setTablePaymentDone(true);
+      toast.success('Sent to register — table stays open. Now you can Confirm.');
+      return;
+    }
+    // Pay Here: close table and show tip flow
     setLoading(true);
     try {
       const fd = new FormData();
@@ -239,14 +248,25 @@ export const TablePage = () => {
       fd.append('payment_method', method);
       fd.append('payment_location', location);
       await tableAPI.closeTable(fd);
-      if (location === 'pay_here') {
-        setTableTipSession({ id: tableDetail.session.id, total: tableDetail.session.total, guest_name: tableDetail.session.guest_name, tab_number: tableDetail.session.tab_number });
-        setTableCloseStep('tip');
-      } else {
-        setTableDetail(null); await loadTables(); toast.success('Table closed — payment at register');
-      }
+      setTableTipSession({ id: tableDetail.session.id, total: tableDetail.session.total, guest_name: tableDetail.session.guest_name, tab_number: tableDetail.session.tab_number });
+      setTableCloseStep('tip');
+      setTablePaymentDone(true);
     } catch { toast.error('Failed'); }
     setLoading(false);
+  };
+
+  const handleTableConfirmOrder = () => {
+    if (!tablePaymentDone) { toast.error('Choose payment method first'); return; }
+    setTableDetail(null); setTablePaymentDone(false);
+    setTableCloseStep(null); setTableTipSession(null); setTableTipInput(''); setTableTipResult(null);
+    loadTables();
+    toast.success('Order confirmed');
+  };
+
+  const handleTableCancelOrder = () => {
+    setTableDetail(null); setTablePaymentDone(false);
+    setTableCloseStep(null); setTableTipSession(null); setTableTipInput(''); setTableTipResult(null);
+    toast('Order cancelled');
   };
 
   const handleTableRecordTip = async () => {
