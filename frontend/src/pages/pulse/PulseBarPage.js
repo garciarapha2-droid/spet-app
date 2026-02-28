@@ -243,10 +243,9 @@ export const PulseBarPage = () => {
     if (!confirmedGuest?.session_id || !tipInput) return;
     try {
       const fd = new FormData();
-      fd.append('session_id', confirmedGuest.session_id);
-      fd.append('tip_type', tipType);
-      fd.append('tip_value', tipInput);
-      const res = await tapAPI.recordTip(fd);
+      if (tipType === 'amount') fd.append('tip_amount', parseFloat(tipInput).toString());
+      else fd.append('tip_percent', parseFloat(tipInput).toString());
+      const res = await tapAPI.recordTip(confirmedGuest.session_id, fd);
       setTipResult(res.data);
       toast.success('Tip recorded');
     } catch { toast.error('Failed to record tip'); }
