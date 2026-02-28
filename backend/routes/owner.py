@@ -806,3 +806,40 @@ Return ONLY a valid JSON array of insight objects with fields: summary, what_we_
         "disclaimer": "AI insights are read-only and based on your business data. They may contain inaccuracies. Always validate with your team.",
         "generated_at": now.isoformat(),
     }
+
+
+# ─── OWNER MODULES STATUS ─────────────────────────────────────────
+@router.get("/modules")
+async def get_owner_modules(user: dict = Depends(require_auth)):
+    """Get active/inactive status for each licensed module."""
+    db = get_mongo_db()
+    pool = get_postgres_pool()
+    user_id = user["sub"]
+    venue_ids = await _get_user_venue_ids(pool, user_id)
+
+    modules_list = []
+    for vid in venue_ids:
+        cfg = await db.venue_configs.find_one({"venue_id": str(vid)}, {"_id": 0})
+        venue_name = cfg.get("venue_name", "Demo Club") if cfg else "Demo Club"
+        bar_mode = cfg.get("bar_mode", "disco") if cfg else "disco"
+
+        # Determine module status based on config and bar_mode
+        pulse_on = True  # Pulse (entrance) is always available
+        tap_on = True  # Tap (bar) is always available
+        restaurant_on = bar_mode in ("restaurant", "disco", "bar", "event")
+        kds_on = cfg.get("kds_enabled", True) if cfg else True
+        loyalty_on = cfg.get("loyalty_enabled", True) if cfg else True
+
+        modules_list.append({
+            "venue_id": str(vid),
+            "venue_name": venue_name,
+            "modules": [
+                {"key": "pulse", "name": "Pulse (Entrance)", "active": pulse_on},
+                {"key": "tap", "name": "Tap (Bar)", "active": tap_on},
+                {"key": "restaurant", "name": "Restaurant (Table)", "active": restaurant_on},
+                {"key": "kds", "name": "KDS (Kitchen Display)", "active": kds_on},
+                {"key": "loyalty", "name": "Loyalty & Rewards", "active": loyalty_on},
+            ],
+        })
+
+    return {"venues_modules": modules_list}
