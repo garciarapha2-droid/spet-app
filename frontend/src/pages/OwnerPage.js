@@ -27,6 +27,17 @@ const TABS = [
 export const OwnerPage = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('overview');
+  const [venues, setVenues] = useState([]);
+  const [selectedVenueId, setSelectedVenueId] = useState('all');
+  const [showVenueMenu, setShowVenueMenu] = useState(false);
+
+  useEffect(() => {
+    ownerAPI.getVenues().then(r => setVenues(r.data?.venues || [])).catch(() => {});
+  }, []);
+
+  const selectedVenueName = selectedVenueId === 'all'
+    ? 'All Venues'
+    : venues.find(v => v.venue_id === selectedVenueId)?.name || 'All Venues';
 
   return (
     <div className="min-h-screen bg-background" data-testid="owner-page">
@@ -34,6 +45,30 @@ export const OwnerPage = () => {
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={() => navigate('/venue/home')} data-testid="back-btn"><ArrowLeft className="h-4 w-4" /></Button>
           <h1 className="text-lg font-bold tracking-tight">Owner Dashboard</h1>
+          {/* Multi-venue Selector */}
+          <div className="relative">
+            <button onClick={() => setShowVenueMenu(!showVenueMenu)}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+              data-testid="venue-selector-btn">
+              <Building2 className="h-3.5 w-3.5" />
+              <span>{selectedVenueName}</span>
+              <ChevronDown className="h-3 w-3" />
+            </button>
+            {showVenueMenu && (
+              <div className="absolute top-full left-0 mt-1 bg-card border border-border rounded-lg shadow-xl z-50 min-w-[220px] py-1" data-testid="venue-selector-dropdown">
+                <button onClick={() => { setSelectedVenueId('all'); setShowVenueMenu(false); }}
+                  className={`w-full text-left px-4 py-2 text-sm hover:bg-muted ${selectedVenueId === 'all' ? 'text-primary font-medium' : ''}`}>
+                  All Venues
+                </button>
+                {venues.map(v => (
+                  <button key={v.venue_id} onClick={() => { setSelectedVenueId(v.venue_id); setShowVenueMenu(false); }}
+                    className={`w-full text-left px-4 py-2 text-sm hover:bg-muted ${selectedVenueId === v.venue_id ? 'text-primary font-medium' : ''}`}>
+                    {v.name}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
         <div className="flex items-center gap-3">
           <ThemeToggle />
