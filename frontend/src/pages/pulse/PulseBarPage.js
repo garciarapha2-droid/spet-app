@@ -5,13 +5,42 @@ import { pulseAPI, tapAPI } from '../../services/api';
 import { toast } from 'sonner';
 import {
   ShoppingCart, User, ScanLine, Plus, X, Check, Beer, Trash2, Pencil,
-  CreditCard, Banknote, Camera, Upload
+  CreditCard, Banknote, Camera, Upload, ShieldCheck
 } from 'lucide-react';
 import { Input } from '../../components/ui/input';
 import { Button } from '../../components/ui/button';
 
 const VENUE_ID = () => localStorage.getItem('active_venue_id') || '40a24e04-75b6-435d-bfff-ab0d469ce543';
 const BAR_CATEGORIES = ['Cocktails', 'Beers', 'Spirits', 'Non-alcoholic', 'Snacks', 'Starters'];
+
+/* ─── Guest Confirmation Modal (Pulse Bar — photo + name + tab#) ── */
+function BarGuestConfirmModal({ result, onConfirm, onCancel }) {
+  if (!result) return null;
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" data-testid="bar-guest-confirm-modal">
+      <div className="bg-card border border-border rounded-2xl shadow-2xl w-full max-w-md p-6 text-center">
+        {result.guest_photo ? (
+          <img src={result.guest_photo} alt="" className="w-24 h-24 rounded-full object-cover mx-auto mb-4 border-4 border-primary/20" />
+        ) : (
+          <div className="w-24 h-24 rounded-full bg-muted flex items-center justify-center mx-auto mb-4 border-4 border-primary/20">
+            <User className="h-10 w-10 text-muted-foreground" />
+          </div>
+        )}
+        <h2 className="text-xl font-bold mb-1" data-testid="bar-confirm-guest-name">{result.guest_name}</h2>
+        {result.tab_number && (
+          <span className="inline-block bg-primary/10 text-primary font-bold px-3 py-1 rounded-full text-sm mb-4" data-testid="bar-confirm-tab-number">Tab #{result.tab_number}</span>
+        )}
+        <p className="text-sm text-muted-foreground mb-6">Confirm this is the correct guest before proceeding.</p>
+        <div className="flex gap-3">
+          <Button variant="outline" className="flex-1 h-11" onClick={onCancel} data-testid="bar-confirm-cancel-btn">Cancel</Button>
+          <Button className="flex-1 h-11" onClick={onConfirm} data-testid="bar-confirm-guest-btn">
+            <ShieldCheck className="h-4 w-4 mr-2" /> Confirm
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export const PulseBarPage = () => {
   const navigate = useNavigate();
@@ -20,7 +49,8 @@ export const PulseBarPage = () => {
   const [cart, setCart] = useState([]);
   const [scanInput, setScanInput] = useState('');
   const [scanResult, setScanResult] = useState(null);
-  const [confirmingIdentity, setConfirmingIdentity] = useState(false);
+  const [pendingConfirm, setPendingConfirm] = useState(null);
+  const [confirmedGuest, setConfirmedGuest] = useState(null);
   const [activeSessions, setActiveSessions] = useState([]);
   const [showCustom, setShowCustom] = useState(false);
   const [customItem, setCustomItem] = useState({ name: '', price: '', category: 'Cocktails' });
@@ -64,15 +94,26 @@ export const PulseBarPage = () => {
   const handleScan = async (e) => {
     e.preventDefault();
     if (!scanInput.trim()) return;
+    const raw = scanInput.trim();
     try {
-      const fd = new FormData(); fd.append('venue_id', VENUE_ID()); fd.append('query', scanInput.trim());
-      const res = await pulseAPI.dedupeSearch(fd);
-      if (res.data.matches?.length > 0) {
-        const gRes = await pulseAPI.getGuest(res.data.matches[0].id, VENUE_ID());
-        setScanResult(gRes.data); setConfirmingIdentity(true);
-      } else { toast.error('Guest not found'); }
+      const res = await pulseAPI.barSearch(VENUE_ID(), raw);
+      if (res.data.results?.length > 0) {
+        const match = res.data.results[0];
+        setPendingConfirm(match);
+      } else {
+        toast.error('No matching tab found');
+      }
     } catch { toast.error('Search failed'); }
     setScanInput('');
+  };
+
+  const handleConfirmGuest = () => {
+    setConfirmedGuest(pendingConfirm);
+    setPendingConfirm(null);
+  };
+
+  const handleCancelConfirm = () => {
+    setPendingConfirm(null);
   };
 
   const handleAddCustom = async () => {
