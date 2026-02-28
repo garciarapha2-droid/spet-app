@@ -1391,17 +1391,62 @@ function ShiftOpsSection() {
         </div>
       )}
 
-      {/* 1: Shift Overview KPIs */}
+      {/* 1: Shift Overview KPIs — clickable with drill-down */}
       {overview && (
         <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
-          <KPICard icon={DollarSign} label="Revenue" value={`$${overview.revenue.toFixed(0)}`} accent="text-green-500" testid="shift-revenue" />
-          <KPICard icon={Check} label="Tables Closed" value={overview.tables_closed} testid="shift-tables" />
-          <KPICard icon={Users} label="Staff Cost" value={`$${overview.staff_cost.toFixed(0)}`} accent="text-orange-500" testid="shift-cost" />
-          <KPICard icon={TrendingUp} label="Avg Ticket" value={`$${overview.avg_ticket.toFixed(2)}`} accent="text-blue-500" testid="shift-avg" />
+          <div onClick={() => handleKpiDrilldown('revenue')} className="cursor-pointer hover:ring-2 hover:ring-primary/30 rounded-xl transition-all">
+            <KPICard icon={DollarSign} label="Revenue" value={`$${overview.revenue.toFixed(0)}`} accent="text-green-500" testid="shift-revenue" />
+          </div>
+          <div onClick={() => handleKpiDrilldown('tables')} className="cursor-pointer hover:ring-2 hover:ring-primary/30 rounded-xl transition-all">
+            <KPICard icon={Check} label="Tables Closed" value={overview.tables_closed} testid="shift-tables" />
+          </div>
+          <div onClick={() => handleKpiDrilldown('staff_cost')} className="cursor-pointer hover:ring-2 hover:ring-primary/30 rounded-xl transition-all">
+            <KPICard icon={Users} label="Staff Cost" value={`$${overview.staff_cost.toFixed(0)}`} accent="text-orange-500" testid="shift-cost" />
+          </div>
+          <div onClick={() => handleKpiDrilldown('tips')} className="cursor-pointer hover:ring-2 hover:ring-primary/30 rounded-xl transition-all">
+            <KPICard icon={TrendingUp} label="Tips" value={`$${(overview.tips || 0).toFixed(0)}`} accent="text-blue-500" testid="shift-tips" />
+          </div>
           <div className={`bg-card border-2 rounded-xl p-4 ${overview.status === 'positive' ? 'border-green-500/40' : overview.status === 'tight' ? 'border-yellow-500/40' : 'border-red-500/40'}`} data-testid="shift-result">
             <div className="flex items-center gap-2 text-muted-foreground mb-1"><Activity className="h-3.5 w-3.5" /><span className="text-xs">Net Result</span></div>
             <p className={`text-2xl font-bold ${statusColors[overview.status]}`}>${overview.result.toFixed(0)}</p>
             <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${statusBg[overview.status]} ${statusColors[overview.status]}`}>{overview.status}</span>
+          </div>
+        </div>
+      )}
+
+      {/* KPI Drilldown Modal */}
+      {drilldownData && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" data-testid="kpi-drilldown-modal">
+          <div className="bg-card border border-border rounded-2xl shadow-2xl w-full max-w-2xl max-h-[80vh] overflow-hidden mx-4">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-border">
+              <h3 className="font-bold text-lg capitalize">{drilldownData.kpi} Drill-down ({drilldownData.count} items)</h3>
+              <Button variant="ghost" size="icon" onClick={() => setDrilldownData(null)} data-testid="close-drilldown"><X className="h-4 w-4" /></Button>
+            </div>
+            <div className="p-6 max-h-[60vh] overflow-y-auto">
+              {drilldownData.items?.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-8">No data for this period</p>
+              ) : (
+                <div className="space-y-2">
+                  {drilldownData.items?.map((item, i) => (
+                    <div key={i} className="flex items-center justify-between py-2.5 px-4 rounded-lg bg-muted/20 border border-border/50 text-sm">
+                      <div className="flex-1">
+                        <span className="font-medium">{item.guest_name || item.name || `Item ${i+1}`}</span>
+                        {item.tab_number && <span className="text-primary font-bold ml-2">#{item.tab_number}</span>}
+                        {item.table_number && <span className="text-muted-foreground ml-2">T{item.table_number}</span>}
+                        {item.server_name && <span className="text-muted-foreground ml-2">{item.server_name}</span>}
+                        {item.role && <span className="text-muted-foreground ml-2 text-xs">{item.role}</span>}
+                      </div>
+                      <div className="flex items-center gap-3">
+                        {item.total !== undefined && <span className="font-bold text-green-500">${item.total?.toFixed?.(2) || item.total}</span>}
+                        {item.tip_amount !== undefined && <span className="font-bold text-blue-500">${item.tip_amount?.toFixed?.(2) || item.tip_amount}</span>}
+                        {item.wages !== undefined && <span className="text-orange-500">${item.wages?.toFixed?.(2) || item.wages}</span>}
+                        {item.closed_at && <span className="text-xs text-muted-foreground">{new Date(item.closed_at).toLocaleTimeString()}</span>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
