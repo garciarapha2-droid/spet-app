@@ -277,7 +277,7 @@ export const KitchenPage = () => {
 
   const handleDrop = async (ticketId, newStatus) => {
     if (!ticketId || !newStatus) return;
-    await handleStatusChange(ticketId, newStatus);
+    handleRequestStatusChange(ticketId, newStatus);
   };
 
   // Categorize tickets
