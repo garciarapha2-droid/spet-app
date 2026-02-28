@@ -299,6 +299,7 @@ export const TablePage = () => {
 
   return (
     <div className="min-h-screen bg-background" data-testid="table-page">
+      {showCamera && <CameraModal onCapture={file => setCustomPhoto(file)} onClose={() => setShowCamera(false)} />}
       {/* ID Verification Modal */}
       {showIdModal && (
         <IDVerificationModal onConfirm={handleIdVerified} onCancel={handleIdCancel} />
