@@ -400,7 +400,23 @@ async def add_item_to_tab(
     }
 
 
-@router.post("/session/{session_id}/close")
+async def _auto_route_to_kds(pool, venue_id, session_id, item_row_id, item_name, qty, is_alcohol, staff_id, table_id=None, guest_name=None):
+    """Auto-route a single item to KDS. Alcohol→bar, Non-alcohol→kitchen."""
+    destination = "bar" if is_alcohol else "kitchen"
+    meta_json = json_mod.dumps({"guest_name": guest_name or "Guest"})
+    async with pool.acquire() as conn:
+        ticket = await conn.fetchrow(
+            """INSERT INTO kds_tickets
+               (venue_id, tap_session_id, table_id, destination, status, created_by_user_id, meta)
+               VALUES ($1, $2, $3, $4, 'pending', $5, $6::jsonb)
+               RETURNING id""",
+            venue_id, session_id, table_id, destination, staff_id, meta_json,
+        )
+        await conn.execute(
+            """INSERT INTO kds_ticket_items (ticket_id, tap_item_id, item_name, qty, notes)
+               VALUES ($1, $2, $3, $4, $5)""",
+            ticket["id"], item_row_id, item_name, qty, None,
+        )
 async def close_tab(
     session_id: str,
     user: dict = Depends(require_auth),
