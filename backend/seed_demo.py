@@ -356,10 +356,10 @@ async def seed():
             ticket1["id"],
         )
 
-        # Ticket 2: Table 3 — Pasta x1 (Delayed — started 15 min ago, estimate was 10 min)
+        # Ticket 2: Table 3 — Pasta x1 (Delayed — explicitly set as delayed)
         ticket2 = await conn.fetchrow(
             """INSERT INTO kds_tickets (venue_id, tap_session_id, table_id, destination, status, estimated_minutes, created_by_user_id, started_at, created_at, meta)
-               VALUES ($1::uuid, $2, $3, 'kitchen', 'preparing', 10, $4, $5, $6, $7::jsonb) RETURNING id""",
+               VALUES ($1::uuid, $2, $3, 'kitchen', 'delayed', 10, $4, $5, $6, $7::jsonb) RETURNING id""",
             uuid.UUID(VENUE_ID), sess4_id, table_ids["3"], staff_id,
             now - timedelta(minutes=15), now - timedelta(minutes=16),
             json.dumps({"guest_name": "Alex Turner"}),
