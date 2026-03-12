@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException, Depends, Form, UploadFile, File
 from middleware.auth_middleware import require_auth
 from database import get_mongo_db, get_postgres_pool
+from ws_manager import ws_manager
 from datetime import datetime, timezone, date
 import uuid
 import json as json_mod
@@ -410,6 +411,11 @@ async def add_item_to_tab(
     except Exception as e:
         logger.warning(f"KDS auto-route failed: {e}")
 
+    # Broadcast real-time update to Manager
+    await ws_manager.broadcast(str(session["venue_id"]), "item_added", {
+        "session_id": str(sid), "item": catalog_item["name"], "qty": qty, "total": float(new_total)
+    })
+
     return {
         "line_item_id": str(item_row["id"]),
         "name": catalog_item["name"],
@@ -482,6 +488,11 @@ async def close_tab(
                VALUES ($1, $2, $3, $4, $5, $6)""",
             session["venue_id"], sid, session["total"], payment_method, staff_id, now,
         )
+
+    # Broadcast real-time update to Manager
+    await ws_manager.broadcast(str(session["venue_id"]), "tab_closed", {
+        "session_id": str(sid), "total": float(session["total"]), "method": payment_method
+    })
 
     return {
         "session_id": str(sid),
@@ -754,6 +765,11 @@ async def record_tip(
             "UPDATE tap_sessions SET meta = $1::jsonb WHERE id = $2",
             json_mod.dumps(meta), sid,
         )
+
+    # Broadcast real-time update to Manager
+    await ws_manager.broadcast(str(session["venue_id"]), "tip_recorded", {
+        "session_id": str(sid), "tip_amount": final_tip
+    })
 
     return {
         "session_id": str(sid),

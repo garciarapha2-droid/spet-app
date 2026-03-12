@@ -1,4 +1,4 @@
-from fastapi import FastAPI, APIRouter, Request, HTTPException, Depends
+from fastapi import FastAPI, APIRouter, Request, HTTPException, Depends, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 from pathlib import Path
@@ -20,6 +20,7 @@ from database import (
 )
 
 from config import get_settings
+from ws_manager import ws_manager
 
 # Create FastAPI app
 app = FastAPI(title="SPETAP API", version="1.0.0")
@@ -65,6 +66,18 @@ api_router.include_router(barmen.router, prefix="/staff", tags=["staff"])
 @api_router.get("/health")
 async def health_check():
     return {"status": "healthy", "service": "SPETAP"}
+
+# WebSocket endpoint for real-time Manager updates
+@app.websocket("/api/ws/manager/{venue_id}")
+async def ws_manager_endpoint(websocket: WebSocket, venue_id: str):
+    await ws_manager.connect(venue_id, websocket)
+    try:
+        while True:
+            await websocket.receive_text()
+    except WebSocketDisconnect:
+        ws_manager.disconnect(venue_id, websocket)
+    except Exception:
+        ws_manager.disconnect(venue_id, websocket)
 
 # Include router
 app.include_router(api_router)

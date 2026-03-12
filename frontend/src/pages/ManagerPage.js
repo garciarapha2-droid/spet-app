@@ -98,9 +98,46 @@ function OverviewSection({ onNavigate }) {
   const [funnelData, setFunnelData] = useState([]);
   const [funnelLoading, setFunnelLoading] = useState(false);
 
+  const refreshData = useCallback(() => {
+    managerAPI.getOverview(VID()).then(r => setData(r.data)).catch(() => {});
+  }, []);
+
   useEffect(() => {
     managerAPI.getOverview(VID()).then(r => setData(r.data)).catch(() => toast.error('Failed to load overview')).finally(() => setLoading(false));
   }, []);
+
+  // WebSocket real-time updates
+  useEffect(() => {
+    const backendUrl = process.env.REACT_APP_BACKEND_URL || '';
+    const wsProtocol = backendUrl.startsWith('https') ? 'wss' : 'ws';
+    const wsHost = backendUrl.replace(/^https?:\/\//, '');
+    const wsUrl = `${wsProtocol}://${wsHost}/api/ws/manager/${VID()}`;
+    let ws = null;
+    let reconnectTimer = null;
+
+    function connect() {
+      ws = new WebSocket(wsUrl);
+      ws.onopen = () => console.log('[WS] Manager connected');
+      ws.onmessage = (event) => {
+        try {
+          const msg = JSON.parse(event.data);
+          console.log('[WS] Event:', msg.type);
+          refreshData();
+        } catch {}
+      };
+      ws.onclose = () => {
+        reconnectTimer = setTimeout(connect, 3000);
+      };
+      ws.onerror = () => ws.close();
+    }
+
+    connect();
+
+    return () => {
+      if (reconnectTimer) clearTimeout(reconnectTimer);
+      if (ws) { ws.onclose = null; ws.close(); }
+    };
+  }, [refreshData]);
 
   const openFunnelDrilldown = async (stage) => {
     setFunnelModal(stage);

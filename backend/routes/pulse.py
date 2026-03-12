@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException, Depends, UploadFile, File, Form
 from middleware.auth_middleware import require_auth
 from database import get_mongo_db, get_postgres_pool
+from ws_manager import ws_manager
 from datetime import datetime, timezone, date
 import hashlib
 import json
@@ -385,6 +386,12 @@ async def record_entry_decision(
                     uuid.UUID(venue_id), uuid.UUID(guest_id), uuid.UUID(staff_id),
                     meta_json, now,
                 )
+
+    # Broadcast real-time update to Manager
+    if decision == "allowed":
+        await ws_manager.broadcast(venue_id, "guest_entered", {
+            "guest_id": guest_id, "guest_name": guest_doc.get("name", "Guest"), "tab_number": tab_number
+        })
 
     return {
         "entry_id": str(entry_row["id"]),

@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException, Depends, Form
 from middleware.auth_middleware import require_auth
 from database import get_mongo_db, get_postgres_pool
+from ws_manager import ws_manager
 from datetime import datetime, timezone
 import uuid
 import json as json_mod
@@ -226,6 +227,15 @@ async def update_ticket_status(
             f"UPDATE kds_tickets SET {', '.join(set_clauses)} WHERE id = $1",
             *params,
         )
+
+        # Get venue_id for broadcast
+        venue_row = await conn.fetchrow("SELECT venue_id FROM kds_tickets WHERE id = $1", tid)
+
+    # Broadcast real-time update to Manager
+    if venue_row:
+        await ws_manager.broadcast(str(venue_row["venue_id"]), "kds_update", {
+            "ticket_id": str(tid), "status": status
+        })
 
     return {
         "ticket_id": str(tid),
