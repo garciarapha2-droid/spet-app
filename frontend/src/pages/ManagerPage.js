@@ -167,9 +167,6 @@ function OverviewSection({ onNavigate }) {
         <KPICard icon={Users} label="Unique Guests" value={kpis.unique_guests} accent="text-purple-500" testid="kpi-guests" />
         <KPICard icon={FileText} label="Open Tabs" value={kpis.open_tabs} sub={`$${kpis.running_total.toFixed(0)} running`} testid="kpi-open-tabs" />
         <KPICard icon={Check} label="Tabs Closed" value={kpis.closed_today} testid="kpi-closed" />
-        {(kpis.chips_today || 0) > 0 && (
-          <KPICard icon={DollarSign} label="Chips Today" value={`$${kpis.chips_today.toFixed(0)}`} accent="text-amber-500" testid="kpi-chips" />
-        )}
         <KPICard icon={AlertTriangle} label="Voids Today" value={kpis.void_count} accent={kpis.void_count > 5 ? 'text-red-500' : ''} testid="kpi-voids" />
       </div>
 
@@ -1441,15 +1438,10 @@ function ShiftOpsSection() {
 
       {/* 1: Shift Overview KPIs — clickable with drill-down */}
       {overview && (
-        <div className="grid grid-cols-2 lg:grid-cols-6 gap-4 mb-6">
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
           <div onClick={() => handleKpiDrilldown('revenue')} className="cursor-pointer hover:ring-2 hover:ring-primary/30 rounded-xl transition-all">
             <KPICard icon={DollarSign} label="Revenue" value={`$${overview.revenue.toFixed(0)}`} accent="text-green-500" testid="shift-revenue" />
           </div>
-          {(overview.chips_total || 0) > 0 && (
-            <div className="cursor-default rounded-xl">
-              <KPICard icon={DollarSign} label="Chips" value={`$${overview.chips_total.toFixed(0)}`} accent="text-amber-500" testid="shift-chips" />
-            </div>
-          )}
           <div onClick={() => handleKpiDrilldown('tables')} className="cursor-pointer hover:ring-2 hover:ring-primary/30 rounded-xl transition-all">
             <KPICard icon={Check} label="Tables Closed" value={overview.tables_closed} testid="shift-tables" />
           </div>

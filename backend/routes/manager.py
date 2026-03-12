@@ -56,35 +56,21 @@ async def get_overview(venue_id: str, user: dict = Depends(require_auth)):
     month = _month_start()
 
     async with pool.acquire() as conn:
-        # Revenue KPIs — exclude chips payments from regular revenue
+        # Revenue KPIs
         rev_today = float(await conn.fetchval(
-            """SELECT COALESCE(SUM(s.total),0) FROM tap_sessions s
-               LEFT JOIN tap_payments p ON p.tap_session_id = s.id
-               WHERE s.venue_id=$1 AND s.status='closed' AND s.closed_at>=$2
-               AND COALESCE(p.method,'card') != 'chips'""", vid, today) or 0)
+            "SELECT COALESCE(SUM(total),0) FROM tap_sessions WHERE venue_id=$1 AND status='closed' AND closed_at>=$2",
+            vid, today) or 0)
         rev_week = float(await conn.fetchval(
-            """SELECT COALESCE(SUM(s.total),0) FROM tap_sessions s
-               LEFT JOIN tap_payments p ON p.tap_session_id = s.id
-               WHERE s.venue_id=$1 AND s.status='closed' AND s.closed_at>=$2
-               AND COALESCE(p.method,'card') != 'chips'""", vid, week) or 0)
+            "SELECT COALESCE(SUM(total),0) FROM tap_sessions WHERE venue_id=$1 AND status='closed' AND closed_at>=$2",
+            vid, week) or 0)
         rev_month = float(await conn.fetchval(
-            """SELECT COALESCE(SUM(s.total),0) FROM tap_sessions s
-               LEFT JOIN tap_payments p ON p.tap_session_id = s.id
-               WHERE s.venue_id=$1 AND s.status='closed' AND s.closed_at>=$2
-               AND COALESCE(p.method,'card') != 'chips'""", vid, month) or 0)
+            "SELECT COALESCE(SUM(total),0) FROM tap_sessions WHERE venue_id=$1 AND status='closed' AND closed_at>=$2",
+            vid, month) or 0)
 
-        # Chips total (separate metric)
-        chips_today = float(await conn.fetchval(
-            """SELECT COALESCE(SUM(p.amount),0) FROM tap_payments p
-               JOIN tap_sessions s ON s.id = p.tap_session_id
-               WHERE s.venue_id=$1 AND p.method='chips' AND p.paid_at>=$2""", vid, today) or 0)
-
-        # Avg ticket (exclude chips)
+        # Avg ticket
         avg_ticket = float(await conn.fetchval(
-            """SELECT COALESCE(AVG(s.total),0) FROM tap_sessions s
-               LEFT JOIN tap_payments p ON p.tap_session_id = s.id
-               WHERE s.venue_id=$1 AND s.status='closed' AND s.closed_at>=$2
-               AND COALESCE(p.method,'card') != 'chips'""", vid, today) or 0)
+            "SELECT COALESCE(AVG(total),0) FROM tap_sessions WHERE venue_id=$1 AND status='closed' AND closed_at>=$2",
+            vid, today) or 0)
 
         # Unique guests today
         unique_guests = await conn.fetchval(
@@ -145,7 +131,6 @@ async def get_overview(venue_id: str, user: dict = Depends(require_auth)):
             "revenue_today": rev_today,
             "revenue_week": rev_week,
             "revenue_month": rev_month,
-            "chips_today": chips_today,
             "avg_ticket": round(avg_ticket, 2),
             "unique_guests": unique_guests,
             "open_tabs": open_tabs,
@@ -1091,24 +1076,13 @@ async def get_shift_overview(
 
     async with pool.acquire() as conn:
         revenue = float(await conn.fetchval(
-            """SELECT COALESCE(SUM(s.total),0) FROM tap_sessions s
-               LEFT JOIN tap_payments p ON p.tap_session_id = s.id
-               WHERE s.venue_id=$1 AND s.status='closed' AND s.closed_at>=$2 AND s.closed_at<=$3
-               AND COALESCE(p.method,'card') != 'chips'""",
-            vid, start, end) or 0)
-        chips_total = float(await conn.fetchval(
-            """SELECT COALESCE(SUM(p.amount),0) FROM tap_payments p
-               JOIN tap_sessions s ON s.id = p.tap_session_id
-               WHERE s.venue_id=$1 AND p.method='chips' AND p.paid_at>=$2 AND p.paid_at<=$3""",
+            "SELECT COALESCE(SUM(total),0) FROM tap_sessions WHERE venue_id=$1 AND status='closed' AND closed_at>=$2 AND closed_at<=$3",
             vid, start, end) or 0)
         tables_closed = await conn.fetchval(
             "SELECT COUNT(*) FROM tap_sessions WHERE venue_id=$1 AND status='closed' AND closed_at>=$2 AND closed_at<=$3",
             vid, start, end) or 0
         avg_ticket = float(await conn.fetchval(
-            """SELECT COALESCE(AVG(s.total),0) FROM tap_sessions s
-               LEFT JOIN tap_payments p ON p.tap_session_id = s.id
-               WHERE s.venue_id=$1 AND s.status='closed' AND s.closed_at>=$2 AND s.closed_at<=$3
-               AND COALESCE(p.method,'card') != 'chips'""",
+            "SELECT COALESCE(AVG(total),0) FROM tap_sessions WHERE venue_id=$1 AND status='closed' AND closed_at>=$2 AND closed_at<=$3",
             vid, start, end) or 0)
 
     staff_cost, staff_breakdown, total_tips = await _calc_staff_cost(db, venue_id, start, end)
@@ -1117,7 +1091,6 @@ async def get_shift_overview(
 
     return {
         "revenue": revenue,
-        "chips_total": round(chips_total, 2),
         "tables_closed": tables_closed,
         "avg_ticket": round(avg_ticket, 2),
         "staff_cost": round(staff_cost, 2),

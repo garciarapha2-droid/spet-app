@@ -5,7 +5,7 @@ import { pulseAPI, tapAPI, staffAPI } from '../../services/api';
 import { toast } from 'sonner';
 import {
   ShoppingCart, User, ScanLine, Plus, X, Check, Beer, Trash2, Pencil,
-  CreditCard, Banknote, Camera, Upload, ShieldCheck, ChevronDown, Video, DollarSign
+  CreditCard, Banknote, Camera, Upload, ShieldCheck, ChevronDown, Video
 } from 'lucide-react';
 import { Input } from '../../components/ui/input';
 import { Button } from '../../components/ui/button';
@@ -139,20 +139,38 @@ export const PulseBarPage = () => {
 
   const loadSessions = useCallback(async () => {
     try {
-      // Only show guests who are "Inside" the current event (Item 4 & 5)
       const [sessRes, insideRes] = await Promise.all([
         tapAPI.getSessions(VENUE_ID()),
         pulseAPI.getInsideGuests(VENUE_ID()).catch(() => ({ data: { guests: [] } })),
       ]);
-      const allSessions = sessRes.data.sessions || [];
-      const insideGuests = insideRes.data?.guests || [];
-      const insideNames = new Set(insideGuests.map(g => g.name?.toLowerCase()));
+      const sessions = sessRes.data.sessions || [];
+      const insideGuests = insideRes.data?.guests || insideRes.data || [];
 
-      // Filter: only show sessions for guests who are "Inside" OR show all if no event filtering
-      const filtered = insideNames.size > 0
-        ? allSessions.filter(s => insideNames.has(s.guest_name?.toLowerCase()) || insideNames.size === 0)
-        : allSessions;
-      setActiveSessions(filtered.length > 0 ? filtered : allSessions);
+      // Build a lookup: guest name → open session
+      const sessionByName = {};
+      for (const s of sessions) {
+        const key = s.guest_name?.toLowerCase();
+        if (key) sessionByName[key] = s;
+      }
+
+      // Guest-centric list: every inside guest appears, with session data if available
+      const guestTabs = insideGuests.map(g => {
+        const gName = g.guest_name || g.name || 'Guest';
+        const s = sessionByName[gName.toLowerCase()];
+        return {
+          id: s?.id || g.guest_id || g.id,
+          session_id: s?.session_id || null,
+          guest_name: gName,
+          guest_id: g.guest_id || g.id,
+          tab_number: s?.tab_number || g.tab_number || null,
+          total: s?.total || g.tab_total || 0,
+          has_session: !!s,
+          nfc_tag: g.nfc_tag,
+          guest_photo: g.guest_photo || g.photo || s?.guest_photo || null,
+        };
+      });
+
+      setActiveSessions(guestTabs.length > 0 ? guestTabs : sessions);
     } catch { }
   }, []);
 
@@ -193,7 +211,25 @@ export const PulseBarPage = () => {
     setScanInput('');
   };
 
-  const handleConfirmGuest = () => { setConfirmedGuest(pendingConfirm); setPendingConfirm(null); };
+  const handleConfirmGuest = async () => {
+    let guest = { ...pendingConfirm };
+    // If guest has no open session, auto-create one
+    if (!guest.session_id && guest.guest_name) {
+      try {
+        const fd = new FormData();
+        fd.append('venue_id', VENUE_ID());
+        fd.append('guest_name', guest.guest_name);
+        if (guest.guest_id) fd.append('guest_id', guest.guest_id);
+        fd.append('session_type', 'tap');
+        const res = await tapAPI.openSession(fd);
+        guest = { ...guest, session_id: res.data.session_id, tab_number: res.data.tab_number, has_session: true };
+        toast.success(`Tab #${res.data.tab_number} opened for ${guest.guest_name}`);
+        await loadSessions();
+      } catch { toast.error('Failed to open tab'); return; }
+    }
+    setConfirmedGuest(guest);
+    setPendingConfirm(null);
+  };
   const handleCancelConfirm = () => { setPendingConfirm(null); };
 
   const handleAddCustom = async () => {
@@ -256,22 +292,6 @@ export const PulseBarPage = () => {
       setOrderTotal(res.data?.total || cartTotal);
       setCheckoutStep('tip');
     } catch { toast.error('Payment failed'); }
-  };
-
-  // Pay with Chips: submit items → close tab as chips (not counted as regular revenue)
-  const handlePayChips = async () => {
-    if (!confirmedGuest?.session_id) { toast.error('No active session'); return; }
-    try {
-      if (cart.length > 0) {
-        const ok = await submitOrder();
-        if (!ok) return;
-      }
-      const fd = new FormData();
-      fd.append('payment_method', 'chips'); fd.append('payment_location', 'pay_here');
-      const res = await tapAPI.closeSession(confirmedGuest.session_id, fd);
-      toast.success(`Chips payment recorded: $${res.data?.total?.toFixed(2)}`);
-      handleCleanSlate();
-    } catch { toast.error('Chips payment failed'); }
   };
 
   // Pay at Register: submit items first, then tab stays open
@@ -361,13 +381,14 @@ export const PulseBarPage = () => {
               <h3 className="text-xs font-semibold uppercase text-muted-foreground mb-2">Inside Tabs ({activeSessions.length})</h3>
               <div className="space-y-1 max-h-[250px] overflow-y-auto">
                 {activeSessions.map(s => (
-                  <div key={s.id || s.session_id} className="px-2 py-1.5 bg-card border border-border rounded-lg text-sm cursor-pointer hover:border-primary/30"
+                  <div key={s.id || s.guest_id} className={`px-2 py-1.5 bg-card border rounded-lg text-sm cursor-pointer hover:border-primary/30 ${s.has_session === false ? 'border-dashed border-muted-foreground/30' : 'border-border'}`}
                     onClick={() => setPendingConfirm(s)}
-                    data-testid={`session-${s.tab_number || s.id}`}>
+                    data-testid={`session-${s.tab_number || s.guest_name}`}>
                     <div className="flex justify-between items-center">
                       <div className="truncate">
-                        <span className="font-medium text-xs">{s.guest_name || 'Tab'}</span>
-                        <span className="text-primary font-bold text-xs ml-1">#{s.tab_number}</span>
+                        <span className="font-medium text-xs">{s.guest_name || 'Guest'}</span>
+                        {s.tab_number && <span className="text-primary font-bold text-xs ml-1">#{s.tab_number}</span>}
+                        {s.has_session === false && <span className="text-[9px] text-muted-foreground ml-1">no tab</span>}
                       </div>
                       <span className="text-xs font-bold">${(s.total || 0).toFixed(2)}</span>
                     </div>
@@ -506,6 +527,22 @@ export const PulseBarPage = () => {
               </div>
             ) : cart.length === 0 ? (
               <p className="text-sm text-muted-foreground py-8 text-center">No items — add from menu</p>
+            ) : checkoutStep === 'payment' ? (
+              <div className="border border-primary/30 rounded-xl p-4" data-testid="payment-method-selector">
+                <h4 className="text-sm font-semibold mb-1">Select payment method</h4>
+                <p className="text-xs text-muted-foreground mb-3">{cart.length} item(s) — ${cartTotal.toFixed(2)}</p>
+                <div className="grid grid-cols-2 gap-2">
+                  <Button className="h-11" onClick={handlePayHere} data-testid="pay-here-btn">
+                    <CreditCard className="h-4 w-4 mr-1" /> Pay Here
+                  </Button>
+                  <Button variant="outline" className="h-11" onClick={handlePayAtRegister} data-testid="pay-register-btn">
+                    <Banknote className="h-4 w-4 mr-1" /> Pay at Register
+                  </Button>
+                </div>
+                <button onClick={() => setCheckoutStep(null)} className="text-xs text-muted-foreground mt-3 hover:underline w-full text-center" data-testid="cancel-payment-btn">
+                  Back to cart
+                </button>
+              </div>
             ) : (
               <>
                 <div className="space-y-1 mb-4 max-h-[350px] overflow-y-auto flex-1">
@@ -533,23 +570,12 @@ export const PulseBarPage = () => {
                     <span className="text-sm font-medium">Total</span>
                     <span className="text-xl font-bold text-primary" data-testid="cart-total">${cartTotal.toFixed(2)}</span>
                   </div>
-                  <div className="grid grid-cols-3 gap-2 mb-3">
-                    <Button className="h-11" onClick={handlePayHere} data-testid="pay-here-btn">
-                      <CreditCard className="h-4 w-4 mr-1" /> Pay Here
-                    </Button>
-                    <Button variant="outline" className="h-11" onClick={handlePayChips} data-testid="pay-chips-btn">
-                      <DollarSign className="h-4 w-4 mr-1" /> Chips
-                    </Button>
-                    <Button variant="outline" className="h-11" onClick={handlePayAtRegister} data-testid="pay-register-btn">
-                      <Banknote className="h-4 w-4 mr-1" /> Register
-                    </Button>
-                  </div>
-                  {/* Cancel + Confirm (same as Tap) */}
-                  <div className="grid grid-cols-2 gap-2" data-testid="pulse-order-action-buttons">
+                  {/* Cancel + Confirm */}
+                  <div className="grid grid-cols-2 gap-2 mb-3" data-testid="pulse-order-action-buttons">
                     <Button variant="destructive" className="h-10 text-sm font-semibold" onClick={handleCleanSlate} data-testid="pulse-cancel-order-btn">
                       <X className="h-4 w-4 mr-1" /> Cancel
                     </Button>
-                    <Button className="h-10 text-sm font-semibold bg-green-600 hover:bg-green-700 text-white" onClick={async () => { const ok = await submitOrder(); if (ok) handleCleanSlate(); }} data-testid="pulse-confirm-order-btn">
+                    <Button className="h-10 text-sm font-semibold bg-green-600 hover:bg-green-700 text-white" onClick={() => setCheckoutStep('payment')} data-testid="pulse-confirm-order-btn">
                       <Check className="h-4 w-4 mr-1" /> Confirm
                     </Button>
                   </div>
