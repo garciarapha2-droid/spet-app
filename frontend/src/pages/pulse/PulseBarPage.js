@@ -5,7 +5,7 @@ import { pulseAPI, tapAPI, staffAPI } from '../../services/api';
 import { toast } from 'sonner';
 import {
   ShoppingCart, User, ScanLine, Plus, X, Check, Beer, Trash2, Pencil,
-  CreditCard, Banknote, Camera, Upload, ShieldCheck, ChevronDown, Video
+  CreditCard, Banknote, Camera, Upload, ShieldCheck, ChevronDown, Video, DollarSign
 } from 'lucide-react';
 import { Input } from '../../components/ui/input';
 import { Button } from '../../components/ui/button';
@@ -221,10 +221,35 @@ export const PulseBarPage = () => {
     } catch { toast.error('Failed'); }
   };
 
-  // Pay Here: close tab + show tip flow (Item 7 & 11)
+  // Submit cart items to backend — the CORE order function
+  const submitOrder = async () => {
+    if (!confirmedGuest?.session_id) { toast.error('Select a guest first'); return false; }
+    if (cart.length === 0) { toast.error('Cart is empty'); return false; }
+    try {
+      for (const item of cart) {
+        const fd = new FormData();
+        fd.append('item_id', item.id);
+        fd.append('qty', item.qty.toString());
+        await tapAPI.addItem(confirmedGuest.session_id, fd);
+      }
+      toast.success(`${cart.length} item(s) saved to tab`);
+      await loadSessions();
+      return true;
+    } catch (err) {
+      toast.error('Failed to save order to tab');
+      return false;
+    }
+  };
+
+  // Pay Here: submit items → close tab → show tip flow
   const handlePayHere = async () => {
     if (!confirmedGuest?.session_id) { toast.error('No active session'); return; }
     try {
+      // First, submit all cart items to the backend
+      if (cart.length > 0) {
+        const ok = await submitOrder();
+        if (!ok) return;
+      }
       const fd = new FormData();
       fd.append('payment_method', 'card'); fd.append('payment_location', 'pay_here');
       const res = await tapAPI.closeSession(confirmedGuest.session_id, fd);
@@ -233,9 +258,29 @@ export const PulseBarPage = () => {
     } catch { toast.error('Payment failed'); }
   };
 
-  // Pay at Register: tab stays open (Item 11)
-  const handlePayAtRegister = () => {
-    toast.success('Sent to register — tab stays open');
+  // Pay with Chips: submit items → close tab as chips (not counted as regular revenue)
+  const handlePayChips = async () => {
+    if (!confirmedGuest?.session_id) { toast.error('No active session'); return; }
+    try {
+      if (cart.length > 0) {
+        const ok = await submitOrder();
+        if (!ok) return;
+      }
+      const fd = new FormData();
+      fd.append('payment_method', 'chips'); fd.append('payment_location', 'pay_here');
+      const res = await tapAPI.closeSession(confirmedGuest.session_id, fd);
+      toast.success(`Chips payment recorded: $${res.data?.total?.toFixed(2)}`);
+      handleCleanSlate();
+    } catch { toast.error('Chips payment failed'); }
+  };
+
+  // Pay at Register: submit items first, then tab stays open
+  const handlePayAtRegister = async () => {
+    if (cart.length > 0) {
+      const ok = await submitOrder();
+      if (!ok) return;
+    }
+    toast.success('Items saved — tab stays open for register payment');
     handleCleanSlate();
   };
 
@@ -488,12 +533,15 @@ export const PulseBarPage = () => {
                     <span className="text-sm font-medium">Total</span>
                     <span className="text-xl font-bold text-primary" data-testid="cart-total">${cartTotal.toFixed(2)}</span>
                   </div>
-                  <div className="grid grid-cols-2 gap-2 mb-3">
+                  <div className="grid grid-cols-3 gap-2 mb-3">
                     <Button className="h-11" onClick={handlePayHere} data-testid="pay-here-btn">
                       <CreditCard className="h-4 w-4 mr-1" /> Pay Here
                     </Button>
+                    <Button variant="outline" className="h-11" onClick={handlePayChips} data-testid="pay-chips-btn">
+                      <DollarSign className="h-4 w-4 mr-1" /> Chips
+                    </Button>
                     <Button variant="outline" className="h-11" onClick={handlePayAtRegister} data-testid="pay-register-btn">
-                      <Banknote className="h-4 w-4 mr-1" /> Pay at Register
+                      <Banknote className="h-4 w-4 mr-1" /> Register
                     </Button>
                   </div>
                   {/* Cancel + Confirm (same as Tap) */}
@@ -501,7 +549,7 @@ export const PulseBarPage = () => {
                     <Button variant="destructive" className="h-10 text-sm font-semibold" onClick={handleCleanSlate} data-testid="pulse-cancel-order-btn">
                       <X className="h-4 w-4 mr-1" /> Cancel
                     </Button>
-                    <Button className="h-10 text-sm font-semibold bg-green-600 hover:bg-green-700 text-white" onClick={handleCleanSlate} data-testid="pulse-confirm-order-btn">
+                    <Button className="h-10 text-sm font-semibold bg-green-600 hover:bg-green-700 text-white" onClick={async () => { const ok = await submitOrder(); if (ok) handleCleanSlate(); }} data-testid="pulse-confirm-order-btn">
                       <Check className="h-4 w-4 mr-1" /> Confirm
                     </Button>
                   </div>

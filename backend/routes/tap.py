@@ -323,6 +323,9 @@ async def get_session(session_id: str, user: dict = Depends(require_auth)):
         "session_type": session["session_type"],
         "total": float(session["total"]),
         "subtotal": float(session["subtotal"]),
+        "tip_amount": meta.get("tip_amount", 0),
+        "tip_percent": meta.get("tip_percent", 0),
+        "tip_recorded": meta.get("tip_recorded", False),
         "opened_at": session["opened_at"].isoformat() if session["opened_at"] else None,
         "closed_at": session["closed_at"].isoformat() if session["closed_at"] else None,
         "id_verified": meta.get("id_verified", False),
@@ -460,7 +463,7 @@ async def close_tab(
 
     async with pool.acquire() as conn:
         session = await conn.fetchrow(
-            "SELECT id, venue_id, total, status, meta FROM tap_sessions WHERE id = $1", sid
+            "SELECT id, venue_id, total, status, meta, guest_id FROM tap_sessions WHERE id = $1", sid
         )
         if not session:
             raise HTTPException(404, "Session not found")
@@ -470,6 +473,7 @@ async def close_tab(
         # Update meta with payment info
         meta = _parse_meta(session["meta"])
         meta["payment_location"] = payment_location
+        meta["payment_method"] = payment_method
         meta["tip_amount"] = 0
         meta["tip_recorded"] = False
 
@@ -487,6 +491,14 @@ async def close_tab(
                (venue_id, tap_session_id, amount, method, paid_by_user_id, paid_at)
                VALUES ($1, $2, $3, $4, $5, $6)""",
             session["venue_id"], sid, session["total"], payment_method, staff_id, now,
+        )
+
+    # Update guest spend_total in MongoDB
+    if session["guest_id"]:
+        db = get_mongo_db()
+        await db.venue_guests.update_one(
+            {"id": str(session["guest_id"]), "venue_id": str(session["venue_id"])},
+            {"$inc": {"spend_total": float(session["total"])}},
         )
 
     # Broadcast real-time update to Manager

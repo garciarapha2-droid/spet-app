@@ -1,0 +1,74 @@
+{
+  "summary": "Iteration 35: All 6 Critical Operational Fixes VERIFIED. Backend: 11/11 tests passed. Frontend: All fixes working in UI.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "features_verified": {
+    "fix_1_bar_orders_save": {
+      "status": "PASS",
+      "description": "submitOrder() in PulseBarPage.js loops through cart items and calls POST /api/tap/session/{id}/add for each",
+      "evidence": "Toast 'X item(s) saved to tab' appears, Maria Santos total increased from $44 to $57 after adding $13 Caipirinha"
+    },
+    "fix_2_guest_spend_total": {
+      "status": "PASS",
+      "description": "Guest spend_total updates in MongoDB on tab close via close_tab route (lines 497-502 in tap.py)",
+      "evidence": "Backend test verified API updates MongoDB guest spend_total on close"
+    },
+    "fix_3_inside_tabs_list": {
+      "status": "PASS",
+      "description": "Inside Tabs section shows all active sessions with click-to-select in PulseBarPage",
+      "evidence": "Bar page shows 5 tabs: Maria Santos #201, Ricardo Almeida #305, Fernando VIP #701, Sofia Cardoso #106, Lucas Oliveira #107"
+    },
+    "fix_4_chips_payment": {
+      "status": "PASS",
+      "description": "Chips button added in Bar (pay-chips-btn), closes tab with payment_method=chips",
+      "evidence": "Chips button visible in UI, backend API accepts chips method and stores in tap_payments table"
+    },
+    "fix_5_manager_chips_separation": {
+      "status": "PASS",
+      "description": "Manager dashboard shows chips_today ($110) separate from revenue_today ($43)",
+      "evidence": "Manager Overview shows separate KPI cards: Revenue Today $43, Chips Today $110 (amber color)"
+    },
+    "fix_6_session_detail": {
+      "status": "PASS",
+      "description": "Session detail shows items list with qty/prices and tip info (tip_amount, tip_percent, tip_recorded)",
+      "evidence": "TAP page Fernando VIP #701 shows full items list with quantities, backend returns tip fields"
+    }
+  },
+  "kpis_verified": {
+    "revenue_today": "$43 (excludes chips)",
+    "chips_today": "$110 (separate)",
+    "open_tabs": 5,
+    "tabs_closed": 3,
+    "unique_guests": 7,
+    "avg_ticket": "$43.00",
+    "guest_funnel": "7 entries → 7 allowed → 8 tabs opened → 3 tabs closed"
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iteration35_operational_fixes.py",
+    "/app/test_reports/pytest/iteration35_operational_fixes.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [],
+  "updated_files": [
+    "/app/backend/tests/test_iteration35_operational_fixes.py"
+  ],
+  "success_rate": {
+    "backend": "100% (11/11 tests passed)",
+    "frontend": "100% (All 6 fixes verified in UI)"
+  },
+  "test_credentials": {
+    "email": "teste@teste.com",
+    "password": "12345"
+  },
+  "seed_data_creation": "TEST_ChipsGuest created during chips payment method test",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Iteration 35: All 6 critical operational fixes working. Bar page flow: select bartender → click Inside Tab → confirm modal → add items → Confirm saves to backend. Chips payment works and shows separate from revenue in Manager. Current state: 5 open tabs (Ricardo $127, Fernando VIP $352, Sofia $42, Lucas $47, Maria $57), 3 closed tabs. Manager Revenue $43 excludes chips, Chips $110 separate."
+}
