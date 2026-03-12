@@ -85,6 +85,8 @@ async def seed():
             "host_collect_photo": True,
             "entry_types": ["vip", "cover", "cover_consumption", "consumption_only"],
             "bar_mode": "disco",
+        }, "$setOnInsert": {
+            "modules": ["pulse", "tap", "table", "kds"],
         }},
         upsert=True,
     )

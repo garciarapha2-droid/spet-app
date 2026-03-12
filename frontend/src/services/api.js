@@ -49,6 +49,8 @@ export const venueAPI = {
   getEventStaff: (venueId, eventId) => api.get(`/venue/${venueId}/events/${eventId}/staff`),
   assignStaffToEvent: (venueId, eventId, fd) => api.post(`/venue/${venueId}/events/${eventId}/staff`, fd),
   removeStaffFromEvent: (venueId, eventId, staffId) => api.delete(`/venue/${venueId}/events/${eventId}/staff/${staffId}`),
+  // Module access check
+  checkModuleAccess: (moduleKey, venueId) => api.get(`/venue/check-module/${moduleKey}`, { params: { venue_id: venueId } }),
 };
 
 // Pulse
@@ -208,4 +210,8 @@ export const ceoAPI = {
   getKpiBreakdown: (kpi) => api.get('/ceo/kpi-breakdown', { params: { kpi } }),
   updateCompanyModules: (userId, fd) => api.put(`/ceo/company/${userId}/modules`, fd),
   updateCompanyStatus: (userId, fd) => api.put(`/ceo/company/${userId}/status`, fd),
+  getUsers: () => api.get('/ceo/users'),
+  createUser: (fd) => api.post('/ceo/users', fd),
+  updateUser: (userId, fd) => api.put(`/ceo/users/${userId}`, fd),
+  deleteUser: (userId) => api.delete(`/ceo/users/${userId}`),
 };

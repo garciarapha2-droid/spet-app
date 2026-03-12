@@ -7,7 +7,7 @@ import { Button } from '../components/ui/button';
 import {
   ArrowLeft, DollarSign, TrendingUp, Users, Building2, Activity,
   Target, AlertTriangle, ChevronRight, BarChart3, ShieldAlert,
-  Zap, ArrowUpRight, ArrowDownRight, X, Check, Layers
+  Zap, ArrowUpRight, ArrowDownRight, X, Check, Layers, UserPlus, Pencil, Trash2, Power
 } from 'lucide-react';
 
 const TABS = [
@@ -15,6 +15,7 @@ const TABS = [
   { key: 'revenue', label: 'Revenue & Profit', icon: DollarSign },
   { key: 'companies', label: 'Companies', icon: Building2 },
   { key: 'modules', label: 'Module Adoption', icon: Layers },
+  { key: 'users', label: 'User Management', icon: Users },
   { key: 'alerts', label: 'Risk & Alerts', icon: AlertTriangle },
   { key: 'pipeline', label: 'Growth Pipeline', icon: TrendingUp },
 ];
@@ -127,6 +128,7 @@ export default function CeoPage() {
           {activeTab === 'revenue' && <RevenueSection />}
           {activeTab === 'companies' && <CompaniesSection />}
           {activeTab === 'modules' && <ModulesSection />}
+          {activeTab === 'users' && <UsersSection />}
           {activeTab === 'alerts' && <AlertsSection />}
           {activeTab === 'pipeline' && <PipelineSection />}
         </main>
@@ -555,7 +557,172 @@ function ModulesSection() {
   );
 }
 
-/* ─── 5. Risk & Alerts ─── */
+/* ─── 5. User Management ─── */
+function UsersSection() {
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showCreate, setShowCreate] = useState(false);
+  const [editingUser, setEditingUser] = useState(null);
+  const [form, setForm] = useState({ email: '', password: '', role: 'server', venue_id: '', status: 'active' });
+
+  const loadUsers = useCallback(() => {
+    ceoAPI.getUsers().then(r => setUsers(r.data.users || [])).catch(() => toast.error('Failed to load users')).finally(() => setLoading(false));
+  }, []);
+  useEffect(() => { loadUsers(); }, [loadUsers]);
+
+  const handleCreate = async () => {
+    if (!form.email || !form.password) { toast.error('Email and password required'); return; }
+    try {
+      const fd = new FormData();
+      fd.append('email', form.email); fd.append('password', form.password); fd.append('role', form.role);
+      if (form.venue_id) fd.append('venue_id', form.venue_id);
+      const perms = {};
+      if (['server', 'host', 'bartender', 'cashier', 'kitchen'].includes(form.role)) {
+        perms.pulse = true; perms.tap = true; perms.table = true; perms.kds = true;
+      }
+      fd.append('permissions', JSON.stringify(perms));
+      await ceoAPI.createUser(fd);
+      toast.success('User created'); setShowCreate(false);
+      setForm({ email: '', password: '', role: 'server', venue_id: '', status: 'active' }); loadUsers();
+    } catch (e) { toast.error(e.response?.data?.detail || 'Failed'); }
+  };
+
+  const handleUpdate = async () => {
+    if (!editingUser) return;
+    try {
+      const fd = new FormData();
+      if (form.role) fd.append('role', form.role);
+      if (form.status) fd.append('status', form.status);
+      if (form.venue_id) fd.append('venue_id', form.venue_id);
+      if (form.email) fd.append('email', form.email);
+      const perms = {};
+      if (['server', 'host', 'bartender', 'cashier', 'kitchen'].includes(form.role)) {
+        perms.pulse = true; perms.tap = true; perms.table = true; perms.kds = true;
+      }
+      fd.append('permissions', JSON.stringify(perms));
+      await ceoAPI.updateUser(editingUser, fd);
+      toast.success('User updated'); setEditingUser(null); loadUsers();
+    } catch (e) { toast.error(e.response?.data?.detail || 'Failed'); }
+  };
+
+  const handleDelete = async (userId) => {
+    if (!window.confirm('Are you sure you want to delete this user?')) return;
+    try {
+      await ceoAPI.deleteUser(userId);
+      toast.success('User deleted'); loadUsers();
+    } catch (e) { toast.error(e.response?.data?.detail || 'Failed'); }
+  };
+
+  const startEdit = (u) => {
+    setEditingUser(u.id);
+    setForm({
+      email: u.email,
+      password: '',
+      role: u.roles?.[0]?.role || 'server',
+      venue_id: u.roles?.[0]?.venue_id || '',
+      status: u.status,
+    });
+  };
+
+  const ROLES = ['ceo', 'owner', 'manager', 'host', 'tap', 'bartender', 'server', 'kitchen', 'cashier'];
+  const venueId = localStorage.getItem('active_venue_id') || '';
+
+  if (loading) return <Skeleton />;
+
+  return (
+    <div data-testid="ceo-users-section">
+      <div className="flex items-center justify-between mb-5">
+        <h2 className="text-xl font-bold">User Management</h2>
+        <Button size="sm" onClick={() => { setShowCreate(true); setEditingUser(null); setForm({ email: '', password: '', role: 'server', venue_id: venueId, status: 'active' }); }} data-testid="create-user-btn">
+          <UserPlus className="h-4 w-4 mr-1" /> New User
+        </Button>
+      </div>
+
+      {/* Create / Edit Form */}
+      {(showCreate || editingUser) && (
+        <div className="bg-card border border-border rounded-xl p-4 mb-4 space-y-3" data-testid="user-form">
+          <h3 className="font-semibold text-sm">{editingUser ? 'Edit User' : 'Create New User'}</h3>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs text-muted-foreground">Email</label>
+              <Input value={form.email} onChange={e => setForm(p => ({ ...p, email: e.target.value }))} placeholder="user@email.com" className="h-8 text-sm" data-testid="user-email-input" />
+            </div>
+            {!editingUser && (
+              <div>
+                <label className="text-xs text-muted-foreground">Password</label>
+                <Input type="password" value={form.password} onChange={e => setForm(p => ({ ...p, password: e.target.value }))} placeholder="Password" className="h-8 text-sm" data-testid="user-password-input" />
+              </div>
+            )}
+            <div>
+              <label className="text-xs text-muted-foreground">Role</label>
+              <select value={form.role} onChange={e => setForm(p => ({ ...p, role: e.target.value }))}
+                className="w-full h-8 text-sm bg-background border border-border rounded-md px-2" data-testid="user-role-select">
+                {ROLES.map(r => <option key={r} value={r}>{r.charAt(0).toUpperCase() + r.slice(1)}</option>)}
+              </select>
+            </div>
+            {editingUser && (
+              <div>
+                <label className="text-xs text-muted-foreground">Status</label>
+                <select value={form.status} onChange={e => setForm(p => ({ ...p, status: e.target.value }))}
+                  className="w-full h-8 text-sm bg-background border border-border rounded-md px-2" data-testid="user-status-select">
+                  {['active', 'suspended', 'pending'].map(s => <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>)}
+                </select>
+              </div>
+            )}
+          </div>
+          <div className="flex gap-2">
+            <Button size="sm" onClick={editingUser ? handleUpdate : handleCreate} data-testid="user-save-btn">
+              <Check className="h-3 w-3 mr-1" /> {editingUser ? 'Update' : 'Create'}
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => { setShowCreate(false); setEditingUser(null); }} data-testid="user-cancel-btn">
+              Cancel
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Users List */}
+      <div className="space-y-2" data-testid="users-list">
+        {users.length === 0 ? (
+          <p className="text-sm text-muted-foreground text-center py-8">No users found</p>
+        ) : users.map(u => (
+          <div key={u.id} className="bg-card border border-border rounded-xl p-4 flex items-center justify-between" data-testid={`user-row-${u.id}`}>
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="font-medium text-sm">{u.email}</span>
+                <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${
+                  u.status === 'active' ? 'bg-green-500/10 text-green-600' :
+                  u.status === 'suspended' ? 'bg-red-500/10 text-red-600' :
+                  'bg-yellow-500/10 text-yellow-600'
+                }`}>{u.status}</span>
+              </div>
+              <div className="flex gap-2 flex-wrap">
+                {(u.roles || []).map((r, i) => (
+                  <span key={i} className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium">
+                    {r.role}{r.venue_id ? ` (Venue)` : ''}
+                  </span>
+                ))}
+              </div>
+              <p className="text-[10px] text-muted-foreground mt-1">
+                Last login: {u.last_login_at ? new Date(u.last_login_at).toLocaleDateString() : 'Never'}
+              </p>
+            </div>
+            <div className="flex items-center gap-1">
+              <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => startEdit(u)} data-testid={`edit-user-${u.id}`}>
+                <Pencil className="h-3.5 w-3.5" />
+              </Button>
+              <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => handleDelete(u.id)} data-testid={`delete-user-${u.id}`}>
+                <Trash2 className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ─── 6. Risk & Alerts ─── */
 function AlertsSection() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);

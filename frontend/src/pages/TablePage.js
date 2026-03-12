@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { tableAPI, tapAPI, staffAPI } from '../services/api';
+import { tableAPI, tapAPI, staffAPI, venueAPI } from '../services/api';
 import { toast } from 'sonner';
 import { Input } from '../components/ui/input';
 import { Button } from '../components/ui/button';
 import { ThemeToggle } from '../components/ThemeToggle';
 import {
   ArrowLeft, LayoutGrid, Plus, Users, X, Trash2, CreditCard, Banknote, Beer,
-  Home, LogOut, Pencil, Check, Camera, Upload, User, ChevronDown, Clock, ShieldCheck, ShieldAlert, Video
+  Home, LogOut, Pencil, Check, Camera, Upload, User, ChevronDown, Clock, ShieldCheck, ShieldAlert, Video, Lock
 } from 'lucide-react';
 
 const VENUE_ID = () => localStorage.getItem('active_venue_id') || '40a24e04-75b6-435d-bfff-ab0d469ce543';
@@ -109,6 +109,7 @@ const ElapsedTime = ({ openedAt }) => {
 
 export const TablePage = () => {
   const navigate = useNavigate();
+  const [moduleBlocked, setModuleBlocked] = useState(false);
   const [tables, setTables] = useState([]);
   const [selectedTable, setSelectedTable] = useState(null);
   const [tableDetail, setTableDetail] = useState(null);
@@ -146,6 +147,12 @@ export const TablePage = () => {
 
   useEffect(() => { loadTables(); loadCatalog(); loadBarmen(); }, [loadTables, loadCatalog, loadBarmen]);
   useEffect(() => { const iv = setInterval(loadTables, 15000); return () => clearInterval(iv); }, [loadTables]);
+
+  useEffect(() => {
+    venueAPI.checkModuleAccess('table', VENUE_ID())
+      .then(res => { if (!res.data.allowed) setModuleBlocked(true); })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (!selectedTable) { setTableDetail(null); return; }
@@ -240,16 +247,15 @@ export const TablePage = () => {
   const [tableTipResult, setTableTipResult] = useState(null);
 
   const [tablePaymentDone, setTablePaymentDone] = useState(false);
+  const [tableOrderConfirmed, setTableOrderConfirmed] = useState(false);
 
   const handleCloseTable = async (method, location) => {
     if (!tableDetail?.session) return;
     if (location === 'pay_at_register') {
-      // Pay at Register: table stays open, mark payment done
       setTablePaymentDone(true);
-      toast.success('Sent to register — table stays open. Now you can Confirm.');
+      toast.success('Sent to register — done.');
       return;
     }
-    // Pay Here: close table and show tip flow
     setLoading(true);
     try {
       const fd = new FormData();
@@ -265,15 +271,21 @@ export const TablePage = () => {
   };
 
   const handleTableConfirmOrder = () => {
+    if (!tableDetail?.session) return;
+    if ((tableDetail.items || []).length === 0) { toast.error('Add items before confirming'); return; }
+    setTableOrderConfirmed(true);
+  };
+
+  const handleTableFinalDone = () => {
     if (!tablePaymentDone) { toast.error('Choose payment method first'); return; }
-    setTableDetail(null); setTablePaymentDone(false);
+    setTableDetail(null); setTablePaymentDone(false); setTableOrderConfirmed(false);
     setTableCloseStep(null); setTableTipSession(null); setTableTipInput(''); setTableTipResult(null);
     loadTables();
-    toast.success('Order confirmed');
+    toast.success('Order completed');
   };
 
   const handleTableCancelOrder = () => {
-    setTableDetail(null); setTablePaymentDone(false);
+    setTableDetail(null); setTablePaymentDone(false); setTableOrderConfirmed(false);
     setTableCloseStep(null); setTableTipSession(null); setTableTipInput(''); setTableTipResult(null);
     toast('Order cancelled');
   };
@@ -325,6 +337,17 @@ export const TablePage = () => {
 
   const filteredItems = catalog.filter(i => i.category === selectedCategory).sort((a, b) => a.name.localeCompare(b.name));
   const currentTable = tables.find(t => t.id === selectedTable);
+
+  if (moduleBlocked) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center" data-testid="module-blocked">
+        <Lock className="h-12 w-12 text-muted-foreground mb-4" />
+        <h2 className="text-xl font-bold mb-2">Module Not Available</h2>
+        <p className="text-muted-foreground mb-6">You do not have access to the Table module for this venue.</p>
+        <Button onClick={() => navigate('/venue/home')} data-testid="back-to-home-btn">Back to Home</Button>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background" data-testid="table-page">
@@ -569,17 +592,49 @@ export const TablePage = () => {
                       ))}
                     </div>
 
-                    {!tableCloseStep && (
-                      <div className="space-y-3 pt-4 border-t border-border">
-                        <p className="text-sm font-medium text-muted-foreground">Pay Now</p>
+                    {/* STEP 5: Confirm Order (before payment) */}
+                    {!tableCloseStep && !tableOrderConfirmed && (
+                      <div className="grid grid-cols-2 gap-3 pt-4 border-t border-border" data-testid="table-order-action-buttons">
+                        <Button variant="destructive" className="h-12 text-sm font-semibold" onClick={handleTableCancelOrder} data-testid="table-cancel-order-btn">
+                          <X className="h-4 w-4 mr-1.5" /> Cancel Order
+                        </Button>
+                        <Button
+                          className="h-12 text-sm font-semibold bg-primary hover:bg-primary/90 text-primary-foreground"
+                          onClick={handleTableConfirmOrder}
+                          disabled={(tableDetail.items || []).length === 0}
+                          data-testid="table-confirm-order-btn">
+                          <Check className="h-4 w-4 mr-1.5" /> Confirm Order
+                        </Button>
+                        {(tableDetail.items || []).length === 0 && (
+                          <p className="col-span-2 text-[10px] text-muted-foreground text-center">Add items before confirming</p>
+                        )}
+                      </div>
+                    )}
+
+                    {/* STEP 6: Payment screen (only after order confirmed) */}
+                    {!tableCloseStep && tableOrderConfirmed && !tablePaymentDone && (
+                      <div className="space-y-3 pt-4 border-t border-border" data-testid="table-payment-section">
+                        <p className="text-sm font-medium text-muted-foreground">Choose Payment Method</p>
                         <div className="grid grid-cols-2 gap-2">
                           <Button variant="outline" className="h-11" onClick={() => handleCloseTable('card', 'pay_here')} disabled={loading} data-testid="table-pay-here-btn">
-                            <CreditCard className="h-4 w-4 mr-1" /> Pay here
+                            <CreditCard className="h-4 w-4 mr-1" /> Pay Here
                           </Button>
                           <Button variant="outline" className="h-11" onClick={() => handleCloseTable('card', 'pay_at_register')} disabled={loading} data-testid="table-pay-register-btn">
-                            <Banknote className="h-4 w-4 mr-1" /> Pay at register
+                            <Banknote className="h-4 w-4 mr-1" /> Pay at Register
                           </Button>
                         </div>
+                        <Button variant="ghost" className="w-full text-xs text-muted-foreground" onClick={() => setTableOrderConfirmed(false)} data-testid="table-back-to-items-btn">
+                          Back to items
+                        </Button>
+                      </div>
+                    )}
+
+                    {/* After payment done (non-tip flow) */}
+                    {!tableCloseStep && tableOrderConfirmed && tablePaymentDone && (
+                      <div className="pt-4 border-t border-border">
+                        <Button className="w-full h-12 bg-green-600 hover:bg-green-700 text-white font-semibold" onClick={handleTableFinalDone} data-testid="table-done-btn">
+                          <Check className="h-4 w-4 mr-1.5" /> Done
+                        </Button>
                       </div>
                     )}
 
@@ -634,24 +689,7 @@ export const TablePage = () => {
                       </div>
                     )}
 
-                    {/* Cancel + Confirm Order (blocked until payment done) */}
-                    {!tableCloseStep && !tableTipResult && (
-                      <div className="grid grid-cols-2 gap-3 pt-4 mt-auto border-t border-border" data-testid="table-order-action-buttons">
-                        <Button variant="destructive" className="h-12 text-sm font-semibold" onClick={handleTableCancelOrder} data-testid="table-cancel-order-btn">
-                          <X className="h-4 w-4 mr-1.5" /> Cancel Order
-                        </Button>
-                        <Button
-                          className={`h-12 text-sm font-semibold ${tablePaymentDone ? 'bg-green-600 hover:bg-green-700 text-white' : 'bg-muted text-muted-foreground cursor-not-allowed'}`}
-                          onClick={handleTableConfirmOrder}
-                          disabled={!tablePaymentDone}
-                          data-testid="table-confirm-order-btn">
-                          <Check className="h-4 w-4 mr-1.5" /> Confirm
-                        </Button>
-                        {!tablePaymentDone && (
-                          <p className="col-span-2 text-[10px] text-muted-foreground text-center">Choose payment method above before confirming</p>
-                        )}
-                      </div>
-                    )}
+                    {/* (removed duplicate buttons) */}
                   </div>
                 ) : (
                   <div className="text-center py-10" data-testid="open-table-panel">

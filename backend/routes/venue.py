@@ -91,13 +91,25 @@ async def venue_home(user: dict = Depends(require_auth)):
                 venues.append({"id": cid, "name": str(company["name"])})
 
     active_venue = venues[0] if venues else {"id": None, "name": "No Venue"}
+
+    # Check venue-level module configs (set by CEO)
+    venue_enabled_modules = None
+    if active_venue.get("id"):
+        venue_cfg = await db.venue_configs.find_one({"venue_id": active_venue["id"]}, {"_id": 0})
+        if venue_cfg and "modules" in venue_cfg:
+            venue_enabled_modules = set(venue_cfg["modules"])
+
     modules = []
     for m in MODULE_DEFS:
         has_access = _user_has_access(user, m)
+        # If venue has explicit module config, permission-based modules must also be in the venue's allowed list
+        if venue_enabled_modules is not None and m["permission"]:
+            if m["permission"] not in venue_enabled_modules:
+                has_access = False
         modules.append({
             "key": m["key"], "name": m["name"], "description": m["description"],
             "enabled": has_access,
-            "locked_reason": None if has_access else "Upgrade required or no access",
+            "locked_reason": None if has_access else "Module not available for this venue",
         })
 
     return {
@@ -105,6 +117,26 @@ async def venue_home(user: dict = Depends(require_auth)):
         "user_email": user.get("email", ""),
         "user_role": roles[0]["role"] if roles else "unknown",
     }
+
+
+
+@router.get("/check-module/{module_key}")
+async def check_module_access(module_key: str, venue_id: str = None, user: dict = Depends(require_auth)):
+    """Check if the current user has access to a specific module for the given venue."""
+    db = get_mongo_db()
+    module_def = next((m for m in MODULE_DEFS if m["key"] == module_key), None)
+    if not module_def:
+        return {"allowed": False, "reason": "Module not found"}
+
+    has_access = _user_has_access(user, module_def)
+
+    if has_access and venue_id and module_def["permission"]:
+        venue_cfg = await db.venue_configs.find_one({"venue_id": venue_id}, {"_id": 0})
+        if venue_cfg and "modules" in venue_cfg:
+            if module_def["permission"] not in venue_cfg["modules"]:
+                has_access = False
+
+    return {"allowed": has_access, "module": module_key}
 
 
 # ─── Events ──────────────────────────────────────────────────────

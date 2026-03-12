@@ -504,3 +504,145 @@ async def update_company_status(
         await conn.execute("UPDATE users SET status=$1 WHERE id=$2", status, uid)
 
     return {"status": "updated", "user_id": user_id, "new_status": status}
+
+
+PROTECTED_SYSTEM_ACCOUNTS = {"teste@teste.com", "garcia.rapha2@gmail.com"}
+
+
+@router.get("/users")
+async def list_users(user: dict = Depends(require_auth)):
+    """List all users with their roles and venue access."""
+    pool = get_postgres_pool()
+    async with pool.acquire() as conn:
+        users = await conn.fetch(
+            """SELECT u.id, u.email, u.status, u.created_at, u.last_login_at
+               FROM users u ORDER BY u.created_at DESC"""
+        )
+        result = []
+        for u in users:
+            roles = await conn.fetch(
+                """SELECT company_id, venue_id, role, permissions
+                   FROM user_access WHERE user_id = $1""", u["id"]
+            )
+            result.append({
+                "id": str(u["id"]),
+                "email": u["email"],
+                "status": u["status"],
+                "created_at": u["created_at"].isoformat() if u["created_at"] else None,
+                "last_login_at": u["last_login_at"].isoformat() if u["last_login_at"] else None,
+                "roles": [{
+                    "company_id": str(r["company_id"]) if r["company_id"] else None,
+                    "venue_id": str(r["venue_id"]) if r["venue_id"] else None,
+                    "role": r["role"],
+                    "permissions": json.loads(r["permissions"]) if isinstance(r["permissions"], str) else (r["permissions"] or {}),
+                } for r in roles],
+            })
+    return {"users": result}
+
+
+@router.post("/users")
+async def create_user(
+    email: str = Form(...),
+    password: str = Form(...),
+    role: str = Form("server"),
+    venue_id: str = Form(None),
+    company_id: str = Form(None),
+    permissions: str = Form("{}"),
+    user: dict = Depends(require_auth),
+):
+    """Create a new user from the CEO panel."""
+    from utils.auth import hash_password
+    pool = get_postgres_pool()
+    async with pool.acquire() as conn:
+        existing = await conn.fetchrow("SELECT id FROM users WHERE email = $1", email.lower())
+        if existing:
+            raise HTTPException(400, "Email already registered")
+        now = datetime.now(timezone.utc)
+        row = await conn.fetchrow(
+            """INSERT INTO users (email, password_hash, status, created_at, updated_at)
+               VALUES ($1, $2, 'active', $3, $3) RETURNING id""",
+            email.lower(), hash_password(password), now,
+        )
+        uid = row["id"]
+        vid = uuid.UUID(venue_id) if venue_id else None
+        cid = uuid.UUID(company_id) if company_id else None
+        await conn.execute(
+            """INSERT INTO user_access (user_id, company_id, venue_id, role, permissions, created_at)
+               VALUES ($1, $2, $3, $4, $5, $6)""",
+            uid, cid, vid, role, permissions, now,
+        )
+    return {"user_id": str(uid), "email": email.lower(), "status": "active"}
+
+
+@router.put("/users/{user_id}")
+async def update_user(
+    user_id: str,
+    email: str = Form(None),
+    role: str = Form(None),
+    venue_id: str = Form(None),
+    company_id: str = Form(None),
+    permissions: str = Form(None),
+    status: str = Form(None),
+    user: dict = Depends(require_auth),
+):
+    """Update user details."""
+    pool = get_postgres_pool()
+    uid = uuid.UUID(user_id)
+    async with pool.acquire() as conn:
+        target = await conn.fetchrow("SELECT id, email FROM users WHERE id = $1", uid)
+        if not target:
+            raise HTTPException(404, "User not found")
+        if email:
+            await conn.execute("UPDATE users SET email=$1, updated_at=$2 WHERE id=$3", email.lower(), datetime.now(timezone.utc), uid)
+        if status:
+            valid = {"active", "suspended", "pending"}
+            if status not in valid:
+                raise HTTPException(400, f"Invalid status: {status}")
+            await conn.execute("UPDATE users SET status=$1, updated_at=$2 WHERE id=$3", status, datetime.now(timezone.utc), uid)
+        if role:
+            existing_access = await conn.fetchrow("SELECT id FROM user_access WHERE user_id = $1", uid)
+            vid = uuid.UUID(venue_id) if venue_id else None
+            cid = uuid.UUID(company_id) if company_id else None
+            if existing_access:
+                updates = ["role = $1"]
+                vals = [role]
+                idx = 2
+                if venue_id is not None:
+                    updates.append(f"venue_id = ${idx}")
+                    vals.append(vid)
+                    idx += 1
+                if company_id is not None:
+                    updates.append(f"company_id = ${idx}")
+                    vals.append(cid)
+                    idx += 1
+                if permissions is not None:
+                    updates.append(f"permissions = ${idx}")
+                    vals.append(permissions)
+                    idx += 1
+                vals.append(uid)
+                await conn.execute(
+                    f"UPDATE user_access SET {', '.join(updates)} WHERE user_id = ${idx}", *vals
+                )
+            else:
+                await conn.execute(
+                    """INSERT INTO user_access (user_id, company_id, venue_id, role, permissions, created_at)
+                       VALUES ($1, $2, $3, $4, $5, $6)""",
+                    uid, cid, vid, role, permissions or "{}", datetime.now(timezone.utc),
+                )
+    return {"status": "updated", "user_id": user_id}
+
+
+@router.delete("/users/{user_id}")
+async def delete_ceo_user(user_id: str, user: dict = Depends(require_auth)):
+    """Delete or deactivate a user from CEO panel."""
+    pool = get_postgres_pool()
+    uid = uuid.UUID(user_id)
+    async with pool.acquire() as conn:
+        target = await conn.fetchrow("SELECT id, email FROM users WHERE id = $1", uid)
+        if not target:
+            raise HTTPException(404, "User not found")
+        if target["email"] in PROTECTED_SYSTEM_ACCOUNTS:
+            raise HTTPException(403, "System account cannot be deleted")
+        await conn.execute("DELETE FROM user_access WHERE user_id = $1", uid)
+        await conn.execute("DELETE FROM users WHERE id = $1", uid)
+    return {"deleted": True, "user_id": user_id}

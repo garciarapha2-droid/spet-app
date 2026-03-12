@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { tapAPI, staffAPI, pulseAPI } from '../services/api';
+import { tapAPI, staffAPI, pulseAPI, venueAPI } from '../services/api';
 import { toast } from 'sonner';
 import { Input } from '../components/ui/input';
 import { Button } from '../components/ui/button';
 import { ThemeToggle } from '../components/ThemeToggle';
 import {
   ArrowLeft, Plus, X, CreditCard, Banknote, Beer, User, ChevronDown, ScanLine,
-  Home, LogOut, LayoutGrid, Pencil, Trash2, Check, Receipt, Camera, Upload, ShieldCheck, Video
+  Home, LogOut, LayoutGrid, Pencil, Trash2, Check, Receipt, Camera, Upload, ShieldCheck, Video, Lock
 } from 'lucide-react';
 
 const VENUE_ID = () => localStorage.getItem('active_venue_id') || '40a24e04-75b6-435d-bfff-ab0d469ce543';
@@ -92,6 +92,7 @@ function GuestConfirmModal({ session, onConfirm, onCancel }) {
 
 export const TapPage = () => {
   const navigate = useNavigate();
+  const [moduleBlocked, setModuleBlocked] = useState(false);
   const [sessions, setSessions] = useState([]);
   const [catalog, setCatalog] = useState([]);
   const [stats, setStats] = useState({});
@@ -119,10 +120,17 @@ export const TapPage = () => {
   const [showAddBarman, setShowAddBarman] = useState(false);
   const [confirmedSessions, setConfirmedSessions] = useState(new Set());
   const [pendingConfirmSession, setPendingConfirmSession] = useState(null);
-  const [paymentProcessed, setPaymentProcessed] = useState(false); // Tracks if payment was done for current order
+  const [paymentProcessed, setPaymentProcessed] = useState(false);
+  const [orderConfirmed, setOrderConfirmed] = useState(false);
 
   const loadBarmen = useCallback(async () => {
     try { const res = await staffAPI.getBarmen(VENUE_ID()); setBarmen(res.data.barmen || []); } catch {}
+  }, []);
+
+  useEffect(() => {
+    venueAPI.checkModuleAccess('tap', VENUE_ID())
+      .then(res => { if (!res.data.allowed) setModuleBlocked(true); })
+      .catch(() => {});
   }, []);
 
   const handleAddBarman = async () => {
@@ -308,12 +316,10 @@ export const TapPage = () => {
   const handleCloseTab = async (method, location) => {
     if (!activeSessionId) return;
     if (location === 'pay_at_register') {
-      // Pay at Register: tab stays OPEN, mark payment as processed
       setPaymentProcessed(true);
-      toast.success('Sent to register — tab stays open. Now you can Confirm.');
+      toast.success('Sent to register — done.');
       return;
     }
-    // Pay Here: close the tab and show tip flow
     setLoading(true);
     try {
       const fd = new FormData();
@@ -350,26 +356,39 @@ export const TapPage = () => {
   };
 
   const handleConfirmOrder = () => {
-    if (!paymentProcessed) {
-      toast.error('Choose payment method first (Pay Here or Pay at Register)');
-      return;
-    }
-    // Clean slate after confirmed order
+    if (!activeSessionId || !activeSession) return;
+    if ((activeSession.items || []).length === 0) { toast.error('Add items before confirming'); return; }
+    setOrderConfirmed(true);
+  };
+
+  const handleFinalDone = () => {
+    if (!paymentProcessed) { toast.error('Choose payment method first'); return; }
     setActiveSessionId(null); setActiveSession(null);
     setSelectedBarman(''); setConfirmedSessions(new Set());
     setCloseStep(null); setClosedSessionForTip(null); setTipInput(''); setTipResult(null);
-    setPaymentProcessed(false);
-    toast.success('Order confirmed — ready for next customer');
+    setPaymentProcessed(false); setOrderConfirmed(false);
+    toast.success('Order completed');
   };
 
   const handleCancelOrder = () => {
     setActiveSessionId(null); setActiveSession(null);
-    setPaymentProcessed(false);
+    setPaymentProcessed(false); setOrderConfirmed(false);
     setCloseStep(null); setClosedSessionForTip(null); setTipInput(''); setTipResult(null);
     toast('Order cancelled');
   };
 
   const filteredItems = catalog.filter(i => i.category === selectedCategory).sort((a, b) => a.name.localeCompare(b.name));
+
+  if (moduleBlocked) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center" data-testid="module-blocked">
+        <Lock className="h-12 w-12 text-muted-foreground mb-4" />
+        <h2 className="text-xl font-bold mb-2">Module Not Available</h2>
+        <p className="text-muted-foreground mb-6">You do not have access to the TAP module for this venue.</p>
+        <Button onClick={() => navigate('/venue/home')} data-testid="back-to-home-btn">Back to Home</Button>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background" data-testid="tap-page">
@@ -636,17 +655,49 @@ export const TapPage = () => {
                   ))}
                 </div>
 
-                {activeSession.status === 'open' && !closeStep && (
-                  <div className="space-y-3 pt-4 border-t border-border">
-                    <p className="text-sm font-medium text-muted-foreground">Pay Now</p>
+                {/* STEP 5: Confirm Order (before payment) */}
+                {activeSession.status === 'open' && !closeStep && !orderConfirmed && (
+                  <div className="grid grid-cols-2 gap-3 pt-4 border-t border-border" data-testid="order-action-buttons">
+                    <Button variant="destructive" className="h-12 text-sm font-semibold" onClick={handleCancelOrder} data-testid="cancel-order-btn">
+                      <X className="h-4 w-4 mr-1.5" /> Cancel Order
+                    </Button>
+                    <Button
+                      className="h-12 text-sm font-semibold bg-primary hover:bg-primary/90 text-primary-foreground"
+                      onClick={handleConfirmOrder}
+                      disabled={(activeSession.items || []).length === 0}
+                      data-testid="confirm-order-btn">
+                      <Check className="h-4 w-4 mr-1.5" /> Confirm Order
+                    </Button>
+                    {(activeSession.items || []).length === 0 && (
+                      <p className="col-span-2 text-[10px] text-muted-foreground text-center">Add items before confirming</p>
+                    )}
+                  </div>
+                )}
+
+                {/* STEP 6: Payment screen (only after order confirmed) */}
+                {activeSession.status === 'open' && !closeStep && orderConfirmed && !paymentProcessed && (
+                  <div className="space-y-3 pt-4 border-t border-border" data-testid="payment-section">
+                    <p className="text-sm font-medium text-muted-foreground">Choose Payment Method</p>
                     <div className="grid grid-cols-2 gap-2">
                       <Button variant="outline" className="h-11" onClick={() => handleCloseTab('card', 'pay_here')} disabled={loading} data-testid="pay-here-btn">
-                        <CreditCard className="h-4 w-4 mr-1" /> Pay here
+                        <CreditCard className="h-4 w-4 mr-1" /> Pay Here
                       </Button>
                       <Button variant="outline" className="h-11" onClick={() => handleCloseTab('card', 'pay_at_register')} disabled={loading} data-testid="pay-register-btn">
-                        <Banknote className="h-4 w-4 mr-1" /> Pay at register
+                        <Banknote className="h-4 w-4 mr-1" /> Pay at Register
                       </Button>
                     </div>
+                    <Button variant="ghost" className="w-full text-xs text-muted-foreground" onClick={() => setOrderConfirmed(false)} data-testid="back-to-items-btn">
+                      Back to items
+                    </Button>
+                  </div>
+                )}
+
+                {/* After payment done (non-tip flow) */}
+                {activeSession.status === 'open' && !closeStep && orderConfirmed && paymentProcessed && (
+                  <div className="pt-4 border-t border-border">
+                    <Button className="w-full h-12 bg-green-600 hover:bg-green-700 text-white font-semibold" onClick={handleFinalDone} data-testid="done-btn">
+                      <Check className="h-4 w-4 mr-1.5" /> Done
+                    </Button>
                   </div>
                 )}
 
@@ -703,24 +754,7 @@ export const TapPage = () => {
                   </div>
                 )}
 
-                {/* Always visible: Cancel Order (red) + Confirm Order (green) */}
-                {activeSession.status === 'open' && !closeStep && !tipResult && (
-                  <div className="grid grid-cols-2 gap-3 pt-4 mt-auto border-t border-border" data-testid="order-action-buttons">
-                    <Button variant="destructive" className="h-12 text-sm font-semibold" onClick={handleCancelOrder} data-testid="cancel-order-btn">
-                      <X className="h-4 w-4 mr-1.5" /> Cancel Order
-                    </Button>
-                    <Button
-                      className={`h-12 text-sm font-semibold ${paymentProcessed ? 'bg-green-600 hover:bg-green-700 text-white' : 'bg-muted text-muted-foreground cursor-not-allowed'}`}
-                      onClick={handleConfirmOrder}
-                      disabled={!paymentProcessed}
-                      data-testid="confirm-order-btn">
-                      <Check className="h-4 w-4 mr-1.5" /> Confirm Order
-                    </Button>
-                    {!paymentProcessed && (
-                      <p className="col-span-2 text-[10px] text-muted-foreground text-center">Choose payment method above before confirming</p>
-                    )}
-                  </div>
-                )}
+                {/* (order buttons moved above) */}
               </div>
             ) : (
               <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
