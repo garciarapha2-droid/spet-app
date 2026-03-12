@@ -947,12 +947,8 @@ async def _calc_staff_cost(db, venue_id: str, start: datetime, end: datetime):
         if not attributed:
             tips_by_staff_id["_unassigned"] = tips_by_staff_id.get("_unassigned", 0) + tip_amount
 
-    # Distribute any unassigned tips equally among active staff
+    # Unassigned tips stay unattributed — tips go ONLY to the specific staff member
     unassigned = tips_by_staff_id.pop("_unassigned", 0)
-    if unassigned > 0 and staff:
-        per_staff = round(unassigned / len(staff), 2)
-        for s in staff:
-            tips_by_staff_id[s["id"]] = tips_by_staff_id.get(s["id"], 0) + per_staff
 
     total_cost = 0
     staff_breakdown = []

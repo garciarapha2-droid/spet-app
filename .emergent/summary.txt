@@ -1,148 +1,194 @@
 <analysis>**original_problem_statement**:
-The user's initial goal was to build SPETAP, a multi-tenant SaaS platform for venue operations. The project has evolved through several phases:
-1.  **Critical Bug Fixes (Completed):** A patch was successfully delivered to fix 3 P0 bugs related to Staff Sync, Pay Here payment flow, and Tip Sync to the Manager dashboard.
-2.  **System Integration (Completed):** A major integration pass was completed to make all modules (Pulse, Tap, Table, KDS, Manager, AI) communicate as a unified system. A robust demo data seeding script () was created to ensure the platform is always populated with realistic, interconnected data for demos, addressing the user's core complaint about disconnected modules.
-3.  **Business Logic Update (Completed):** The staff earnings calculation was updated to handle cumulative tips and correctly calculate total earnings (Base Pay + Tips).
-4.  **Rebrand and UI Polish (Current Task):** The user has now requested a full rebrand from SPETAP to SPET and a major UI/UX polish. The goal is to elevate the platform's visual design to a premium, modern Silicon Valley startup aesthetic (similar to Stripe, Linear, Vercel) with a dark theme and electric blue accents. This is a purely visual task with a strict non-regression rule, meaning no functionality should be altered.
+The user's goal is to build SPET, a multi-tenant SaaS platform for real-time venue operations. The project has moved from initial bug-fixing and rebranding to a phase of intense operational refinement. The user is providing detailed feedback on system behavior, requiring the platform to function as a fully synchronized, real-time system where all modules (Pulse, Tap, Table, KDS, Manager, CEO) reflect a single source of truth.
+
+The latest user request involves correcting and implementing 7 specific operational rules, ranging from tip distribution logic and payment workflows to making dashboards interactive and adding user/module management capabilities. The user has emphasized that these are corrections to previously defined but incorrectly implemented behaviors and that all recent fixes must be preserved.
 
 **User's preferred language**: Portuguese. The next agent **MUST** respond in Portuguese.
 
 **what currently exists?**
-A stable, fully integrated full-stack application (React/FastAPI/PostgreSQL/MongoDB) rebranded as **SPET**. All previously reported critical bugs related to data synchronization and payment flows have been fixed and verified. A comprehensive demo data seeding mechanism is in place, ensuring the platform boots up in a realistic, demo-ready state. The previous agent completed a full audit of the frontend and received a detailed design system from the  to guide the UI polish.
+A full-stack application (React/FastAPI/PostgreSQL/MongoDB) with a polished, premium dark-themed UI. The platform has undergone several rounds of critical bug fixes focused on data synchronization across its modules. A WebSocket implementation provides real-time updates to the Manager Dashboard. The system uses a resilient data seeding script () to start in a consistent, demo-ready state. The previous agent successfully addressed multiple critical operational bugs related to order processing, payment handling, and tip attribution.
 
 **Last working item**:
-    - Last item agent was working: The agent was preparing to execute a major rebranding and UI/UX polish task. It had completed a full audit of the frontend code and had just received a comprehensive design system and implementation plan from the . The next step is to begin implementing these visual changes.
-    - Status: IN PROGRESS
+    - Last item agent was working: The agent was about to start work on a new set of 7 operational behavior corrections and feature requests provided by the user in their last message. The previous cycle of bug fixes was completed and verified.
+    - Status: NOT STARTED
     - Agent Testing Done: N
-    - Which testing method agent to use? Frontend testing agent. After implementation, the agent should take screenshots of key pages (Login, Dashboard, Tap, Manager) for a quick visual check, followed by a full frontend test run using  to ensure no functional regressions were introduced by the CSS/styling changes.
+    - Which testing method agent to use? both. Given the scope of the 7 new tasks, which touch multiple frontend and backend modules, a comprehensive end-to-end test using  is required after implementation. The agent should validate the entire operational flow described by the user.
     - User Testing Done: N
 
 **All Pending/In progress Issue list**:
-There are no pending bugs. The current work is a planned enhancement.
+The user's latest message lists 7 distinct tasks/issues. These are the highest priority.
+
+  - Issue 1:  (P0) Tips are being distributed among all staff instead of being assigned only to the staff member who handled the transaction.
+  - Issue 2:  (P0) The operational flow in the Tap and Table modules is inconsistent. Both must force a payment selection (Pay Here or Pay at Register) after an order is confirmed.
+  - Issue 3:  (P0) The Inside Now panel in the Demo Club Update does not show all active guests. It should list every guest currently in the venue.
+  - Issue 4:  (P1) The Revenue Today KPI in the Manager Dashboard is not interactive. It should be clickable to show a detailed breakdown.
+  - Issue 5:  (P1) The KPI icons (MRR, Gross Revenue, Net Profit) in the CEO Dashboard are not interactive.
+  - Issue 6:  (P1) The Company Management panel lacks user and module management functionality.
+  
+  Issues Detail:
+  - Issue 1: 
+     - Attempted fixes: The previous agent fixed an issue where tips were not being attributed to *any* staff member due to an ID mismatch ( vs ). The fix ensured tips were attributed, but the user now reports they are being pooled and distributed, which is incorrect.
+     - Next debug checklist: 
+        - Review the  function within .
+        - The logic likely pools all tips and divides them. This needs to be changed to a direct assignment model. The  function in  correctly identifies the ; this ID should be used to directly assign the tip amount to that specific staff member's record, bypassing any distribution logic.
+     - Why fix this issue and what will be achieved with the fix? To align the platform with the specified business rule that tips are a direct reward for the staff member who earned them, not a shared pool.
+     - Status:  NOT STARTED
+     - Is recurring issue? Y
+     - Should Test frontend/backend/both after fix? Backend.
+     - Blocked on other issue: None.
 
 **In progress Task List**:
-  - Task 1:  (P0) Rebrand to SPET & UI/UX Polish
- 
+These tasks are derived from the user's latest request and should be treated with high priority.
+
+  - Task 1:  (P0) Enforce Consistent Payment Flow in Tap & Table modules
+  - Task 2:  (P0) Correct Inside Now Guest List Display
+  - Task 3:  (P1) Implement Interactive Revenue Today KPI
+  - Task 4:  (P1) Implement Interactive CEO Dashboard KPIs
+  - Task 5:  (P1) Implement User & Module Management
+
  Task Detail:
   - Task 1: 
-     - Where to resume: The  has provided a complete design system playbook. The agent must now implement these visual changes. The recommended approach is to start with global styles:
-        1.  Update  with the new color palette, fonts, and spacing.
-        2.  Update  with base styles.
-        3.  Refactor the main layout () and shared navigation components.
-        4.  Systematically update shared UI components (Buttons, Inputs, Cards, etc.).
-        5.  Apply the polish to each page (, , , , , etc.) to ensure consistency.
-     - What will be achieved with this? The application's brand will be updated to SPET, and its visual design will be elevated to a premium, modern, and professional SaaS product, ready for investor and commercial demos.
-     - Status:  IN PROGRESS
-     - Should Test frontend/backend/both after fix? Frontend. This is a visual-only task, but strict regression testing on the frontend is mandatory.
-     - Blocked on something: Nothing.
+     - Where to resume: The Confirm Order flow was recently fixed for the Bar (), but the user wants the same logic applied to the  module.
+        1.  Locate the order confirmation logic in .
+        2.  Implement the same state management and UI as in  where clicking Confirm reveals Pay Here and Pay at Register buttons, making one mandatory for proceeding.
+     - What will be achieved with this? Standardized and correct operational workflow across all order-taking modules.
+     - Status:  NOT STARTED
+     - Should Test frontend/backend/both after fix? Frontend.
+     - Blocked on something: None.
+  - Task 2:
+     - Where to resume: The Inside Tabs panel on the Bar page was fixed to show all guests. The user now wants the Inside Now panel on the  page (likely ) to do the same.
+        1.  Analyze the data fetching logic in .
+        2.  It currently shows an incomplete list. The logic should be updated to fetch from the same source as the Bar's Inside Tabs panel ( and ), which correctly combines guests with and without active tabs.
+        3.  Ensure the display format matches the user's request: , , , .
+     - What will be achieved with this? A complete, real-time view of all guests inside the venue on the main home page.
+     - Status: NOT STARTED
+     - Should Test frontend/backend/both after fix? Frontend.
+     - Blocked on something: None.
+  - Task 3: 
+     - Where to resume: This is a new feature request.
+        1.  Modify  to make the Revenue Today card a clickable element.
+        2.  On click, open a modal () that displays a breakdown of revenue.
+        3.  Create a new backend endpoint (e.g., ) that returns data on orders, tabs, payments, and tips contributing to the total revenue.
+     - What will be achieved with this? Deeper financial insights for managers directly from the dashboard.
+     - Status:  NOT STARTED
+     - Should Test frontend/backend/both after fix? Both.
+     - Blocked on something: None.
+  - Task 4 & 5 are new feature requests and can be planned after the P0 tasks are completed.
 
 **Upcoming and Future Tasks**
 **Upcoming Tasks:**
-*   **(P0) Final Demo & Operational Checklist:** After the UI polish is complete, the user intends to conduct a final validation of the entire system.
-*   **(P1) Further UX/Wireframe Polish:** The user may have additional, more granular UX tweaks after the main visual overhaul.
+*   (P1) Implement Interactive CEO Dashboard KPIs (Task 4 from above)
+*   (P1) Implement User & Module Management (Task 5 from above)
+*   (P0) Final Demo & Operational Checklist: After the current task list is complete, the user will likely want to conduct a full system validation.
 
 **Future Tasks:**
-*   (P1) **Per-Event Dashboard (Manager View):** A new dashboard for managers to analyze single, completed events.
-*   (P2) **KDS / Bar Order Routing:** Advanced routing for kitchen/bar tickets.
-*   (P2) **Push notifications:** For real-time alerts.
-*   (P3) **Stripe Webhooks:** For handling subscriptions.
-*   (P3) **Offline-First Capabilities:** For staff-facing apps.
-*   (P3) **Event Wallet Module.**
+*   (P1) Per-Event Dashboard (Manager View)
+*   (P2) KDS / Bar Order Routing enhancements
+*   (P2) Push notifications for real-time alerts
+*   (P3) Stripe Webhooks for subscriptions
+*   (P3) Offline-First Capabilities for staff-facing apps
+*   (P3) Event Wallet Module
 
 **Completed work in this session**
-- **Staff Earnings Logic Update (DONE):**
-  - Implemented logic for cumulative tips and corrected the total earnings formula ().
-  - Updated backend (, ) and frontend (,  pages) to support and display .
-  - Created a new test file () and validated the changes with 12/12 tests passing.
-- **Full System Integration (DONE):**
-  - Created a robust, idempotent demo data seeding script ( in ) that populates the entire platform with interconnected, realistic data.
-  - Verified end-to-end data flow from guest intake in **Pulse** to revenue and tip calculations in the **Manager** dashboard.
-- **P0 Bug Patch (DONE):**
-  - Fixed Staff Sync, Pay Here flow, and Tip Sync bugs. All fixes were verified via API tests and the .
-- **UI Polish Preparation (DONE):**
-  - Audited all frontend files in preparation for the visual overhaul.
-  - Successfully invoked the  and received a detailed design system to implement.
+- **Full UI Rebrand & Polish (DONE):** Rebranded the app from SPETAP to SPET and implemented a premium, dark-themed UI with blue accents across the entire application.
+- **WebSocket Integration (DONE):** Implemented real-time updates for the Manager Dashboard using WebSockets, ensuring instant data propagation for key events (orders, tips, etc.).
+- **Critical Sync Bug Fixes (DONE):** Executed multiple rounds of bug fixes to restore and ensure data synchronization between all modules. This included:
+  - Fixing a data seeding bug that prevented the demo environment from resetting correctly.
+  - Ensuring bar orders are correctly saved to the backend and attached to guest tabs.
+  - Correcting guest spend calculation logic.
+  - Fixing payment categorization (including adding and later removing a Chips payment type per user request).
+- **Operational Flow Correction (DONE):**
+  - Implemented a mandatory payment selection flow (Pay Here / Pay at Register) in the Bar module.
+  - Corrected the Inside Tabs list to show all active guests, including those without open tabs.
+  - Fixed tip attribution logic to ensure tips are credited to the correct staff member () instead of being lost.
 
 **Earlier issues found/mentioned but not fixed**
-- None.
+- None. The agent has been diligent in addressing all issues raised by the user, although some have required multiple iterations to get right.
 
 **Known issue recurrence from previous fork**
-  - **Issue recurrence in previous fork**: Data inconsistency and lack of communication between modules.
-  - **Recurrence count**: High (mentioned repeatedly by the user).
-  - **Status**: RESOLVED. The Full System Integration task, specifically the creation of the  script in , was a major architectural improvement designed to fix the root cause of these issues. The system now starts with a consistent and interconnected state.
+  - **Issue recurrence in previous fork**: Data and state synchronization failures between modules.
+  - **Recurrence count**: High. This is the central theme of the user's feedback.
+  - **Status**: IN PROGRESS. While many specific sync bugs have been fixed, the user's latest request list indicates that the system's behavior is still not fully synchronized according to business rules. The new task to fix tip distribution is a direct example of this recurring theme.
 
 **Code Architecture**
 
 
 **Key Technical Concepts**
 -   **Frameworks**: React (Frontend), FastAPI (Backend)
--   **Databases**: PostgreSQL (Transactional data: sessions, orders, tickets), MongoDB (Document data: guests, staff, events)
+-   **Databases**: PostgreSQL (Transactional data), MongoDB (Document data)
 -   **Styling**: Tailwind CSS, Shadcn/UI
+-   **Real-time**: WebSockets for instant dashboard updates.
 -   **Authentication**: JWT stored in 
--   **Data Seeding**: A critical  script runs on startup to ensure a consistent, demo-ready environment.
+-   **Data Seeding**: A critical  script ensures a consistent demo environment.
 
 **key DB schema**
--   **PostgreSQL ():** The  column (JSONB) now stores  to correctly attribute tips to individual staff members.
--   **MongoDB ():** This is the source of truth for staff. The schema was updated to include an  field, which is essential for the new earnings calculation logic.
+-   **PostgreSQL ():** The  column (JSONB) now stores  to correctly attribute transactions and tips to the responsible staff member.
+
+**changes in tech stack**
+-   WebSockets have been added to the backend (via FastAPI) and integrated into the frontend for real-time communication.
 
 **All files of reference**
-*   **Key files for current UI Polish task**:
-    *   : To be updated with the new design system (colors, fonts).
-    *   : For global style overrides.
-    *   : The main app shell.
-    *   All page components under  and .
-*   **Key files from previous completed tasks**:
-    *   : Contains the critical  function that maintains the app's demo state. **DO NOT BREAK**.
-    *   : Contains the corrected staff earnings calculation logic in .
-    *   : The test suite for the earnings logic.
+*   **For Tip Distribution Fix (Issue #1):**
+    *   : Contains the  and  functions that need review.
+    *   : The  function is the source of the tip data.
+*   **For Tap/Table Flow Fix (Task #1):**
+    *   : Needs the payment selection logic added.
+    *   : Contains the reference implementation for the correct flow.
+*   **For Inside Now Fix (Task #2):**
+    *   : The component that needs its data fetching logic corrected.
+*   **Previously Modified Files:**
+    *   : Critical for maintaining app state. **DO NOT BREAK**.
+    *   : The core WebSocket connection manager.
 
 **Areas that need refactoring**:
-- A previous note mentioned consolidating  and  MongoDB collections. However, the user explicitly instructed: **Do NOT refactor now**. This should be considered a future, low-priority task.
+- A future low-priority task could be to consolidate the  and  MongoDB collections, but the user has explicitly said not to refactor now.
 
 **key api endpoints**
--   : Returns detailed staff earnings, including base pay, tips, and total earnings.
--   : Updates staff details, including .
+-   : Real-time event stream for the Manager dashboard.
+-   : Records a tip. The logic that consumes this data in  needs to be fixed.
+-   : Fetches all guests currently inside the venue.
+-   : Fetches all active tabs.
 
 **Critical Info for New Agent**
--   **UI POLISH IS THE ONLY TASK**: Your immediate and only priority is to implement the visual rebrand and UI polish based on the design agent's playbook. No functional changes are permitted.
--   **STRICT NON-REGRESSION**: This is the user's most important rule. The UI polish must not break any existing functionality. You must validate your work with the .
--   **FOLLOW THE DESIGN SYSTEM**: The  has provided a detailed plan for a premium Silicon Valley startup look (dark theme, electric blue accent). Adhere to it strictly.
--   **DEMO DATA IS CRITICAL**: The application's ability to self-seed with realistic, interconnected data via  is a core feature. Do not break this mechanism.
--   **FALE PORTUGUÊS**: The user is a native Portuguese speaker. All communication must be in Portuguese.
+-   **FALE PORTUGUÊS**: All communication with the user MUST be in Portuguese.
+-   **PRIORITIZE OPERATIONAL RULES**: Your top priority is implementing the 7 new operational rules from the user's last message. Start with the P0 tasks: tip distribution, consistent payment flow, and the Inside Now list.
+-   **DO NOT REGRESS**: The user explicitly stated not to undo any recent fixes. The new work is additive or corrective.
+-   **TIP LOGIC NUANCE**: The user wants tips to go *only* to the specific staff member. Your predecessor fixed tip *attribution* (linking a tip to a staff member), but the system may still be *distributing* that tip among all staff. You must change the logic from pool and distribute to direct assignment.
+-   **SYNCHRONIZATION IS KEY**: This is the user's core principle. Every change must be tested to ensure data propagates correctly and instantly across all relevant modules.
 
 **documents and test reports created in this job**
--    (Continuously updated)
--    (New test file for earnings logic)
+-    (Updated after the last  call)
+-    (Result of the last successful test run)
 
 **Last 10 User Messages and any pending HUMAN messages** 
-10. **User:** Asks if the agent has finished the last adjustments (referring to the staff earnings logic fix).
-9.  **Agent:** Replies that tests are running to validate the fix.
-8.  (Agent messages debugging and successfully running tests).
-7.  **Agent:** Confirms 12/12 tests passed! for the staff earnings logic.
-6.  **User:** Asks about the tech stack of the application.
-5.  **Agent:** Provides a summary of the tech stack (React, FastAPI, etc.).
-4.  **User:** Provides a detailed request to rebrand the product from SPETAP to SPET.
-3.  **User:** Provides a second, very detailed message clarifying the scope of the **UI Polish**. Stresses that it is a **visual-only** task with a **strict non-regression** rule and provides design direction (premium, modern, dark UI, blue accent).
-2.  **Agent:** Acknowledges the request and begins auditing frontend files.
-1.  **Agent:** Finishes the audit and calls the  to get a concrete design system before starting implementation.
+10. User reports critical system behavior issue: screens are no longer synchronized after the UI polish. Lists several problems like incorrect tab lists and tips not propagating. Stresses this is a regression.
+9. Agent acknowledges and begins investigating the data seeding and synchronization logic.
+8. Agent identifies the root cause: test runs were modifying the DB state, and the seeding script's idempotency check was preventing a clean state from being restored.
+7. Agent fixes the  script to be more resilient and re-seeds the environment.
+6. Agent verifies the entire E2E flow (Guest Entry -> Order -> Tip -> Manager Update) is now working correctly and all data is synchronized.
+5. User confirms they want to proceed with adding WebSocket for real-time updates.
+4. Agent implements WebSocket on the backend and frontend for the Manager dashboard.
+3. User reports a new set of 6 operational behavior issues, including incorrect bar order saving, wrong chips accounting, and guest spend not updating.
+2. Agent fixes all 6 issues, primarily by adding proper backend submission for Bar orders and correcting the accounting logic.
+1. **(PENDING)** User reports a final set of operational rules that are still not implemented correctly, including tip distribution, payment flows in the  module, and several new feature requests for the Manager/CEO dashboards. **This message contains the current tasks.**
 
 **Project Health Check:**
--   **Broken**: None. The system is stable, integrated, and all known bugs are resolved.
--   **Mocked**: None. The platform now operates on a realistic, interconnected dataset generated at startup.
+-   **Broken**: Yes. While the application is stable and many bugs have been fixed, it does not currently meet several critical business logic requirements outlined by the user, particularly regarding tip distribution and cross-module workflows.
+-   **Mocked**: None.
 
 **3rd Party Integrations**
--   **OpenAI GPT-5.2**: Used for AI insights via  and the **Emergent LLM Key**.
--   **Stripe (Payments)**: The library is installed, but no payment features are implemented yet.
+-   **OpenAI**: Used for AI insights via  and the **Emergent LLM Key**.
+-   **Stripe (Payments)**: Library is present but no active integration.
 
 **Testing status**
--   **Testing agent used after significant changes**: YES. It was used successfully to validate the P0 bug patch and the full system integration. It is the required method for verifying the upcoming UI polish.
--   **Troubleshoot agent used after agent stuck in loop**: NO.
--   **Test files created**: []
--   **Known regressions**: None at the moment.
+  - Testing agent used after significant changes: YES. The previous agent consistently used  to validate fixes.
+  - Troubleshoot agent used after agent stuck in loop: NO.
+  - Test files created: []
+  - Known regressions: The user has identified several behavioral regressions or incorrect implementations in their last message.
 
 **Credentials to test flow:**
 -   **Email**: 
 -   **Password**: 
 
 **What agent forgot to execute**
-The agent has followed all user requests systematically and has not forgotten any tasks. It is currently in the middle of the latest request (UI Polish).</analysis>
+The agent has not forgotten any tasks but has had to iterate on complex business logic based on detailed user feedback. The current set of pending tasks is a continuation of this refinement process.</analysis>

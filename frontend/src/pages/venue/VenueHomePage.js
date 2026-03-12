@@ -580,6 +580,85 @@ function CreateEventWizard({ venueId, date, barmen, onCreated, onCancel }) {
   );
 }
 
+/* ─── Inside Now Panel ──────────────────────────────────────────── */
+function InsideNowPanel({ venueId }) {
+  const [guests, setGuests] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const loadInsideGuests = useCallback(async () => {
+    if (!venueId) return;
+    try {
+      const res = await pulseAPI.getInsideGuests(venueId);
+      setGuests(res.data.guests || []);
+    } catch {}
+    setLoading(false);
+  }, [venueId]);
+
+  useEffect(() => { loadInsideGuests(); }, [loadInsideGuests]);
+  useEffect(() => { const iv = setInterval(loadInsideGuests, 15000); return () => clearInterval(iv); }, [loadInsideGuests]);
+
+  return (
+    <div className="bg-card border border-border rounded-2xl overflow-hidden" data-testid="inside-now-panel">
+      <div className="px-5 py-3 border-b border-border flex items-center justify-between bg-muted/30">
+        <div className="flex items-center gap-2">
+          <Users className="h-4 w-4 text-green-500" />
+          <h3 className="font-bold text-sm">Inside Now</h3>
+          <span className="text-[10px] bg-green-500/10 text-green-500 font-bold px-2 py-0.5 rounded-full" data-testid="inside-now-count">
+            {guests.length}
+          </span>
+        </div>
+        <button onClick={loadInsideGuests} className="text-xs text-muted-foreground hover:text-foreground transition-colors">Refresh</button>
+      </div>
+      <div className="max-h-[320px] overflow-y-auto">
+        {loading ? (
+          <div className="py-8 text-center text-sm text-muted-foreground animate-pulse">Loading...</div>
+        ) : guests.length === 0 ? (
+          <div className="py-8 text-center">
+            <Users className="h-8 w-8 text-muted-foreground/30 mx-auto mb-2" />
+            <p className="text-sm text-muted-foreground">No guests inside</p>
+          </div>
+        ) : (
+          <div className="divide-y divide-border/50">
+            {guests.map(g => (
+              <div key={g.guest_id} className="flex items-center gap-3 px-5 py-2.5 hover:bg-muted/30 transition-colors" data-testid={`inside-guest-${g.guest_id}`}>
+                {g.guest_photo ? (
+                  <img src={g.guest_photo} alt="" className="w-8 h-8 rounded-full object-cover" />
+                ) : (
+                  <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                    <Users className="h-4 w-4 text-primary" />
+                  </div>
+                )}
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate" data-testid={`inside-guest-name-${g.guest_id}`}>{g.guest_name}</p>
+                  <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+                    <Clock className="h-3 w-3" />
+                    <span>{g.entered_at ? new Date(g.entered_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'}</span>
+                    {g.entry_type && <span className="capitalize">{g.entry_type.replace('_', ' ')}</span>}
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${
+                    g.guest_status === 'Blocked' ? 'bg-red-500/10 text-red-500' :
+                    g.tab_total > 0 ? 'bg-blue-500/10 text-blue-500' :
+                    'bg-green-500/10 text-green-500'
+                  }`} data-testid={`inside-guest-status-${g.guest_id}`}>
+                    {g.guest_status === 'Blocked' ? 'Blocked' : g.tab_total > 0 ? `$${g.tab_total.toFixed(2)}` : 'No consumption'}
+                  </span>
+                  {g.tab_number && (
+                    <span className="text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full" data-testid={`inside-guest-tab-${g.guest_id}`}>
+                      #{g.tab_number}
+                    </span>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 /* ─── Main Page ─────────────────────────────────────────────────── */
 export const VenueSelectPage = () => {
   const navigate = useNavigate();
@@ -900,6 +979,11 @@ export const VenueSelectPage = () => {
                 <Button className="w-full mt-6 h-14 text-lg font-semibold rounded-xl" onClick={handleEnter} data-testid="enter-venue-btn">
                   Enter {selectedVenue.name}
                 </Button>
+
+                {/* Inside Now Panel */}
+                <div className="mt-6">
+                  <InsideNowPanel venueId={selectedVenue.id} />
+                </div>
               </div>
             </div>
           </>
