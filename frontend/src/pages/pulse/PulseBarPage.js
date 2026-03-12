@@ -266,6 +266,7 @@ export const PulseBarPage = () => {
         const fd = new FormData();
         fd.append('item_id', item.id);
         fd.append('qty', item.qty.toString());
+        if (selectedBarman) fd.append('bartender_id', selectedBarman);
         await tapAPI.addItem(confirmedGuest.session_id, fd);
       }
       toast.success(`${cart.length} item(s) saved to tab`);
@@ -288,6 +289,7 @@ export const PulseBarPage = () => {
       }
       const fd = new FormData();
       fd.append('payment_method', 'card'); fd.append('payment_location', 'pay_here');
+      if (selectedBarman) fd.append('bartender_id', selectedBarman);
       const res = await tapAPI.closeSession(confirmedGuest.session_id, fd);
       setOrderTotal(res.data?.total || cartTotal);
       setCheckoutStep('tip');

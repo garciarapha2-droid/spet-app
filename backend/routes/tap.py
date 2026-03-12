@@ -354,6 +354,7 @@ async def add_item_to_tab(
     item_id: str = Form(...),
     qty: int = Form(1),
     notes: str = Form(None),
+    bartender_id: str = Form(None),
 ):
     """B1 — Add catalog item to an open tab (item in PG, catalog in MongoDB)."""
     db = get_mongo_db()
@@ -364,12 +365,26 @@ async def add_item_to_tab(
     # Verify session exists and is open
     async with pool.acquire() as conn:
         session = await conn.fetchrow(
-            "SELECT id, venue_id, status FROM tap_sessions WHERE id = $1", sid
+            "SELECT id, venue_id, status, meta FROM tap_sessions WHERE id = $1", sid
         )
     if not session:
         raise HTTPException(404, "Session not found")
     if session["status"] != "open":
         raise HTTPException(400, "Tab is closed")
+
+    # Store bartender_id in session meta if provided
+    if bartender_id:
+        meta = _parse_meta(session["meta"])
+        if meta.get("bartender_id") != bartender_id:
+            meta["bartender_id"] = bartender_id
+            # Also store bartender name for display
+            barman = await db.venue_barmen.find_one({"id": bartender_id}, {"_id": 0, "name": 1})
+            if barman:
+                meta["bartender_name"] = barman["name"]
+            async with pool.acquire() as conn:
+                await conn.execute(
+                    "UPDATE tap_sessions SET meta = $1::jsonb WHERE id = $2",
+                    json_mod.dumps(meta), sid)
 
     # Get catalog item from MongoDB
     catalog_item = await db.venue_catalog.find_one(
@@ -453,6 +468,7 @@ async def close_tab(
     user: dict = Depends(require_auth),
     payment_method: str = Form("card"),
     payment_location: str = Form("pay_here"),
+    bartender_id: str = Form(None),
 ):
     """B1 — Close tab: update session + record payment in PG.
     payment_location: 'pay_here' (server's card machine) or 'pay_at_register' (cashier)."""
@@ -476,6 +492,8 @@ async def close_tab(
         meta["payment_method"] = payment_method
         meta["tip_amount"] = 0
         meta["tip_recorded"] = False
+        if bartender_id:
+            meta["bartender_id"] = bartender_id
 
         # Close session
         await conn.execute(

@@ -1311,6 +1311,24 @@ function ShiftOpsSection() {
 
   useEffect(() => { load(); }, [load]);
 
+  // WebSocket: auto-refresh Shift data when Tap/Bar events happen
+  useEffect(() => {
+    const backendUrl = process.env.REACT_APP_BACKEND_URL || '';
+    const wsProtocol = backendUrl.startsWith('https') ? 'wss' : 'ws';
+    const wsHost = backendUrl.replace(/^https?:\/\//, '');
+    const wsUrl = `${wsProtocol}://${wsHost}/api/ws/manager/${VID()}`;
+    let ws = null;
+    let timer = null;
+    function connect() {
+      ws = new WebSocket(wsUrl);
+      ws.onmessage = () => load();
+      ws.onclose = () => { timer = setTimeout(connect, 3000); };
+      ws.onerror = () => ws.close();
+    }
+    connect();
+    return () => { if (timer) clearTimeout(timer); if (ws) { ws.onclose = null; ws.close(); } };
+  }, [load]);
+
   const customizeStaffMember = async (id) => {
     if (!editRate && !editRole) return;
     const fd = new FormData();
