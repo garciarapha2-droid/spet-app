@@ -42,6 +42,12 @@ Multi-tenant SaaS platform for real-time venue operations. Modules: Pulse (guest
 - **P1-2**: CEO KPIs (MRR, Gross Revenue, Net Profit) clickable with venue breakdown
 - **P1-3**: Company Management with user status toggle and module management per venue
 
+### Phase 5: Regression Fixes (Complete - Mar 12, 2026)
+- **FIX 1**: Staff Earnings tip attribution — tips now match bartender_id as both UUID and name
+- **FIX 1**: Seed script fixed to use venue_barmen ID instead of user ID for tip attribution
+- **FIX 2**: Bar Inside Tabs now shows ALL inside guests (merges open sessions + pulse/inside data)
+- **FIX 2**: pulse/inside endpoint now queries most recent session regardless of status (open or closed)
+
 ## Prioritized Backlog
 
 ### P1 (Next)
