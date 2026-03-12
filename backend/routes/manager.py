@@ -23,7 +23,7 @@ def _parse_meta(raw):
             return {}
     return {}
 
-PROTECTED_EMAILS = {"teste@teste.com"}
+PROTECTED_EMAILS = {"teste@teste.com", "garcia.rapha2@gmail.com"}
 
 
 def _vid(venue_id: str):

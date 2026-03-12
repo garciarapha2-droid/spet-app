@@ -58,9 +58,14 @@ Multi-tenant SaaS platform for real-time venue operations. Modules: Pulse (guest
 - Event Wallet Module
 
 ## Key Credentials
-- Email: teste@teste.com
-- Password: 12345
+- **Tester**: teste@teste.com / 12345 (platform_admin) — PROTECTED
+- **CEO**: garcia.rapha2@gmail.com / 1234 (ceo) — PROTECTED
 - Venue ID: 40a24e04-75b6-435d-bfff-ab0d469ce543
+
+## Protected Accounts Policy
+- Both accounts are auto-created on startup via `ensure_system_account()`
+- Both are in PROTECTED_SYSTEM_ACCOUNTS set — cannot be deleted
+- Future updates must NEVER remove existing users or test data
 
 ## Architecture Notes
 - PostgreSQL: Transactional data (sessions, items, users)

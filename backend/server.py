@@ -98,24 +98,26 @@ async def startup_event():
 
 
 async def ensure_system_account():
-    """Ensure teste@teste.com always exists — Protected System Account."""
+    """Ensure protected system accounts always exist."""
     from utils.auth import hash_password
     from database import get_postgres_pool
     import json as _json
+    import uuid
     pool = get_postgres_pool()
+    now = datetime.now(timezone.utc)
+    cid = "c0000001-0000-0000-0000-000000000001"
+    vid = "40a24e04-75b6-435d-bfff-ab0d469ce543"
+
     async with pool.acquire() as conn:
+        # 1. Tester account (platform_admin)
         user = await conn.fetchrow("SELECT id FROM users WHERE email = 'teste@teste.com'")
         if not user:
             hashed = hash_password("12345")
-            now = datetime.now(timezone.utc) if 'datetime' in dir() else __import__('datetime').datetime.now(__import__('datetime').timezone.utc)
             user_row = await conn.fetchrow(
                 "INSERT INTO users (email, password_hash, status, created_at, updated_at) VALUES ('teste@teste.com', $1, 'active', $2, $2) RETURNING id",
                 hashed, now,
             )
             uid = user_row["id"]
-            cid = "c0000001-0000-0000-0000-000000000001"
-            vid = "40a24e04-75b6-435d-bfff-ab0d469ce543"
-            import uuid
             await conn.execute(
                 "INSERT INTO companies (id, name, status, created_at, updated_at) VALUES ($1::uuid, 'Demo Club Inc.', 'active', $2, $2) ON CONFLICT DO NOTHING",
                 uuid.UUID(cid), now,
@@ -130,6 +132,30 @@ async def ensure_system_account():
         else:
             await conn.execute("UPDATE users SET status = 'active' WHERE email = 'teste@teste.com'")
             logger.info("Protected system account teste@teste.com verified")
+
+        # 2. CEO account (garcia.rapha2@gmail.com)
+        ceo_user = await conn.fetchrow("SELECT id FROM users WHERE email = 'garcia.rapha2@gmail.com'")
+        if not ceo_user:
+            ceo_hashed = hash_password("1234")
+            ceo_row = await conn.fetchrow(
+                "INSERT INTO users (email, password_hash, status, created_at, updated_at) VALUES ('garcia.rapha2@gmail.com', $1, 'active', $2, $2) RETURNING id",
+                ceo_hashed, now,
+            )
+            ceo_uid = ceo_row["id"]
+            await conn.execute(
+                "INSERT INTO companies (id, name, status, created_at, updated_at) VALUES ($1::uuid, 'Demo Club Inc.', 'active', $2, $2) ON CONFLICT DO NOTHING",
+                uuid.UUID(cid), now,
+            )
+            await conn.execute(
+                """INSERT INTO user_access (user_id, company_id, venue_id, role, permissions, created_at)
+                   VALUES ($1, $2::uuid, $3::uuid, 'ceo', $4::jsonb, $5) ON CONFLICT DO NOTHING""",
+                ceo_uid, uuid.UUID(cid), uuid.UUID(vid),
+                _json.dumps({"HOST_COLLECT_DOB": True, "kds": True, "ceo": True}), now,
+            )
+            logger.info("Protected CEO account garcia.rapha2@gmail.com created")
+        else:
+            await conn.execute("UPDATE users SET status = 'active' WHERE email = 'garcia.rapha2@gmail.com'")
+            logger.info("Protected CEO account garcia.rapha2@gmail.com verified")
 
 
 async def ensure_demo_tables():

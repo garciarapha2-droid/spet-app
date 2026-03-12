@@ -133,7 +133,7 @@ async def get_current_user_info(user: dict = Depends(require_auth)):
     }
 
 
-PROTECTED_SYSTEM_ACCOUNTS = {"teste@teste.com"}
+PROTECTED_SYSTEM_ACCOUNTS = {"teste@teste.com", "garcia.rapha2@gmail.com"}
 
 
 @router.delete("/users/{user_id}")
