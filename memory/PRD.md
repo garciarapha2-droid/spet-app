@@ -48,6 +48,13 @@ Multi-tenant SaaS platform for real-time venue operations. Modules: Pulse (guest
 - **FIX 2**: Bar Inside Tabs now shows ALL inside guests (merges open sessions + pulse/inside data)
 - **FIX 2**: pulse/inside endpoint now queries most recent session regardless of status (open or closed)
 
+### Phase 6: Operational Rules Restoration (Complete - Mar 12, 2026)
+- **Rule 1**: Alcohol ID verification confirmed as Table-only (Tap/Bar bypasses verification)
+- **Rule 2**: Demo data now shows profitable operation ($566 revenue, $324 staff cost, +$242 result)
+- Deactivated TEST_ barmen artifacts, set realistic hourly rates ($12-15/h)
+- Seed now closes 4 sessions with proper tip attribution and bartender IDs
+- Shift hour cap reduced from 12h to 6h (realistic nightclub shift)
+
 ## Prioritized Backlog
 
 ### P1 (Next)
