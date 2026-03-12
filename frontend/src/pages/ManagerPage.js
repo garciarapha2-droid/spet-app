@@ -97,6 +97,8 @@ function OverviewSection({ onNavigate }) {
   const [funnelModal, setFunnelModal] = useState(null);
   const [funnelData, setFunnelData] = useState([]);
   const [funnelLoading, setFunnelLoading] = useState(false);
+  const [revBreakdown, setRevBreakdown] = useState(null);
+  const [revBreakdownLoading, setRevBreakdownLoading] = useState(false);
 
   const refreshData = useCallback(() => {
     managerAPI.getOverview(VID()).then(r => setData(r.data)).catch(() => {});
@@ -149,6 +151,15 @@ function OverviewSection({ onNavigate }) {
     setFunnelLoading(false);
   };
 
+  const openRevenueBreakdown = async () => {
+    setRevBreakdownLoading(true);
+    try {
+      const res = await managerAPI.getRevenueBreakdown(VID());
+      setRevBreakdown(res.data);
+    } catch { toast.error('Failed to load revenue breakdown'); }
+    setRevBreakdownLoading(false);
+  };
+
   if (loading) return <Skeleton />;
   if (!data) return <p className="text-muted-foreground">No data available</p>;
 
@@ -160,7 +171,7 @@ function OverviewSection({ onNavigate }) {
 
       {/* KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <KPICard icon={DollarSign} label="Revenue Today" value={`$${kpis.revenue_today.toFixed(0)}`} accent="text-green-500" testid="kpi-rev-today" />
+        <KPICard icon={DollarSign} label="Revenue Today" value={`$${kpis.revenue_today.toFixed(0)}`} accent="text-green-500" testid="kpi-rev-today" onClick={openRevenueBreakdown} />
         <KPICard icon={DollarSign} label="Revenue Week" value={`$${kpis.revenue_week.toFixed(0)}`} accent="text-emerald-500" testid="kpi-rev-week" />
         <KPICard icon={DollarSign} label="Revenue Month" value={`$${kpis.revenue_month.toFixed(0)}`} accent="text-teal-500" testid="kpi-rev-month" />
         <KPICard icon={TrendingUp} label="Avg Ticket" value={`$${kpis.avg_ticket.toFixed(2)}`} accent="text-blue-500" testid="kpi-avg-ticket" />
@@ -257,6 +268,88 @@ function OverviewSection({ onNavigate }) {
                     </div>
                   </div>
                 ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Revenue Breakdown Modal */}
+      {(revBreakdown || revBreakdownLoading) && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center" onClick={() => { setRevBreakdown(null); setRevBreakdownLoading(false); }} data-testid="revenue-breakdown-modal">
+          <div className="bg-card border border-border rounded-xl p-5 w-full max-w-2xl max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-bold text-lg">Revenue Today — Breakdown</h3>
+              <Button variant="ghost" size="sm" onClick={() => { setRevBreakdown(null); setRevBreakdownLoading(false); }} data-testid="close-revenue-modal"><X className="h-4 w-4" /></Button>
+            </div>
+            {revBreakdownLoading ? <p className="text-sm text-muted-foreground animate-pulse py-8 text-center">Loading breakdown...</p> : revBreakdown && (
+              <div className="space-y-5">
+                {/* Summary Row */}
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="bg-muted/30 rounded-lg p-3 text-center">
+                    <p className="text-xs text-muted-foreground">Total Revenue</p>
+                    <p className="text-xl font-bold text-green-500" data-testid="breakdown-total-revenue">${revBreakdown.total_revenue.toFixed(2)}</p>
+                  </div>
+                  <div className="bg-muted/30 rounded-lg p-3 text-center">
+                    <p className="text-xs text-muted-foreground">Total Tips</p>
+                    <p className="text-xl font-bold text-blue-500" data-testid="breakdown-total-tips">${revBreakdown.total_tips.toFixed(2)}</p>
+                  </div>
+                  <div className="bg-muted/30 rounded-lg p-3 text-center">
+                    <p className="text-xs text-muted-foreground">Sessions Closed</p>
+                    <p className="text-xl font-bold" data-testid="breakdown-sessions-count">{revBreakdown.sessions_count}</p>
+                  </div>
+                </div>
+
+                {/* Payment Methods */}
+                <div>
+                  <h4 className="text-sm font-semibold mb-2">Payment Methods</h4>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="bg-muted/20 rounded-lg p-3 flex items-center justify-between border border-border/50">
+                      <span className="text-sm">Pay Here</span>
+                      <span className="font-bold text-green-500" data-testid="breakdown-pay-here">${(revBreakdown.payment_methods.pay_here || 0).toFixed(2)}</span>
+                    </div>
+                    <div className="bg-muted/20 rounded-lg p-3 flex items-center justify-between border border-border/50">
+                      <span className="text-sm">Pay at Register</span>
+                      <span className="font-bold text-emerald-500" data-testid="breakdown-pay-register">${(revBreakdown.payment_methods.pay_at_register || 0).toFixed(2)}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Top Items */}
+                {revBreakdown.top_items?.length > 0 && (
+                  <div>
+                    <h4 className="text-sm font-semibold mb-2">Top Items</h4>
+                    <div className="space-y-1">
+                      {revBreakdown.top_items.map((item, i) => (
+                        <div key={i} className="flex items-center justify-between p-2 rounded-lg border border-border/50 hover:bg-muted/20">
+                          <span className="text-sm"><span className="text-xs text-muted-foreground mr-2">{i + 1}.</span>{item.name} <span className="text-xs text-muted-foreground">x{item.qty}</span></span>
+                          <span className="text-sm font-bold text-green-500">${item.revenue.toFixed(2)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Closed Sessions */}
+                {revBreakdown.sessions?.length > 0 && (
+                  <div>
+                    <h4 className="text-sm font-semibold mb-2">Closed Sessions</h4>
+                    <div className="space-y-1">
+                      {revBreakdown.sessions.map((s, i) => (
+                        <div key={i} className="flex items-center justify-between p-2.5 rounded-lg border border-border/50 hover:bg-muted/20" data-testid={`breakdown-session-${i}`}>
+                          <div>
+                            <p className="text-sm font-medium">Tab #{s.tab_number}</p>
+                            <p className="text-xs text-muted-foreground">{s.bartender} — {s.payment_location === 'pay_here' ? 'Paid Here' : s.payment_location === 'pay_at_register' ? 'Register' : s.payment_location} — {s.closed_at ? new Date(s.closed_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-sm font-bold text-green-500">${s.total.toFixed(2)}</p>
+                            {s.tip > 0 && <p className="text-[10px] text-blue-500">+ ${s.tip.toFixed(2)} tip</p>}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -1815,10 +1908,14 @@ function ShiftOpsSection() {
 /* ═══════════════════════════════════════════════════════════════════
    SHARED COMPONENTS
    ═══════════════════════════════════════════════════════════════════ */
-function KPICard({ icon: Icon, label, value, accent = '', sub, testid }) {
+function KPICard({ icon: Icon, label, value, accent = '', sub, testid, onClick }) {
   return (
-    <div className="bg-card border border-border rounded-xl p-4" data-testid={testid}>
-      <div className="flex items-center gap-2 text-muted-foreground mb-1"><Icon className="h-3.5 w-3.5" /><span className="text-xs">{label}</span></div>
+    <div
+      className={`bg-card border border-border rounded-xl p-4 ${onClick ? 'cursor-pointer hover:border-primary/50 hover:bg-muted/30 transition-all' : ''}`}
+      data-testid={testid}
+      onClick={onClick}
+    >
+      <div className="flex items-center gap-2 text-muted-foreground mb-1"><Icon className="h-3.5 w-3.5" /><span className="text-xs">{label}</span>{onClick && <Eye className="h-3 w-3 ml-auto opacity-40" />}</div>
       <p className={`text-2xl font-bold ${accent}`}>{value}</p>
       {sub && <p className="text-xs text-muted-foreground mt-0.5">{sub}</p>}
     </div>

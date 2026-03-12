@@ -152,6 +152,71 @@ async def get_overview(venue_id: str, user: dict = Depends(require_auth)):
     }
 
 
+
+# ─── REVENUE BREAKDOWN ────────────────────────────────────────────
+@router.get("/revenue-breakdown")
+async def revenue_breakdown(venue_id: str, user: dict = Depends(require_auth)):
+    """Detailed revenue breakdown for today: closed sessions, tips, payments, top items."""
+    pool = get_postgres_pool()
+    vid = _vid(venue_id)
+    today = _today_start()
+
+    async with pool.acquire() as conn:
+        # Closed sessions with details
+        sessions = await conn.fetch(
+            """SELECT id, guest_id, total, meta, closed_at
+               FROM tap_sessions WHERE venue_id=$1 AND status='closed' AND closed_at>=$2
+               ORDER BY closed_at DESC""",
+            vid, today)
+
+        session_list = []
+        total_revenue = 0
+        total_tips = 0
+        payment_methods = {"pay_here": 0, "pay_at_register": 0, "other": 0}
+
+        for s in sessions:
+            meta = _parse_meta(s["meta"])
+            total_val = float(s["total"])
+            tip = meta.get("tip_amount", 0)
+            total_revenue += total_val
+            total_tips += tip
+
+            payment_loc = meta.get("payment_location", "other")
+            if payment_loc in payment_methods:
+                payment_methods[payment_loc] += total_val
+            else:
+                payment_methods["other"] += total_val
+
+            tab_number = meta.get("tab_number", "—")
+
+            session_list.append({
+                "id": str(s["id"]),
+                "tab_number": tab_number,
+                "total": total_val,
+                "tip": tip,
+                "payment_location": payment_loc,
+                "closed_at": s["closed_at"].isoformat() if s["closed_at"] else None,
+                "bartender": meta.get("bartender_name") or meta.get("server_name") or "—",
+            })
+
+        # Top items today
+        top_items = await conn.fetch(
+            """SELECT item_name, SUM(qty) as qty, SUM(line_total) as revenue
+               FROM tap_items WHERE venue_id=$1 AND created_at>=$2 AND voided_at IS NULL
+               GROUP BY item_name ORDER BY revenue DESC LIMIT 10""",
+            vid, today)
+
+        return {
+            "total_revenue": round(total_revenue, 2),
+            "total_tips": round(total_tips, 2),
+            "sessions_count": len(session_list),
+            "payment_methods": {k: round(v, 2) for k, v in payment_methods.items()},
+            "sessions": session_list,
+            "top_items": [{"name": r["item_name"], "qty": int(r["qty"]), "revenue": float(r["revenue"])} for r in top_items],
+        }
+
+
+
 # ─── STAFF & ROLES ────────────────────────────────────────────────
 @router.get("/staff")
 async def list_staff(venue_id: str, user: dict = Depends(require_auth)):
@@ -948,7 +1013,7 @@ async def _calc_staff_cost(db, venue_id: str, start: datetime, end: datetime):
             tips_by_staff_id["_unassigned"] = tips_by_staff_id.get("_unassigned", 0) + tip_amount
 
     # Unassigned tips stay unattributed — tips go ONLY to the specific staff member
-    unassigned = tips_by_staff_id.pop("_unassigned", 0)
+    tips_by_staff_id.pop("_unassigned", 0)
 
     total_cost = 0
     staff_breakdown = []

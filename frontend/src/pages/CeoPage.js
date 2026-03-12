@@ -178,13 +178,28 @@ function TargetCard({ label, data, color }) {
 function HealthSection() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [kpiModal, setKpiModal] = useState(null);
+  const [kpiBreakdown, setKpiBreakdown] = useState(null);
+  const [kpiBreakdownLoading, setKpiBreakdownLoading] = useState(false);
 
   useEffect(() => {
     ceoAPI.getHealth().then(r => setData(r.data.kpis)).catch(() => toast.error('Failed')).finally(() => setLoading(false));
   }, []);
 
+  const openKpiBreakdown = async (kpiKey, kpiLabel) => {
+    setKpiModal(kpiLabel);
+    setKpiBreakdownLoading(true);
+    try {
+      const res = await ceoAPI.getKpiBreakdown(kpiKey);
+      setKpiBreakdown(res.data);
+    } catch { toast.error('Failed to load breakdown'); }
+    setKpiBreakdownLoading(false);
+  };
+
   if (loading) return <Skeleton />;
   if (!data) return <p className="text-muted-foreground">No data</p>;
+
+  const clickableKpis = { 'MRR': 'mrr', 'Gross Revenue': 'gross_revenue', 'Net Profit': 'net_profit' };
 
   const kpis = [
     { label: 'MRR', value: `$${(data.mrr || 0).toLocaleString()}`, icon: DollarSign, accent: 'text-green-500', status: data.mrr > 0 ? 'green' : 'red' },
@@ -205,21 +220,60 @@ function HealthSection() {
           const Icon = k.icon;
           const statusColor = k.status === 'green' ? 'border-green-500/30' : k.status === 'yellow' ? 'border-yellow-500/30' : 'border-red-500/30';
           const dotColor = k.status === 'green' ? 'bg-green-500' : k.status === 'yellow' ? 'bg-yellow-500' : 'bg-red-500';
+          const isClickable = !!clickableKpis[k.label];
           return (
-            <div key={i} className={`bg-card border-2 ${statusColor} rounded-xl p-4 hover:shadow-md transition-all cursor-pointer`}
-              data-testid={`ceo-kpi-${k.label.toLowerCase().replace(/[^a-z]/g, '-')}`}>
+            <div key={i} className={`bg-card border-2 ${statusColor} rounded-xl p-4 hover:shadow-md transition-all ${isClickable ? 'cursor-pointer hover:border-primary/50 hover:bg-muted/30' : 'cursor-default'}`}
+              data-testid={`ceo-kpi-${k.label.toLowerCase().replace(/[^a-z]/g, '-')}`}
+              onClick={() => isClickable && openKpiBreakdown(clickableKpis[k.label], k.label)}>
               <div className="flex items-center justify-between mb-2">
                 <div className={`w-8 h-8 rounded-lg bg-muted flex items-center justify-center`}>
                   <Icon className={`h-4 w-4 ${k.accent}`} />
                 </div>
-                <div className={`w-2.5 h-2.5 rounded-full ${dotColor}`} />
+                <div className="flex items-center gap-1.5">
+                  {isClickable && <ChevronRight className="h-3 w-3 text-muted-foreground" />}
+                  <div className={`w-2.5 h-2.5 rounded-full ${dotColor}`} />
+                </div>
               </div>
               <p className={`text-2xl font-bold ${k.accent}`}>{k.value}</p>
-              <p className="text-xs text-muted-foreground mt-0.5">{k.label}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">{k.label}{isClickable && <span className="ml-1 opacity-50">Click for details</span>}</p>
             </div>
           );
         })}
       </div>
+
+      {/* KPI Breakdown Modal */}
+      {(kpiModal || kpiBreakdownLoading) && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center" onClick={() => { setKpiModal(null); setKpiBreakdown(null); setKpiBreakdownLoading(false); }} data-testid="ceo-kpi-breakdown-modal">
+          <div className="bg-card border border-border rounded-xl p-5 w-full max-w-xl max-h-[70vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-bold text-lg">{kpiModal} — Breakdown by Venue</h3>
+              <Button variant="ghost" size="sm" onClick={() => { setKpiModal(null); setKpiBreakdown(null); setKpiBreakdownLoading(false); }} data-testid="close-ceo-kpi-modal"><X className="h-4 w-4" /></Button>
+            </div>
+            {kpiBreakdownLoading ? <p className="text-sm text-muted-foreground animate-pulse py-8 text-center">Loading...</p> : kpiBreakdown && (
+              <div className="space-y-4">
+                <div className="bg-muted/30 rounded-lg p-3 text-center">
+                  <p className="text-xs text-muted-foreground">Total {kpiBreakdown.kpi?.replace('_', ' ')}</p>
+                  <p className="text-2xl font-bold text-green-500" data-testid="ceo-breakdown-total">${(kpiBreakdown.total || 0).toFixed(2)}</p>
+                </div>
+                <div className="space-y-2">
+                  {(kpiBreakdown.venues || []).map((v, i) => (
+                    <div key={i} className="flex items-center justify-between p-3 rounded-lg border border-border/50 hover:bg-muted/20" data-testid={`ceo-breakdown-venue-${i}`}>
+                      <div>
+                        <p className="text-sm font-medium">{v.venue_name}</p>
+                        <p className="text-xs text-muted-foreground">{v.sessions_closed} sessions · ${v.tips.toFixed(2)} tips · Today: ${v.revenue_today.toFixed(2)}</p>
+                      </div>
+                      <p className="text-lg font-bold text-green-500">${v.value.toFixed(2)}</p>
+                    </div>
+                  ))}
+                  {(!kpiBreakdown.venues || kpiBreakdown.venues.length === 0) && (
+                    <p className="text-sm text-muted-foreground text-center py-4">No venue data available</p>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
       {/* Growth indicator */}
       <div className="mt-6 bg-card border border-border rounded-xl p-5 flex items-center justify-between" data-testid="ceo-growth-banner">
         <div className="flex items-center gap-4">
@@ -342,53 +396,116 @@ function RevenueSection() {
 function CompaniesSection() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [expandedCompany, setExpandedCompany] = useState(null);
+  const [moduleToggles, setModuleToggles] = useState({});
 
-  useEffect(() => {
+  const load = useCallback(() => {
     ceoAPI.getCompanies().then(r => setData(r.data)).catch(() => toast.error('Failed')).finally(() => setLoading(false));
   }, []);
 
+  useEffect(() => { load(); }, [load]);
+
+  const toggleModule = async (company, venue, mod) => {
+    const currentMods = venue.modules || [];
+    const newMods = currentMods.includes(mod) ? currentMods.filter(m => m !== mod) : [...currentMods, mod];
+    const fd = new FormData();
+    fd.append('venue_id', venue.venue_id);
+    fd.append('modules', newMods.join(','));
+    try {
+      await ceoAPI.updateCompanyModules(company.user_id, fd);
+      toast.success(`Modules updated for ${venue.name}`);
+      load();
+    } catch { toast.error('Failed to update modules'); }
+  };
+
+  const updateStatus = async (company, newStatus) => {
+    const fd = new FormData();
+    fd.append('status', newStatus);
+    try {
+      await ceoAPI.updateCompanyStatus(company.user_id, fd);
+      toast.success(`Status updated to ${newStatus}`);
+      load();
+    } catch { toast.error('Failed to update status'); }
+  };
+
   if (loading) return <Skeleton />;
+
+  const allModules = ['pulse', 'tap', 'table', 'kds'];
 
   return (
     <div data-testid="ceo-companies-section">
-      <h2 className="text-xl font-bold mb-5">Active Companies & Venues</h2>
-      <div className="bg-card border border-border rounded-xl overflow-hidden">
-        <table className="w-full text-sm" data-testid="companies-table">
-          <thead>
-            <tr className="border-b border-border bg-muted/30">
-              <th className="text-left p-3 font-semibold text-xs uppercase text-muted-foreground">Company</th>
-              <th className="text-left p-3 font-semibold text-xs uppercase text-muted-foreground">Venues</th>
-              <th className="text-left p-3 font-semibold text-xs uppercase text-muted-foreground">Status</th>
-              <th className="text-right p-3 font-semibold text-xs uppercase text-muted-foreground">MRR</th>
-              <th className="text-left p-3 font-semibold text-xs uppercase text-muted-foreground">Modules</th>
-            </tr>
-          </thead>
-          <tbody>
-            {data?.companies?.map((c, i) => (
-              <tr key={c.user_id} className="border-b border-border last:border-0 hover:bg-muted/20 cursor-pointer" data-testid={`company-row-${i}`}>
-                <td className="p-3">
+      <h2 className="text-xl font-bold mb-5">Company Management</h2>
+      <div className="space-y-3">
+        {data?.companies?.map((c, i) => (
+          <div key={c.user_id} className="bg-card border border-border rounded-xl overflow-hidden" data-testid={`company-card-${i}`}>
+            {/* Company Row */}
+            <div className="flex items-center p-4 cursor-pointer hover:bg-muted/20 transition-colors"
+              onClick={() => setExpandedCompany(expandedCompany === c.user_id ? null : c.user_id)}>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
                   <p className="font-medium">{c.name}</p>
-                  <p className="text-xs text-muted-foreground">{c.email}</p>
-                </td>
-                <td className="p-3">{c.venue_count}</td>
-                <td className="p-3">
-                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                    c.status === 'active' ? 'bg-green-500/10 text-green-600' : 'bg-yellow-500/10 text-yellow-600'}`}>
+                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${
+                    c.status === 'active' ? 'bg-green-500/10 text-green-600' : c.status === 'suspended' ? 'bg-red-500/10 text-red-600' : 'bg-yellow-500/10 text-yellow-600'}`}>
                     {c.status}
                   </span>
-                </td>
-                <td className="p-3 text-right font-bold text-green-500">${c.mrr.toLocaleString()}</td>
-                <td className="p-3">
-                  <div className="flex gap-1 flex-wrap">
-                    {c.venues?.flatMap(v => v.modules || []).filter((m, idx, arr) => arr.indexOf(m) === idx).map(m => (
-                      <span key={m} className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded capitalize">{m}</span>
+                </div>
+                <p className="text-xs text-muted-foreground">{c.email} · {c.venue_count} venue(s)</p>
+              </div>
+              <div className="flex items-center gap-4">
+                <p className="font-bold text-green-500">${c.mrr.toLocaleString()}</p>
+                <ChevronRight className={`h-4 w-4 text-muted-foreground transition-transform ${expandedCompany === c.user_id ? 'rotate-90' : ''}`} />
+              </div>
+            </div>
+
+            {/* Expanded Management Panel */}
+            {expandedCompany === c.user_id && (
+              <div className="border-t border-border p-4 bg-muted/10 space-y-4" data-testid={`company-management-${i}`}>
+                {/* Status Management */}
+                <div>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">User Status</p>
+                  <div className="flex gap-2">
+                    {['active', 'suspended', 'pending'].map(st => (
+                      <button key={st} onClick={() => updateStatus(c, st)}
+                        className={`px-3 py-1.5 text-xs font-medium rounded-lg border transition-all ${
+                          c.status === st ? 'border-primary bg-primary/10 text-primary' : 'border-border text-muted-foreground hover:border-primary/30'}`}
+                        data-testid={`status-btn-${st}-${i}`}>
+                        {st.charAt(0).toUpperCase() + st.slice(1)}
+                      </button>
                     ))}
                   </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                </div>
+
+                {/* Module Management per Venue */}
+                {c.venues?.map((v, vi) => (
+                  <div key={v.venue_id} data-testid={`venue-modules-${vi}`}>
+                    <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">{v.name} — Modules</p>
+                    <div className="flex gap-2 flex-wrap">
+                      {allModules.map(mod => {
+                        const isActive = (v.modules || []).includes(mod);
+                        return (
+                          <button key={mod} onClick={() => toggleModule(c, v, mod)}
+                            className={`px-3 py-1.5 text-xs font-medium rounded-lg border transition-all ${
+                              isActive ? 'border-primary bg-primary/10 text-primary' : 'border-border text-muted-foreground hover:border-primary/30 opacity-50'}`}
+                            data-testid={`module-toggle-${mod}-${vi}`}>
+                            {isActive ? <Check className="h-3 w-3 inline mr-1" /> : null}
+                            {mod.toUpperCase()}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <p className="text-[10px] text-muted-foreground mt-1">MRR: ${v.mrr.toLocaleString()}</p>
+                  </div>
+                ))}
+
+                {/* Account Info */}
+                <div className="text-xs text-muted-foreground pt-2 border-t border-border/50">
+                  <p>User ID: {c.user_id}</p>
+                  <p>Created: {c.created_at ? new Date(c.created_at).toLocaleDateString() : '—'}</p>
+                </div>
+              </div>
+            )}
+          </div>
+        ))}
       </div>
     </div>
   );

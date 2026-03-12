@@ -116,6 +116,74 @@ async def get_company_health(user: dict = Depends(require_auth)):
     }
 
 
+
+# ─── CEO KPI BREAKDOWN ───────────────────────────────────────────
+@router.get("/kpi-breakdown")
+async def kpi_breakdown(kpi: str, user: dict = Depends(require_auth)):
+    """Drill-down for CEO KPI cards: mrr, gross_revenue, net_profit."""
+    pool = get_postgres_pool()
+    db = get_mongo_db()
+    venue_ids = await _get_all_venue_ids(pool)
+    month = _month_start()
+    today = _today_start()
+
+    if not venue_ids:
+        return {"kpi": kpi, "venues": [], "total": 0}
+
+    venues_data = []
+    total_val = 0
+
+    for vid in venue_ids:
+        cfg = await db.venue_configs.find_one({"venue_id": str(vid)}, {"_id": 0})
+        venue_name = cfg.get("venue_name", "Venue") if cfg else "Venue"
+        async with pool.acquire() as conn:
+            rev_month = float(await conn.fetchval(
+                "SELECT COALESCE(SUM(total),0) FROM tap_sessions WHERE venue_id=$1 AND status='closed' AND closed_at>=$2",
+                vid, month) or 0)
+            rev_today = float(await conn.fetchval(
+                "SELECT COALESCE(SUM(total),0) FROM tap_sessions WHERE venue_id=$1 AND status='closed' AND closed_at>=$2",
+                vid, today) or 0)
+            sessions_count = await conn.fetchval(
+                "SELECT COUNT(*) FROM tap_sessions WHERE venue_id=$1 AND status='closed' AND closed_at>=$2",
+                vid, month) or 0
+            tips = 0
+            tip_rows = await conn.fetch(
+                "SELECT meta FROM tap_sessions WHERE venue_id=$1 AND status='closed' AND closed_at>=$2",
+                vid, month)
+            for tr in tip_rows:
+                meta = tr["meta"]
+                if isinstance(meta, str):
+                    try:
+                        meta = json.loads(meta)
+                    except Exception:
+                        meta = {}
+                tips += meta.get("tip_amount", 0) if isinstance(meta, dict) else 0
+
+        if kpi == "mrr":
+            value = rev_month
+        elif kpi == "gross_revenue":
+            value = rev_month
+        elif kpi == "net_profit":
+            value = round(rev_month * 0.30, 2)
+        else:
+            value = rev_month
+
+        total_val += value
+        venues_data.append({
+            "venue_id": str(vid),
+            "venue_name": venue_name,
+            "value": round(value, 2),
+            "revenue_today": round(rev_today, 2),
+            "sessions_closed": sessions_count,
+            "tips": round(tips, 2),
+        })
+
+    venues_data.sort(key=lambda x: x["value"], reverse=True)
+
+    return {"kpi": kpi, "total": round(total_val, 2), "venues": venues_data}
+
+
+
 # ─── REVENUE VS PROFIT ───────────────────────────────────────────
 @router.get("/revenue")
 async def get_revenue_chart(user: dict = Depends(require_auth), period: str = "month"):
@@ -393,3 +461,46 @@ async def get_growth_pipeline(user: dict = Depends(require_auth)):
     }
 
     return {"pipeline": pipeline}
+
+
+
+# ─── USER & MODULE MANAGEMENT ─────────────────────────────────────
+@router.put("/company/{user_id}/modules")
+async def update_company_modules(
+    user_id: str,
+    venue_id: str = Form(...),
+    modules: str = Form(...),
+    user: dict = Depends(require_auth),
+):
+    """Toggle modules for a company's venue. modules = comma-separated list."""
+    db = get_mongo_db()
+    module_list = [m.strip() for m in modules.split(",") if m.strip()]
+    valid_modules = {"pulse", "tap", "table", "kds"}
+    module_list = [m for m in module_list if m in valid_modules]
+
+    existing = await db.venue_configs.find_one({"venue_id": venue_id})
+    if existing:
+        await db.venue_configs.update_one({"venue_id": venue_id}, {"$set": {"modules": module_list}})
+    else:
+        await db.venue_configs.insert_one({"venue_id": venue_id, "modules": module_list})
+
+    return {"status": "updated", "venue_id": venue_id, "modules": module_list}
+
+
+@router.put("/company/{user_id}/status")
+async def update_company_status(
+    user_id: str,
+    status: str = Form(...),
+    user: dict = Depends(require_auth),
+):
+    """Update company status: active, suspended, pending."""
+    pool = get_postgres_pool()
+    uid = uuid.UUID(user_id)
+    valid_statuses = {"active", "suspended", "pending"}
+    if status not in valid_statuses:
+        raise HTTPException(400, f"Invalid status. Must be one of: {valid_statuses}")
+
+    async with pool.acquire() as conn:
+        await conn.execute("UPDATE users SET status=$1 WHERE id=$2", status, uid)
+
+    return {"status": "updated", "user_id": user_id, "new_status": status}

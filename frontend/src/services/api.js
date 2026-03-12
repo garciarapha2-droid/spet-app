@@ -174,6 +174,7 @@ export const managerAPI = {
   getShiftChart: (venueId, period, dateFrom, dateTo) => api.get('/manager/shift-chart', { params: { venue_id: venueId, period, date_from: dateFrom, date_to: dateTo } }),
   saveShiftSnapshot: (fd) => api.post('/manager/shift-snapshot', fd),
   shiftAI: (fd) => api.post('/manager/shift-ai', fd),
+  getRevenueBreakdown: (venueId) => api.get('/manager/revenue-breakdown', { params: { venue_id: venueId } }),
 };
 
 // Owner
@@ -204,4 +205,7 @@ export const ceoAPI = {
   getModules: () => api.get('/ceo/modules'),
   getAlerts: () => api.get('/ceo/alerts'),
   getPipeline: () => api.get('/ceo/pipeline'),
+  getKpiBreakdown: (kpi) => api.get('/ceo/kpi-breakdown', { params: { kpi } }),
+  updateCompanyModules: (userId, fd) => api.put(`/ceo/company/${userId}/modules`, fd),
+  updateCompanyStatus: (userId, fd) => api.put(`/ceo/company/${userId}/status`, fd),
 };
