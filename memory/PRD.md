@@ -79,3 +79,10 @@ Multi-tenant SaaS platform for venue operations (nightclubs, bars, restaurants).
 ## Credentials
 - Email: teste@teste.com
 - Password: 12345
+
+### Block 6 — Staff Earnings Business Logic (DONE — Mar 12, 2026)
+1. Tips cumulative per staff (not overwritten) ✅
+2. Tip ownership by bartender_id (not pooled) ✅
+3. Earnings = Base Pay (hours × rate) + Tips ✅
+4. Manager shows: hours, rate, wages, tips, total per staff ✅
+5. Testing: 12/12 passed (iteration_32)

@@ -63,6 +63,7 @@ async def open_table(
     guest_name: str = Form("Guest"),
     covers: int = Form(1),
     server_name: str = Form(None),
+    bartender_id: str = Form(None),
 ):
     pool = get_postgres_pool()
     vid = uuid.UUID(venue_id)
@@ -82,6 +83,8 @@ async def open_table(
         meta_dict = {"guest_name": guest_name, "covers": covers}
         if server_name:
             meta_dict["server_name"] = server_name
+        if bartender_id:
+            meta_dict["bartender_id"] = bartender_id
         meta = json_mod.dumps(meta_dict)
         session = await conn.fetchrow(
             """INSERT INTO tap_sessions

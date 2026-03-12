@@ -185,6 +185,8 @@ async def open_tab(
     table_id: str = Form(None),
     nfc_card_id: str = Form(None),
     session_type: str = Form("tap"),
+    bartender_id: str = Form(None),
+    bartender_name: str = Form(None),
 ):
     """B1 — Open a new tab/session in PG."""
     pool = get_postgres_pool()
@@ -200,7 +202,12 @@ async def open_tab(
         )
         tab_number = 100 + count + 1
 
-        meta_json = json_mod.dumps({"guest_name": guest_name, "tab_number": tab_number})
+        meta_dict = {"guest_name": guest_name, "tab_number": tab_number}
+        if bartender_id:
+            meta_dict["bartender_id"] = bartender_id
+        if bartender_name:
+            meta_dict["bartender_name"] = bartender_name
+        meta_json = json_mod.dumps(meta_dict)
 
         row = await conn.fetchrow(
             """INSERT INTO tap_sessions
@@ -698,6 +705,10 @@ async def record_tip(
             raise HTTPException(400, "Provide tip_amount or tip_percent")
 
         # Get items by server (created_by_user_id) to distribute proportionally
+        # If a bartender_id is assigned to the session, attribute the tip to them
+        assigned_bartender = meta.get("bartender_id")
+        server_name_meta = meta.get("bartender_name") or meta.get("server_name")
+
         items = await conn.fetch(
             """SELECT created_by_user_id, SUM(line_total) as sold
                FROM tap_items WHERE tap_session_id = $1 AND voided_at IS NULL
@@ -708,17 +719,28 @@ async def record_tip(
         total_sold = sum(float(it["sold"]) for it in items)
         tip_distribution = []
 
-        for it in items:
-            srv_id = it["created_by_user_id"]
-            sold = float(it["sold"])
-            proportion = sold / total_sold if total_sold > 0 else 0
-            srv_tip = round(final_tip * proportion, 2)
+        if assigned_bartender:
+            # Tip ownership: assign entire tip to the assigned bartender
             tip_distribution.append({
-                "staff_id": str(srv_id),
-                "sold": sold,
-                "proportion": round(proportion, 4),
-                "tip": srv_tip,
+                "staff_id": assigned_bartender,
+                "staff_name": server_name_meta or "",
+                "sold": total_sold,
+                "proportion": 1.0,
+                "tip": final_tip,
             })
+        else:
+            # Fallback: distribute by who added items
+            for it in items:
+                srv_id = it["created_by_user_id"]
+                sold = float(it["sold"])
+                proportion = sold / total_sold if total_sold > 0 else 0
+                srv_tip = round(final_tip * proportion, 2)
+                tip_distribution.append({
+                    "staff_id": str(srv_id),
+                    "sold": sold,
+                    "proportion": round(proportion, 4),
+                    "tip": srv_tip,
+                })
 
         # Store tip in meta
         meta["tip_amount"] = final_tip

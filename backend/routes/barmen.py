@@ -21,12 +21,16 @@ async def add_barman(
     user: dict = Depends(require_auth),
     venue_id: str = Form(...),
     name: str = Form(...),
+    role: str = Form("server"),
+    hourly_rate: float = Form(0),
 ):
     db = get_mongo_db()
     barman = {
         "id": str(uuid.uuid4()),
         "venue_id": venue_id,
         "name": name.strip(),
+        "role": role,
+        "hourly_rate": hourly_rate,
         "active": True,
     }
     await db.venue_barmen.insert_one(barman)
@@ -38,16 +42,28 @@ async def add_barman(
 async def update_barman(
     barman_id: str,
     user: dict = Depends(require_auth),
-    name: str = Form(...),
+    name: str = Form(None),
+    role: str = Form(None),
+    hourly_rate: float = Form(None),
 ):
     db = get_mongo_db()
+    update_fields = {}
+    if name is not None:
+        update_fields["name"] = name.strip()
+    if role is not None:
+        update_fields["role"] = role
+    if hourly_rate is not None:
+        update_fields["hourly_rate"] = hourly_rate
+    if not update_fields:
+        raise HTTPException(400, "No fields to update")
     result = await db.venue_barmen.update_one(
         {"id": barman_id},
-        {"$set": {"name": name.strip()}},
+        {"$set": update_fields},
     )
     if result.matched_count == 0:
         raise HTTPException(404, "Barman not found")
-    return {"id": barman_id, "name": name.strip(), "updated": True}
+    updated = await db.venue_barmen.find_one({"id": barman_id}, {"_id": 0})
+    return updated
 
 
 @router.delete("/barmen/{barman_id}")

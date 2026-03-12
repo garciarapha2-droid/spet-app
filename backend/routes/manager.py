@@ -199,6 +199,7 @@ async def add_staff_member(
     name: str = Form(...),
     role: str = Form("server"),
     email: str = Form(None),
+    hourly_rate: float = Form(0),
 ):
     """Add a staff/server member."""
     db = get_mongo_db()
@@ -208,6 +209,7 @@ async def add_staff_member(
         "name": name,
         "role": role,
         "email": email,
+        "hourly_rate": hourly_rate,
         "active": True,
         "created_at": datetime.now(timezone.utc),
     }
@@ -223,6 +225,7 @@ async def update_staff_member(
     name: str = Form(None),
     role: str = Form(None),
     active: bool = Form(None),
+    hourly_rate: float = Form(None),
 ):
     """Update staff member."""
     db = get_mongo_db()
@@ -233,6 +236,8 @@ async def update_staff_member(
         update["role"] = role
     if active is not None:
         update["active"] = active
+    if hourly_rate is not None:
+        update["hourly_rate"] = hourly_rate
     if not update:
         raise HTTPException(400, "Nothing to update")
     result = await db.venue_barmen.update_one({"id": staff_id}, {"$set": update})
@@ -876,37 +881,81 @@ def _parse_date_range(date_from: str = None, date_to: str = None):
 
 async def _calc_staff_cost(db, venue_id: str, start: datetime, end: datetime):
     """Calculate total staff cost for a period based on active staff and their hourly rates.
-    Also queries actual tips from tap_sessions.meta for the period."""
+    Tips are cumulative per staff member, attributed by bartender_id/server_name in session meta."""
     pool = get_postgres_pool()
     cursor = db.venue_barmen.find({"venue_id": venue_id, "active": True}, {"_id": 0})
     staff = await cursor.to_list(100)
     hours_in_period = max((end - start).total_seconds() / 3600, 1)
     shift_hours = min(hours_in_period, 12)
 
+    # Build lookup: barmen by id and by name (for legacy sessions that only have server_name)
+    staff_by_id = {s["id"]: s for s in staff}
+    staff_by_name = {s["name"].lower(): s for s in staff}
+
     # Query actual tip data from closed sessions in this period
     vid = uuid.UUID(venue_id)
+    tips_by_staff_id = {}  # venue_barmen id -> cumulative tips
     total_tips_period = 0
+
     async with pool.acquire() as conn:
         rows = await conn.fetch(
             """SELECT meta FROM tap_sessions
                WHERE venue_id=$1 AND status='closed'
                AND closed_at>=$2 AND closed_at<=$3""",
             vid, start, end)
+
     for r in rows:
         meta = _parse_meta(r["meta"])
-        if meta.get("tip_recorded") and meta.get("tip_amount", 0) > 0:
-            total_tips_period += meta.get("tip_amount", 0)
+        if not meta.get("tip_recorded") or meta.get("tip_amount", 0) <= 0:
+            continue
 
-    # Distribute tips proportionally among active staff
-    staff_count = len(staff) if staff else 1
-    tip_per_staff = round(total_tips_period / staff_count, 2) if staff_count > 0 else 0
+        tip_amount = meta.get("tip_amount", 0)
+        total_tips_period += tip_amount
+
+        # Try to attribute tip to specific staff member
+        attributed = False
+
+        # Method 1: tip_distribution with bartender_id (venue_barmen ID)
+        distribution = meta.get("tip_distribution", [])
+        for d in distribution:
+            sid = d.get("staff_id", "")
+            tip = d.get("tip", 0)
+            if sid in staff_by_id:
+                tips_by_staff_id[sid] = tips_by_staff_id.get(sid, 0) + tip
+                attributed = True
+
+        # Method 2: bartender_id in session meta
+        if not attributed and meta.get("bartender_id"):
+            bid = meta["bartender_id"]
+            if bid in staff_by_id:
+                tips_by_staff_id[bid] = tips_by_staff_id.get(bid, 0) + tip_amount
+                attributed = True
+
+        # Method 3: server_name / bartender_name match by name
+        if not attributed:
+            sname = (meta.get("bartender_name") or meta.get("server_name") or "").lower()
+            if sname and sname in staff_by_name:
+                matched = staff_by_name[sname]
+                tips_by_staff_id[matched["id"]] = tips_by_staff_id.get(matched["id"], 0) + tip_amount
+                attributed = True
+
+        # If still unattributed, add to unassigned pool (distributed later)
+        if not attributed:
+            tips_by_staff_id["_unassigned"] = tips_by_staff_id.get("_unassigned", 0) + tip_amount
+
+    # Distribute any unassigned tips equally among active staff
+    unassigned = tips_by_staff_id.pop("_unassigned", 0)
+    if unassigned > 0 and staff:
+        per_staff = round(unassigned / len(staff), 2)
+        for s in staff:
+            tips_by_staff_id[s["id"]] = tips_by_staff_id.get(s["id"], 0) + per_staff
 
     total_cost = 0
     staff_breakdown = []
     for s in staff:
         rate = s.get("hourly_rate", 0)
         wages = round(rate * shift_hours, 2)
-        tips = tip_per_staff
+        tips = round(tips_by_staff_id.get(s["id"], 0), 2)
         total = round(wages + tips, 2)
         total_cost += wages  # Cost = wages only; tips are earnings
         staff_breakdown.append({

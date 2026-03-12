@@ -215,6 +215,12 @@ export const TapPage = () => {
     try {
       const fd = new FormData();
       fd.append('venue_id', VENUE_ID()); fd.append('guest_name', newTabName.trim());
+      // Send bartender assignment for tip ownership
+      const barmanObj = barmen.find(b => b.name === selectedBarman);
+      if (barmanObj) {
+        fd.append('bartender_id', barmanObj.id);
+        fd.append('bartender_name', barmanObj.name);
+      }
       const res = await tapAPI.openSession(fd);
       setActiveSessionId(res.data.session_id); setNewTabName(''); setShowNewTab(false);
       await loadData(); toast.success(`Tab #${res.data.tab_number} opened`);

@@ -165,6 +165,9 @@ export const TablePage = () => {
       fd.append('venue_id', VENUE_ID()); fd.append('table_id', selectedTable);
       fd.append('guest_name', guestName.trim()); fd.append('server_name', selectedServer);
       fd.append('seats', seatCount);
+      // Send bartender_id for tip ownership
+      const serverObj = barmen.find(b => b.name === selectedServer);
+      if (serverObj) fd.append('bartender_id', serverObj.id);
       await tableAPI.openTable(fd);
       setGuestName(''); setSeatCount(''); setShowOpenForm(false); await loadTables();
       const res = await tableAPI.getTableDetail(selectedTable); setTableDetail(res.data);
