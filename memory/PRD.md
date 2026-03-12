@@ -26,12 +26,9 @@ Build "SPET" (formerly SPETAP), a multi-tenant SaaS platform for venue operation
 - Multi-module routing and navigation
 - PostgreSQL schema for transactional data
 - MongoDB for venue/staff/guest documents
-- Demo data seeding (`seed_demo.py`)
 
 ### Phase 2: Critical Bug Fixes (Complete)
-- Staff Sync between Tap and Manager
-- "Pay Here" payment flow
-- Tip Sync to Manager dashboard
+- Staff Sync, "Pay Here" flow, Tip Sync
 
 ### Phase 3: System Integration (Complete)
 - `ensure_demo_ecosystem` script for interconnected demo data
@@ -40,12 +37,16 @@ Build "SPET" (formerly SPETAP), a multi-tenant SaaS platform for venue operation
 
 ### Phase 4: Rebrand & UI Polish (Complete — March 12, 2026)
 - Rebranded all visible references from "SPETAP" to "SPET"
-- Premium dark-first design system (CSS variables in index.css)
-- Electric blue accent color (#3B82F6 / HSL 217 91% 60%)
-- Backdrop-blur glass headers on all pages
-- Custom scrollbar, selection styles, focus rings
-- Smooth transitions and micro-animations
-- Zero functional regressions verified (14/14 tests passed)
+- Premium dark-first design system with electric blue accent (#3B82F6)
+- Backdrop-blur glass headers, custom scrollbar, focus rings
+- Zero functional regressions (14/14 tests passed)
+
+### Phase 5: Operational Sync Restoration (Complete — March 12, 2026)
+- Upgraded seed system to STATE-AWARE: checks open session count, auto-heals if degraded
+- Full clean + reseed when state is incorrect (< 5 open sessions)
+- Verified E2E flow: Guest enters → Tab opens → Order → KDS ticket → Close tab → Tip → Manager update
+- 19/19 backend tests + all 6 modules verified
+- Cross-module sync: Tap↔Manager, Pulse↔Manager, Table↔Sessions all consistent
 
 ## Prioritized Backlog
 
