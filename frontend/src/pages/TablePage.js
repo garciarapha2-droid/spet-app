@@ -198,18 +198,27 @@ export const TablePage = () => {
   };
 
   const handleIdVerified = async () => {
-    if (!tableDetail?.session) return;
+    if (!tableDetail?.session?.id) return;
+    const sessionId = tableDetail.session.id;
+    const itemToAdd = pendingAlcoholItem;
     try {
-      await tapAPI.verifyId(tableDetail.session.id);
+      await tapAPI.verifyId(sessionId);
+      setShowIdModal(false);
+      setPendingAlcoholItem(null);
+      // Add the pending item using the captured session ID
+      if (itemToAdd) {
+        const fd = new FormData(); fd.append('item_id', itemToAdd.id); fd.append('qty', '1');
+        await tapAPI.addItem(sessionId, fd);
+        toast.success(`${itemToAdd.name} added`);
+      }
+      // Refresh table detail after both operations complete
       const res = await tableAPI.getTableDetail(selectedTable);
       setTableDetail(res.data);
-      setShowIdModal(false);
-      // Now add the pending item
-      if (pendingAlcoholItem) {
-        await doAddItem(pendingAlcoholItem);
-        setPendingAlcoholItem(null);
-      }
-    } catch { toast.error('ID verification failed'); }
+      await loadTables();
+    } catch (err) {
+      console.error('ID verify + add failed:', err);
+      toast.error('Failed to add item');
+    }
   };
 
   const handleIdCancel = () => {
