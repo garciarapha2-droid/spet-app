@@ -209,7 +209,7 @@ async def ensure_demo_ecosystem():
     vid_str = str(vid)
     now = datetime.now(timezone.utc)
 
-    EXPECTED_OPEN_SESSIONS = 5  # 3 table + 2 bar (John Smith + Sofia + Lucas)
+    EXPECTED_OPEN_SESSIONS = 3  # 3 bar (Sofia, Lucas, John)
 
     async with pool.acquire() as conn:
         open_count = await conn.fetchval(
@@ -443,36 +443,57 @@ async def ensure_demo_ecosystem():
                 )
             await conn.execute("UPDATE tap_sessions SET subtotal=$1, total=$1 WHERE id=$2", total, sid)
 
-    # ── 6. Create one CLOSED session with tip (for Manager revenue) ──
-    # Get Carlos Silva's barmen ID for tip attribution
-    carlos_barmen = await db.venue_barmen.find_one({"venue_id": venue_id, "name": "Carlos Silva"}, {"_id": 0})
-    carlos_barmen_id = carlos_barmen["id"] if carlos_barmen else str(user_id)
+    # ── 6. Close multiple sessions with tips for profitable demo revenue ──
+    barmen_lookup = {}
+    for name in ["Carlos Silva", "Ana Perez", "Marco Rossi", "Joao"]:
+        doc = await db.venue_barmen.find_one({"venue_id": vid_str, "name": name}, {"_id": 0})
+        if doc:
+            barmen_lookup[name] = doc["id"]
+
+    sessions_to_close = [
+        {"guest": "Alex Turner", "bartender": "Carlos Silva", "tip_pct": 0.20},
+        {"guest": "Ricardo Almeida", "bartender": "Marco Rossi", "tip_pct": 0.20},
+        {"guest": "Maria Santos", "bartender": "Ana Perez", "tip_pct": 0.20},
+        {"guest": "Fernando VIP", "bartender": "Carlos Silva", "tip_pct": 0.15},
+    ]
 
     async with pool.acquire() as conn:
-        closed_guest = "Alex Turner"
-        closed_gid = guest_id_map[closed_guest]
-        # Close Alex Turner's session and add payment + tip
-        alex_sess = await conn.fetchrow(
-            "SELECT id, total FROM tap_sessions WHERE venue_id=$1 AND meta->>'guest_name'=$2 AND status='open'",
-            vid, closed_guest,
-        )
-        if alex_sess:
-            tip_amount = round(float(alex_sess["total"]) * 0.20, 2)
+        for sc in sessions_to_close:
+            sess = await conn.fetchrow(
+                "SELECT id, total, meta FROM tap_sessions WHERE venue_id=$1 AND meta->>'guest_name'=$2 AND status='open'",
+                vid, sc["guest"],
+            )
+            if not sess:
+                continue
+            bartender_id = barmen_lookup.get(sc["bartender"], str(user_id))
+            total_val = float(sess["total"])
+            tip_amount = round(total_val * sc["tip_pct"], 2)
+            raw_meta = sess["meta"]
+            if isinstance(raw_meta, str):
+                try:
+                    tab_meta = _json.loads(raw_meta)
+                except Exception:
+                    tab_meta = {}
+            elif isinstance(raw_meta, dict):
+                tab_meta = raw_meta
+            else:
+                tab_meta = {}
+            tab_number = tab_meta.get("tab_number", 100)
             close_meta = _json.dumps({
-                "guest_name": closed_guest, "tab_number": 105,
-                "bartender_id": carlos_barmen_id, "bartender_name": "Carlos Silva",
+                "guest_name": sc["guest"], "tab_number": tab_number,
+                "bartender_id": bartender_id, "bartender_name": sc["bartender"],
                 "payment_location": "pay_here", "tip_recorded": True,
-                "tip_amount": tip_amount, "tip_percent": 20.0,
-                "tip_distribution": [{"staff_id": carlos_barmen_id, "staff_name": "Carlos Silva", "sold": float(alex_sess["total"]), "proportion": 1.0, "tip": tip_amount}],
+                "tip_amount": tip_amount, "tip_percent": sc["tip_pct"] * 100,
+                "tip_distribution": [{"staff_id": bartender_id, "staff_name": sc["bartender"], "sold": total_val, "proportion": 1.0, "tip": tip_amount}],
             })
             await conn.execute(
                 "UPDATE tap_sessions SET status='closed', closed_at=$1, closed_by_user_id=$2, meta=$3::jsonb WHERE id=$4",
-                now, user_id, close_meta, alex_sess["id"],
+                now, user_id, close_meta, sess["id"],
             )
             await conn.execute(
                 """INSERT INTO tap_payments (venue_id, tap_session_id, amount, method, paid_by_user_id, paid_at)
                    VALUES ($1, $2, $3, 'card', $4, $5)""",
-                vid, alex_sess["id"], alex_sess["total"], user_id, now,
+                vid, sess["id"], sess["total"], user_id, now,
             )
 
     logger.info("Demo ecosystem seeded: 7 guests, 7 entry events, 6 open sessions, 1 closed with tip, KDS tickets")

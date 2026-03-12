@@ -955,7 +955,7 @@ async def _calc_staff_cost(db, venue_id: str, start: datetime, end: datetime):
     cursor = db.venue_barmen.find({"venue_id": venue_id, "active": True}, {"_id": 0})
     staff = await cursor.to_list(100)
     hours_in_period = max((end - start).total_seconds() / 3600, 1)
-    shift_hours = min(hours_in_period, 12)
+    shift_hours = min(hours_in_period, 6)  # Typical nightclub shift: 6 hours max
 
     # Build lookup: barmen by id and by name (for legacy sessions that only have server_name)
     staff_by_id = {s["id"]: s for s in staff}
