@@ -1,0 +1,146 @@
+{
+  "brand": {
+    "name": "SPET",
+    "description": "Premium multi-tenant SaaS for hospitality operations.",
+    "emotional_archetype": "The Performance Pro",
+    "tone": "Elite, Precision, Nightlife, Tech-Forward",
+    "keywords": ["Minimal", "Electric", "Dark", "Fast"]
+  },
+  "typography": {
+    "font_family": "Inter, system-ui, sans-serif",
+    "rules": {
+      "headings": {
+        "weight": "600",
+        "tracking": "-0.025em",
+        "size_scale": "text-3xl md:text-4xl lg:text-5xl"
+      },
+      "body": {
+        "weight": "400",
+        "tracking": "normal",
+        "size_scale": "text-sm md:text-base"
+      },
+      "ui_labels": {
+        "weight": "500",
+        "tracking": "0.01em",
+        "case": "uppercase",
+        "size": "text-xs"
+      }
+    }
+  },
+  "colors": {
+    "palette": {
+      "primary": {
+        "hex": "#0066FF",
+        "hsl": "216 100% 50%",
+        "usage": "Primary actions, active states, key data highlights"
+      },
+      "background": {
+        "dark": {
+          "hex": "#050505",
+          "hsl": "0 0% 2%",
+          "usage": "Main app background"
+        },
+        "card": {
+          "hex": "#0A0A0A",
+          "hsl": "0 0% 4%",
+          "usage": "Cards, sidebars, modal backgrounds"
+        }
+      },
+      "text": {
+        "primary": {
+          "hex": "#EDEDED",
+          "hsl": "0 0% 93%"
+        },
+        "secondary": {
+          "hex": "#A1A1AA",
+          "hsl": "240 5% 65%"
+        }
+      },
+      "border": {
+        "default": {
+          "hex": "#27272A",
+          "hsl": "240 3.7% 15.9%"
+        },
+        "active": {
+          "hex": "#0066FF",
+          "hsl": "216 100% 50%"
+        }
+      }
+    },
+    "gradients": {
+      "glow": "linear-gradient(to bottom right, rgba(0, 102, 255, 0.15), transparent)",
+      "surface": "linear-gradient(to bottom, rgba(255,255,255,0.03), rgba(255,255,255,0))"
+    }
+  },
+  "layout_strategies": {
+    "dashboard_grid": {
+      "type": "Bento Grid",
+      "classes": "grid grid-cols-1 md:grid-cols-12 gap-4",
+      "spans": {
+        "hero": "col-span-12 md:col-span-8",
+        "stat": "col-span-6 md:col-span-4",
+        "list": "col-span-12 md:col-span-4 row-span-2"
+      }
+    },
+    "spacing": {
+      "container_padding": "p-6 md:p-8",
+      "section_gap": "gap-6",
+      "internal_padding": "p-4"
+    },
+    "surfaces": {
+      "card": "bg-card border border-border/40 rounded-lg shadow-sm hover:border-primary/50 transition-colors duration-200",
+      "glass": "bg-background/80 backdrop-blur-xl border-b border-white/5",
+      "modal": "bg-[#0A0A0A] border border-white/10 shadow-2xl"
+    }
+  },
+  "component_styling": {
+    "buttons": {
+      "primary": "bg-primary text-white hover:bg-primary/90 shadow-[0_0_15px_rgba(0,102,255,0.3)]",
+      "secondary": "bg-white/5 text-white hover:bg-white/10 border border-white/10",
+      "ghost": "hover:bg-white/5 text-muted-foreground hover:text-white",
+      "radius": "rounded-md"
+    },
+    "inputs": {
+      "base": "bg-white/5 border-white/10 focus:border-primary focus:ring-1 focus:ring-primary text-white placeholder:text-neutral-500",
+      "radius": "rounded-md"
+    },
+    "navigation": {
+      "sidebar": "bg-[#050505] border-r border-white/5",
+      "active_item": "text-primary bg-primary/10 border-l-2 border-primary"
+    }
+  },
+  "visual_enhancers": {
+    "shadows": {
+      "glow_sm": "0 0 10px rgba(0, 102, 255, 0.1)",
+      "glow_md": "0 0 20px rgba(0, 102, 255, 0.2)"
+    },
+    "borders": {
+      "subtle": "1px solid rgba(255, 255, 255, 0.08)",
+      "highlight": "1px solid rgba(0, 102, 255, 0.5)"
+    }
+  },
+  "image_assets": {
+    "venue_backgrounds": [
+      "https://images.unsplash.com/photo-1660737612593-4cd046c6266b?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDQ2MzR8MHwxfHNlYXJjaHw0fHxtb2Rlcm4lMjBsdXh1cnklMjBuaWdodGNsdWIlMjBpbnRlcmlvciUyMGRhcmslMjBtaW5pbWFsaXN0fGVufDB8fHx8MTc3MzI4OTE2N3ww&ixlib=rb-4.1.0&q=85",
+      "https://images.unsplash.com/photo-1673512703111-c38c42a1f1a3?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDQ2MzR8MHwxfHNlYXJjaHwzfHxtb2Rlcm4lMjBsdXh1cnklMjBuaWdodGNsdWIlMjBpbnRlcmlvciUyMGRhcmslMjBtaW5pbWFsaXN0fGVufDB8fHx8MTc3MzI4OTE2N3ww&ixlib=rb-4.1.0&q=85",
+      "https://images.unsplash.com/photo-1771928258114-b345abf3f7b4?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDQ2MzR8MHwxfHNlYXJjaHwxfHxtb2Rlcm4lMjBsdXh1cnklMjBuaWdodGNsdWIlMjBpbnRlcmlvciUyMGRhcmslMjBtaW5pbWFsaXN0fGVufDB8fHx8MTc3MzI4OTE2N3ww&ixlib=rb-4.1.0&q=85"
+    ]
+  },
+  "universal_guidelines": [
+    "FORCE DARK MODE: Update CSS variables in index.css to make dark mode values the default :root values.",
+    "NO PURPLE: Replace all instances of Hue 253 with Hue 216 (Electric Blue).",
+    "NO TEAL: Avoid teal/cyan unless strictly required for specific data visualization (use Blue or White/Grey instead).",
+    "LINEAR STYLE: Use 1px borders with low opacity (10-15%) instead of heavy shadows for separation.",
+    "DATA DENSITY: In dashboards (Manager, Owner), keep spacing tight (p-2, gap-2) but consistent. In Marketing/Login, use generous spacing (p-8).",
+    "GLASS: Use 'backdrop-blur-xl' for sticky headers and overlays.",
+    "INTERACTION: Add 'transition-all duration-200' to all interactive elements. Hover states must be clear.",
+    "DO NOT CHANGE ROUTING: Keep all existing routes and logic exactly as is."
+  ],
+  "instructions_to_main_agent": {
+    "step_1": "Update /app/frontend/src/index.css: Replace HSL variables. Set dark mode HSLs as the default in :root. Remove the light mode block or swap it so light mode is opt-in (if kept).",
+    "step_2": "Update /app/frontend/tailwind.config.js: Ensure 'border-border' and 'bg-background' map correctly. Adjust 'borderRadius' theme to match the Linear look (slightly sharper).",
+    "step_3": "Refine /app/frontend/src/App.js: Ensure the outer container has 'min-h-screen bg-background text-foreground' to apply the dark theme globally.",
+    "step_4": "Polish Components: Go through Shadcn components in /components/ui and ensure they use the new variables (e.g. Card should have 'border-border/40').",
+    "step_5": "Polish Pages: Apply 'Bento Grid' layouts to Dashboard pages. Apply 'Glass' effects to Headers."
+  }
+}
