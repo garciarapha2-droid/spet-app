@@ -55,6 +55,10 @@ Multi-tenant SaaS platform for real-time venue operations. Modules: Pulse (guest
 - Seed now closes 4 sessions with proper tip attribution and bartender IDs
 - Shift hour cap reduced from 12h to 6h (realistic nightclub shift)
 
+### Phase 7: Table Alcohol ID Bug Fix (Complete - Mar 12, 2026)
+- **Root cause**: `handleIdVerified` lost references to sessionId and pendingAlcoholItem due to async state updates and stale closures
+- **Fix**: Captured sessionId and itemToAdd in local variables BEFORE async operations, then executes verify-id → close modal → add item → refresh sequentially
+
 ## Prioritized Backlog
 
 ### P1 (Next)
