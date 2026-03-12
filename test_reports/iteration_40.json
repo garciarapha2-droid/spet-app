@@ -1,0 +1,86 @@
+{
+  "summary": "Iteration 40: BOTH REGRESSION FIXES VERIFIED. FIX 1 (Staff Earnings tip attribution) - Carlos Silva correctly shows $8.60+ in tips in both shift-overview and staff-costs. FIX 2 (Bar Inside shows ALL guests) - pulse/inside returns 7 guests including Alex Turner with closed tab #105 $43.00. Frontend TAP page shows all guests with tab numbers and amounts.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "fixes_verified": {
+    "FIX_1_Staff_Earnings_Tip_Attribution": {
+      "status": "PASS",
+      "description": "Tips are correctly attributed to specific staff members based on bartender_id",
+      "evidence": {
+        "shift_overview_tips": "$8.60 (seed) + $5.00 (E2E test) = $13.60+",
+        "carlos_silva_tips": "$8.60+ attributed in staff-costs",
+        "tip_distribution": "Tips go ONLY to assigned bartender, not split",
+        "api_endpoints": [
+          "GET /api/manager/shift-overview returns tips field",
+          "GET /api/manager/staff-costs returns per-staff tips breakdown"
+        ]
+      }
+    },
+    "FIX_2_Bar_Inside_All_Guests": {
+      "status": "PASS",
+      "description": "pulse/inside returns ALL guests inside venue including those with closed tabs",
+      "evidence": {
+        "total_guests": 7,
+        "alex_turner": {
+          "guest_name": "Alex Turner",
+          "tab_number": 105,
+          "tab_total": 43.0,
+          "tab_status": "closed",
+          "guest_status": "Paid"
+        },
+        "all_guests_have": ["tab_number", "tab_total", "tab_status", "guest_status"],
+        "frontend_display": "TapPage shows 8 guests (7 seed + 1 E2E test) with name, tab number, and amount"
+      }
+    }
+  },
+  "regression_tests": {
+    "protected_accounts": {
+      "status": "PASS",
+      "teste@teste.com": "Login successful",
+      "garcia.rapha2@gmail.com": "Login successful"
+    }
+  },
+  "e2e_tip_flow": {
+    "status": "PASS",
+    "steps_verified": [
+      "Open session with bartender_id (Carlos Silva)",
+      "Add item to session",
+      "Close session with pay_here",
+      "Record $5.00 tip",
+      "Verify tip appears in shift-overview",
+      "Verify Carlos Silva has tip in staff-costs"
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iteration40_regression_fixes.py",
+    "/app/test_reports/pytest/iteration40_regression_fixes.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [],
+  "updated_files": [
+    "/app/backend/tests/test_iteration40_regression_fixes.py"
+  ],
+  "success_rate": {
+    "backend": "100% (14/14 tests passed)",
+    "frontend": "100% (TAP page shows all guests correctly)"
+  },
+  "test_credentials": {
+    "email": "teste@teste.com",
+    "password": "12345",
+    "ceo_email": "garcia.rapha2@gmail.com",
+    "ceo_password": "1234",
+    "venue_id": "40a24e04-75b6-435d-bfff-ab0d469ce543",
+    "carlos_silva_id": "b5f31a05-6a8c-406e-84ec-26454411aca4"
+  },
+  "seed_data_creation": "E2E test created TEST_TipFlow_Guest with $5.00 tip attributed to Carlos Silva",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Both regression fixes verified: (1) _calc_staff_cost in manager.py correctly matches bartender_id as both UUID and name (lowercase). (2) pulse/inside queries most recent session regardless of status (open or closed), prioritizing open sessions. TapPage merges open sessions with pulse/inside guests. Carlos Silva ID: b5f31a05-6a8c-406e-84ec-26454411aca4. API paths: /api/tap/session/open, /api/tap/session/{id}/add, /api/tap/session/{id}/close, /api/tap/session/{id}/record-tip."
+}

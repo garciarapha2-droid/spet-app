@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { tapAPI, staffAPI } from '../services/api';
+import { tapAPI, staffAPI, pulseAPI } from '../services/api';
 import { toast } from 'sonner';
 import { Input } from '../components/ui/input';
 import { Button } from '../components/ui/button';
@@ -147,10 +147,30 @@ export const TapPage = () => {
 
   const loadData = useCallback(async () => {
     try {
-      const [sessRes, catRes, stRes] = await Promise.all([
+      const [sessRes, catRes, stRes, insideRes] = await Promise.all([
         tapAPI.getSessions(VENUE_ID()), tapAPI.getCatalog(VENUE_ID()), tapAPI.getStats(VENUE_ID()),
+        pulseAPI.getInsideGuests(VENUE_ID()),
       ]);
-      setSessions(sessRes.data.sessions || []); setCatalog(catRes.data.items || []); setStats(stRes.data);
+      const openSessions = sessRes.data.sessions || [];
+      const insideGuests = insideRes.data?.guests || [];
+
+      // Merge: start with open sessions, add inside guests who don't have an open session
+      const sessionGuestNames = new Set(openSessions.map(s => s.guest_name?.toLowerCase()));
+      const merged = [...openSessions];
+      for (const g of insideGuests) {
+        if (!sessionGuestNames.has(g.guest_name?.toLowerCase())) {
+          merged.push({
+            id: g.guest_id || g.session_id || `pulse-${g.guest_name}`,
+            session_id: g.session_id || null,
+            guest_name: g.guest_name,
+            tab_number: g.tab_number || null,
+            total: g.tab_total || 0,
+            status: g.tab_number ? 'closed' : 'no_tab',
+            _isPulseOnly: true,
+          });
+        }
+      }
+      setSessions(merged); setCatalog(catRes.data.items || []); setStats(stRes.data);
     } catch (err) { console.error(err); }
   }, []);
 
@@ -462,16 +482,23 @@ export const TapPage = () => {
             <div className="space-y-1 max-h-[calc(100vh-300px)] overflow-y-auto">
               {sessions.map(s => (
                 <button key={s.session_id || s.id}
-                  onClick={() => setActiveSessionId(s.session_id || s.id)}
+                  onClick={() => !s._isPulseOnly && setActiveSessionId(s.session_id || s.id)}
                   className={`w-full text-left px-3 py-2 rounded-lg border transition-all text-sm ${
+                    s._isPulseOnly ? 'border-border/50 bg-muted/30 opacity-70' :
                     (s.session_id || s.id) === activeSessionId ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/30 bg-card'
                   }`} data-testid={`tab-${s.tab_number || s.session_id || s.id}`}>
                   <div className="flex justify-between items-center">
                     <div className="truncate">
                       <span className="font-medium">{s.guest_name}</span>
-                      <span className="text-primary font-bold ml-1">#{s.tab_number}</span>
+                      {s.tab_number ? (
+                        <span className="text-primary font-bold ml-1">#{s.tab_number}</span>
+                      ) : (
+                        <span className="text-muted-foreground text-xs ml-1">(inside)</span>
+                      )}
                     </div>
-                    <span className="font-bold text-xs">${(s.total || 0).toFixed(2)}</span>
+                    <span className={`font-bold text-xs ${s._isPulseOnly && s.status === 'closed' ? 'text-muted-foreground' : ''}`}>
+                      ${(s.total || 0).toFixed(2)}
+                    </span>
                   </div>
                 </button>
               ))}

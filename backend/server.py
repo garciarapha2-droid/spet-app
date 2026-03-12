@@ -444,6 +444,10 @@ async def ensure_demo_ecosystem():
             await conn.execute("UPDATE tap_sessions SET subtotal=$1, total=$1 WHERE id=$2", total, sid)
 
     # ── 6. Create one CLOSED session with tip (for Manager revenue) ──
+    # Get Carlos Silva's barmen ID for tip attribution
+    carlos_barmen = await db.venue_barmen.find_one({"venue_id": venue_id, "name": "Carlos Silva"}, {"_id": 0})
+    carlos_barmen_id = carlos_barmen["id"] if carlos_barmen else str(user_id)
+
     async with pool.acquire() as conn:
         closed_guest = "Alex Turner"
         closed_gid = guest_id_map[closed_guest]
@@ -456,9 +460,10 @@ async def ensure_demo_ecosystem():
             tip_amount = round(float(alex_sess["total"]) * 0.20, 2)
             close_meta = _json.dumps({
                 "guest_name": closed_guest, "tab_number": 105,
+                "bartender_id": carlos_barmen_id, "bartender_name": "Carlos Silva",
                 "payment_location": "pay_here", "tip_recorded": True,
                 "tip_amount": tip_amount, "tip_percent": 20.0,
-                "tip_distribution": [{"staff_id": str(user_id), "sold": float(alex_sess["total"]), "proportion": 1.0, "tip": tip_amount}],
+                "tip_distribution": [{"staff_id": carlos_barmen_id, "staff_name": "Carlos Silva", "sold": float(alex_sess["total"]), "proportion": 1.0, "tip": tip_amount}],
             })
             await conn.execute(
                 "UPDATE tap_sessions SET status='closed', closed_at=$1, closed_by_user_id=$2, meta=$3::jsonb WHERE id=$4",

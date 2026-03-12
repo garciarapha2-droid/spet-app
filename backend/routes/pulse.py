@@ -678,13 +678,13 @@ async def get_inside_guests(venue_id: str, user: dict = Depends(require_auth)):
             guest_doc = await db.venue_guests.find_one(
                 {"id": str(r["guest_id"])}, {"_id": 0, "name": 1, "photo": 1, "tags": 1, "wristband_blocked": 1}
             )
-            # Check for open tab
+            # Check for tab (open first, then most recent closed)
             tab_info = None
             async with pool.acquire() as conn2:
                 tab_row = await conn2.fetchrow(
                     """SELECT id, meta, total, status FROM tap_sessions
-                       WHERE venue_id = $1::uuid AND guest_id = $2::uuid AND status = 'open'
-                       ORDER BY opened_at DESC LIMIT 1""",
+                       WHERE venue_id = $1::uuid AND guest_id = $2::uuid
+                       ORDER BY CASE WHEN status='open' THEN 0 ELSE 1 END, opened_at DESC LIMIT 1""",
                     uuid.UUID(venue_id), r["guest_id"],
                 )
             if tab_row:
@@ -712,8 +712,10 @@ async def get_inside_guests(venue_id: str, user: dict = Depends(require_auth)):
                 "tags": guest_doc.get("tags", []) if guest_doc else [],
                 "entry_type": r["entry_type"],
                 "entered_at": r["created_at"].isoformat(),
+                "session_id": tab_info["session_id"] if tab_info else None,
                 "tab_number": tab_info["tab_number"] if tab_info else None,
                 "tab_total": tab_info["total"] if tab_info else None,
+                "tab_status": tab_info["status"] if tab_info else None,
                 "guest_status": guest_status,
             })
 

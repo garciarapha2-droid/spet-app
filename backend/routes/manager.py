@@ -984,7 +984,7 @@ async def _calc_staff_cost(db, venue_id: str, start: datetime, end: datetime):
         # Try to attribute tip to specific staff member
         attributed = False
 
-        # Method 1: tip_distribution with bartender_id (venue_barmen ID)
+        # Method 1: tip_distribution with bartender_id (could be venue_barmen ID or name)
         distribution = meta.get("tip_distribution", [])
         for d in distribution:
             sid = d.get("staff_id", "")
@@ -992,12 +992,20 @@ async def _calc_staff_cost(db, venue_id: str, start: datetime, end: datetime):
             if sid in staff_by_id:
                 tips_by_staff_id[sid] = tips_by_staff_id.get(sid, 0) + tip
                 attributed = True
+            elif sid.lower() in staff_by_name:
+                matched = staff_by_name[sid.lower()]
+                tips_by_staff_id[matched["id"]] = tips_by_staff_id.get(matched["id"], 0) + tip
+                attributed = True
 
-        # Method 2: bartender_id in session meta
+        # Method 2: bartender_id in session meta (could be UUID or name)
         if not attributed and meta.get("bartender_id"):
             bid = meta["bartender_id"]
             if bid in staff_by_id:
                 tips_by_staff_id[bid] = tips_by_staff_id.get(bid, 0) + tip_amount
+                attributed = True
+            elif bid.lower() in staff_by_name:
+                matched = staff_by_name[bid.lower()]
+                tips_by_staff_id[matched["id"]] = tips_by_staff_id.get(matched["id"], 0) + tip_amount
                 attributed = True
 
         # Method 3: server_name / bartender_name match by name
