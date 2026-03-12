@@ -41,10 +41,10 @@ export const OwnerPage = () => {
 
   return (
     <div className="min-h-screen bg-background" data-testid="owner-page">
-      <header className="h-14 border-b border-border bg-card px-6 flex items-center justify-between">
+      <header className="h-14 border-b border-border/60 bg-card/80 backdrop-blur-md px-6 flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={() => navigate('/venue/home')} data-testid="back-btn"><ArrowLeft className="h-4 w-4" /></Button>
-          <h1 className="text-lg font-bold tracking-tight">Owner Dashboard</h1>
+          <h1 className="text-base font-extrabold tracking-tight">Owner Dashboard</h1>
           {/* Multi-venue Selector */}
           <div className="relative">
             <button onClick={() => setShowVenueMenu(!showVenueMenu)}
@@ -80,7 +80,7 @@ export const OwnerPage = () => {
       </header>
 
       <div className="flex">
-        <nav className="w-52 border-r border-border bg-card min-h-[calc(100vh-56px)] p-3 space-y-0.5">
+        <nav className="w-52 border-r border-border/60 bg-card/50 min-h-[calc(100vh-56px)] p-3 space-y-0.5">
           {TABS.map(tab => {
             const Icon = tab.icon;
             return (

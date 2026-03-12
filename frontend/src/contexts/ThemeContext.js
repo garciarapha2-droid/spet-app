@@ -7,9 +7,8 @@ const ThemeContext = createContext({
 
 export const ThemeProvider = ({ children }) => {
   const [theme, setTheme] = useState(() => {
-    // Check localStorage or default to light
     const saved = localStorage.getItem('spetap-theme');
-    return saved || 'light';
+    return saved || 'dark';
   });
 
   useEffect(() => {

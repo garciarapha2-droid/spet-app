@@ -89,11 +89,16 @@ export const ModulesPage = () => {
       <ThemeToggle />
       
       {/* Header */}
-      <div className="border-b border-border bg-card">
+      <div className="border-b border-border/60 bg-card/80 backdrop-blur-md">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold">SPETAP</h1>
-            <p className="text-sm text-muted-foreground">{user?.email}</p>
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 rounded-md bg-primary flex items-center justify-center">
+                <span className="text-primary-foreground font-extrabold text-xs">S</span>
+              </div>
+              <h1 className="text-lg font-extrabold tracking-tight">SPET</h1>
+            </div>
+            <p className="text-sm text-muted-foreground mt-0.5">{user?.email}</p>
           </div>
           <Button variant="ghost" onClick={logout} data-testid="logout-button">
             <LogOut className="h-4 w-4 mr-2" />

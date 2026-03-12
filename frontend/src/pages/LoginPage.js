@@ -31,21 +31,33 @@ export const LoginPage = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background px-4">
-      <ThemeToggle />
-      
-      <Card className="w-full max-w-md">
-        <CardHeader className="space-y-1 text-center">
-          <div className="mb-4">
-            <h1 className="text-4xl font-bold tracking-tight">SPETAP</h1>
+    <div className="min-h-screen flex items-center justify-center bg-background px-4 relative overflow-hidden">
+      {/* Subtle background gradient */}
+      <div className="absolute inset-0 bg-gradient-to-br from-primary/[0.03] via-transparent to-primary/[0.02]" />
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-primary/[0.04] rounded-full blur-[120px]" />
+
+      <div className="absolute top-4 right-4 z-10">
+        <ThemeToggle />
+      </div>
+
+      <Card className="w-full max-w-md relative z-10 border-border/50 shadow-xl shadow-black/5">
+        <CardHeader className="space-y-1 text-center pb-2">
+          <div className="mb-5">
+            <div className="inline-flex items-center gap-2.5">
+              <div className="w-9 h-9 rounded-lg bg-primary flex items-center justify-center glow-blue">
+                <span className="text-primary-foreground font-extrabold text-sm tracking-tighter">S</span>
+              </div>
+              <h1 className="text-3xl font-extrabold tracking-tight" data-testid="brand-logo">SPET</h1>
+            </div>
+            <p className="text-xs text-muted-foreground mt-2 tracking-wider uppercase font-medium">Venue Operations Platform</p>
           </div>
-          <CardTitle className="text-2xl">Welcome back</CardTitle>
-          <CardDescription>Sign in to your account</CardDescription>
+          <CardTitle className="text-xl font-semibold">Welcome back</CardTitle>
+          <CardDescription className="text-sm">Sign in to your account</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email" className="text-sm font-medium">Email</Label>
               <Input
                 id="email"
                 type="email"
@@ -54,37 +66,39 @@ export const LoginPage = () => {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 autoFocus
+                className="h-11"
                 data-testid="email-input"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password" className="text-sm font-medium">Password</Label>
               <Input
                 id="password"
                 type="password"
-                placeholder="•••••••••"
+                placeholder="Enter your password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
+                className="h-11"
                 data-testid="password-input"
               />
             </div>
             <Button
               type="submit"
-              className="w-full"
+              className="w-full h-11 font-semibold"
               disabled={loading}
               data-testid="login-button"
             >
-              {loading ? 'Logging in...' : 'Log in'}
+              {loading ? 'Signing in...' : 'Sign in'}
             </Button>
             <div className="text-center">
-              <button type="button" className="text-sm text-primary hover:underline" data-testid="forgot-password-link"
+              <button type="button" className="text-sm text-muted-foreground hover:text-primary transition-colors" data-testid="forgot-password-link"
                 onClick={() => toast.info('Password reset coming soon')}>
-                Forgot my password?
+                Forgot password?
               </button>
             </div>
           </form>
-          <div className="mt-4 text-center text-sm text-muted-foreground">
+          <div className="mt-6 pt-4 border-t border-border/50 text-center text-xs text-muted-foreground">
             Secure platform access
           </div>
         </CardContent>

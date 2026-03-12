@@ -327,12 +327,12 @@ export const TablePage = () => {
       {showIdModal && (
         <IDVerificationModal onConfirm={handleIdVerified} onCancel={handleIdCancel} />
       )}
-      <header className="h-14 border-b border-border bg-card px-6 flex items-center justify-between">
+      <header className="h-14 border-b border-border/60 bg-card/80 backdrop-blur-md px-6 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon" onClick={() => navigate('/tap')} data-testid="back-to-home-btn">
             <ArrowLeft className="h-4 w-4" />
           </Button>
-          <span className="text-lg font-bold tracking-tight">TABLE</span>
+          <span className="text-base font-extrabold tracking-tight">TABLE</span>
           <div className="h-5 w-px bg-border" />
           <label className="flex items-center gap-2 cursor-pointer" data-testid="disco-mode-toggle">
             <LayoutGrid className="h-4 w-4 text-primary" />

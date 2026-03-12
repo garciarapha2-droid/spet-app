@@ -366,12 +366,17 @@ export const KitchenPage = () => {
         </div>
       )}
 
-      <header className="h-14 border-b border-border px-6 flex items-center justify-between bg-card">
+      <header className="h-14 border-b border-border/60 px-6 flex items-center justify-between bg-card/80 backdrop-blur-md">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
             <ArrowLeft className="h-4 w-4" />
           </Button>
-          <h1 className="text-xl font-bold tracking-tight">SPETAP</h1>
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-md bg-primary flex items-center justify-center">
+              <span className="text-primary-foreground font-extrabold text-xs">S</span>
+            </div>
+            <h1 className="text-lg font-extrabold tracking-tight">SPET</h1>
+          </div>
           <span className="text-sm text-muted-foreground">KDS — {destination === 'kitchen' ? 'Kitchen' : 'Bar'} Display</span>
           {delayed.length > 0 && (
             <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-red-500 text-white animate-pulse">
