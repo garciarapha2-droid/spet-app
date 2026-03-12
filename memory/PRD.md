@@ -27,13 +27,28 @@ Build "SPET" (formerly SPETAP), a multi-tenant SaaS platform for venue operation
 - Events: item_added, tab_closed, tip_recorded, guest_entered, kds_update
 
 ### Phase 6: Operational Sync Fixes (Complete — March 12, 2026)
-- **Fix 1**: Bar orders now save to backend via `submitOrder()` — items are POSTed individually then cart clears
-- **Fix 2**: Guest `spend_total` updates in MongoDB when tab is closed
-- **Fix 3**: Inside Tabs in Bar shows all active sessions, click-to-select works
-- **Fix 4**: Chips payment method added — separate tracking from card/cash
-- **Fix 5**: Manager dashboard separates chips from regular revenue (revenue excludes chips, chips shown as separate KPI)
-- **Fix 6**: Session detail returns tip_amount, tip_percent, tip_recorded + full items list
-- All 6 fixes verified: 11/11 backend + full frontend UI tests passed
+- Bar orders save to backend via `submitOrder()`
+- Guest `spend_total` updates in MongoDB on tab close
+- Session detail returns tip info
+
+### Phase 7: Bar Module Behavior Corrections (Complete — March 12, 2026)
+- **Inside Tabs shows ALL 7 inside guests** (guest-centric list from Pulse + Tap merge)
+- **Auto-create tab** for guests without sessions (POST /api/tap/session/open)
+- **Confirm requires payment method** — Cart → Confirm → Payment Selector (Pay Here | Pay at Register)
+- **Chips payment removed** from Bar flow
+- **Pay Here** → submits items → closes tab → tip recording flow
+- **Pay at Register** → submits items → tab stays open
+- All 11 features verified: 100% pass rate
+
+## Bar Operational Flow
+Guest enters → Pulse  
+Guest appears in Inside Tabs (all inside guests visible)  
+Bartender selects guest (click from list OR scan tag)  
+Auto-creates tab if guest has no session  
+Bartender adds items  
+Bartender clicks Confirm → Payment selector appears  
+Pay Here → items saved → tab closed → tip → Manager updates  
+Pay at Register → items saved → tab open → Manager updates  
 
 ## Prioritized Backlog
 
@@ -43,7 +58,6 @@ Build "SPET" (formerly SPETAP), a multi-tenant SaaS platform for venue operation
 ### P1
 - Per-Event Dashboard (Manager View)
 - KDS / Bar Order Routing enhancements
-- Further UX/Wireframe Polish
 
 ### P2
 - Push notifications
