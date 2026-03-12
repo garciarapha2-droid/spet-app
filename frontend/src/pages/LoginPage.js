@@ -51,8 +51,7 @@ export const LoginPage = () => {
             </div>
             <p className="text-xs text-muted-foreground mt-2 tracking-wider uppercase font-medium">Venue Operations Platform</p>
           </div>
-          <CardTitle className="text-xl font-semibold">Welcome back</CardTitle>
-          <CardDescription className="text-sm">Sign in to your account</CardDescription>
+          <CardTitle className="sr-only">Login</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
