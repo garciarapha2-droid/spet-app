@@ -51,7 +51,17 @@ Multi-tenant SaaS platform for venue operations (nightclubs, bars, restaurants).
 3. Tips → Manager Shift Overview: Fixed _calc_staff_cost in manager.py to query actual tips from tap_sessions.meta. Added 'tips' field to shift-overview response. Tips distributed proportionally among active staff ✅
    - Testing: 100% pass rate (11/11 backend, all frontend verified via Playwright)
 
-## Key Non-Negotiable Rules
+### Block 5 — Full System Integration (DONE — Mar 12, 2026)
+**Goal**: Make all modules communicate as ONE unified SaaS system with shared data.
+1. Created `ensure_demo_ecosystem` in server.py: seeds real guests, entry_events, tap_items, KDS tickets, bar sessions, and closed sessions with tips ✅
+2. All 5 integration flows verified:
+   - Pulse → Tap: entry decision auto-creates tap_session ✅
+   - Tap → KDS: add-item auto-routes alcohol→bar, food→kitchen ✅
+   - Pay Here + Tips → Manager: shift-overview shows revenue + tips ✅
+   - Table sessions: visible in both /table/tables and /tap/sessions ✅
+   - Staff sync: Manager → Pulse/Tap/Table via shared venue_barmen ✅
+3. Demo data preservation: 9 guests inside, 7 open tabs, 3 occupied tables, 16+ KDS tickets, $85 revenue, $15 tips
+4. Testing: 100% pass rate (17/17 backend, all frontend verified via Playwright — iteration 31)
 - **Non-regression**: Nothing existing can be removed/simplified without approval
 - **Flow order**: Pay → Tip → Confirm (never confirm before paying)
 - **Data consistency**: Same numbers everywhere, single source of truth
