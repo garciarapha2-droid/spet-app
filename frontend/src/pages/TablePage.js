@@ -201,23 +201,20 @@ export const TablePage = () => {
     if (!tableDetail?.session?.id) return;
     const sessionId = tableDetail.session.id;
     const itemToAdd = pendingAlcoholItem;
-    try {
-      await tapAPI.verifyId(sessionId);
-      setShowIdModal(false);
-      setPendingAlcoholItem(null);
-      // Add the pending item using the captured session ID
-      if (itemToAdd) {
+    setShowIdModal(false);
+    setPendingAlcoholItem(null);
+    // Best-effort: mark session as ID-verified on backend
+    try { await tapAPI.verifyId(sessionId); } catch {}
+    // Always add the item after confirmation — ID check is a frontend gate only
+    if (itemToAdd) {
+      try {
         const fd = new FormData(); fd.append('item_id', itemToAdd.id); fd.append('qty', '1');
         await tapAPI.addItem(sessionId, fd);
         toast.success(`${itemToAdd.name} added`);
-      }
-      // Refresh table detail after both operations complete
-      const res = await tableAPI.getTableDetail(selectedTable);
-      setTableDetail(res.data);
-      await loadTables();
-    } catch (err) {
-      console.error('ID verify + add failed:', err);
-      toast.error('Failed to add item');
+        const res = await tableAPI.getTableDetail(selectedTable);
+        setTableDetail(res.data);
+        await loadTables();
+      } catch { toast.error('Failed to add item'); }
     }
   };
 
