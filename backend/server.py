@@ -136,7 +136,7 @@ async def ensure_system_account():
         # 2. CEO account (garcia.rapha2@gmail.com)
         ceo_user = await conn.fetchrow("SELECT id FROM users WHERE email = 'garcia.rapha2@gmail.com'")
         if not ceo_user:
-            ceo_hashed = hash_password("1234")
+            ceo_hashed = hash_password("12345")
             ceo_row = await conn.fetchrow(
                 "INSERT INTO users (email, password_hash, status, created_at, updated_at) VALUES ('garcia.rapha2@gmail.com', $1, 'active', $2, $2) RETURNING id",
                 ceo_hashed, now,
