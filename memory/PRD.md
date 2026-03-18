@@ -7,6 +7,7 @@ Build a premium restaurant POS/operational platform ("SPET") with:
 - Guest management (Pulse module)
 - Manager & CEO dashboards with role-based access
 - SaaS onboarding with Stripe checkout
+- Item modifiers & customization system
 - Dark theme design system with precise brand tokens
 
 ## User Personas
@@ -26,7 +27,7 @@ Build a premium restaurant POS/operational platform ("SPET") with:
 
 ## Tech Stack
 - **Frontend**: React, Tailwind CSS, Shadcn/UI, Lucide icons
-- **Backend**: FastAPI, PostgreSQL (auth), MongoDB (operations)
+- **Backend**: FastAPI, PostgreSQL (auth + orders), MongoDB (catalog + operations)
 - **Payments**: Stripe via emergentintegrations
 - **Auth**: JWT with RBAC (CEO, USER roles)
 - **Deployment**: Supervisor-managed, Kubernetes
@@ -52,7 +53,7 @@ Build a premium restaurant POS/operational platform ("SPET") with:
 ### Phase 1: Kitchen Order Cards (Toast-style) ✅
 - 5-column kanban: Pending, Preparing, Ready, Delivered, Delayed
 - Toast KDS card structure: order #, guest, timer, type, status badge
-- Item list with quantities, modifiers support
+- Item list with quantities and modifiers display
 - Drag-and-drop between columns
 - ETA modal for preparation time
 - Delayed order popup alerts
@@ -63,8 +64,19 @@ Build a premium restaurant POS/operational platform ("SPET") with:
 - Large touch-friendly item tile grid (4 columns)
 - Fixed left panel (tabs/table map)
 - Fixed right panel (order summary)
-- Full-height layout (no scroll on main frame)
 - Both TapPage and TablePage share same POS pattern
+
+### Phase 3: Item Modifiers & Notes ✅
+- **ItemCustomizeModal** component with ingredient toggles, extras, notes
+- Click on item = fast add (unchanged)
+- Pencil icon on order items opens customization modal
+- Ingredients loaded from catalog (default_ingredients field)
+- Modifiers stored as JSONB: {removed: [...], extras: [...]}
+- Notes stored in text field
+- **Backend**: PUT /api/tap/session/{id}/item/{id} updates modifiers
+- **Backend**: GET /api/tap/catalog/{id} returns default_ingredients
+- **KDS reflection**: Kitchen cards show "No X" (red) and "Extra X" (green)
+- Backward-compatible — no existing flows broken
 
 ### Checkout Flow (2-step) ✅
 - Public pricing page at /pricing with hero, features, plans
@@ -72,10 +84,8 @@ Build a premium restaurant POS/operational platform ("SPET") with:
 - 2-step modal: Lead capture (name, email, phone) → Stripe redirect
 - Backend lead storage + Stripe checkout session creation
 - Success page with payment status polling
-- Root / redirects to /pricing
 
 ## Pending (On Hold)
-- **Phase 3**: Item Modifiers & Notes (backend + frontend) — awaiting user review
 - **Phase 4**: Server History View — awaiting user review
 
 ## Backlog / Future
@@ -94,14 +104,22 @@ Build a premium restaurant POS/operational platform ("SPET") with:
 - USER: teste@teste.com / 12345
 
 ## Key Files
+- `frontend/src/components/ItemCustomizeModal.js` — Customization modal
 - `frontend/src/pages/KitchenPage.js` — KDS kanban
 - `frontend/src/pages/TapPage.js` — Bar POS
 - `frontend/src/pages/TablePage.js` — Table POS
 - `frontend/src/pages/PricingPage.js` — Landing + checkout
 - `frontend/src/pages/CheckoutSuccessPage.js` — Post-payment
+- `backend/routes/tap.py` — Tap API (modifiers, items, sessions)
+- `backend/routes/kds.py` — KDS tickets with modifiers
 - `backend/routes/onboarding.py` — Plans, leads, Stripe checkout
 - `frontend/src/index.css` — Design tokens (source of truth)
 
+## Database Schema Changes
+- `tap_items`: Added `modifiers JSONB DEFAULT '{}'`
+- `kds_ticket_items`: Added `modifiers JSONB DEFAULT '{}'`
+- MongoDB `venue_catalog`: Added `default_ingredients` array field
+
 ## Environment Notes
 - PostgreSQL is NON-PERSISTENT in preview — needs re-seeding on restart
-- Seed sequence: start postgres, start mongo, run init_postgres.sql, run seed_demo.py
+- Seed sequence: start postgres, start mongo, run init_postgres.sql, run seed_demo.py, run seed_ingredients.py
