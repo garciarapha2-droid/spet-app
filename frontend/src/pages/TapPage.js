@@ -408,7 +408,7 @@ export const TapPage = () => {
           <Button variant="ghost" size="icon" onClick={() => navigate('/pulse/bar')} data-testid="back-btn">
             <ArrowLeft className="h-4 w-4" />
           </Button>
-          <span className="text-base font-extrabold tracking-tight">TAP</span>
+          <span className="text-base font-bold tracking-tight">TAP</span>
           <span className="text-[10px] font-semibold bg-primary/10 text-primary px-2 py-0.5 rounded-full uppercase tracking-wider">DISCO</span>
           <div className="h-5 w-px bg-border" />
           <label className="flex items-center gap-2 cursor-pointer" data-testid="table-toggle">

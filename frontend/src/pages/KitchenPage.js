@@ -3,6 +3,7 @@ import { kdsAPI } from '../services/api';
 import { toast } from 'sonner';
 import { Button } from '../components/ui/button';
 import { ThemeToggle } from '../components/ThemeToggle';
+import SpetLogo from '../components/SpetLogo';
 import {
   UtensilsCrossed, Beer, Clock, ChefHat, CheckCircle,
   ArrowLeft, Timer, LogOut, Home, AlertTriangle, X, PackageCheck
@@ -372,10 +373,7 @@ export const KitchenPage = () => {
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-md bg-primary flex items-center justify-center">
-              <span className="text-primary-foreground font-extrabold text-xs">S</span>
-            </div>
-            <h1 className="text-lg font-extrabold tracking-tight">SPET</h1>
+            <SpetLogo size="default" />
           </div>
           <span className="text-sm text-muted-foreground">KDS — {destination === 'kitchen' ? 'Kitchen' : 'Bar'} Display</span>
           {delayed.length > 0 && (

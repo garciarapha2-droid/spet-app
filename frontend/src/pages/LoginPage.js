@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import SpetLogo from '../components/SpetLogo';
 import { useAuth } from '../contexts/AuthContext';
 import { ThemeToggle } from '../components/ThemeToggle';
 import { Button } from '../components/ui/button';
@@ -43,11 +44,8 @@ export const LoginPage = () => {
       <Card className="w-full max-w-md relative z-10 border-border/50 shadow-xl shadow-black/5">
         <CardHeader className="space-y-1 text-center pb-2">
           <div className="mb-5">
-            <div className="inline-flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-lg bg-primary flex items-center justify-center glow-blue">
-                <span className="text-primary-foreground font-extrabold text-sm tracking-tighter">S</span>
-              </div>
-              <h1 className="text-3xl font-extrabold tracking-tight" data-testid="brand-logo">SPET</h1>
+            <div className="flex items-center justify-center">
+              <SpetLogo size="lg" />
             </div>
             <p className="text-xs text-muted-foreground mt-2 tracking-wider uppercase font-medium">Venue Operations Platform</p>
           </div>

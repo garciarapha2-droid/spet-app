@@ -42,7 +42,7 @@ export const ManagerPage = () => {
           <Button variant="ghost" size="icon" onClick={() => navigate('/venue/home')} data-testid="back-btn">
             <ArrowLeft className="h-4 w-4" />
           </Button>
-          <h1 className="text-base font-extrabold tracking-tight">Manager Dashboard</h1>
+          <h1 className="text-base font-bold tracking-tight">Manager Dashboard</h1>
           <span className="text-sm text-muted-foreground">{VNAME()}</span>
         </div>
         <div className="flex items-center gap-3">

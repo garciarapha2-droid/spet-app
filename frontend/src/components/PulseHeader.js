@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { ThemeToggle } from './ThemeToggle';
+import SpetLogo from './SpetLogo';
 import { venueAPI } from '../services/api';
 import { Button } from './ui/button';
 import {
@@ -67,12 +68,7 @@ export const PulseHeader = () => {
       <div className="flex items-center gap-0">
         {/* Logo + Venue + Module dropdown */}
         <button onClick={() => navigate('/venue/home')} className="flex items-center gap-2 px-3 py-1.5 hover:bg-muted rounded-lg transition-colors mr-1" data-testid="logo-btn">
-          <div className="flex items-center gap-1.5">
-            <div className="w-6 h-6 rounded-md bg-primary flex items-center justify-center">
-              <span className="text-primary-foreground font-extrabold text-[10px]">S</span>
-            </div>
-            <span className="text-base font-extrabold tracking-tight">SPET</span>
-          </div>
+          <SpetLogo size="sm" />
         </button>
 
         <div className="h-5 w-px bg-border mx-1" />

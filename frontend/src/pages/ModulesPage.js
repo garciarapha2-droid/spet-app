@@ -2,6 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { ThemeToggle } from '../components/ThemeToggle';
+import SpetLogo from '../components/SpetLogo';
 import { Button } from '../components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
@@ -92,12 +93,7 @@ export const ModulesPage = () => {
       <div className="border-b border-border/60 bg-card/80 backdrop-blur-md">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div>
-            <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-md bg-primary flex items-center justify-center">
-                <span className="text-primary-foreground font-extrabold text-xs">S</span>
-              </div>
-              <h1 className="text-lg font-extrabold tracking-tight">SPET</h1>
-            </div>
+            <SpetLogo size="default" />
             <p className="text-sm text-muted-foreground mt-0.5">{user?.email}</p>
           </div>
           <Button variant="ghost" onClick={logout} data-testid="logout-button">

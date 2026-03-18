@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { venueAPI, pulseAPI, staffAPI } from '../../services/api';
+import SpetLogo from '../../components/SpetLogo';
 import { ThemeToggle } from '../../components/ThemeToggle';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
@@ -776,12 +777,7 @@ export const VenueSelectPage = () => {
       {/* Header */}
       <header className="h-16 border-b border-border/60 bg-card/80 backdrop-blur-md px-8 flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-md bg-primary flex items-center justify-center">
-              <span className="text-primary-foreground font-extrabold text-xs">S</span>
-            </div>
-            <h1 className="text-lg font-extrabold tracking-tight">SPET</h1>
-          </div>
+          <SpetLogo size="default" />
           {selectedVenue && (
             <>
               <div className="h-5 w-px bg-border" />
