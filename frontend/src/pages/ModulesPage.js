@@ -120,14 +120,14 @@ export const ModulesPage = () => {
             return (
               <Card
                 key={module.id}
-                className="cursor-pointer hover:shadow-lg transition-all hover:scale-105"
+                className="cursor-pointer card-hover"
                 onClick={() => handleModuleClick(module)}
                 data-testid={`module-${module.id}`}
               >
                 <CardHeader>
                   <div className="flex items-start justify-between">
-                    <div className={`p-3 rounded-lg ${module.color} bg-opacity-10`}>
-                      <Icon className={`h-6 w-6 text-${module.color.replace('bg-', '')}`} />
+                    <div className="p-3 rounded-lg bg-primary/10">
+                      <Icon className="h-6 w-6 text-primary" />
                     </div>
                     <Badge variant="secondary">Enabled</Badge>
                   </div>

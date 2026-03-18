@@ -4,7 +4,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* SPET Design System — Premium Dark-First Theme */
+/* SPET Design System — Exact Lovable Tokens */
 @layer base {
   :root {
     --font-family: 'Inter', system-ui, -apple-system, sans-serif;
@@ -13,66 +13,71 @@
 
   /* Light Mode */
   :root, [data-theme="light"] {
-    --background: 210 20% 98%;
+    --background: 220 26% 97%;
     --foreground: 222 47% 11%;
     --card: 0 0% 100%;
     --card-foreground: 222 47% 11%;
     --popover: 0 0% 100%;
     --popover-foreground: 222 47% 11%;
-    --primary: 217 91% 60%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 214 32% 91%;
+    --primary: 262 83% 58%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 220 20% 92%;
     --secondary-foreground: 222 47% 11%;
-    --muted: 210 40% 96%;
-    --muted-foreground: 215 16% 47%;
-    --accent: 217 91% 60%;
-    --accent-foreground: 210 40% 98%;
+    --muted: 220 20% 95%;
+    --muted-foreground: 222 17% 46%;
+    --accent: 262 83% 58%;
+    --accent-foreground: 0 0% 100%;
     --destructive: 0 84% 60%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214 32% 91%;
-    --input: 214 32% 91%;
-    --ring: 217 91% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 220 20% 88%;
+    --input: 220 20% 88%;
+    --ring: 262 83% 58%;
     --radius: 0.5rem;
-    --sidebar-background: 222 47% 6%;
-    --sidebar-foreground: 213 31% 75%;
-    --sidebar-primary: 217 91% 60%;
-    --sidebar-primary-foreground: 210 40% 98%;
-    --sidebar-accent: 217 33% 12%;
-    --sidebar-accent-foreground: 213 31% 75%;
-    --sidebar-border: 217 33% 14%;
-    --sidebar-ring: 217 91% 60%;
+    --sidebar-background: 222 50% 6%;
+    --sidebar-foreground: 221 30% 70%;
+    --sidebar-primary: 262 83% 58%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 223 30% 12%;
+    --sidebar-accent-foreground: 221 30% 70%;
+    --sidebar-border: 223 26% 16%;
+    --sidebar-ring: 262 83% 58%;
   }
 
-  /* Dark Mode — Premium Default */
+  /* Dark Mode — Primary Experience
+     Background: #020617  → 229 84% 5%
+     Card:       #0B1120  → 223 49% 8%
+     Border:     #1E2433  → 223 26% 16%
+     Primary:    #7C3AED  → 262 83% 58%
+  */
   [data-theme="dark"] {
-    --background: 222 47% 5%;
-    --foreground: 210 40% 98%;
-    --card: 222 41% 8%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222 41% 8%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 217 91% 60%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 217 33% 14%;
-    --secondary-foreground: 213 31% 75%;
-    --muted: 217 33% 12%;
-    --muted-foreground: 215 20% 50%;
-    --accent: 217 91% 60%;
-    --accent-foreground: 210 40% 98%;
+    --background: 229 84% 5%;
+    --foreground: 210 40% 96%;
+    --card: 223 49% 8%;
+    --card-foreground: 210 40% 96%;
+    --popover: 223 49% 8%;
+    --popover-foreground: 210 40% 96%;
+    --primary: 262 83% 58%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 223 30% 14%;
+    --secondary-foreground: 215 20% 65%;
+    --muted: 223 30% 12%;
+    --muted-foreground: 215 20% 55%;
+    --accent: 262 83% 58%;
+    --accent-foreground: 0 0% 100%;
     --destructive: 0 63% 31%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217 24% 14%;
-    --input: 217 24% 14%;
-    --ring: 217 91% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 223 26% 16%;
+    --input: 223 26% 16%;
+    --ring: 262 83% 58%;
     --radius: 0.5rem;
-    --sidebar-background: 222 47% 6%;
-    --sidebar-foreground: 213 31% 75%;
-    --sidebar-primary: 217 91% 60%;
-    --sidebar-primary-foreground: 210 40% 98%;
-    --sidebar-accent: 217 33% 12%;
-    --sidebar-accent-foreground: 213 31% 75%;
-    --sidebar-border: 217 24% 14%;
-    --sidebar-ring: 217 91% 60%;
+    --sidebar-background: 229 84% 4%;
+    --sidebar-foreground: 215 20% 65%;
+    --sidebar-primary: 262 83% 58%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 223 30% 12%;
+    --sidebar-accent-foreground: 215 20% 65%;
+    --sidebar-border: 223 26% 16%;
+    --sidebar-ring: 262 83% 58%;
   }
 
   * {
@@ -87,16 +92,21 @@
   }
 }
 
+/* Typography */
 h1, h2, h3, h4, h5, h6 {
-  font-weight: 600;
+  font-weight: 700;
   line-height: 1.2;
   letter-spacing: -0.025em;
 }
 
+h1 { font-weight: 800; letter-spacing: -0.035em; }
+h2 { font-weight: 700; letter-spacing: -0.03em; }
+h3 { font-weight: 600; }
+
 /* Premium Scrollbar */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 
 ::-webkit-scrollbar-track {
@@ -104,47 +114,50 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: hsl(var(--muted-foreground) / 0.25);
+  background: hsl(var(--muted-foreground) / 0.2);
   border-radius: 10px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: hsl(var(--muted-foreground) / 0.4);
+  background: hsl(var(--muted-foreground) / 0.35);
 }
 
-/* Premium glass surfaces */
+/* Glass surfaces */
 .glass-surface {
   background: hsl(var(--card) / 0.7);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
 }
 
-/* Subtle glow effect for primary elements */
+/* Purple glow effect for primary elements — #7C3AED */
+.glow-primary {
+  box-shadow: 0 0 20px hsl(262 83% 58% / 0.15), 0 0 40px hsl(262 83% 58% / 0.05);
+}
 .glow-blue {
-  box-shadow: 0 0 20px hsl(217 91% 60% / 0.15), 0 0 40px hsl(217 91% 60% / 0.05);
+  box-shadow: 0 0 20px hsl(262 83% 58% / 0.15), 0 0 40px hsl(262 83% 58% / 0.05);
 }
 
-/* Smooth transitions for all interactive elements */
+/* Smooth transitions */
 button, a, input, select, textarea {
-  transition: all 0.15s ease;
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
 }
 
-/* Premium focus ring */
+/* Focus ring — purple */
 *:focus-visible {
   outline: 2px solid hsl(var(--ring));
   outline-offset: 2px;
 }
 
-/* Premium card hover effect */
+/* Card hover */
 .card-hover {
-  transition: all 0.2s ease;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 .card-hover:hover {
   border-color: hsl(var(--primary) / 0.3);
-  box-shadow: 0 4px 12px hsl(var(--primary) / 0.08);
+  box-shadow: 0 4px 16px hsl(var(--primary) / 0.08);
 }
 
-/* Stagger animation for lists */
+/* Stagger animation */
 @keyframes fadeInUp {
   from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
@@ -154,8 +167,24 @@ button, a, input, select, textarea {
   animation: fadeInUp 0.3s ease-out forwards;
 }
 
-/* Selection styling */
+/* Selection — purple */
 ::selection {
   background: hsl(var(--primary) / 0.2);
+  color: hsl(var(--foreground));
+}
+
+/* Native select elements — match premium feel */
+select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+  background-position: right 0.5rem center;
+  background-repeat: no-repeat;
+  background-size: 1.25rem;
+  padding-right: 2.25rem;
+  border-radius: 0.5rem;
+}
+
+select option {
+  background: hsl(var(--card));
   color: hsl(var(--foreground));
 }
