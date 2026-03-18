@@ -89,11 +89,16 @@ async def startup_event():
     logger.info("Starting SPETAP API...")
     await connect_mongodb()
     await connect_postgres()
-    # Ensure protected system account exists
-    await ensure_system_account()
-    # Ensure demo tables exist for product demos
+
+    # STEP 1: Ensure schema exists (CREATE TABLE IF NOT EXISTS — safe to run always)
+    from protected_users import startup_protection
+    from database import get_postgres_pool
+    pool = get_postgres_pool()
+    await startup_protection(pool)
+
+    # STEP 2: Ensure demo tables exist for product demos
     await ensure_demo_tables()
-    # Ensure complete demo ecosystem (guests, items, KDS, bar sessions)
+    # STEP 3: Ensure complete demo ecosystem (guests, items, KDS, bar sessions)
     await ensure_demo_ecosystem()
     logger.info("SPETAP API started successfully")
 

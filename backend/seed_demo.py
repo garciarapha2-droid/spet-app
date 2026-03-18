@@ -1,5 +1,13 @@
 #!/usr/bin/env python3
-"""Seed SPETAP with comprehensive demo data for Demo Club."""
+"""Seed SPETAP with comprehensive demo data for Demo Club.
+
+SAFETY RULES:
+  1. NEVER delete or truncate the 'users' table
+  2. NEVER delete or truncate the 'companies' table
+  3. NEVER delete or truncate the 'user_access' table
+  4. Protected accounts (garcia.rapha2@gmail.com, teste@teste.com) are PERMANENT
+  5. Use INSERT ... ON CONFLICT DO NOTHING for idempotent operations
+"""
 import asyncio
 import uuid
 import json

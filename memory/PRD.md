@@ -90,4 +90,13 @@ Build a high-performance POS platform (SPET) inspired by Toast, with role-based 
 - Venue ID: 40a24e04-75b6-435d-bfff-ab0d469ce543
 
 ## Known Limitations
-- PostgreSQL is non-persistent in preview environment (requires re-seed on restart)
+- PostgreSQL is non-persistent in preview environment — but protected users are auto-recovered on every startup via `protected_users.py`
+
+## Protected Users System (CRITICAL)
+- File: `/app/backend/protected_users.py`
+- Runs on every backend startup via `server.py` → `startup_protection(pool)`
+- Guarantees: garcia.rapha2@gmail.com (CEO) and teste@teste.com (USER) ALWAYS exist
+- If users are missing → auto-recreates with correct roles and access
+- If users exist → verifies system flags, does NOT overwrite
+- Schema is auto-initialized via `init_postgres.sql` (CREATE TABLE IF NOT EXISTS)
+- seed_demo.py NEVER deletes users, companies, or user_access tables

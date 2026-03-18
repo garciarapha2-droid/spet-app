@@ -1,5 +1,10 @@
 -- SPETAP Postgres Schema (Billing, Ledger, Transactional)
 -- This handles all financial and subscription data
+--
+-- SAFETY: This file ONLY uses CREATE TABLE IF NOT EXISTS.
+-- It NEVER drops, truncates, or deletes existing data.
+-- Protected user accounts must NEVER be affected by schema changes.
+--
 
 -- Users table
 CREATE TABLE IF NOT EXISTS users (
