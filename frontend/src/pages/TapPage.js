@@ -764,9 +764,15 @@ export const TapPage = () => {
                                 {item.modifiers?.removed?.map(r => (
                                   <span key={r} className="block text-[11px] text-red-500 font-medium">No {r}</span>
                                 ))}
-                                {item.modifiers?.extras?.map(e => (
-                                  <span key={e} className="block text-[11px] text-emerald-500 font-medium">+ {e}</span>
-                                ))}
+                                {item.modifiers?.extras?.map((e, i) => {
+                                  const name = typeof e === 'string' ? e : e.name;
+                                  const price = typeof e === 'object' ? e.price : 0;
+                                  return (
+                                    <span key={i} className="block text-[11px] text-emerald-500 font-medium">
+                                      + {name}{price > 0 && <span className="ml-1">(+${price.toFixed(2)})</span>}
+                                    </span>
+                                  );
+                                })}
                                 {item.notes && (
                                   <span className="block text-[11px] text-muted-foreground italic">{item.notes}</span>
                                 )}

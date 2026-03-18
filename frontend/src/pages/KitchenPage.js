@@ -120,9 +120,13 @@ const TicketCard = ({ ticket, onStatusChange, onSetTime, isDelayed }) => {
               {item.modifiers?.removed?.map((r, ri) => (
                 <div key={`r-${ri}`} className="ml-[30px] text-[11px] text-red-500 font-medium">No {r}</div>
               ))}
-              {item.modifiers?.extras?.map((e, ei) => (
-                <div key={`e-${ei}`} className="ml-[30px] text-[11px] text-emerald-500 font-medium">+ {e}</div>
-              ))}
+              {item.modifiers?.extras?.map((e, ei) => {
+                const name = typeof e === 'string' ? e : e.name;
+                const price = typeof e === 'object' ? e.price : 0;
+                return (
+                  <div key={`e-${ei}`} className="ml-[30px] text-[11px] text-emerald-500 font-medium">+ {name}{price > 0 && ` (+$${price.toFixed(2)})`}</div>
+                );
+              })}
               {item.notes && <div className="ml-[30px] text-[11px] text-muted-foreground italic">{item.notes}</div>}
             </div>
           ))}

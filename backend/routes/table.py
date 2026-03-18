@@ -200,7 +200,7 @@ async def get_table_detail(table_id: str, user: dict = Depends(require_auth)):
             }
 
             rows = await conn.fetch(
-                """SELECT id, item_name, category, unit_price, qty, line_total, is_alcohol, notes, created_at
+                """SELECT id, item_name, category, unit_price, qty, line_total, is_alcohol, notes, modifiers, catalog_item_id, created_at
                    FROM tap_items WHERE tap_session_id = $1 AND voided_at IS NULL ORDER BY created_at""",
                 table["current_session_id"],
             )
@@ -214,6 +214,8 @@ async def get_table_detail(table_id: str, user: dict = Depends(require_auth)):
                     "line_total": float(r["line_total"]),
                     "is_alcohol": r["is_alcohol"],
                     "notes": r["notes"],
+                    "modifiers": _parse_meta(r["modifiers"]) if r["modifiers"] else {},
+                    "catalog_item_id": str(r["catalog_item_id"]) if r["catalog_item_id"] else None,
                 }
                 for r in rows
             ]

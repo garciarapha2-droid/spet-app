@@ -662,7 +662,10 @@ async def update_item_modifiers(
     request: Request,
     user: dict = Depends(require_auth),
 ):
-    """Update modifiers, extras, and notes for an order item."""
+    """Update modifiers, extras, and notes for an order item.
+    Extras can include prices: [{"name": "cheese", "price": 2.0}]
+    Line total is recalculated: base_price * qty + sum(extra prices)
+    """
     pool = get_postgres_pool()
     sid = uuid.UUID(session_id)
     iid = uuid.UUID(item_id)
@@ -681,16 +684,37 @@ async def update_item_modifiers(
             raise HTTPException(400, "Tab is closed")
 
         item = await conn.fetchrow(
-            "SELECT id FROM tap_items WHERE id = $1 AND tap_session_id = $2 AND voided_at IS NULL",
+            "SELECT id, unit_price, qty, line_total FROM tap_items WHERE id = $1 AND tap_session_id = $2 AND voided_at IS NULL",
             iid, sid,
         )
         if not item:
             raise HTTPException(404, "Item not found")
 
+        # Calculate extras total
+        extras = modifiers.get("extras", [])
+        extras_total = 0.0
+        for ext in extras:
+            if isinstance(ext, dict):
+                extras_total += float(ext.get("price", 0))
+
+        # Recalculate line_total: (base_price + extras) * qty
+        base_price = float(item["unit_price"])
+        qty = item["qty"]
+        new_line_total = round((base_price + extras_total) * qty, 2)
+        old_line_total = float(item["line_total"])
+        diff = new_line_total - old_line_total
+
         await conn.execute(
-            "UPDATE tap_items SET modifiers = $1::jsonb, notes = $2 WHERE id = $3",
-            json_mod.dumps(modifiers), notes, iid,
+            "UPDATE tap_items SET modifiers = $1::jsonb, notes = $2, line_total = $3 WHERE id = $4",
+            json_mod.dumps(modifiers), notes, new_line_total, iid,
         )
+
+        # Update session total by the difference
+        if abs(diff) > 0.001:
+            await conn.execute(
+                "UPDATE tap_sessions SET subtotal = subtotal + $1, total = total + $1 WHERE id = $2",
+                diff, sid,
+            )
 
         # Also update corresponding KDS ticket items if any
         await conn.execute(
@@ -699,7 +723,9 @@ async def update_item_modifiers(
             json_mod.dumps(modifiers), notes, iid,
         )
 
-    return {"id": str(iid), "updated": True}
+        new_session_total = await conn.fetchval("SELECT total FROM tap_sessions WHERE id = $1", sid)
+
+    return {"id": str(iid), "updated": True, "line_total": new_line_total, "extras_total": extras_total, "session_total": float(new_session_total)}
 
 
 # ─── Void/remove item from session ────────────────────────────────

@@ -206,21 +206,40 @@ export const TablePage = () => {
   };
 
   const handleIdVerified = async () => {
-    if (!tableDetail?.session?.id) return;
+    if (!tableDetail?.session?.id) {
+      toast.error('No active session');
+      return;
+    }
     const sessionId = tableDetail.session.id;
     const itemToAdd = pendingAlcoholItem;
     setShowIdModal(false);
     setPendingAlcoholItem(null);
-    try { await tapAPI.verifyId(sessionId); } catch {}
+    // Step 1: Mark session as ID verified
+    try {
+      await tapAPI.verifyId(sessionId);
+    } catch (err) {
+      console.error('verifyId failed:', err);
+      // Continue anyway — we still want to add the item
+    }
+    // Step 2: Add the pending alcohol item
     if (itemToAdd) {
       try {
-        const fd = new FormData(); fd.append('item_id', itemToAdd.id); fd.append('qty', '1');
-        await tapAPI.addItem(sessionId, fd);
+        const fd = new FormData();
+        fd.append('item_id', itemToAdd.id);
+        fd.append('qty', '1');
+        const result = await tapAPI.addItem(sessionId, fd);
         toast.success(`${itemToAdd.name} added`);
+        // Reload table detail to reflect changes
         const res = await tableAPI.getTableDetail(selectedTable);
         setTableDetail(res.data);
         await loadTables();
-      } catch { toast.error('Failed to add item'); }
+      } catch (err) {
+        console.error('addItem after verify failed:', err);
+        const msg = err.response?.data?.detail || 'Failed to add item after verification';
+        toast.error(msg);
+      }
+    } else {
+      toast.error('No item to add — try again');
     }
   };
 
@@ -685,9 +704,15 @@ export const TablePage = () => {
                                 {item.modifiers?.removed?.map(r => (
                                   <span key={r} className="block text-[11px] text-red-500 font-medium">No {r}</span>
                                 ))}
-                                {item.modifiers?.extras?.map(e => (
-                                  <span key={e} className="block text-[11px] text-emerald-500 font-medium">+ {e}</span>
-                                ))}
+                                {item.modifiers?.extras?.map((e, i) => {
+                                  const name = typeof e === 'string' ? e : e.name;
+                                  const price = typeof e === 'object' ? e.price : 0;
+                                  return (
+                                    <span key={i} className="block text-[11px] text-emerald-500 font-medium">
+                                      + {name}{price > 0 && <span className="ml-1">(+${price.toFixed(2)})</span>}
+                                    </span>
+                                  );
+                                })}
                                 {item.notes && (
                                   <span className="block text-[11px] text-muted-foreground italic">{item.notes}</span>
                                 )}
@@ -813,13 +838,13 @@ export const TablePage = () => {
                     <div className="space-y-3 w-full max-w-xs text-left" data-testid="open-table-form">
                       <Input value={guestName} onChange={e => setGuestName(e.target.value)} placeholder="Guest name" autoFocus data-testid="open-table-guest-name" />
                       <select value={selectedServer} onChange={e => setSelectedServer(e.target.value)}
-                        className={`w-full h-10 rounded-md border bg-background px-3 text-sm ${!selectedServer ? 'border-red-500/50 ring-1 ring-red-500/20' : 'border-input'}`}
+                        className={`w-full h-10 rounded-md border bg-background px-3 text-sm ${!selectedServer ? 'border-border' : 'border-input'}`}
                         data-testid="open-table-server">
                         <option value="">Select server (required)...</option>
                         {barmen.map(b => <option key={b.id} value={b.name}>{b.name}</option>)}
                       </select>
                       <select value={seatCount} onChange={e => setSeatCount(e.target.value)}
-                        className={`w-full h-10 rounded-md border bg-background px-3 text-sm ${!seatCount ? 'border-red-500/50 ring-1 ring-red-500/20' : 'border-input'}`}
+                        className={`w-full h-10 rounded-md border bg-background px-3 text-sm ${!seatCount ? 'border-border' : 'border-input'}`}
                         data-testid="open-table-seats">
                         <option value="">Seats (required)...</option>
                         {[1,2,3,4,5,6,7,8,10,12].map(n => <option key={n} value={n}>{n} {n === 1 ? 'seat' : 'seats'}</option>)}
