@@ -109,12 +109,12 @@ async def ensure_system_account():
     vid = "40a24e04-75b6-435d-bfff-ab0d469ce543"
 
     async with pool.acquire() as conn:
-        # 1. Tester account (platform_admin)
+        # 1. Tester account (role=USER, system account)
         user = await conn.fetchrow("SELECT id FROM users WHERE email = 'teste@teste.com'")
         if not user:
             hashed = hash_password("12345")
             user_row = await conn.fetchrow(
-                "INSERT INTO users (name, email, password_hash, status, created_at, updated_at) VALUES ('Admin', 'teste@teste.com', $1, 'active', $2, $2) RETURNING id",
+                "INSERT INTO users (name, email, password_hash, role, is_system_account, status, created_at, updated_at) VALUES ('Test User', 'teste@teste.com', $1, 'USER', TRUE, 'active', $2, $2) RETURNING id",
                 hashed, now,
             )
             uid = user_row["id"]
@@ -130,15 +130,15 @@ async def ensure_system_account():
             )
             logger.info("Protected system account teste@teste.com recreated")
         else:
-            await conn.execute("UPDATE users SET status = 'active' WHERE email = 'teste@teste.com'")
+            await conn.execute("UPDATE users SET status = 'active', role = 'USER', is_system_account = TRUE, name = 'Test User' WHERE email = 'teste@teste.com'")
             logger.info("Protected system account teste@teste.com verified")
 
-        # 2. CEO account (garcia.rapha2@gmail.com)
+        # 2. CEO account (role=CEO, system account)
         ceo_user = await conn.fetchrow("SELECT id FROM users WHERE email = 'garcia.rapha2@gmail.com'")
         if not ceo_user:
             ceo_hashed = hash_password("12345")
             ceo_row = await conn.fetchrow(
-                "INSERT INTO users (name, email, password_hash, status, created_at, updated_at) VALUES ('CEO Garcia', 'garcia.rapha2@gmail.com', $1, 'active', $2, $2) RETURNING id",
+                "INSERT INTO users (name, email, password_hash, role, is_system_account, status, created_at, updated_at) VALUES ('Raphael Garcia', 'garcia.rapha2@gmail.com', $1, 'CEO', TRUE, 'active', $2, $2) RETURNING id",
                 ceo_hashed, now,
             )
             ceo_uid = ceo_row["id"]
@@ -154,7 +154,7 @@ async def ensure_system_account():
             )
             logger.info("Protected CEO account garcia.rapha2@gmail.com created")
         else:
-            await conn.execute("UPDATE users SET status = 'active' WHERE email = 'garcia.rapha2@gmail.com'")
+            await conn.execute("UPDATE users SET status = 'active', role = 'CEO', is_system_account = TRUE, name = 'Raphael Garcia' WHERE email = 'garcia.rapha2@gmail.com'")
             logger.info("Protected CEO account garcia.rapha2@gmail.com verified")
 
 

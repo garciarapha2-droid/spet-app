@@ -663,7 +663,7 @@ function InsideNowPanel({ venueId }) {
 /* ─── Main Page ─────────────────────────────────────────────────── */
 export const VenueSelectPage = () => {
   const navigate = useNavigate();
-  const { logout, user } = useAuth();
+  const { logout, user, isCEO } = useAuth();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [selectedVenue, setSelectedVenue] = useState(null);
@@ -799,6 +799,7 @@ export const VenueSelectPage = () => {
                 <div className="absolute top-full right-0 mt-1 bg-card border border-border rounded-lg shadow-lg z-50 min-w-[200px] py-1" data-testid="modules-menu">
                   {data.modules
                     .filter(m => m.enabled)
+                    .filter(m => m.key !== 'ceo' || isCEO)
                     .map(mod => {
                       const Icon = MODULE_ICONS[mod.key] || Sparkles;
                       return (

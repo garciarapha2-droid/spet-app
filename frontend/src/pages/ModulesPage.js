@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 
 export const ModulesPage = () => {
-  const { user, logout } = useAuth();
+  const { user, logout, isCEO } = useAuth();
   const navigate = useNavigate();
 
   const modules = [
@@ -111,7 +111,9 @@ export const ModulesPage = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {modules.map((module) => {
+          {modules
+            .filter(m => m.id !== 'ceo' || isCEO)
+            .map((module) => {
             const Icon = module.icon;
             return (
               <Card

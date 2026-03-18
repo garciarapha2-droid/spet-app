@@ -15,9 +15,11 @@ PROTECTED_SYSTEM_ACCOUNTS = {"teste@teste.com", "garcia.rapha2@gmail.com"}
 
 def _build_token_and_response(user_row, access_roles):
     """Shared helper to build JWT + LoginResponse for both login and signup."""
+    user_role = user_row.get("role", "USER") if hasattr(user_row, 'get') else "USER"
     token_data = {
         "sub": str(user_row["id"]),
         "email": user_row["email"],
+        "role": user_role,
         "roles": access_roles,
     }
     access_token = create_access_token(token_data)
@@ -27,6 +29,7 @@ def _build_token_and_response(user_row, access_roles):
             id=str(user_row["id"]),
             email=user_row["email"],
             name=user_row.get("name"),
+            role=user_role,
             status=user_row["status"],
             created_at=user_row["created_at"],
         ),
@@ -39,7 +42,7 @@ async def login(request: LoginRequest):
     pool = get_postgres_pool()
     async with pool.acquire() as conn:
         user = await conn.fetchrow(
-            "SELECT id, name, email, password_hash, status, created_at FROM users WHERE email = $1",
+            "SELECT id, name, email, password_hash, role, status, created_at FROM users WHERE email = $1",
             request.email.lower(),
         )
 
@@ -174,7 +177,7 @@ async def get_current_user_info(user: dict = Depends(require_auth)):
 
     async with pool.acquire() as conn:
         user_row = await conn.fetchrow(
-            "SELECT id, name, email, status, created_at FROM users WHERE id = $1::uuid",
+            "SELECT id, name, email, role, status, created_at FROM users WHERE id = $1::uuid",
             user["sub"],
         )
         if not user_row:
@@ -212,6 +215,7 @@ async def get_current_user_info(user: dict = Depends(require_auth)):
         "id": str(user_row["id"]),
         "name": user_row["name"],
         "email": user_row["email"],
+        "role": user_row.get("role", "USER"),
         "status": user_row["status"],
         "created_at": user_row["created_at"].isoformat() if user_row["created_at"] else None,
         "roles": access_roles,
@@ -225,10 +229,10 @@ async def delete_user(user_id: str, user: dict = Depends(require_auth)):
     pool = get_postgres_pool()
     uid = uuid.UUID(user_id)
     async with pool.acquire() as conn:
-        target = await conn.fetchrow("SELECT id, email FROM users WHERE id = $1", uid)
+        target = await conn.fetchrow("SELECT id, email, is_system_account FROM users WHERE id = $1", uid)
         if not target:
             raise HTTPException(status_code=404, detail="User not found")
-        if target["email"] in PROTECTED_SYSTEM_ACCOUNTS:
+        if target["email"] in PROTECTED_SYSTEM_ACCOUNTS or target.get("is_system_account"):
             raise HTTPException(status_code=403, detail="System account cannot be deleted")
         await conn.execute("DELETE FROM user_access WHERE user_id = $1", uid)
         await conn.execute("DELETE FROM users WHERE id = $1", uid)
@@ -253,7 +257,7 @@ async def create_handoff(user: dict = Depends(require_auth)):
 
     async with pool.acquire() as conn:
         user_row = await conn.fetchrow(
-            "SELECT id, name, email, password_hash, status, created_at FROM users WHERE id = $1::uuid",
+            "SELECT id, name, email, password_hash, role, status, created_at FROM users WHERE id = $1::uuid",
             user["sub"],
         )
         if not user_row:

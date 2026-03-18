@@ -3,7 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { Toaster } from './components/ui/sonner';
-import { ProtectedRoute } from './components/ProtectedRoute';
+import { ProtectedRoute, CEORoute } from './components/ProtectedRoute';
 
 // Pages
 import { LoginPage } from './pages/LoginPage';
@@ -148,9 +148,9 @@ function App() {
               <Route
                 path="/ceo"
                 element={
-                  <ProtectedRoute>
+                  <CEORoute>
                     <CEOPage />
-                  </ProtectedRoute>
+                  </CEORoute>
                 }
               />
               <Route path="/" element={<Navigate to="/venue/home" replace />} />

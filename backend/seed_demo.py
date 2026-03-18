@@ -38,19 +38,42 @@ async def seed():
     hashed = hash_password("12345")
 
     async with pool.acquire() as conn:
-        # Check if user exists
+        # === SYSTEM ACCOUNT 1: Test User (role=USER) ===
         user = await conn.fetchrow("SELECT id FROM users WHERE email = 'teste@teste.com'")
         if not user:
             user_row = await conn.fetchrow(
-                """INSERT INTO users (email, password_hash, status, created_at, updated_at)
-                   VALUES ('teste@teste.com', $1, 'active', $2, $2) RETURNING id""",
+                """INSERT INTO users (name, email, password_hash, role, is_system_account, status, created_at, updated_at)
+                   VALUES ('Test User', 'teste@teste.com', $1, 'USER', TRUE, 'active', $2, $2) RETURNING id""",
                 hashed, now,
             )
             user_id = user_row["id"]
-            print(f"  Created user: teste@teste.com (id={user_id})")
+            print(f"  Created SYSTEM user: teste@teste.com (role=USER, id={user_id})")
         else:
             user_id = user["id"]
-            print(f"  User exists: teste@teste.com (id={user_id})")
+            # Ensure role and system flag are set
+            await conn.execute(
+                "UPDATE users SET role='USER', is_system_account=TRUE, name='Test User' WHERE id=$1",
+                user_id,
+            )
+            print(f"  User exists: teste@teste.com (id={user_id}) — ensured role=USER, system=TRUE")
+
+        # === SYSTEM ACCOUNT 2: CEO (role=CEO) ===
+        ceo_user = await conn.fetchrow("SELECT id FROM users WHERE email = 'garcia.rapha2@gmail.com'")
+        if not ceo_user:
+            ceo_row = await conn.fetchrow(
+                """INSERT INTO users (name, email, password_hash, role, is_system_account, status, created_at, updated_at)
+                   VALUES ('Raphael Garcia', 'garcia.rapha2@gmail.com', $1, 'CEO', TRUE, 'active', $2, $2) RETURNING id""",
+                hashed, now,
+            )
+            ceo_id = ceo_row["id"]
+            print(f"  Created SYSTEM user: garcia.rapha2@gmail.com (role=CEO, id={ceo_id})")
+        else:
+            ceo_id = ceo_user["id"]
+            await conn.execute(
+                "UPDATE users SET role='CEO', is_system_account=TRUE, name='Raphael Garcia' WHERE id=$1",
+                ceo_id,
+            )
+            print(f"  User exists: garcia.rapha2@gmail.com (id={ceo_id}) — ensured role=CEO, system=TRUE")
 
         # Company
         company = await conn.fetchrow("SELECT id FROM companies WHERE id = $1::uuid", uuid.UUID(COMPANY_ID))
@@ -62,7 +85,7 @@ async def seed():
             )
             print("  Created company: Demo Club Inc.")
 
-        # User access (owner + manager + platform_admin)
+        # User access for test user (platform_admin for testing)
         existing_access = await conn.fetchrow(
             "SELECT id FROM user_access WHERE user_id = $1 AND company_id = $2::uuid",
             user_id, uuid.UUID(COMPANY_ID),
@@ -74,7 +97,21 @@ async def seed():
                 user_id, uuid.UUID(COMPANY_ID), uuid.UUID(VENUE_ID),
                 json.dumps({"HOST_COLLECT_DOB": True, "kds": True}), now,
             )
-            print("  Created user access: platform_admin")
+            print("  Created user access for test user: platform_admin")
+
+        # User access for CEO
+        ceo_access = await conn.fetchrow(
+            "SELECT id FROM user_access WHERE user_id = $1 AND company_id = $2::uuid",
+            ceo_id, uuid.UUID(COMPANY_ID),
+        )
+        if not ceo_access:
+            await conn.execute(
+                """INSERT INTO user_access (user_id, company_id, venue_id, role, permissions, created_at)
+                   VALUES ($1, $2::uuid, $3::uuid, 'platform_admin', $4::jsonb, $5)""",
+                ceo_id, uuid.UUID(COMPANY_ID), uuid.UUID(VENUE_ID),
+                json.dumps({"HOST_COLLECT_DOB": True, "kds": True, "ceo": True}), now,
+            )
+            print("  Created user access for CEO: platform_admin")
 
     # ─── 2. MongoDB: Venue Config ──────────────────────────
     await db.venue_configs.update_one(

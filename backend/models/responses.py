@@ -7,6 +7,7 @@ class UserResponse(BaseModel):
     id: str
     email: str
     name: Optional[str] = None
+    role: str = "USER"
     status: str
     created_at: datetime
 

@@ -7,6 +7,8 @@ CREATE TABLE IF NOT EXISTS users (
     name VARCHAR(255),
     email VARCHAR(255) UNIQUE NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
+    role VARCHAR(20) DEFAULT 'USER' NOT NULL,
+    is_system_account BOOLEAN DEFAULT FALSE NOT NULL,
     status VARCHAR(50) DEFAULT 'active',
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW(),

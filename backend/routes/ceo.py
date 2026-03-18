@@ -10,6 +10,18 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
+async def require_ceo(user: dict = Depends(require_auth)):
+    """Ensure the authenticated user has the CEO role."""
+    pool = get_postgres_pool()
+    async with pool.acquire() as conn:
+        row = await conn.fetchrow(
+            "SELECT role FROM users WHERE id = $1::uuid", user["sub"]
+        )
+    if not row or row["role"] != "CEO":
+        raise HTTPException(status_code=403, detail="CEO access required")
+    return user
+
+
 def _today_start():
     return datetime.combine(date.today(), datetime.min.time()).replace(tzinfo=timezone.utc)
 
@@ -47,7 +59,7 @@ async def _get_all_venue_ids(pool):
 
 # ─── CEO COMPANY HEALTH ──────────────────────────────────────────
 @router.get("/health")
-async def get_company_health(user: dict = Depends(require_auth)):
+async def get_company_health(user: dict = Depends(require_ceo)):
     """CEO KPIs — MRR, Revenue, Profit, Companies, Venues, Churn, Activation."""
     pool = get_postgres_pool()
     today = _today_start()
@@ -119,7 +131,7 @@ async def get_company_health(user: dict = Depends(require_auth)):
 
 # ─── CEO KPI BREAKDOWN ───────────────────────────────────────────
 @router.get("/kpi-breakdown")
-async def kpi_breakdown(kpi: str, user: dict = Depends(require_auth)):
+async def kpi_breakdown(kpi: str, user: dict = Depends(require_ceo)):
     """Drill-down for CEO KPI cards: mrr, gross_revenue, net_profit."""
     pool = get_postgres_pool()
     db = get_mongo_db()
@@ -186,7 +198,7 @@ async def kpi_breakdown(kpi: str, user: dict = Depends(require_auth)):
 
 # ─── REVENUE VS PROFIT ───────────────────────────────────────────
 @router.get("/revenue")
-async def get_revenue_chart(user: dict = Depends(require_auth), period: str = "month"):
+async def get_revenue_chart(user: dict = Depends(require_ceo), period: str = "month"):
     """Revenue vs Profit chart data."""
     pool = get_postgres_pool()
     venue_ids = await _get_all_venue_ids(pool)
@@ -227,7 +239,7 @@ async def get_revenue_chart(user: dict = Depends(require_auth), period: str = "m
 
 # ─── TARGETS / GOALS ─────────────────────────────────────────────
 @router.get("/targets")
-async def get_targets(user: dict = Depends(require_auth)):
+async def get_targets(user: dict = Depends(require_ceo)):
     """Get CEO targets and progress."""
     db = get_mongo_db()
     pool = get_postgres_pool()
@@ -287,7 +299,7 @@ async def get_targets(user: dict = Depends(require_auth)):
 
 @router.post("/targets")
 async def update_targets(
-    user: dict = Depends(require_auth),
+    user: dict = Depends(require_ceo),
     weekly_value: float = Form(None),
     weekly_type: str = Form(None),
     monthly_value: float = Form(None),
@@ -318,7 +330,7 @@ async def update_targets(
 
 # ─── ACTIVE COMPANIES & VENUES ────────────────────────────────────
 @router.get("/companies")
-async def get_companies(user: dict = Depends(require_auth)):
+async def get_companies(user: dict = Depends(require_ceo)):
     """Active companies with venues, MRR, module status."""
     pool = get_postgres_pool()
     db = get_mongo_db()
@@ -357,7 +369,7 @@ async def get_companies(user: dict = Depends(require_auth)):
 
 # ─── MODULE ADOPTION ──────────────────────────────────────────────
 @router.get("/modules")
-async def get_module_adoption(user: dict = Depends(require_auth)):
+async def get_module_adoption(user: dict = Depends(require_ceo)):
     """Module adoption metrics."""
     db = get_mongo_db()
     pool = get_postgres_pool()
@@ -389,7 +401,7 @@ async def get_module_adoption(user: dict = Depends(require_auth)):
 
 # ─── RISK & ALERTS ────────────────────────────────────────────────
 @router.get("/alerts")
-async def get_risk_alerts(user: dict = Depends(require_auth)):
+async def get_risk_alerts(user: dict = Depends(require_ceo)):
     """Risk alerts — low usage, no revenue, high voids."""
     pool = get_postgres_pool()
     db = get_mongo_db()
@@ -423,7 +435,7 @@ async def get_risk_alerts(user: dict = Depends(require_auth)):
 
 # ─── GROWTH PIPELINE ──────────────────────────────────────────────
 @router.get("/pipeline")
-async def get_growth_pipeline(user: dict = Depends(require_auth)):
+async def get_growth_pipeline(user: dict = Depends(require_ceo)):
     """Growth funnel."""
     pool = get_postgres_pool()
     venue_ids = await _get_all_venue_ids(pool)
@@ -470,7 +482,7 @@ async def update_company_modules(
     user_id: str,
     venue_id: str = Form(...),
     modules: str = Form(...),
-    user: dict = Depends(require_auth),
+    user: dict = Depends(require_ceo),
 ):
     """Toggle modules for a company's venue. modules = comma-separated list."""
     db = get_mongo_db()
@@ -491,7 +503,7 @@ async def update_company_modules(
 async def update_company_status(
     user_id: str,
     status: str = Form(...),
-    user: dict = Depends(require_auth),
+    user: dict = Depends(require_ceo),
 ):
     """Update company status: active, suspended, pending."""
     pool = get_postgres_pool()
@@ -510,7 +522,7 @@ PROTECTED_SYSTEM_ACCOUNTS = {"teste@teste.com", "garcia.rapha2@gmail.com"}
 
 
 @router.get("/users")
-async def list_users(user: dict = Depends(require_auth)):
+async def list_users(user: dict = Depends(require_ceo)):
     """List all users with their roles and venue access."""
     pool = get_postgres_pool()
     async with pool.acquire() as conn:
@@ -548,7 +560,7 @@ async def create_user(
     venue_id: str = Form(None),
     company_id: str = Form(None),
     permissions: str = Form("{}"),
-    user: dict = Depends(require_auth),
+    user: dict = Depends(require_ceo),
 ):
     """Create a new user from the CEO panel."""
     from utils.auth import hash_password
@@ -583,7 +595,7 @@ async def update_user(
     company_id: str = Form(None),
     permissions: str = Form(None),
     status: str = Form(None),
-    user: dict = Depends(require_auth),
+    user: dict = Depends(require_ceo),
 ):
     """Update user details."""
     pool = get_postgres_pool()
@@ -633,7 +645,7 @@ async def update_user(
 
 
 @router.delete("/users/{user_id}")
-async def delete_ceo_user(user_id: str, user: dict = Depends(require_auth)):
+async def delete_ceo_user(user_id: str, user: dict = Depends(require_ceo)):
     """Delete or deactivate a user from CEO panel."""
     pool = get_postgres_pool()
     uid = uuid.UUID(user_id)

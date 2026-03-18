@@ -15,3 +15,19 @@ export const ProtectedRoute = ({ children }) => {
 
   return isAuthenticated ? children : <Navigate to="/login" replace />;
 };
+
+export const CEORoute = ({ children }) => {
+  const { isAuthenticated, loading, isCEO } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) return <Navigate to="/login" replace />;
+  if (!isCEO) return <Navigate to="/venue/home" replace />;
+  return children;
+};
