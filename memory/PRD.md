@@ -4,9 +4,10 @@
 Build a high-performance POS platform (SPET) inspired by Toast, with role-based access, operational screens for Kitchen, Tap, Table, and Manager dashboards.
 
 ## Architecture
-- **Lovable** = public experience (landing, signup, login, checkout)
-- **Emergent** = protected SaaS app (no public access)
-- Unauthenticated users → redirect to Lovable (REACT_APP_LOVABLE_LOGIN_URL)
+- **Lovable** = public experience (landing, signup, login, checkout) — optional external integration
+- **Emergent** = self-contained SaaS app with internal login
+- ProtectedRoute redirects unauthenticated users to internal /login page
+- Auth handoff endpoint at /auth/handoff still available for Lovable integration
 
 ## Tech Stack
 - Frontend: React, Tailwind CSS, Shadcn/UI, Lucide Icons
@@ -17,9 +18,10 @@ Build a high-performance POS platform (SPET) inspired by Toast, with role-based 
 
 ## Completed Features
 
-### Architecture: Lovable/Emergent Separation
-- Removed login/signup/landing pages from Emergent
-- ProtectedRoute redirects to Lovable login
+### Architecture: Standalone + Lovable Compatible
+- Internal login page at /login (works standalone)
+- ProtectedRoute uses React Router Navigate (no external redirects)
+- Auth handoff endpoint preserved for Lovable integration
 - Auth backend intact (JWT + RBAC)
 
 ### Phase 1-2: Kitchen KDS + Menu Grid
@@ -27,51 +29,41 @@ Build a high-performance POS platform (SPET) inspired by Toast, with role-based 
 
 ### Phase 3: Item Modifiers & Notes + Priced Extras
 - ItemCustomizeModal with remove/add ingredients, extras, notes
-- **Extras support pricing**: {name: "cheese", price: 2.00}
+- Extras support pricing: {name: "cheese", price: 2.00}
 - Line total recalculated: (base_price + extras_total) * qty
-- Session total updated automatically
-- Backward compatible with string-only extras
-- Prices shown in order summary, kitchen tickets, and bill
 
 ### ID Verification (Fixed)
-- TABLE: Click alcohol item → modal appears → check checkbox → confirm → item added
-- TAP: Age verification modal (ShieldCheck "Confirm 21+") for alcohol items
-- After first verification, subsequent alcohol items add directly
-- Full error handling with explicit toast messages
+- TABLE: Click alcohol item → modal → checkbox → confirm → item added
+- TAP: Age verification modal for alcohol items
 
 ### UI/UX Color System Upgrade (Completed - March 2026)
-- **Soft tinted backgrounds**: Category colors use opacity-based Tailwind classes (e.g., bg-amber-500/[0.06])
-- **Colored icons**: Category icons use vibrant colors (amber, pink, orange, emerald, etc.)
-- **Neutral bases**: Card backgrounds, borders use neutral foreground/muted colors
-- **Purple selection border**: Active tab uses border-[#6D5DFC]
-- **CSS Variables**: .cat-beers, .cat-cocktails, etc. defined in index.css with light/dark mode variants
-- **Consistent across TapPage and TablePage**
-- **Table status colors**: Free=emerald borders/text, Busy=neutral foreground
-- Tested and validated (iteration_56 - 100% pass rate)
+- Soft tinted backgrounds with opacity-based Tailwind classes
+- Colored icons per category
+- Neutral base colors, purple selection border
+- CSS Variables for light/dark mode
+- Tested iteration_56: 100% pass
+
+### Critical 404 Fix (March 2026)
+- Restored internal login page (was redirecting to broken Lovable URL)
+- ProtectedRoute now uses React Router Navigate to /login
+- CEORoute also uses Navigate (no window.location.href)
+- App loads correctly from preview URL
 
 ### Protected Users System
 - Auto-recovery on every backend startup
 - garcia.rapha2@gmail.com (CEO) + teste@teste.com always exist
 
-### Table Mode Server Consistency (Fixed)
-- Top-level server selector is the single source of truth
-- Per-table server assignment dropdown REMOVED
-- Server name shown as read-only info on table cards
-- All table operations use the top-level selected server
+### Table Mode Server Consistency
+- Top-level server selector is single source of truth
 
 ### Manager Panel
-- Tips view with server detail table
-- Menu list/kanban toggle
-- Settings with venue creation
-- Tables by Server with WebSocket + polling
+- Tips view, Menu toggle, Settings, Tables by Server
 
-## Upcoming Tasks (After Approval)
-- Manager Panel refinement (P1)
-- Server History View (P2)
-- PWA support
-- Live Activity Feed, Per-Event Dashboard
-- KDS/Bar routing, Push notifications
-- Stripe Webhooks, Offline-First
+## Upcoming Tasks
+- P1: Manager Panel refinement
+- P2: Server History View
+- PWA support, Live Activity Feed, Per-Event Dashboard
+- KDS/Bar routing, Push notifications, Stripe Webhooks, Offline-First
 
 ## Test Credentials
 - CEO: garcia.rapha2@gmail.com / 12345
@@ -80,12 +72,7 @@ Build a high-performance POS platform (SPET) inspired by Toast, with role-based 
 
 ## Key API Endpoints
 - POST /api/auth/login
-- PUT /api/tap/session/{sid}/item/{iid} — update modifiers with priced extras
-- POST /api/tap/session/{sid}/verify-id — age/ID verification
+- PUT /api/tap/session/{sid}/item/{iid}
+- POST /api/tap/session/{sid}/verify-id
 - GET /api/manager/tips-detail
 - POST /api/venue/create-venue
-
-## Known Environment Constraints
-- PostgreSQL is non-persistent in preview environment
-- protected_users.py runs on startup to ensure schema + users exist
-- Demo data is re-seeded on startup when sessions are low

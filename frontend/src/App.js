@@ -5,7 +5,8 @@ import { ThemeProvider } from './contexts/ThemeContext';
 import { Toaster } from './components/ui/sonner';
 import { ProtectedRoute, CEORoute } from './components/ProtectedRoute';
 
-// Pages — Internal SaaS app only (no public pages)
+// Pages
+import { LoginPage } from './pages/LoginPage';
 import { AuthHandoffPage } from './pages/AuthHandoffPage';
 import { VenueSelectPage } from './pages/venue/VenueHomePage';
 import { PulseEntryPage } from './pages/pulse/PulseEntryPage';
@@ -29,7 +30,8 @@ function App() {
         <BrowserRouter>
           <div className="App">
             <Routes>
-              {/* Auth handoff — Lovable redirects here with a code */}
+              {/* Auth routes */}
+              <Route path="/login" element={<LoginPage />} />
               <Route path="/auth/handoff" element={<AuthHandoffPage />} />
 
               {/* Protected internal routes */}

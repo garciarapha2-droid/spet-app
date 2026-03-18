@@ -1,7 +1,6 @@
 import React from 'react';
+import { Navigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-
-const LOVABLE_LOGIN = process.env.REACT_APP_LOVABLE_LOGIN_URL || 'https://spet.lovable.app/login';
 
 export const ProtectedRoute = ({ children }) => {
   const { isAuthenticated, loading } = useAuth();
@@ -15,8 +14,7 @@ export const ProtectedRoute = ({ children }) => {
   }
 
   if (!isAuthenticated) {
-    window.location.href = LOVABLE_LOGIN;
-    return null;
+    return <Navigate to="/login" replace />;
   }
 
   return children;
@@ -34,14 +32,11 @@ export const CEORoute = ({ children }) => {
   }
 
   if (!isAuthenticated) {
-    window.location.href = LOVABLE_LOGIN;
-    return null;
+    return <Navigate to="/login" replace />;
   }
 
   if (!isCEO) {
-    // Redirect non-CEO users to venue home
-    window.location.href = '/venue/home';
-    return null;
+    return <Navigate to="/venue/home" replace />;
   }
 
   return children;
