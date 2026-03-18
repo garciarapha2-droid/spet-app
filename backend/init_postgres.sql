@@ -212,6 +212,7 @@ CREATE TABLE IF NOT EXISTS tap_items (
     is_alcohol BOOLEAN DEFAULT FALSE,
     seat_number INTEGER,
     notes TEXT,
+    modifiers JSONB DEFAULT '{}'::jsonb,
     created_by_user_id UUID REFERENCES users(id),
     created_at TIMESTAMPTZ DEFAULT NOW(),
     voided_at TIMESTAMPTZ,
@@ -322,6 +323,7 @@ CREATE TABLE IF NOT EXISTS kds_ticket_items (
     item_name VARCHAR(255) NOT NULL,
     qty INTEGER NOT NULL DEFAULT 1,
     notes TEXT,
+    modifiers JSONB DEFAULT '{}'::jsonb,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 

@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { Input } from '../components/ui/input';
 import { Button } from '../components/ui/button';
 import { ThemeToggle } from '../components/ThemeToggle';
+import { ItemCustomizeModal } from '../components/ItemCustomizeModal';
 import {
   ArrowLeft, Plus, X, CreditCard, Banknote, Beer, User, ChevronDown, ScanLine,
   Home, LogOut, LayoutGrid, Pencil, Trash2, Check, Receipt, Camera, Upload, ShieldCheck, Video, Lock,
@@ -128,6 +129,9 @@ export const TapPage = () => {
   const [pendingConfirmSession, setPendingConfirmSession] = useState(null);
   const [paymentProcessed, setPaymentProcessed] = useState(false);
   const [orderConfirmed, setOrderConfirmed] = useState(false);
+  const [customizingItem, setCustomizingItem] = useState(null);
+
+  const getToken = () => localStorage.getItem('spetap_token');
 
   const loadBarmen = useCallback(async () => {
     try { const res = await staffAPI.getBarmen(VENUE_ID()); setBarmen(res.data.barmen || []); } catch {}
@@ -377,6 +381,15 @@ export const TapPage = () => {
 
   const filteredItems = catalog.filter(i => i.category === selectedCategory).sort((a, b) => a.name.localeCompare(b.name));
 
+  const reloadSession = async () => {
+    if (!activeSessionId) return;
+    try {
+      const res = await tapAPI.getSession(activeSessionId);
+      setActiveSession(res.data);
+    } catch {}
+    await loadData();
+  };
+
   if (moduleBlocked) {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center" data-testid="module-blocked">
@@ -393,6 +406,15 @@ export const TapPage = () => {
       {showCamera && <CameraModal onCapture={file => setCustomPhoto(file)} onClose={() => setShowCamera(false)} />}
       {pendingConfirmSession && (
         <GuestConfirmModal session={pendingConfirmSession} onConfirm={handleConfirmGuest} onCancel={handleCancelConfirm} />
+      )}
+      {customizingItem && activeSessionId && (
+        <ItemCustomizeModal
+          item={customizingItem}
+          sessionId={activeSessionId}
+          token={getToken()}
+          onClose={() => setCustomizingItem(null)}
+          onSaved={reloadSession}
+        />
       )}
 
       {/* ── Header ── */}
@@ -661,16 +683,39 @@ export const TapPage = () => {
                 {(activeSession.items || []).length === 0 ? (
                   <p className="text-sm text-muted-foreground py-8 text-center">No items — add from menu</p>
                 ) : activeSession.items.map(item => (
-                  <div key={item.id} className="flex items-center gap-2.5 py-2.5 px-3 rounded-lg hover:bg-muted/30 text-sm group">
-                    <span className="w-6 h-6 rounded bg-primary/10 text-primary text-xs font-bold flex items-center justify-center flex-shrink-0">{item.qty}</span>
-                    <span className="font-medium flex-1 truncate">{item.name}</span>
-                    <span className="font-bold text-sm">${item.line_total.toFixed(2)}</span>
-                    {activeSession.status === 'open' && (
-                      <button onClick={() => handleVoidItem(item.id)}
-                        className="p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-opacity"
-                        data-testid={`void-item-${item.id}`}>
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
+                  <div key={item.id} className="py-2.5 px-3 rounded-lg hover:bg-muted/30 text-sm group">
+                    <div className="flex items-center gap-2.5">
+                      <span className="w-6 h-6 rounded bg-primary/10 text-primary text-xs font-bold flex items-center justify-center flex-shrink-0">{item.qty}</span>
+                      <span className="font-medium flex-1 truncate">{item.name}</span>
+                      <span className="font-bold text-sm">${item.line_total.toFixed(2)}</span>
+                      {activeSession.status === 'open' && (
+                        <>
+                          <button onClick={() => setCustomizingItem(item)}
+                            className="p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-primary/10 text-muted-foreground hover:text-primary transition-opacity"
+                            data-testid={`customize-item-${item.id}`}>
+                            <Pencil className="h-3.5 w-3.5" />
+                          </button>
+                          <button onClick={() => handleVoidItem(item.id)}
+                            className="p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-opacity"
+                            data-testid={`void-item-${item.id}`}>
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </>
+                      )}
+                    </div>
+                    {/* Show modifiers/extras/notes under item */}
+                    {(item.modifiers?.removed?.length > 0 || item.modifiers?.extras?.length > 0 || item.notes) && (
+                      <div className="ml-[34px] mt-1 space-y-0.5">
+                        {item.modifiers?.removed?.map(r => (
+                          <span key={r} className="block text-[11px] text-red-400 italic">No {r}</span>
+                        ))}
+                        {item.modifiers?.extras?.map(e => (
+                          <span key={e} className="block text-[11px] text-green-400 italic">Extra {e}</span>
+                        ))}
+                        {item.notes && (
+                          <span className="block text-[11px] text-muted-foreground italic">{item.notes}</span>
+                        )}
+                      </div>
                     )}
                   </div>
                 ))}

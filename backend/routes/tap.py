@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Depends, Form, UploadFile, File
+from fastapi import APIRouter, HTTPException, Depends, Form, UploadFile, File, Request
 from middleware.auth_middleware import require_auth
 from database import get_mongo_db, get_postgres_pool
 from ws_manager import ws_manager
@@ -99,8 +99,15 @@ async def add_catalog_item(
     price: float = Form(...),
     is_alcohol: bool = Form(False),
     image_url: str = Form(None),
+    default_ingredients: str = Form(None),
 ):
     db = get_mongo_db()
+    ingredients_list = []
+    if default_ingredients:
+        try:
+            ingredients_list = json_mod.loads(default_ingredients)
+        except Exception:
+            ingredients_list = [i.strip() for i in default_ingredients.split(",") if i.strip()]
     item = {
         "id": str(uuid.uuid4()),
         "venue_id": venue_id,
@@ -109,6 +116,7 @@ async def add_catalog_item(
         "price": price,
         "is_alcohol": is_alcohol,
         "image_url": image_url,
+        "default_ingredients": ingredients_list,
         "active": True,
         "created_at": datetime.now(timezone.utc),
     }
@@ -126,6 +134,7 @@ async def update_catalog_item(
     price: float = Form(None),
     is_alcohol: bool = Form(None),
     image_url: str = Form(None),
+    default_ingredients: str = Form(None),
 ):
     db = get_mongo_db()
     update = {}
@@ -139,12 +148,27 @@ async def update_catalog_item(
         update["is_alcohol"] = is_alcohol
     if image_url is not None:
         update["image_url"] = image_url
+    if default_ingredients is not None:
+        try:
+            update["default_ingredients"] = json_mod.loads(default_ingredients)
+        except Exception:
+            update["default_ingredients"] = [i.strip() for i in default_ingredients.split(",") if i.strip()]
     if not update:
         raise HTTPException(400, "Nothing to update")
     result = await db.venue_catalog.update_one({"id": item_id}, {"$set": update})
     if result.matched_count == 0:
         raise HTTPException(404, "Item not found")
     return {"id": item_id, "updated": True}
+
+
+@router.get("/catalog/{item_id}")
+async def get_catalog_item(item_id: str, user: dict = Depends(require_auth)):
+    """Get single catalog item with ingredients."""
+    db = get_mongo_db()
+    item = await db.venue_catalog.find_one({"id": item_id}, {"_id": 0})
+    if not item:
+        raise HTTPException(404, "Item not found")
+    return item
 
 
 @router.delete("/catalog/{item_id}")
@@ -292,7 +316,7 @@ async def get_session(session_id: str, user: dict = Depends(require_auth)):
 
         items = await conn.fetch(
             """SELECT id, item_name, category, unit_price, qty, line_total,
-                      is_alcohol, notes, created_at
+                      is_alcohol, notes, modifiers, catalog_item_id, created_at
                FROM tap_items
                WHERE tap_session_id = $1 AND voided_at IS NULL
                ORDER BY created_at""",
@@ -340,6 +364,8 @@ async def get_session(session_id: str, user: dict = Depends(require_auth)):
                 "line_total": float(it["line_total"]),
                 "is_alcohol": it["is_alcohol"],
                 "notes": it["notes"],
+                "modifiers": _parse_meta(it["modifiers"]) if it["modifiers"] else {},
+                "catalog_item_id": str(it["catalog_item_id"]) if it["catalog_item_id"] else None,
                 "created_at": it["created_at"].isoformat() if it["created_at"] else None,
             }
             for it in items
@@ -355,12 +381,21 @@ async def add_item_to_tab(
     qty: int = Form(1),
     notes: str = Form(None),
     bartender_id: str = Form(None),
+    modifiers: str = Form(None),
 ):
     """B1 — Add catalog item to an open tab (item in PG, catalog in MongoDB)."""
     db = get_mongo_db()
     pool = get_postgres_pool()
     sid = uuid.UUID(session_id)
     staff_id = uuid.UUID(user["sub"])
+
+    # Parse modifiers JSON
+    mods = {}
+    if modifiers:
+        try:
+            mods = json_mod.loads(modifiers)
+        except Exception:
+            pass
 
     # Verify session exists and is open
     async with pool.acquire() as conn:
@@ -400,13 +435,13 @@ async def add_item_to_tab(
         item_row = await conn.fetchrow(
             """INSERT INTO tap_items
                (venue_id, tap_session_id, catalog_item_id, item_name, category,
-                unit_price, qty, line_total, is_alcohol, notes, created_by_user_id)
-               VALUES ($1, $2, $3::uuid, $4, $5, $6, $7, $8, $9, $10, $11)
+                unit_price, qty, line_total, is_alcohol, notes, modifiers, created_by_user_id)
+               VALUES ($1, $2, $3::uuid, $4, $5, $6, $7, $8, $9, $10, $11::jsonb, $12)
                RETURNING id""",
             session["venue_id"], sid, uuid.UUID(item_id),
             catalog_item["name"], catalog_item["category"],
             catalog_item["price"], qty, line_total,
-            catalog_item.get("is_alcohol", False), notes, staff_id,
+            catalog_item.get("is_alcohol", False), notes, json_mod.dumps(mods), staff_id,
         )
         # Update session totals
         await conn.execute(
@@ -425,7 +460,8 @@ async def add_item_to_tab(
         await _auto_route_to_kds(
             pool, session["venue_id"], sid, item_row["id"],
             catalog_item["name"], qty, catalog_item.get("is_alcohol", False),
-            staff_id, sess["table_id"] if sess else None, meta.get("guest_name", "Guest"))
+            staff_id, sess["table_id"] if sess else None, meta.get("guest_name", "Guest"),
+            notes=notes, modifiers=mods)
     except Exception as e:
         logger.warning(f"KDS auto-route failed: {e}")
 
@@ -443,10 +479,11 @@ async def add_item_to_tab(
     }
 
 
-async def _auto_route_to_kds(pool, venue_id, session_id, item_row_id, item_name, qty, is_alcohol, staff_id, table_id=None, guest_name=None):
+async def _auto_route_to_kds(pool, venue_id, session_id, item_row_id, item_name, qty, is_alcohol, staff_id, table_id=None, guest_name=None, notes=None, modifiers=None):
     """Auto-route a single item to KDS. Alcohol→bar, Non-alcohol→kitchen."""
     destination = "bar" if is_alcohol else "kitchen"
     meta_json = json_mod.dumps({"guest_name": guest_name or "Guest"})
+    mods_json = json_mod.dumps(modifiers or {})
     async with pool.acquire() as conn:
         ticket = await conn.fetchrow(
             """INSERT INTO kds_tickets
@@ -456,9 +493,9 @@ async def _auto_route_to_kds(pool, venue_id, session_id, item_row_id, item_name,
             venue_id, session_id, table_id, destination, staff_id, meta_json,
         )
         await conn.execute(
-            """INSERT INTO kds_ticket_items (ticket_id, tap_item_id, item_name, qty, notes)
-               VALUES ($1, $2, $3, $4, $5)""",
-            ticket["id"], item_row_id, item_name, qty, None,
+            """INSERT INTO kds_ticket_items (ticket_id, tap_item_id, item_name, qty, notes, modifiers)
+               VALUES ($1, $2, $3, $4, $5, $6::jsonb)""",
+            ticket["id"], item_row_id, item_name, qty, notes, mods_json,
         )
 
 
@@ -615,6 +652,54 @@ async def add_custom_item(
         "line_total": float(line_total),
         "session_total": float(new_total),
     }
+
+
+# ─── Update item modifiers ────────────────────────────────────────
+@router.put("/session/{session_id}/item/{item_id}")
+async def update_item_modifiers(
+    session_id: str,
+    item_id: str,
+    request: Request,
+    user: dict = Depends(require_auth),
+):
+    """Update modifiers, extras, and notes for an order item."""
+    pool = get_postgres_pool()
+    sid = uuid.UUID(session_id)
+    iid = uuid.UUID(item_id)
+
+    body = await request.json()
+    modifiers = body.get("modifiers", {})
+    notes = body.get("notes")
+
+    async with pool.acquire() as conn:
+        session = await conn.fetchrow(
+            "SELECT id, status FROM tap_sessions WHERE id = $1", sid
+        )
+        if not session:
+            raise HTTPException(404, "Session not found")
+        if session["status"] != "open":
+            raise HTTPException(400, "Tab is closed")
+
+        item = await conn.fetchrow(
+            "SELECT id FROM tap_items WHERE id = $1 AND tap_session_id = $2 AND voided_at IS NULL",
+            iid, sid,
+        )
+        if not item:
+            raise HTTPException(404, "Item not found")
+
+        await conn.execute(
+            "UPDATE tap_items SET modifiers = $1::jsonb, notes = $2 WHERE id = $3",
+            json_mod.dumps(modifiers), notes, iid,
+        )
+
+        # Also update corresponding KDS ticket items if any
+        await conn.execute(
+            """UPDATE kds_ticket_items SET modifiers = $1::jsonb, notes = $2
+               WHERE tap_item_id = $3""",
+            json_mod.dumps(modifiers), notes, iid,
+        )
+
+    return {"id": str(iid), "updated": True}
 
 
 # ─── Void/remove item from session ────────────────────────────────

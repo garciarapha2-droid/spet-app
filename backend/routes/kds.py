@@ -75,7 +75,7 @@ async def list_kds_tickets(
         for r in rows:
             # Get items for this ticket
             items = await conn.fetch(
-                "SELECT id, item_name, qty, notes FROM kds_ticket_items WHERE ticket_id = $1",
+                "SELECT id, item_name, qty, notes, modifiers FROM kds_ticket_items WHERE ticket_id = $1",
                 r["id"],
             )
             meta = _parse_meta(r["meta"])
@@ -93,7 +93,7 @@ async def list_kds_tickets(
                 "created_at": r["created_at"].isoformat() if r["created_at"] else None,
                 "guest_name": meta.get("guest_name"),
                 "items": [
-                    {"id": str(i["id"]), "name": i["item_name"], "qty": i["qty"], "notes": i["notes"]}
+                    {"id": str(i["id"]), "name": i["item_name"], "qty": i["qty"], "notes": i["notes"], "modifiers": _parse_meta(i["modifiers"]) if i.get("modifiers") else {}}
                     for i in items
                 ],
             })

@@ -127,12 +127,13 @@ const TicketCard = ({ ticket, onStatusChange, onSetTime, isDelayed }) => {
               <span className="text-lg font-bold text-primary/70 w-6 text-right flex-shrink-0 leading-tight">{item.qty}</span>
               <div className="flex-1 min-w-0">
                 <span className="text-[15px] font-semibold leading-snug block">{item.name}</span>
-                {item.notes && <span className="text-xs text-muted-foreground/60 italic block mt-0.5">{item.notes}</span>}
-                {item.modifiers && item.modifiers.length > 0 && item.modifiers.map((mod, mi) => (
-                  <span key={mi} className="text-xs text-muted-foreground/60 italic block mt-0.5">
-                    {mod.type === 'remove' ? `No ${mod.name}` : mod.type === 'add' ? `Extra ${mod.name}` : mod.name}
-                  </span>
+                {item.modifiers?.removed?.map((r, ri) => (
+                  <span key={`r-${ri}`} className="text-xs text-red-400 italic block mt-0.5">No {r}</span>
                 ))}
+                {item.modifiers?.extras?.map((e, ei) => (
+                  <span key={`e-${ei}`} className="text-xs text-green-400 italic block mt-0.5">Extra {e}</span>
+                ))}
+                {item.notes && <span className="text-xs text-muted-foreground/60 italic block mt-0.5">{item.notes}</span>}
               </div>
             </div>
           ))}

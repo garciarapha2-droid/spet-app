@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { Input } from '../components/ui/input';
 import { Button } from '../components/ui/button';
 import { ThemeToggle } from '../components/ThemeToggle';
+import { ItemCustomizeModal } from '../components/ItemCustomizeModal';
 import {
   ArrowLeft, LayoutGrid, Plus, Users, X, Trash2, CreditCard, Banknote,
   Home, LogOut, Pencil, Check, Camera, Upload, User, ChevronDown, Clock,
@@ -241,6 +242,9 @@ export const TablePage = () => {
   const [tableTipResult, setTableTipResult] = useState(null);
   const [tablePaymentDone, setTablePaymentDone] = useState(false);
   const [tableOrderConfirmed, setTableOrderConfirmed] = useState(false);
+  const [customizingItem, setCustomizingItem] = useState(null);
+
+  const getToken = () => localStorage.getItem('spetap_token');
 
   const handleCloseTable = async (method, location) => {
     if (!tableDetail?.session) return;
@@ -330,6 +334,15 @@ export const TablePage = () => {
   const filteredItems = catalog.filter(i => i.category === selectedCategory).sort((a, b) => a.name.localeCompare(b.name));
   const currentTable = tables.find(t => t.id === selectedTable);
 
+  const reloadTableSession = async () => {
+    if (!selectedTable) return;
+    try {
+      const res = await tableAPI.getTableDetail(selectedTable);
+      setTableDetail(res.data);
+    } catch {}
+    await loadTables();
+  };
+
   if (moduleBlocked) {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center" data-testid="module-blocked">
@@ -345,6 +358,15 @@ export const TablePage = () => {
     <div className="min-h-screen bg-background" data-testid="table-page">
       {showCamera && <CameraModal onCapture={file => setCustomPhoto(file)} onClose={() => setShowCamera(false)} />}
       {showIdModal && <IDVerificationModal onConfirm={handleIdVerified} onCancel={handleIdCancel} />}
+      {customizingItem && tableDetail?.session?.id && (
+        <ItemCustomizeModal
+          item={customizingItem}
+          sessionId={tableDetail.session.id}
+          token={getToken()}
+          onClose={() => setCustomizingItem(null)}
+          onSaved={reloadTableSession}
+        />
+      )}
 
       {/* Header */}
       <header className="h-14 border-b border-border/60 bg-card/80 backdrop-blur-md px-6 flex items-center justify-between">
@@ -586,15 +608,36 @@ export const TablePage = () => {
                     {(tableDetail.items || []).length === 0 ? (
                       <p className="text-sm text-muted-foreground py-8 text-center">No items — add from menu</p>
                     ) : tableDetail.items.map(item => (
-                      <div key={item.id} className="flex items-center gap-2.5 py-2.5 px-3 rounded-lg hover:bg-muted/30 text-sm group">
-                        <span className="w-6 h-6 rounded bg-primary/10 text-primary text-xs font-bold flex items-center justify-center flex-shrink-0">{item.qty}</span>
-                        <span className="font-medium flex-1 truncate">{item.name}</span>
-                        <span className="font-bold text-sm">${item.line_total.toFixed(2)}</span>
-                        <button onClick={() => handleVoidItem(item.id)}
-                          className="p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-opacity"
-                          data-testid={`table-void-item-${item.id}`}>
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </button>
+                      <div key={item.id} className="py-2.5 px-3 rounded-lg hover:bg-muted/30 text-sm group">
+                        <div className="flex items-center gap-2.5">
+                          <span className="w-6 h-6 rounded bg-primary/10 text-primary text-xs font-bold flex items-center justify-center flex-shrink-0">{item.qty}</span>
+                          <span className="font-medium flex-1 truncate">{item.name}</span>
+                          <span className="font-bold text-sm">${item.line_total.toFixed(2)}</span>
+                          <button onClick={() => setCustomizingItem(item)}
+                            className="p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-primary/10 text-muted-foreground hover:text-primary transition-opacity"
+                            data-testid={`table-customize-item-${item.id}`}>
+                            <Pencil className="h-3.5 w-3.5" />
+                          </button>
+                          <button onClick={() => handleVoidItem(item.id)}
+                            className="p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-opacity"
+                            data-testid={`table-void-item-${item.id}`}>
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                        {/* Show modifiers/extras/notes */}
+                        {(item.modifiers?.removed?.length > 0 || item.modifiers?.extras?.length > 0 || item.notes) && (
+                          <div className="ml-[34px] mt-1 space-y-0.5">
+                            {item.modifiers?.removed?.map(r => (
+                              <span key={r} className="block text-[11px] text-red-400 italic">No {r}</span>
+                            ))}
+                            {item.modifiers?.extras?.map(e => (
+                              <span key={e} className="block text-[11px] text-green-400 italic">Extra {e}</span>
+                            ))}
+                            {item.notes && (
+                              <span className="block text-[11px] text-muted-foreground italic">{item.notes}</span>
+                            )}
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
