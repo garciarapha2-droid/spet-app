@@ -530,10 +530,13 @@ export const TablePage = () => {
                     </div>
                   </div>
                 ) : (
-                  <button key={item.id}
+                  <div key={item.id}
                     onClick={() => handleAddItem(item)}
-                    className="relative group flex flex-col rounded-xl border border-border bg-card hover:border-primary/50 hover:shadow-lg transition-all overflow-hidden text-left active:scale-[0.98]"
-                    data-testid={`table-item-${item.id}`}>
+                    className="relative group flex flex-col rounded-xl border border-border bg-card hover:border-primary/50 hover:shadow-lg transition-all overflow-hidden text-left active:scale-[0.98] cursor-pointer"
+                    data-testid={`table-item-${item.id}`}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={e => e.key === 'Enter' && handleAddItem(item)}>
                     {item.image_url && <img src={item.image_url} alt="" className="w-full h-20 object-cover" />}
                     <div className="p-4 flex-1 flex flex-col justify-between min-h-[80px]">
                       <span className="font-semibold text-sm leading-snug block mb-2">{item.name}</span>
@@ -545,7 +548,7 @@ export const TablePage = () => {
                       <button onClick={(e) => { e.stopPropagation(); handleDeleteItem(item.id); }}
                         className="p-1.5 rounded-lg bg-card/90 hover:bg-destructive/10 border border-border shadow-sm"><Trash2 className="h-3 w-3 text-muted-foreground" /></button>
                     </div>
-                  </button>
+                  </div>
                 )
               ))}
             </div>

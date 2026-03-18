@@ -607,11 +607,14 @@ export const TapPage = () => {
                     </div>
                   </div>
                 ) : (
-                  <button
+                  <div
                     key={item.id}
                     onClick={() => handleAddItem(item)}
-                    className="relative group flex flex-col rounded-xl border border-border bg-card hover:border-primary/50 hover:shadow-lg transition-all overflow-hidden text-left active:scale-[0.98]"
+                    className="relative group flex flex-col rounded-xl border border-border bg-card hover:border-primary/50 hover:shadow-lg transition-all overflow-hidden text-left active:scale-[0.98] cursor-pointer"
                     data-testid={`item-${item.id}`}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={e => e.key === 'Enter' && handleAddItem(item)}
                   >
                     {item.image_url && (
                       <img src={item.image_url} alt="" className="w-full h-20 object-cover" />
@@ -631,7 +634,7 @@ export const TapPage = () => {
                         <Trash2 className="h-3 w-3 text-muted-foreground" />
                       </button>
                     </div>
-                  </button>
+                  </div>
                 )
               ))}
             </div>

@@ -1,71 +1,107 @@
 # SPET — Product Requirements Document
 
 ## Original Problem Statement
-SPET is a multi-tenant SaaS platform for real-time venue operations integrating with an external Lovable frontend.
+Build a premium restaurant POS/operational platform ("SPET") with:
+- Real-time Kitchen Display System (KDS)
+- Touch-friendly POS for Tap (bar) and Table service
+- Guest management (Pulse module)
+- Manager & CEO dashboards with role-based access
+- SaaS onboarding with Stripe checkout
+- Dark theme design system with precise brand tokens
 
-## Design System — EXACT Lovable Tokens
-### Dark Mode
-| Token | HSL | HEX |
-|-------|-----|-----|
-| --background | 222 47% 2% | #020617 |
-| --foreground | 0 0% 100% | #FFFFFF |
-| --primary | 258 75% 58% | #7C3AED |
-| --primary-glow | 263 80% 66% | #9461FB |
-| --secondary | 222 30% 10% | #121929 |
-| --card | 220 30% 6% | #0B1120 |
-| --border | 226 20% 14% | #1E2433 |
-| --muted | 222 20% 11% | #181D27 |
-| --muted-foreground | 226 30% 65% | #8494BD |
-| --accent | 263 80% 62% | #8B5CF6 |
-| --destructive | 0 62% 50% | #CF2D2D |
-| --text-secondary | 226 30% 72% | #9DABC9 |
-| --text-tertiary | 226 20% 48% | #626E8A |
+## User Personas
+- **CEO**: Full platform access, company-level analytics, user management
+- **Manager**: Venue operations, staff management, revenue dashboards
+- **Staff (USER)**: POS operations (Tap, Table, Kitchen)
 
-## System Accounts (PERMANENT — Cannot be deleted)
-| Account | Email | Password | Role |
-|---------|-------|----------|------|
-| Test User | teste@teste.com | 12345 | USER |
-| CEO | garcia.rapha2@gmail.com | 12345 | CEO |
-
-## Role System
-- `CEO`: Access to ALL modules including CEO Dashboard
-- `USER`: Access to all modules EXCEPT CEO. CEO module is completely invisible.
-- Enforced on both backend (require_ceo dependency, 403 for non-CEO) and frontend (CEORoute, isCEO filter)
-
-## Completed Work
-- Production-Ready Auth System + Seamless Auth Handoff
-- Design System — EXACT Lovable Tokens (2026-03-18)
-- Logo (HD icon + wordmark)
-- Typography overhaul (Inter, 15px body, 1.75 line-height)
-- UI/UX Refinement — Toast POS Patterns (menu grid, order cards, KDS tickets)
-- Workflow Consistency (Tap/Table follow Pulse flow)
-- **User Accounts + Role System** (2026-03-18):
-  - role field in users table (CEO / USER)
-  - is_system_account flag (prevents deletion)
-  - require_ceo backend dependency on all 15 CEO endpoints
-  - CEORoute frontend component
-  - isCEO flag in AuthContext
-  - CEO module hidden from non-CEO users
-- CEO Permissions & User Management
-- Alcohol ID Verification fix
+## Core Modules
+1. **Pulse** — Guest entry/exit, inside tracking, rewards
+2. **Tap** — Bar POS with tab management, NFC scan
+3. **Table** — Table service POS with server assignment
+4. **Kitchen** — KDS with kanban workflow, timers, delayed order alerts
+5. **Manager** — Revenue dashboards, staff management
+6. **Owner** — Venue configuration, billing
+7. **CEO** — Multi-company analytics (restricted access)
+8. **Pricing/Checkout** — Public landing page, lead capture, Stripe payment
 
 ## Tech Stack
-- Frontend: React, Tailwind CSS, Shadcn/UI
-- Backend: FastAPI, Python
-- Databases: PostgreSQL (users, roles), MongoDB (venue data)
-- Auth: JWT with role claim
+- **Frontend**: React, Tailwind CSS, Shadcn/UI, Lucide icons
+- **Backend**: FastAPI, PostgreSQL (auth), MongoDB (operations)
+- **Payments**: Stripe via emergentintegrations
+- **Auth**: JWT with RBAC (CEO, USER roles)
+- **Deployment**: Supervisor-managed, Kubernetes
 
-## Prioritized Backlog
-### P1 (Next)
-- Final Demo & Operational Checklist
-- PWA support for mobile
-- Live Activity Feed (Manager Dashboard)
-- Per-Event Dashboard (Manager View)
+## Design System
+- Dark theme by default with exact HSL tokens in index.css
+- SpetLogo component (CSS-based, theme-aware)
+- Inter font family
+- Primary color: purple/violet accent
 
-### P2 (Future)
+## What's Been Implemented
+
+### RBAC System ✅
+- CEO and USER roles with backend enforcement
+- Permanent system accounts (undeletable)
+- Frontend route protection (CEORoute)
+
+### Design System ✅
+- 15 dark mode CSS tokens matched exactly
+- SpetLogo component across all pages
+- Typography hierarchy with Inter font
+
+### Phase 1: Kitchen Order Cards (Toast-style) ✅
+- 5-column kanban: Pending, Preparing, Ready, Delivered, Delayed
+- Toast KDS card structure: order #, guest, timer, type, status badge
+- Item list with quantities, modifiers support
+- Drag-and-drop between columns
+- ETA modal for preparation time
+- Delayed order popup alerts
+- Kitchen/Bar toggle
+
+### Phase 2: Menu Grid (POS-style) ✅
+- Vertical category sidebar with icons (8 categories)
+- Large touch-friendly item tile grid (4 columns)
+- Fixed left panel (tabs/table map)
+- Fixed right panel (order summary)
+- Full-height layout (no scroll on main frame)
+- Both TapPage and TablePage share same POS pattern
+
+### Checkout Flow (2-step) ✅
+- Public pricing page at /pricing with hero, features, plans
+- 3 plans: Starter ($79), Growth ($149), Enterprise ($299)
+- 2-step modal: Lead capture (name, email, phone) → Stripe redirect
+- Backend lead storage + Stripe checkout session creation
+- Success page with payment status polling
+- Root / redirects to /pricing
+
+## Pending (On Hold)
+- **Phase 3**: Item Modifiers & Notes (backend + frontend) — awaiting user review
+- **Phase 4**: Server History View — awaiting user review
+
+## Backlog / Future
+- PWA support
+- Live Activity Feed
+- Per-Event Dashboard
 - Module access control per company (SaaS)
-- KDS / Bar Order Routing
+- KDS / Bar Order Routing enhancements
 - Push notifications
-- Stripe Webhooks
+- Stripe Webhooks for subscriptions
 - Offline-First
 - Event Wallet / Native app
+
+## Test Credentials
+- CEO: garcia.rapha2@gmail.com / 12345
+- USER: teste@teste.com / 12345
+
+## Key Files
+- `frontend/src/pages/KitchenPage.js` — KDS kanban
+- `frontend/src/pages/TapPage.js` — Bar POS
+- `frontend/src/pages/TablePage.js` — Table POS
+- `frontend/src/pages/PricingPage.js` — Landing + checkout
+- `frontend/src/pages/CheckoutSuccessPage.js` — Post-payment
+- `backend/routes/onboarding.py` — Plans, leads, Stripe checkout
+- `frontend/src/index.css` — Design tokens (source of truth)
+
+## Environment Notes
+- PostgreSQL is NON-PERSISTENT in preview — needs re-seeding on restart
+- Seed sequence: start postgres, start mongo, run init_postgres.sql, run seed_demo.py
