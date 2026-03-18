@@ -511,12 +511,12 @@ export const TablePage = () => {
                     t.status === 'occupied' ? 'bg-foreground/10 text-foreground/70' : 'bg-emerald-500/10 text-emerald-600'
                   }`}>{t.status === 'occupied' ? 'Busy' : 'Free'}</span>
                   {t.status === 'occupied' && t.session_guest && (
-                    <p className="text-[10px] text-primary mt-1 truncate font-medium">{t.session_guest}</p>
+                    <p className="text-[10px] text-foreground/70 mt-1 truncate font-medium">{t.session_guest}</p>
                   )}
-                  {t.status === 'occupied' && (
-                    <div className="mt-1.5" onClick={e => e.stopPropagation()}>
-                      <ServerAssign tableId={t.id} currentServer={t.server_name} barmen={barmen} onAssigned={loadTables} />
-                    </div>
+                  {t.status === 'occupied' && t.server_name && (
+                    <p className="text-[9px] text-blue-500/80 mt-0.5 truncate">
+                      <User className="h-2.5 w-2.5 inline mr-0.5" />{t.server_name}
+                    </p>
                   )}
                 </div>
               ))}
@@ -578,7 +578,7 @@ export const TablePage = () => {
                 </div>
                 <div className="flex items-center gap-2 mt-2 pt-2 border-t border-border/50">
                   <User className="h-3.5 w-3.5 text-blue-500" />
-                  <span className="text-xs font-semibold text-blue-600" data-testid="ctx-server-name">Server: {tableDetail.session.server_name || selectedServer || 'Not assigned'}</span>
+                  <span className="text-xs font-semibold text-blue-600" data-testid="ctx-server-name">Server: {selectedServer || tableDetail.session.server_name || 'Not assigned'}</span>
                   {tableDetail.session.id_verified && (
                     <span className="flex items-center gap-1 bg-green-500/10 text-green-600 px-2 py-0.5 rounded-full text-[10px] font-medium ml-2" data-testid="id-verified-badge">
                       <ShieldCheck className="h-3 w-3" /> ID verified
@@ -680,7 +680,7 @@ export const TablePage = () => {
                         <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
                           <span>Table #{tableDetail.table_number}</span>
                           <ElapsedTime openedAt={tableDetail.session.opened_at} />
-                          <span className="flex items-center gap-1"><User className="h-3 w-3" /> {tableDetail.session.server_name || 'No server'}</span>
+                          <span className="flex items-center gap-1"><User className="h-3 w-3" /> {selectedServer || tableDetail.session.server_name || 'No server'}</span>
                         </div>
                       </div>
                     </div>

@@ -57,7 +57,11 @@ Build a high-performance POS platform (SPET) inspired by Toast, with role-based 
 - Auto-recovery on every backend startup
 - garcia.rapha2@gmail.com (CEO) + teste@teste.com always exist
 
-## Approval Status
+## Table Mode Server Consistency (Fixed)
+- Top-level server selector is the single source of truth
+- Per-table server assignment dropdown REMOVED
+- Server name shown as read-only info on table cards
+- All table operations (open, add item, tip) use the top-level selected server
 - Architecture direction: APPROVED
 - General design direction: APPROVED
 - ID Verification: FIXED (iteration_55 confirmed)
