@@ -6,61 +6,80 @@ import { ThemeToggle } from '../components/ThemeToggle';
 import SpetLogo from '../components/SpetLogo';
 import {
   UtensilsCrossed, Beer, Clock, ChefHat, CheckCircle,
-  ArrowLeft, Timer, LogOut, Home, AlertTriangle, X, PackageCheck
+  ArrowLeft, Timer, LogOut, Home, AlertTriangle, X, PackageCheck,
+  Printer, Zap, WifiOff, History
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const VENUE_ID = () => localStorage.getItem('active_venue_id') || '40a24e04-75b6-435d-bfff-ab0d469ce543';
 
-const STATUS_COLORS = {
-  pending: { border: 'border-yellow-500/50', bg: 'bg-yellow-500/5', badge: 'bg-yellow-500/20 text-yellow-600', dot: 'bg-yellow-500' },
-  preparing: { border: 'border-primary/50', bg: 'bg-primary/5', badge: 'bg-primary/20 text-primary', dot: 'bg-primary' },
-  ready: { border: 'border-green-500/50', bg: 'bg-green-500/5', badge: 'bg-green-500/20 text-green-600', dot: 'bg-green-500' },
-  delivered: { border: 'border-blue-500/50', bg: 'bg-blue-500/5', badge: 'bg-blue-500/20 text-blue-600', dot: 'bg-blue-500' },
-  delayed: { border: 'border-red-500/50', bg: 'bg-red-500/5', badge: 'bg-red-500/20 text-red-600', dot: 'bg-red-500' },
+/* Color-coded header bands by status — Toast style adapted to SPET dark mode */
+const HEADER_COLORS = {
+  pending:   { band: 'bg-amber-500/20 border-b border-amber-500/30', text: 'text-amber-400' },
+  preparing: { band: 'bg-primary/15 border-b border-primary/30', text: 'text-primary' },
+  ready:     { band: 'bg-emerald-500/15 border-b border-emerald-500/30', text: 'text-emerald-400' },
+  delivered: { band: 'bg-muted border-b border-border', text: 'text-muted-foreground' },
+  delayed:   { band: 'bg-red-500/15 border-b border-red-500/30', text: 'text-red-400' },
+};
+
+const COLUMN_COLORS = {
+  pending:   { dot: 'bg-amber-500', border: 'border-amber-500/30' },
+  preparing: { dot: 'bg-primary', border: 'border-primary/30' },
+  ready:     { dot: 'bg-emerald-500', border: 'border-emerald-500/30' },
+  delivered: { dot: 'bg-blue-500', border: 'border-blue-500/30' },
+  delayed:   { dot: 'bg-red-500', border: 'border-red-500/30' },
 };
 
 const NEXT_STATUS = { pending: 'preparing', preparing: 'ready', ready: 'delivered', delayed: 'ready' };
-const ACTION_LABELS = { pending: 'Start Preparing', preparing: 'Mark Ready', ready: 'Delivered', delayed: 'Mark Ready' };
-const STATUS_LABELS = { pending: 'Pending', preparing: 'Preparing', ready: 'Ready', delivered: 'Delivered', delayed: 'Delayed' };
+const ACTION_LABELS = { pending: 'Start', preparing: 'Ready', ready: 'Deliver', delayed: 'Ready' };
+const STATUS_LABELS = { pending: 'NEW', preparing: 'PREPARING', ready: 'READY', delivered: 'DONE', delayed: 'DELAYED' };
 
-// Timer hook for live countdown/countup
+/* Generate short order number from ID */
+const shortOrderNum = (id) => {
+  if (!id) return '#000';
+  const num = parseInt(id.replace(/[^0-9a-f]/gi, '').slice(-4), 16) % 1000;
+  return `#${String(num).padStart(3, '0')}`;
+};
+
+/* Timer hook */
 const useElapsed = (startTime) => {
   const [now, setNow] = useState(Date.now());
   useEffect(() => {
     const iv = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(iv);
   }, []);
-  if (!startTime) return { minutes: 0, seconds: 0 };
+  if (!startTime) return { minutes: 0, seconds: 0, total: 0 };
   const diff = Math.max(0, Math.floor((now - new Date(startTime).getTime()) / 1000));
-  return { minutes: Math.floor(diff / 60), seconds: diff % 60 };
+  return { minutes: Math.floor(diff / 60), seconds: diff % 60, total: diff };
 };
 
-const TimerDisplay = ({ startTime, estimatedMinutes, isDelayed }) => {
-  const { minutes, seconds } = useElapsed(startTime);
-  const remaining = estimatedMinutes ? (estimatedMinutes * 60) - (minutes * 60 + seconds) : null;
+const LiveTimer = ({ startTime, estimatedMinutes, isDelayed }) => {
+  const { minutes, seconds, total } = useElapsed(startTime);
+  const remaining = estimatedMinutes ? (estimatedMinutes * 60) - total : null;
   const isOvertime = remaining !== null && remaining < 0;
   const overtime = isOvertime ? Math.abs(remaining) : 0;
 
+  const display = isOvertime
+    ? `+${Math.floor(overtime / 60)}:${String(overtime % 60).padStart(2, '0')}`
+    : estimatedMinutes && !isOvertime
+      ? `${Math.floor(remaining / 60)}:${String(remaining % 60).padStart(2, '0')}`
+      : `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+
   return (
-    <div className={`flex items-center gap-2 font-mono text-base ${isOvertime || isDelayed ? 'text-red-500 font-bold' : 'text-muted-foreground'}`}>
-      <Timer className={`h-5 w-5 ${isOvertime || isDelayed ? 'text-red-500 animate-pulse' : ''}`} />
-      {estimatedMinutes && !isOvertime ? (
-        <span>{Math.floor(remaining / 60)}:{String(remaining % 60).padStart(2, '0')} left</span>
-      ) : isOvertime ? (
-        <span>+{Math.floor(overtime / 60)}:{String(overtime % 60).padStart(2, '0')} over!</span>
-      ) : (
-        <span>{minutes}:{String(seconds).padStart(2, '0')}</span>
-      )}
-    </div>
+    <span className={`font-mono font-bold text-sm ${isOvertime || isDelayed ? 'text-red-400' : 'text-muted-foreground'}`}>
+      {display}
+    </span>
   );
 };
 
+/* ═══════ TICKET CARD — Toast Kanban Style ═══════ */
 const TicketCard = ({ ticket, onStatusChange, onSetTime, isDelayed }) => {
-  const colors = isDelayed ? STATUS_COLORS.delayed : (STATUS_COLORS[ticket.status] || STATUS_COLORS.pending);
-  const [estimateInput, setEstimateInput] = useState('');
+  const status = isDelayed ? 'delayed' : ticket.status;
+  const hdr = HEADER_COLORS[status] || HEADER_COLORS.pending;
   const [showEstimate, setShowEstimate] = useState(false);
+  const [estimateInput, setEstimateInput] = useState('');
   const elapsed = ticket.created_at ? Math.floor((Date.now() - new Date(ticket.created_at).getTime()) / 60000) : 0;
+  const orderType = ticket.table_number ? 'DINE IN' : 'TAB';
 
   const handleDragStart = (e) => {
     e.dataTransfer.setData('ticket_id', ticket.id);
@@ -70,51 +89,71 @@ const TicketCard = ({ ticket, onStatusChange, onSetTime, isDelayed }) => {
   const handleDragEnd = (e) => { e.target.style.opacity = '1'; };
 
   return (
-    <div className={`rounded-xl border-2 overflow-hidden transition-all cursor-grab active:cursor-grabbing ${colors.border} ${isDelayed ? 'ring-2 ring-red-500/30' : ''}`}
+    <div
+      className={`rounded-xl border border-border bg-card overflow-hidden transition-all cursor-grab active:cursor-grabbing ${isDelayed ? 'ring-2 ring-red-500/40' : 'hover:border-border/80'}`}
       draggable="true"
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
-      data-testid={`ticket-${ticket.id}`}>
-      {/* Header band — color-coded status */}
-      <div className={`px-4 py-2.5 flex items-center justify-between ${colors.bg}`}>
-        <div className="flex items-center gap-2">
-          {ticket.table_number && <span className="text-lg font-extrabold">T{ticket.table_number}</span>}
-          {ticket.guest_name && <span className="text-sm font-medium text-muted-foreground">{ticket.guest_name}</span>}
-        </div>
-        <span className={`px-2.5 py-1 rounded-md text-xs font-bold uppercase tracking-wide ${colors.badge}`}>
-          {isDelayed ? 'Delayed' : STATUS_LABELS[ticket.status]}
-        </span>
-      </div>
-
-      <div className="p-4">
-        {/* Timer row */}
-        <div className="mb-3 pb-3 border-b border-border/50">
-          {ticket.status === 'preparing' ? (
-            <TimerDisplay startTime={ticket.started_at} estimatedMinutes={ticket.estimated_minutes} isDelayed={isDelayed} />
+      data-testid={`ticket-${ticket.id}`}
+    >
+      {/* ── Header Band (color-coded) ── */}
+      <div className={`px-4 py-3 ${hdr.band}`}>
+        <div className="flex items-center justify-between mb-1">
+          <div className="flex items-center gap-2">
+            <span className={`text-lg font-extrabold tracking-tight ${hdr.text}`}>{shortOrderNum(ticket.id)}</span>
+            <span className="text-xs text-muted-foreground">·</span>
+            <span className="text-sm font-medium truncate max-w-[120px]">
+              {ticket.guest_name || (ticket.table_number ? `Table ${ticket.table_number}` : 'Guest')}
+            </span>
+          </div>
+          {/* Timer */}
+          {ticket.status === 'preparing' || isDelayed ? (
+            <LiveTimer startTime={ticket.started_at || ticket.created_at} estimatedMinutes={ticket.estimated_minutes} isDelayed={isDelayed} />
           ) : (
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <Clock className="h-3.5 w-3.5" /> {elapsed}m ago
-              {ticket.estimated_minutes && <span>| ~{ticket.estimated_minutes}m est.</span>}
-            </div>
+            <span className="text-xs text-muted-foreground font-mono">{elapsed}m</span>
           )}
         </div>
+        {/* Type + Status */}
+        <div className="flex items-center justify-between">
+          <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">{orderType}</span>
+          <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide ${
+            status === 'delayed' ? 'bg-red-500/20 text-red-400' :
+            status === 'ready' ? 'bg-emerald-500/20 text-emerald-400' :
+            status === 'preparing' ? 'bg-primary/20 text-primary' :
+            status === 'delivered' ? 'bg-blue-500/20 text-blue-400' :
+            'bg-amber-500/20 text-amber-400'
+          }`}>
+            {STATUS_LABELS[status]}
+          </span>
+        </div>
+      </div>
 
-        {/* Items — qty aligned left, name clear */}
-        <div className="space-y-2 mb-4">
+      {/* ── Items ── */}
+      <div className="px-4 py-3">
+        <div className="space-y-2.5 mb-4">
           {ticket.items.map((item, i) => (
-            <div key={item.id || i} className="flex items-start gap-2.5 text-sm">
-              <span className="w-6 h-6 rounded bg-primary/10 text-primary text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">{item.qty}</span>
-              <span className="font-medium leading-snug">{item.name}</span>
+            <div key={item.id || i} className="flex items-start gap-3">
+              <span className="text-base font-bold text-muted-foreground w-5 text-right flex-shrink-0 mt-px">{item.qty}</span>
+              <div className="flex-1 min-w-0">
+                <span className="text-sm font-semibold leading-snug block">{item.name}</span>
+                {item.notes && <span className="text-xs text-muted-foreground/70 italic block mt-0.5">{item.notes}</span>}
+                {item.modifiers && item.modifiers.length > 0 && item.modifiers.map((mod, mi) => (
+                  <span key={mi} className="text-xs text-muted-foreground/70 italic block mt-0.5">
+                    {mod.type === 'remove' ? `No ${mod.name}` : mod.type === 'add' ? `Extra ${mod.name}` : mod.name}
+                  </span>
+                ))}
+              </div>
             </div>
           ))}
         </div>
 
+        {/* ETA Input */}
         {showEstimate && (
           <div className="flex gap-2 mb-3">
             <input type="number" min="1" max="120" value={estimateInput}
               onChange={e => setEstimateInput(e.target.value)}
               placeholder="Min"
-              className="w-20 px-2 py-1.5 text-sm rounded border border-border bg-background"
+              className="w-20 px-2 py-1.5 text-sm rounded-lg border border-border bg-background"
               data-testid="estimate-input" />
             <Button size="sm" variant="outline"
               onClick={() => { onSetTime(ticket.id, parseInt(estimateInput)); setShowEstimate(false); setEstimateInput(''); }}
@@ -125,22 +164,28 @@ const TicketCard = ({ ticket, onStatusChange, onSetTime, isDelayed }) => {
           </div>
         )}
 
-        {/* Action buttons — large, clear, spaced */}
-        <div className="flex gap-2">
-          {NEXT_STATUS[ticket.status] && (
-            <Button size="sm" className={`flex-1 h-10 text-sm font-semibold ${isDelayed ? 'bg-red-500 hover:bg-red-600' : ''}`}
-              onClick={() => onStatusChange(ticket.id, NEXT_STATUS[ticket.status])}
+        {/* ── Action Buttons ── */}
+        <div className="flex gap-2 pt-2 border-t border-border/40">
+          {NEXT_STATUS[status] && (
+            <Button size="sm" className={`flex-1 h-9 text-xs font-bold uppercase tracking-wide ${isDelayed ? 'bg-red-500 hover:bg-red-600' : ''}`}
+              onClick={() => onStatusChange(ticket.id, NEXT_STATUS[status])}
               data-testid={`ticket-action-${ticket.id}`}>
-              {ticket.status === 'pending' && <ChefHat className="h-4 w-4 mr-1.5" />}
-              {ticket.status === 'preparing' && <CheckCircle className="h-4 w-4 mr-1.5" />}
-              {ticket.status === 'ready' && <PackageCheck className="h-4 w-4 mr-1.5" />}
-              {ACTION_LABELS[ticket.status]}
+              {status === 'pending' && <ChefHat className="h-3.5 w-3.5 mr-1.5" />}
+              {status === 'preparing' && <CheckCircle className="h-3.5 w-3.5 mr-1.5" />}
+              {(status === 'ready' || status === 'delayed') && <PackageCheck className="h-3.5 w-3.5 mr-1.5" />}
+              {ACTION_LABELS[status]}
             </Button>
           )}
-          {ticket.status === 'pending' && (
-            <Button size="sm" variant="outline" className="h-10" onClick={() => setShowEstimate(!showEstimate)}
-              data-testid={`set-time-${ticket.id}`}>
-              <Timer className="h-4 w-4" />
+          {status === 'pending' && (
+            <Button size="sm" variant="outline" className="h-9 px-2.5" onClick={() => setShowEstimate(!showEstimate)}
+              data-testid={`set-time-${ticket.id}`} title="Set timer">
+              <Timer className="h-3.5 w-3.5" />
+            </Button>
+          )}
+          {(status === 'preparing' || status === 'pending') && (
+            <Button size="sm" variant="outline" className="h-9 px-2.5" title="Rush order"
+              onClick={() => toast.info('Rush sent to team')}>
+              <Zap className="h-3.5 w-3.5" />
             </Button>
           )}
         </div>
