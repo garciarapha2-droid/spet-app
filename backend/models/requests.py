@@ -11,7 +11,9 @@ class LoginRequest(BaseModel):
 class SignupRequest(BaseModel):
     email: EmailStr
     password: str
+    name: Optional[str] = None
     company_name: Optional[str] = None
+    venue_type: Optional[str] = None  # bar, nightclub, restaurant, lounge, etc.
 
 # Guest/Pulse requests
 class GuestIntakeRequest(BaseModel):
