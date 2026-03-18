@@ -39,13 +39,25 @@ Build a high-performance POS platform (SPET) inspired by Toast, with role-based 
 - After first verification, subsequent alcohol items add directly
 - Full error handling with explicit toast messages
 
-### UI/UX Refinement
-- Global z-index (active screen always on top)
-- Full-color category blocks (amber, pink, orange, etc.)
-- Table cards: green=free, dark gray=busy
-- Bartender/Server selectors: neutral gray
-- Tab cards with green/yellow/red status dots + manual control
-- Item details buttons always visible
+### UI/UX Color System Upgrade (Completed - March 2026)
+- **Soft tinted backgrounds**: Category colors use opacity-based Tailwind classes (e.g., bg-amber-500/[0.06])
+- **Colored icons**: Category icons use vibrant colors (amber, pink, orange, emerald, etc.)
+- **Neutral bases**: Card backgrounds, borders use neutral foreground/muted colors
+- **Purple selection border**: Active tab uses border-[#6D5DFC]
+- **CSS Variables**: .cat-beers, .cat-cocktails, etc. defined in index.css with light/dark mode variants
+- **Consistent across TapPage and TablePage**
+- **Table status colors**: Free=emerald borders/text, Busy=neutral foreground
+- Tested and validated (iteration_56 - 100% pass rate)
+
+### Protected Users System
+- Auto-recovery on every backend startup
+- garcia.rapha2@gmail.com (CEO) + teste@teste.com always exist
+
+### Table Mode Server Consistency (Fixed)
+- Top-level server selector is the single source of truth
+- Per-table server assignment dropdown REMOVED
+- Server name shown as read-only info on table cards
+- All table operations use the top-level selected server
 
 ### Manager Panel
 - Tips view with server detail table
@@ -53,24 +65,9 @@ Build a high-performance POS platform (SPET) inspired by Toast, with role-based 
 - Settings with venue creation
 - Tables by Server with WebSocket + polling
 
-### Protected Users System
-- Auto-recovery on every backend startup
-- garcia.rapha2@gmail.com (CEO) + teste@teste.com always exist
-
-## Table Mode Server Consistency (Fixed)
-- Top-level server selector is the single source of truth
-- Per-table server assignment dropdown REMOVED
-- Server name shown as read-only info on table cards
-- All table operations (open, add item, tip) use the top-level selected server
-- Architecture direction: APPROVED
-- General design direction: APPROVED
-- ID Verification: FIXED (iteration_55 confirmed)
-- Priced Extras: IMPLEMENTED (iteration_55 confirmed)
-- Final approval: PENDING USER REVIEW
-
 ## Upcoming Tasks (After Approval)
-- Manager Panel refinement
-- Server History View
+- Manager Panel refinement (P1)
+- Server History View (P2)
 - PWA support
 - Live Activity Feed, Per-Event Dashboard
 - KDS/Bar routing, Push notifications
@@ -87,3 +84,8 @@ Build a high-performance POS platform (SPET) inspired by Toast, with role-based 
 - POST /api/tap/session/{sid}/verify-id — age/ID verification
 - GET /api/manager/tips-detail
 - POST /api/venue/create-venue
+
+## Known Environment Constraints
+- PostgreSQL is non-persistent in preview environment
+- protected_users.py runs on startup to ensure schema + users exist
+- Demo data is re-seeded on startup when sessions are low
