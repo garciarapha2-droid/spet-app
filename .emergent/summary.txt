@@ -1,61 +1,61 @@
 <analysis>**original_problem_statement**:
-The user's primary goal is a major UI/UX overhaul of the SPET platform's operational screens (Kitchen, Menu) to replicate the structure, layout, and usability of a high-performance POS system like Toast, while adhering to the SPET design system.
+The user's primary goal is a major UI/UX overhaul of the SPET platform's operational screens (Kitchen, Menu, Table) to replicate the structure, layout, and premium usability of a high-performance POS system like Toast.
 
-The project has evolved to include new high-priority features: a premium SaaS checkout flow and a critical item customization/modifier system. Most recently, the focus shifted to a comprehensive design refinement pass to elevate the visual execution of all implemented features to a professional, Toast-like standard of operational clarity.
+This has evolved through several high-priority phases:
+1.  **Initial Toast-like Refinement:** Replicating KDS cards and Menu grids.
+2.  **New Features:** Implementing item modifiers and a premium SaaS checkout flow.
+3.  **Critical Fixes:** Addressing numerous operational logic bugs, data persistence issues, and architectural inconsistencies.
+4.  **Architectural Separation:** Removing the public-facing landing/login UI from the Emergent-hosted app, making it a protected, product-only environment that receives authenticated users from an external frontend (Lovable).
+5.  **Advanced UI/UX Refinement:** A series of demanding refinement passes to fix layout, z-index, operational flows (like ID verification and modifier pricing), and finally, a complete color system upgrade to achieve a more premium, minimal, and cohesive aesthetic.
 
 **PRODUCT REQUIREMENTS:**
-1.  **P0 UI/UX Refinement (Toast-inspired Structure):**
-    *   **Phase 1: Kitchen Order Cards:** Replicate Toast KDS card structure. (Implemented & Refined)
-    *   **Phase 2: Menu Grid:** Rework menu into a touch-friendly grid with a category sidebar. (Implemented & Refined)
-    *   **Phase 3: Item Modifiers & Notes:** Implement a modal-based flow to edit order items (remove/add ingredients, add notes). (Implemented)
-    *   **Phase 4: Server History View:** Create a manager dashboard view to track server performance. (Pending)
-2.  **P0 New Feature: Premium SaaS Checkout Flow:**
-    *   Implement a 2-step onboarding process: lead capture followed by Stripe-powered payment.
-3.  **P0 Critical Design Refinement Pass:**
-    *   Address 9 critical UI/UX issues, including z-index/layering bugs, reducing overuse of brand colors on operational screens, improving layout spacing, and enhancing the visual hierarchy to match Toast's operational clarity.
+The core requirement is to fix operational bugs and elevate the UI to a Toast-like standard of quality, focusing on clarity, elegance, and operational correctness. The user has repeatedly emphasized that conceptual approval is not final approval; the execution must be flawless. All new feature development (like the Manager Panel) is on hold until the current UI/UX and operational bugs are fully resolved and approved.
 
 **User's preferred language**: Portuguese. The next agent **MUST** respond in Portuguese.
 
 **what currently exists?**
-A full-stack application (React/FastAPI/PostgreSQL/MongoDB) with a stable, role-based authentication system. The core operational screens (, , ) have been built and subsequently undergone a major design refinement pass to align with Toast POS usability standards. This includes a neutral color palette, fixed z-index layering issues, and improved layout/spacing.
-
-The application now features:
-- A fully functional item customization system (Phase 3), allowing users to edit order items via a modal.
-- A new, premium 2-step SaaS checkout flow powered by Stripe.
-- A robust testing history, with all recent features verified by the testing agent.
+A full-stack React/FastAPI/PostgreSQL/MongoDB application for a restaurant POS.
+- **Architecture**: The application is now a protected environment. Public landing pages and login/signup UI have been removed. Unauthenticated users are redirected to an external login URL ().
+- **Data Persistence**: A critical data loss issue caused by the non-persistent PostgreSQL environment has been addressed. A startup script () now runs when the backend starts, ensuring the DB schema and protected user accounts (, ) are always present.
+- **Core Features**: Role-based auth, real-time Kitchen Display System (KDS), Tap (bar) and Table ordering modules, and a Manager dashboard are in place.
+- **Recent Fixes**: Critical bugs related to ID verification in the table ordering flow and adding pricing to item modifiers have been implemented and tested. A logic consistency issue in Table mode (unifying the server selection) has also been resolved.
 
 **Last working item**:
-    - Last item agent was working: A comprehensive **Design Refinement Pass** across all operational screens (, , ) to address 9 critical UI/UX issues raised by the user. This pass focused on fixing z-index bugs, adopting a neutral operational color palette (Toast-like), improving layout/spacing, and enhancing visual clarity.
-    - Status: USER VERIFICATION PENDING
-    - Agent Testing Done: Y
-    - Which testing method agent to use? NA. The next step depends on user feedback. If the user approves, the agent will move to Phase 4. If more design changes are requested, the agent will continue the refinement.
+    - Last item agent was working: A **Critical UI Refinement & Color System Upgrade**. The agent was implementing a complete overhaul of the color system to be more cohesive and premium, as requested by the user. This involved moving away from saturated background colors to a system of soft tints, colored icons, and neutral base colors.
+    - Status: IN PROGRESS
+    - Agent Testing Done: N
+    - Which testing method agent to use? Frontend testing agent. This is a major visual change across multiple core pages (, , ) and requires comprehensive visual and functional validation.
     - User Testing Done: N
 
 **All Pending/In progress Issue list**:
-  - Issue 1:  (P0) User review of the Design Refinement Pass.
+  - Issue 1:  (P0) Complete and Test the UI Color System Upgrade.
 
   Issues Detail:
-  - Issue 1:
-     - **Description**: The user needs to review the latest UI/UX changes made across the Kitchen, Tap, and Table pages. The agent has implemented all 9 requested design fixes. The next steps are blocked until the user provides feedback on whether the visual execution is now approved.
-     - **Attempted fixes**: The agent rewrote  and , and applied numerous targeted fixes to  and  to meet the user's design standards.
+  - Issue 1: 
+     - **Description**: The agent has started implementing the user's latest and most critical design feedback: a full color system upgrade. The goal is to create a more premium, minimal, and calm UI, referencing Apple/Stripe/Toast. The agent has modified , , and  to reflect this new direction (soft tints, colored icons, neutral bases). However, the work is not yet tested or verified.
+     - **Attempted fixes**: The agent used  to update CSS variables in  and modify the category definitions and styling logic in  and .
      - **Next debug checklist**:
-       1. Wait for the user's response.
-       2. If approved, proceed to the Upcoming Tasks (Phase 4).
-       3. If further changes are requested, create a new plan to address the feedback.
-     - **Why fix this issue and what will be achieved with the fix?**: Gaining user approval on the design is critical before building new features, ensuring the final product meets the required standard of quality.
-     - **Status**:  USER VERIFICATION PENDING
-     - **Is recurring issue?**: N
-     - **Should Test frontend/backend/both after fix?**: NA
-     - **Blocked on other issue**: None. This is the current blocker for new work.
+       1. Review the changes made to , , and  to ensure they fully align with the user's request (soft tints, neutral bases, purple selection border).
+       2. Run the frontend and take screenshots of the Tap and Table pages to visually verify the new color scheme.
+       3. Call the  to perform a full regression test and specifically validate the new UI styling and ensure no functionality was broken.
+       4. Address any issues found by the testing agent.
+       5. Present the final, tested result to the user for approval.
+     - **Why fix this issue and what will be achieved with the fix?**: This is a blocking issue for final user approval. Completing this will align the app with the user's high-end aesthetic requirements and unblock future development.
+     - **Status**:  IN PROGRESS
+     - **Is recurring issue?**: Y (Design refinement is a recurring theme).
+     - **Should Test frontend/backend/both after fix?**: Frontend.
+     - **Blocked on other issue**: None.
 
 **In progress Task List**:
-- None. All tasks for the current sprint are complete pending user review.
+- None besides the last working item.
 
 **Upcoming and Future Tasks**
 **Upcoming Tasks:**
-*   (P1) **Phase 4: Server History View**: Implement the manager-facing view to track server performance, including orders and tips. This is the next task after the user approves the current design.
+*   (P0) **User Approval**: Get final sign-off from the user on all recent architecture, bug fix, and UI/UX refinement work.
+*   (P1) **Manager Panel Refinement**: The user has indicated this is the next area of focus after the current fixes are approved.
 
 **Future Tasks:**
+*   (P2) **Phase 4: Server History View**: Implement the manager-facing view to track server performance.
 *   Progressive Web App (PWA) support.
 *   Live Activity Feed on Manager Dashboard.
 *   Per-Event Dashboard (Manager View).
@@ -64,101 +64,111 @@ The application now features:
 *   Push notifications for real-time alerts.
 *   Stripe Webhooks for subscriptions.
 *   Offline-First Capabilities.
+*   Analytics dashboard with real-time graphs.
 
 **Completed work in this session**
-- **Phase 1 & 2 UI/UX Implementation & Refinement**:
-  - Implemented the initial Toast-style KDS cards () and Menu Grid (, ).
-  - Executed a complete design refinement pass on these pages, fixing layouts, z-index bugs, and color schemes to align with user feedback.
-- **New Feature: Premium Checkout Flow**:
-  - Built a new backend route () to handle lead capture and Stripe checkout session creation.
-  - Created new frontend pages (, ) for a 2-step SaaS onboarding experience.
-- **Phase 3: Item Modifiers & Notes**:
-  - **Database**: Migrated PostgreSQL (, ) to include a  JSONB column.
-  - **Backend**: Enhanced  and  to handle adding, updating, and displaying item modifiers (removed ingredients, extras, notes). Created a new endpoint  for updates.
-  - **Frontend**: Created a reusable  component and integrated it into  and  via a pencil icon on order items.
-- **Critical Bug Fixes & Environment Setup**:
-  - Resolved a  crash on the .
-  - Successfully navigated a complex environment setup, reinstalling and re-seeding the non-persistent PostgreSQL database.
-  - Fixed a critical z-index bug causing dropdowns to appear behind other elements.
+- **Critical Data Loss Fix**:
+  - Implemented a robust startup protection mechanism () that runs on every backend start to ensure the PostgreSQL schema and critical user accounts (, ) exist, solving the data loss problem from the non-persistent environment.
+- **Architectural Separation (Lovable/Emergent)**:
+  - Removed all public-facing UI (, , etc.) from the React app.
+  - Reconfigured routing (, ) to redirect any unauthenticated user to an external login URL defined by .
+- **Critical Operational Bug Fixes**:
+  - **ID Verification**: Resolved a persistent bug in  where confirming a guest's age did not reliably add the alcoholic item to the order. The full end-to-end flow is now functional.
+  - **Item Modifier Pricing**: Enhanced the item customization system (, ) to support adding an extra cost to modifiers (e.g., Add bacon +), which is now correctly reflected in the line and session totals.
+- **UI/UX & Logic Refinements**:
+  - **Massive Refinement Pass**: Implemented over a dozen specific UI/UX fixes, including global z-index layering, redesigning Tap/Table page layouts, improving real-time data on the Manager panel, and adding new features like a Tips view and view toggles.
+  - **Table Mode Consistency**: Fixed a logic flaw where a table could have a different server assigned than the one selected in the main header. The top-level server selection is now the single source of truth.
 
 **Earlier issues found/mentioned but not fixed**
-- None.
+   - **Issue 1: Global Layering (z-index)**
+     - **Description**: The user has repeatedly reported issues with dropdowns, modals, and panels overlapping incorrectly (e.g., a dropdown appearing behind a card). While the agent has applied numerous fixes (increasing z-index values, creating a tiered system in ), the user continues to find edge cases. This suggests the stacking context management might still have underlying structural problems rather than just needing higher z-index values.
+     - **Debug checklist**:
+       1. During the next task, be extremely mindful of new UI elements and their stacking context (, , ).
+       2. Consider a more robust, framework-level solution for modals and popovers (like a React Portal) if issues persist, to render them at the top of the DOM tree.
+       3. When testing, specifically try to trigger multiple overlapping elements (e.g., open a dropdown, then a modal) to find conflicts.
+     - **Why to solve this issue and what will be achieved with this?**: A clean, predictable UI is a top user priority. Fixing this permanently will prevent user frustration and meet the premium feel requirement.
+     - **Should Test frontend/backend/both after fix**: Frontend.
+     - **Is recurring issue?**: Y
 
 **Known issue recurrence from previous fork**
   - **Issue**: **Data loss on environment restart**.
-  - **Description**: The PostgreSQL database in the preview environment is non-persistent. The agent had to spend significant time at the beginning of the session re-installing , initializing the data directory, creating the user/db, and re-seeding the data.
-  - **Status**: This is an **environmental limitation**. The next agent must be prepared to re-run the database setup if login fails or data is missing.
+  - **Recurrence count**: High.
+  - **Status**: RESOLVED (Workaround). The root cause (non-persistent PostgreSQL in the preview environment) is an environmental limitation. However, the agent implemented a robust workaround by creating  which runs at server startup to ensure the schema and protected users are always present. The next agent should be aware that while the *symptom* is fixed, the underlying *environment constraint* still exists.
 
 **Code Architecture**
 
 
 **Key Technical Concepts**
 - **Frameworks**: React (Frontend), FastAPI (Backend)
-- **Databases**: PostgreSQL, MongoDB
-- **Styling**: Tailwind CSS, CSS Variables for precise theming,  for stacking contexts.
-- **Authentication**: JWT with role-based access control (RBAC).
-- **Payments**: Stripe (via  for server-side redirect to checkout).
+- **Databases**: PostgreSQL (transactional), MongoDB (catalog)
+- **Styling**: Tailwind CSS, CSS Variables for theming.
+- **Architecture**: Protected app (no public UI), receives authenticated users from an external frontend (Lovable).
+- **Authentication**: JWT with role-based access control (RBAC). The backend still manages all auth logic.
 
 **key DB schema**
-  - **PostgreSQL  & **: Added  column.
-  - **MongoDB  collection**: Added  field to documents.
+  - **PostgreSQL **: The  JSONB column now stores extras as an array of objects .
+  - **PostgreSQL **: Schema is now programmatically verified and created on startup if it doesn't exist.
 
 **changes in tech stack**
 - None.
 
 **All files of reference**
-*   , , : **CRITICAL**. These files contain the latest design-refined operational UI.
-*   : **CRITICAL**. Contains the new, user-approved design tokens and z-index classes.
-*   : Core backend logic for item customization.
-*   : The core UI component for item editing (Phase 3).
-*    & : Key files for the new checkout flow.
-*   : Test report confirming the success of the design refinement pass.
+*   : **CRITICAL**. Contains the new, minimal color system variables.
+*   : Contains major UI logic for the new color system, ID verification, and guest status control.
+*   : Contains major UI logic for the new table status colors and unified server selection.
+*    & : Core of the data persistence fix.
+*    & : Core of the new architectural pattern (redirecting to Lovable).
+*    & : Key files for the modifiers with price feature.
+*   : Confirms the last set of critical bug fixes passed testing.
 
 **key api endpoints**
-- : Creates a lead from the first step of checkout.
-- : Creates a Stripe checkout session and returns a redirect URL.
-- : Updates an existing order item with modifiers (notes, extras, removed ingredients).
-- : Gets details for a single catalog item, including .
+- : Updates an item with modifiers, now recalculates total based on extras with prices.
+- : New endpoint to fetch detailed tip information.
+- : New endpoint to create a new venue from the manager settings.
 
 **Critical Info for New Agent**
 -   **FALE PORTUGUÊS**: All communication with the user **MUST** be in Portuguese.
--   **WAIT FOR USER REVIEW**: Do not start Phase 4 (Server History) or any other new feature. The immediate priority is to get the user's explicit approval on the recent, extensive design refinement pass.
--   **DESIGN IS PARAMOUNT**: The user's primary concern is achieving the operational clarity and usability of Toast POS. The concept is approved, but the visual execution is under intense scrutiny. Maintain the high standard of the last refinement pass.
--   **PostgreSQL is Non-Persistent**: This is a critical environmental limitation. If you encounter login failures or empty data, the first step is always to re-seed the database. The agent in this session had to do a full reinstall of Postgres.
+-   **PRIORIDADE MÁXIMA**: Your first task is to test and finalize the **Color System Upgrade**. Do not start any other work. This is a blocking issue for user approval.
+-   **ALTA EXIGÊNCIA DE DESIGN**: The user has an extremely high bar for design quality and operational correctness. Test all changes thoroughly from a user's perspective before finishing.
+-   **ARQUITETURA DE LOGIN**: Remember that the app has no login page. To test authenticated routes, you must use the  with the  parameter or use the provided credentials which the tool uses internally. Unauthenticated access in a browser will redirect to .
+-   **DB WORKAROUND**: The PostgreSQL database is non-persistent. If you see connection errors or missing data after a restart, trust that the  script will handle schema and user creation automatically when the backend starts. You may still need to re-seed demo data () if you need more than the protected users.
 
 **documents and test reports created in this job**
 - 
 - 
 - 
--  (updated with all completed work)
+-  (updated with all completed work and new requirements)
 
-**Last 10 User Messages and any pending HUMAN messages**
-10. **(PENDING)** User's review of the latest design refinement is pending.
-9.  **Request (Design Refinement)**: User provided 9 points of critical design feedback, flagging the UI as concept approved, design not approved. Key issues included z-index bugs, overuse of purple, and layouts not being clean enough. This triggered the last major task. (Completed)
-8.  **Finish**: Agent completed Phase 3 (Item Modifiers). (Completed)
-7.  **Request (Phase 3)**: User provided detailed requirements for implementing item modifiers and notes via an edit flow. (Completed)
-6.  **Finish**: Agent completed Phase 1, Phase 2, and the new Checkout Flow. (Completed)
-5.  **Request (Checkout Flow)**: User introduced a new high-priority task to build a 2-step premium checkout flow. (Completed)
-4.  **Approval with Priority Shift**: User approved the agent's plan but reprioritized heavily, asking to complete visual Phases 1 & 2 first, hold backend work, and then added the new checkout flow as a top priority. (Completed)
-3. **Approval**: User approved the agent's initial plan. (Completed)
+**Last 10 User Messages and any pending HUMAN messages** 
+1.  **(PENDING)** User requests a major **color system upgrade** for a more premium, minimal UI. (In Progress)
+2.  User reports a critical logic consistency issue in **Table Mode** where server selection was duplicated. (Completed)
+3.  User reports two critical operational bugs: **ID verification** in Table mode is still failing, and **item modifiers need to support extra cost**. (Completed)
+4.  User approves the architecture change but provides a new, extensive list of **12 UI/UX and operational logic fixes**. (Completed)
+5.  User confirms the plan to remove the login/landing UI and redirect unauthenticated users to Lovable. (Completed)
+6.  User requests a critical architecture change: **remove the landing/login UI** from Emergent, as another service (Lovable) handles it. (Completed)
+7.  User reports a **critical data loss** issue where protected accounts are being deleted on restart. (Completed)
+8.  Agent finishes a massive UI/UX refinement pass. (Completed)
+9.  User rejects the previous design pass and provides a new list of 9 critical design fixes. (Completed)
+10. Agent asks the user to confirm the plan for the initial UI/UX refinement. (Completed)
 
 **Project Health Check:**
-- **Broken**: The PostgreSQL database is non-persistent and requires manual setup/seeding on environment restarts, which can be time-consuming.
+- **Broken**: The PostgreSQL database remains non-persistent at an environmental level. The application-level fix () is a robust workaround but doesn't change the underlying infrastructure.
 - **Mocked**: None.
 
 **3rd Party Integrations**
 - **OpenAI**: Used via  with the Emergent LLM Key.
 - **Stripe**: Integrated for the new checkout flow, using the test key .
+- **Lovable**: An external frontend service responsible for the public landing page, signup, and login. The Emergent app now redirects to it.
 
 **Testing status**
-  - Testing agent used after significant changes: YES. Used three times (, , ) to validate the POS overhaul, item modifiers, and the final design refinement pass.
+  - Testing agent used after significant changes: YES. Used multiple times ( to ) to validate large batches of UI/UX changes and critical bug fixes. It successfully found and fixed a bug in .
   - Troubleshoot agent used after agent stuck in loop: NO
   - Test files created: None.
-  - Known regressions: None. The testing agent report  confirmed all design fixes were successful and introduced no regressions.
+  - Known regressions: None reported by the last test run.
 
 **Credentials to test flow:**
 - **CEO User**:  / 
 - **Regular User**:  / 
 
 **What agent forgot to execute**
-- Nothing. The agent successfully adapted to the user's shifting priorities, implemented all requested features, and diligently addressed all critical design feedback in the final refinement pass.</analysis>
+- Nothing. The agent has been methodically addressing a long and demanding list of user requests, including bug fixes, feature enhancements, architectural changes, and numerous design refinement passes. The current task (color system upgrade) is the direct result of the user's latest feedback.</analysis>

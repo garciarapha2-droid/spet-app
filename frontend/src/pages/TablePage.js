@@ -16,14 +16,14 @@ import {
 const VENUE_ID = () => localStorage.getItem('active_venue_id') || '40a24e04-75b6-435d-bfff-ab0d469ce543';
 
 const CATEGORIES = [
-  { name: 'Beers', icon: Beer, css: 'cat-beers', color: 'bg-amber-500', bgFull: 'bg-amber-500/15 border-amber-500/30', tileBg: 'bg-amber-500/10 hover:bg-amber-500/20 border-amber-500/25' },
-  { name: 'Cocktails', icon: Wine, css: 'cat-cocktails', color: 'bg-pink-500', bgFull: 'bg-pink-500/15 border-pink-500/30', tileBg: 'bg-pink-500/10 hover:bg-pink-500/20 border-pink-500/25' },
-  { name: 'Spirits', icon: GlassWater, css: 'cat-spirits', color: 'bg-orange-500', bgFull: 'bg-orange-500/15 border-orange-500/30', tileBg: 'bg-orange-500/10 hover:bg-orange-500/20 border-orange-500/25' },
-  { name: 'Non-alcoholic', icon: Coffee, css: 'cat-non-alcoholic', color: 'bg-emerald-500', bgFull: 'bg-emerald-500/15 border-emerald-500/30', tileBg: 'bg-emerald-500/10 hover:bg-emerald-500/20 border-emerald-500/25' },
-  { name: 'Snacks', icon: Sandwich, css: 'cat-snacks', color: 'bg-yellow-500', bgFull: 'bg-yellow-500/15 border-yellow-500/30', tileBg: 'bg-yellow-500/10 hover:bg-yellow-500/20 border-yellow-500/25' },
-  { name: 'Starters', icon: Salad, css: 'cat-starters', color: 'bg-lime-500', bgFull: 'bg-lime-500/15 border-lime-500/30', tileBg: 'bg-lime-500/10 hover:bg-lime-500/20 border-lime-500/25' },
-  { name: 'Mains', icon: Beef, css: 'cat-mains', color: 'bg-red-500', bgFull: 'bg-red-500/15 border-red-500/30', tileBg: 'bg-red-500/10 hover:bg-red-500/20 border-red-500/25' },
-  { name: 'Plates', icon: CakeSlice, css: 'cat-plates', color: 'bg-violet-500', bgFull: 'bg-violet-500/15 border-violet-500/30', tileBg: 'bg-violet-500/10 hover:bg-violet-500/20 border-violet-500/25' },
+  { name: 'Beers', icon: Beer, css: 'cat-beers', color: 'bg-amber-500', bgFull: 'bg-amber-500/[0.06] border-amber-500/15', tileBg: 'bg-amber-500/[0.04] hover:bg-amber-500/[0.08] border-amber-500/10', iconColor: 'text-amber-500' },
+  { name: 'Cocktails', icon: Wine, css: 'cat-cocktails', color: 'bg-pink-500', bgFull: 'bg-pink-500/[0.06] border-pink-500/15', tileBg: 'bg-pink-500/[0.04] hover:bg-pink-500/[0.08] border-pink-500/10', iconColor: 'text-pink-500' },
+  { name: 'Spirits', icon: GlassWater, css: 'cat-spirits', color: 'bg-orange-500', bgFull: 'bg-orange-500/[0.06] border-orange-500/15', tileBg: 'bg-orange-500/[0.04] hover:bg-orange-500/[0.08] border-orange-500/10', iconColor: 'text-orange-500' },
+  { name: 'Non-alcoholic', icon: Coffee, css: 'cat-non-alcoholic', color: 'bg-emerald-500', bgFull: 'bg-emerald-500/[0.06] border-emerald-500/15', tileBg: 'bg-emerald-500/[0.04] hover:bg-emerald-500/[0.08] border-emerald-500/10', iconColor: 'text-emerald-500' },
+  { name: 'Snacks', icon: Sandwich, css: 'cat-snacks', color: 'bg-yellow-500', bgFull: 'bg-yellow-600/[0.06] border-yellow-600/15', tileBg: 'bg-yellow-600/[0.04] hover:bg-yellow-600/[0.08] border-yellow-600/10', iconColor: 'text-yellow-600' },
+  { name: 'Starters', icon: Salad, css: 'cat-starters', color: 'bg-lime-500', bgFull: 'bg-lime-500/[0.06] border-lime-500/15', tileBg: 'bg-lime-500/[0.04] hover:bg-lime-500/[0.08] border-lime-500/10', iconColor: 'text-lime-500' },
+  { name: 'Mains', icon: Beef, css: 'cat-mains', color: 'bg-red-500', bgFull: 'bg-red-500/[0.06] border-red-500/15', tileBg: 'bg-red-500/[0.04] hover:bg-red-500/[0.08] border-red-500/10', iconColor: 'text-red-500' },
+  { name: 'Plates', icon: CakeSlice, css: 'cat-plates', color: 'bg-violet-500', bgFull: 'bg-violet-500/[0.06] border-violet-500/15', tileBg: 'bg-violet-500/[0.04] hover:bg-violet-500/[0.08] border-violet-500/10', iconColor: 'text-violet-500' },
 ];
 
 const CATEGORY_NAMES = CATEGORIES.map(c => c.name);
