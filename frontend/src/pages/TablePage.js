@@ -16,17 +16,18 @@ import {
 const VENUE_ID = () => localStorage.getItem('active_venue_id') || '40a24e04-75b6-435d-bfff-ab0d469ce543';
 
 const CATEGORIES = [
-  { name: 'Beers', icon: Beer },
-  { name: 'Cocktails', icon: Wine },
-  { name: 'Spirits', icon: GlassWater },
-  { name: 'Non-alcoholic', icon: Coffee },
-  { name: 'Snacks', icon: Sandwich },
-  { name: 'Starters', icon: Salad },
-  { name: 'Mains', icon: Beef },
-  { name: 'Plates', icon: CakeSlice },
+  { name: 'Beers', icon: Beer, css: 'cat-beers', color: 'bg-amber-500' },
+  { name: 'Cocktails', icon: Wine, css: 'cat-cocktails', color: 'bg-pink-500' },
+  { name: 'Spirits', icon: GlassWater, css: 'cat-spirits', color: 'bg-orange-500' },
+  { name: 'Non-alcoholic', icon: Coffee, css: 'cat-non-alcoholic', color: 'bg-emerald-500' },
+  { name: 'Snacks', icon: Sandwich, css: 'cat-snacks', color: 'bg-yellow-500' },
+  { name: 'Starters', icon: Salad, css: 'cat-starters', color: 'bg-lime-500' },
+  { name: 'Mains', icon: Beef, css: 'cat-mains', color: 'bg-red-500' },
+  { name: 'Plates', icon: CakeSlice, css: 'cat-plates', color: 'bg-violet-500' },
 ];
 
 const CATEGORY_NAMES = CATEGORIES.map(c => c.name);
+const getCatMeta = (name) => CATEGORIES.find(c => c.name === name) || CATEGORIES[0];
 
 /* Camera Capture Modal */
 function CameraModal({ onCapture, onClose }) {
@@ -333,6 +334,7 @@ export const TablePage = () => {
 
   const filteredItems = catalog.filter(i => i.category === selectedCategory).sort((a, b) => a.name.localeCompare(b.name));
   const currentTable = tables.find(t => t.id === selectedTable);
+  const activeCat = getCatMeta(selectedCategory);
 
   const reloadTableSession = async () => {
     if (!selectedTable) return;
@@ -369,7 +371,7 @@ export const TablePage = () => {
       )}
 
       {/* Header */}
-      <header className="h-14 border-b border-border/60 bg-card/80 backdrop-blur-md px-6 flex items-center justify-between">
+      <header className="h-12 border-b border-border bg-card px-5 flex items-center justify-between relative z-30">
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon" onClick={() => navigate('/tap')} data-testid="back-to-home-btn">
             <ArrowLeft className="h-4 w-4" />
@@ -392,7 +394,7 @@ export const TablePage = () => {
               <ChevronDown className="h-3 w-3" />
             </button>
             {showServerMenu && (
-              <div className="absolute top-full left-0 mt-1 bg-card border border-border rounded-lg shadow-lg z-50 min-w-[200px] py-1" data-testid="server-dropdown">
+              <div className="absolute top-full left-0 mt-1 bg-card border border-border rounded-lg shadow-2xl min-w-[200px] py-1" style={{ zIndex: 9999 }} data-testid="server-dropdown">
                 {barmen.map(b => (
                   <button key={b.id} onClick={() => { setSelectedServer(b.name); setShowServerMenu(false); }}
                     className={`w-full text-left px-4 py-2 text-sm hover:bg-muted ${selectedServer === b.name ? 'text-primary font-medium' : ''}`}>
@@ -411,7 +413,7 @@ export const TablePage = () => {
       </header>
 
       {/* Main POS Layout */}
-      <main className="h-[calc(100vh-56px)] flex overflow-hidden">
+      <main className="h-[calc(100vh-48px)] flex overflow-hidden">
 
         {/* LEFT: Table Map */}
         <div className="w-52 flex-shrink-0 border-r border-border bg-card/50 flex flex-col">
@@ -451,32 +453,36 @@ export const TablePage = () => {
         {/* CENTER: Category Sidebar + Items Grid */}
         <div className="flex-1 flex overflow-hidden">
           {/* Category Sidebar */}
-          <div className="w-24 flex-shrink-0 bg-secondary/30 border-r border-border flex flex-col py-2 overflow-y-auto" data-testid="table-category-tabs">
+          <div className="w-[72px] flex-shrink-0 border-r border-border bg-card flex flex-col py-2 overflow-y-auto" data-testid="table-category-tabs">
             {CATEGORIES.map(cat => {
               const Icon = cat.icon;
               const isActive = selectedCategory === cat.name;
               return (
                 <button key={cat.name}
                   onClick={() => { setSelectedCategory(cat.name); setEditingItem(null); }}
-                  className={`flex flex-col items-center gap-1 px-2 py-3 mx-1.5 rounded-xl transition-all text-center ${
-                    isActive ? 'bg-primary text-primary-foreground shadow-md' : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                  className={`flex flex-col items-center gap-0.5 px-1 py-2.5 mx-1 rounded-lg transition-all text-center ${
+                    isActive ? `${cat.css} bg-[hsl(var(--cat-bg))] text-[hsl(var(--cat-fg))] font-bold` : 'text-muted-foreground hover:bg-muted hover:text-foreground'
                   }`}
                   data-testid={`table-cat-${cat.name.toLowerCase().replace(/[^a-z]/g, '-')}`}>
-                  <Icon className="h-5 w-5" />
-                  <span className="text-[10px] font-semibold leading-tight">{cat.name}</span>
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isActive ? '' : 'bg-muted/50'}`}>
+                    <Icon className="h-4 w-4" />
+                  </div>
+                  <span className="text-[9px] font-semibold leading-tight">{cat.name}</span>
                 </button>
               );
             })}
             <button onClick={() => setShowCustomItem(!showCustomItem)}
-              className="flex flex-col items-center gap-1 px-2 py-3 mx-1.5 rounded-xl text-primary hover:bg-primary/10 transition-all mt-auto"
+              className="flex flex-col items-center gap-0.5 px-1 py-2.5 mx-1 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-all mt-auto"
               data-testid="table-custom-btn">
-              <Plus className="h-5 w-5" />
-              <span className="text-[10px] font-semibold leading-tight">Custom</span>
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center border border-dashed border-muted-foreground/30">
+                <Plus className="h-4 w-4" />
+              </div>
+              <span className="text-[9px] font-semibold leading-tight">Custom</span>
             </button>
           </div>
 
           {/* Items Grid */}
-          <div className="flex-1 p-5 overflow-y-auto">
+          <div className="flex-1 p-6 overflow-y-auto bg-background">
             {/* Table Context Bar */}
             {currentTable && tableDetail?.session && (
               <div className="bg-card border border-border rounded-xl p-3 mb-4" data-testid="table-context-bar">
@@ -529,19 +535,23 @@ export const TablePage = () => {
             )}
 
             {/* Category Title */}
-            <h3 className="font-bold text-lg mb-4 flex items-center gap-2" data-testid="table-category-title">
-              {(() => { const cat = CATEGORIES.find(c => c.name === selectedCategory); return cat ? <cat.icon className="h-5 w-5 text-primary" /> : null; })()}
-              {selectedCategory}
-              <span className="text-sm text-muted-foreground font-normal">({filteredItems.length})</span>
-            </h3>
+            <div className="flex items-center gap-3 mb-5">
+              <div className={`${activeCat.css} w-9 h-9 rounded-lg flex items-center justify-center bg-[hsl(var(--cat-bg))]`}>
+                <activeCat.icon className="h-5 w-5 text-[hsl(var(--cat-fg))]" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold" data-testid="table-category-title">{selectedCategory}</h3>
+                <span className="text-xs text-muted-foreground">{filteredItems.length} items</span>
+              </div>
+            </div>
 
             {/* Large Touch-Friendly Grid */}
-            <div className="grid grid-cols-4 gap-3" data-testid="table-items-list">
+            <div className="grid grid-cols-4 gap-4" data-testid="table-items-list">
               {filteredItems.length === 0 ? (
-                <p className="text-sm text-muted-foreground py-12 text-center col-span-4">No items</p>
+                <p className="text-sm text-muted-foreground py-16 text-center col-span-4">No items</p>
               ) : filteredItems.map(item => (
                 editingItem === item.id ? (
-                  <div key={item.id} className="p-4 rounded-xl border border-primary/30 bg-primary/5 space-y-2 col-span-4">
+                  <div key={item.id} className="p-4 rounded-xl border border-border bg-card space-y-2 col-span-4">
                     <div className="grid grid-cols-3 gap-2">
                       <Input value={editForm.name} onChange={e => setEditForm(p => ({ ...p, name: e.target.value }))} className="text-sm col-span-2" />
                       <Input type="number" step="0.01" value={editForm.price} onChange={e => setEditForm(p => ({ ...p, price: e.target.value }))} className="text-sm" />
@@ -554,21 +564,19 @@ export const TablePage = () => {
                 ) : (
                   <div key={item.id}
                     onClick={() => handleAddItem(item)}
-                    className="relative group flex flex-col rounded-xl border border-border bg-card hover:border-primary/50 hover:shadow-lg transition-all overflow-hidden text-left active:scale-[0.98] cursor-pointer"
+                    className={`${activeCat.css} relative group rounded-xl border bg-card hover:bg-[hsl(var(--cat-bg)/0.4)] hover:border-[hsl(var(--cat-border))] transition-all cursor-pointer active:scale-[0.97]`}
                     data-testid={`table-item-${item.id}`}
-                    role="button"
-                    tabIndex={0}
-                    onKeyDown={e => e.key === 'Enter' && handleAddItem(item)}>
-                    {item.image_url && <img src={item.image_url} alt="" className="w-full h-20 object-cover" />}
-                    <div className="p-4 flex-1 flex flex-col justify-between min-h-[80px]">
-                      <span className="font-semibold text-sm leading-snug block mb-2">{item.name}</span>
-                      <span className="text-primary font-bold text-base">${item.price.toFixed(2)}</span>
+                    role="button" tabIndex={0} onKeyDown={e => e.key === 'Enter' && handleAddItem(item)}>
+                    <div className={`h-1 rounded-t-xl ${activeCat.color} opacity-60`} />
+                    <div className="px-4 py-4">
+                      <span className="text-sm font-semibold leading-snug block mb-3">{item.name}</span>
+                      <span className="text-base font-bold tabular-nums">${item.price.toFixed(2)}</span>
                     </div>
-                    <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="absolute top-2.5 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity" style={{ zIndex: 10 }}>
                       <button onClick={(e) => { e.stopPropagation(); setEditingItem(item.id); setEditForm({ name: item.name, price: item.price, category: item.category }); }}
-                        className="p-1.5 rounded-lg bg-card/90 hover:bg-muted border border-border shadow-sm"><Pencil className="h-3 w-3 text-muted-foreground" /></button>
+                        className="p-1.5 rounded-lg bg-card border border-border shadow-sm hover:bg-muted"><Pencil className="h-3 w-3 text-muted-foreground" /></button>
                       <button onClick={(e) => { e.stopPropagation(); handleDeleteItem(item.id); }}
-                        className="p-1.5 rounded-lg bg-card/90 hover:bg-destructive/10 border border-border shadow-sm"><Trash2 className="h-3 w-3 text-muted-foreground" /></button>
+                        className="p-1.5 rounded-lg bg-card border border-border shadow-sm hover:bg-destructive/10"><Trash2 className="h-3 w-3 text-muted-foreground" /></button>
                     </div>
                   </div>
                 )
@@ -578,28 +586,25 @@ export const TablePage = () => {
         </div>
 
         {/* RIGHT: Table Detail / Order */}
-        <div className="w-80 flex-shrink-0 border-l border-border bg-card/50 flex flex-col">
+        <div className="w-[340px] flex-shrink-0 border-l border-border bg-card flex flex-col">
           {selectedTable ? (
             tableDetail ? (
               tableDetail.session ? (
                 <div data-testid="table-session-detail" className="flex flex-col h-full">
-                  {/* Session Header */}
-                  <div className="p-4 border-b border-border">
-                    <div className="flex items-center justify-between mb-1">
-                      <div className="flex items-center gap-2">
-                        <span className="font-bold text-sm bg-primary/10 text-primary px-2.5 py-1 rounded-lg" data-testid="table-detail-tab-number">#{tableDetail.session.tab_number || '-'}</span>
-                        <h2 className="text-base font-semibold truncate">{tableDetail.session.guest_name}</h2>
+                  {/* Session Header — bold, neutral */}
+                  <div className="px-5 py-4 border-b border-border bg-foreground/[0.02]">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="flex items-center gap-2 mb-0.5">
+                          <span className="text-xs font-bold bg-foreground/[0.08] text-foreground px-2 py-0.5 rounded" data-testid="table-detail-tab-number">#{tableDetail.session.tab_number || '-'}</span>
+                          <h2 className="text-base font-bold">{tableDetail.session.guest_name}</h2>
+                        </div>
+                        <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
+                          <span>Table #{tableDetail.table_number}</span>
+                          <ElapsedTime openedAt={tableDetail.session.opened_at} />
+                          <span className="flex items-center gap-1"><User className="h-3 w-3" /> {tableDetail.session.server_name || 'No server'}</span>
+                        </div>
                       </div>
-                    </div>
-                    <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
-                      <span>Table #{tableDetail.table_number}</span>
-                      <ElapsedTime openedAt={tableDetail.session.opened_at} />
-                      <span className="flex items-center gap-1"><User className="h-3 w-3" /> {tableDetail.session.server_name || 'No server'}</span>
-                      {tableDetail.session.id_verified && (
-                        <span className="flex items-center gap-1 bg-green-500/10 text-green-600 px-2 py-0.5 rounded-full font-medium" data-testid="id-verified-badge">
-                          <ShieldCheck className="h-3 w-3" /> ID
-                        </span>
-                      )}
                     </div>
                   </div>
 
@@ -608,45 +613,51 @@ export const TablePage = () => {
                     {(tableDetail.items || []).length === 0 ? (
                       <p className="text-sm text-muted-foreground py-8 text-center">No items — add from menu</p>
                     ) : tableDetail.items.map(item => (
-                      <div key={item.id} className="py-2.5 px-3 rounded-lg hover:bg-muted/30 text-sm group">
-                        <div className="flex items-center gap-2.5">
-                          <span className="w-6 h-6 rounded bg-primary/10 text-primary text-xs font-bold flex items-center justify-center flex-shrink-0">{item.qty}</span>
-                          <span className="font-medium flex-1 truncate">{item.name}</span>
-                          <span className="font-bold text-sm">${item.line_total.toFixed(2)}</span>
-                          <button onClick={() => setCustomizingItem(item)}
-                            className="p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-primary/10 text-muted-foreground hover:text-primary transition-opacity"
-                            data-testid={`table-customize-item-${item.id}`}>
-                            <Pencil className="h-3.5 w-3.5" />
-                          </button>
-                          <button onClick={() => handleVoidItem(item.id)}
-                            className="p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-opacity"
-                            data-testid={`table-void-item-${item.id}`}>
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </button>
-                        </div>
-                        {/* Show modifiers/extras/notes */}
-                        {(item.modifiers?.removed?.length > 0 || item.modifiers?.extras?.length > 0 || item.notes) && (
-                          <div className="ml-[34px] mt-1 space-y-0.5">
-                            {item.modifiers?.removed?.map(r => (
-                              <span key={r} className="block text-[11px] text-red-400 italic">No {r}</span>
-                            ))}
-                            {item.modifiers?.extras?.map(e => (
-                              <span key={e} className="block text-[11px] text-green-400 italic">Extra {e}</span>
-                            ))}
-                            {item.notes && (
-                              <span className="block text-[11px] text-muted-foreground italic">{item.notes}</span>
+                      <div key={item.id} className="px-5 py-3 hover:bg-muted/20 group">
+                        <div className="flex items-start gap-3">
+                          <span className="w-7 h-7 rounded-lg bg-foreground/[0.06] text-foreground text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">{item.qty}</span>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm font-semibold">{item.name}</span>
+                              <span className="text-sm font-bold tabular-nums ml-2">${item.line_total.toFixed(2)}</span>
+                            </div>
+                            {(item.modifiers?.removed?.length > 0 || item.modifiers?.extras?.length > 0 || item.notes) && (
+                              <div className="mt-1 space-y-0.5">
+                                {item.modifiers?.removed?.map(r => (
+                                  <span key={r} className="block text-[11px] text-red-500 font-medium">No {r}</span>
+                                ))}
+                                {item.modifiers?.extras?.map(e => (
+                                  <span key={e} className="block text-[11px] text-emerald-500 font-medium">+ {e}</span>
+                                ))}
+                                {item.notes && (
+                                  <span className="block text-[11px] text-muted-foreground italic">{item.notes}</span>
+                                )}
+                              </div>
                             )}
                           </div>
-                        )}
+                        </div>
+                        {/* Visible edit actions */}
+                        <div className="flex items-center gap-1 mt-2 ml-10 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button onClick={() => setCustomizingItem(item)}
+                            className="flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-medium text-foreground/60 hover:text-foreground hover:bg-muted border border-transparent hover:border-border transition-all"
+                            data-testid={`table-customize-item-${item.id}`}>
+                            <Pencil className="h-3 w-3" /> Item details
+                          </button>
+                          <button onClick={() => handleVoidItem(item.id)}
+                            className="flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-medium text-foreground/60 hover:text-red-500 hover:bg-red-500/10 border border-transparent hover:border-red-500/20 transition-all"
+                            data-testid={`table-void-item-${item.id}`}>
+                            <Trash2 className="h-3 w-3" /> Remove
+                          </button>
+                        </div>
                       </div>
                     ))}
                   </div>
 
                   {/* Total */}
-                  <div className="px-4 py-3 border-t border-border">
+                  <div className="px-5 py-4 border-t border-border bg-foreground/[0.02]">
                     <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted-foreground font-medium">Total</span>
-                      <span className="text-2xl font-bold text-primary" data-testid="table-total">${(tableDetail.session.total || 0).toFixed(2)}</span>
+                      <span className="text-sm text-muted-foreground">Total</span>
+                      <span className="text-2xl font-extrabold tabular-nums" data-testid="table-total">${(tableDetail.session.total || 0).toFixed(2)}</span>
                     </div>
                   </div>
 

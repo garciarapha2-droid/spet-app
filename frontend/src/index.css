@@ -151,6 +151,31 @@ p, li, span, div {
   letter-spacing: -0.02em;
 }
 
+/* ═══ Z-INDEX HIERARCHY ═══ */
+.z-dropdown { z-index: 40; }
+.z-modal { z-index: 50; }
+.z-popover { z-index: 45; }
+
+/* ═══ OPERATIONAL PALETTE — Toast-like category colors ═══ */
+.cat-beers { --cat-bg: 35 100% 95%; --cat-fg: 35 90% 38%; --cat-border: 35 80% 80%; }
+.cat-cocktails { --cat-bg: 340 80% 95%; --cat-fg: 340 70% 40%; --cat-border: 340 60% 80%; }
+.cat-spirits { --cat-bg: 25 90% 94%; --cat-fg: 25 85% 35%; --cat-border: 25 70% 78%; }
+.cat-non-alcoholic { --cat-bg: 150 50% 94%; --cat-fg: 150 45% 32%; --cat-border: 150 35% 78%; }
+.cat-snacks { --cat-bg: 45 90% 94%; --cat-fg: 45 80% 32%; --cat-border: 45 70% 78%; }
+.cat-starters { --cat-bg: 80 50% 94%; --cat-fg: 80 45% 30%; --cat-border: 80 35% 78%; }
+.cat-mains { --cat-bg: 0 70% 95%; --cat-fg: 0 60% 40%; --cat-border: 0 50% 82%; }
+.cat-plates { --cat-bg: 280 45% 95%; --cat-fg: 280 40% 40%; --cat-border: 280 30% 82%; }
+
+/* Dark mode overrides for category colors */
+[data-theme="dark"] .cat-beers { --cat-bg: 35 60% 12%; --cat-fg: 35 90% 70%; --cat-border: 35 40% 22%; }
+[data-theme="dark"] .cat-cocktails { --cat-bg: 340 50% 12%; --cat-fg: 340 70% 72%; --cat-border: 340 30% 22%; }
+[data-theme="dark"] .cat-spirits { --cat-bg: 25 55% 12%; --cat-fg: 25 80% 68%; --cat-border: 25 35% 22%; }
+[data-theme="dark"] .cat-non-alcoholic { --cat-bg: 150 35% 10%; --cat-fg: 150 50% 65%; --cat-border: 150 25% 20%; }
+[data-theme="dark"] .cat-snacks { --cat-bg: 45 50% 10%; --cat-fg: 45 80% 68%; --cat-border: 45 35% 20%; }
+[data-theme="dark"] .cat-starters { --cat-bg: 80 35% 10%; --cat-fg: 80 50% 65%; --cat-border: 80 25% 20%; }
+[data-theme="dark"] .cat-mains { --cat-bg: 0 45% 12%; --cat-fg: 0 65% 68%; --cat-border: 0 30% 22%; }
+[data-theme="dark"] .cat-plates { --cat-bg: 280 30% 12%; --cat-fg: 280 45% 70%; --cat-border: 280 20% 22%; }
+
 /* Premium Scrollbar */
 ::-webkit-scrollbar {
   width: 5px;

@@ -9,23 +9,26 @@ import { ItemCustomizeModal } from '../components/ItemCustomizeModal';
 import {
   ArrowLeft, Plus, X, CreditCard, Banknote, Beer, User, ChevronDown, ScanLine,
   Home, LogOut, LayoutGrid, Pencil, Trash2, Check, Receipt, Camera, Upload, ShieldCheck, Video, Lock,
-  Wine, Coffee, Beef, Salad, UtensilsCrossed, GlassWater, Sandwich, CakeSlice
+  Wine, Coffee, Beef, Salad, GlassWater, Sandwich, CakeSlice
 } from 'lucide-react';
 
 const VENUE_ID = () => localStorage.getItem('active_venue_id') || '40a24e04-75b6-435d-bfff-ab0d469ce543';
 
+/* Category colors — Toast-inspired vivid operational palette */
 const CATEGORIES = [
-  { name: 'Beers', icon: Beer },
-  { name: 'Cocktails', icon: Wine },
-  { name: 'Spirits', icon: GlassWater },
-  { name: 'Non-alcoholic', icon: Coffee },
-  { name: 'Snacks', icon: Sandwich },
-  { name: 'Starters', icon: Salad },
-  { name: 'Mains', icon: Beef },
-  { name: 'Plates', icon: CakeSlice },
+  { name: 'Beers', icon: Beer, css: 'cat-beers', color: 'bg-amber-500' },
+  { name: 'Cocktails', icon: Wine, css: 'cat-cocktails', color: 'bg-pink-500' },
+  { name: 'Spirits', icon: GlassWater, css: 'cat-spirits', color: 'bg-orange-500' },
+  { name: 'Non-alcoholic', icon: Coffee, css: 'cat-non-alcoholic', color: 'bg-emerald-500' },
+  { name: 'Snacks', icon: Sandwich, css: 'cat-snacks', color: 'bg-yellow-500' },
+  { name: 'Starters', icon: Salad, css: 'cat-starters', color: 'bg-lime-500' },
+  { name: 'Mains', icon: Beef, css: 'cat-mains', color: 'bg-red-500' },
+  { name: 'Plates', icon: CakeSlice, css: 'cat-plates', color: 'bg-violet-500' },
 ];
 
 const CATEGORY_NAMES = CATEGORIES.map(c => c.name);
+
+const getCatMeta = (name) => CATEGORIES.find(c => c.name === name) || CATEGORIES[0];
 
 /* Camera Capture Modal */
 function CameraModal({ onCapture, onClose }) {
@@ -53,7 +56,7 @@ function CameraModal({ onCapture, onClose }) {
     onClose();
   };
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80" data-testid="camera-modal">
+    <div className="fixed inset-0 z-modal flex items-center justify-center bg-black/80" data-testid="camera-modal">
       <div className="bg-card rounded-2xl p-4 max-w-lg w-full mx-4 shadow-2xl">
         <div className="flex items-center justify-between mb-3">
           <h3 className="font-bold flex items-center gap-2"><Video className="h-4 w-4" /> Take Photo</h3>
@@ -73,24 +76,24 @@ function CameraModal({ onCapture, onClose }) {
 function GuestConfirmModal({ session, onConfirm, onCancel }) {
   if (!session) return null;
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" data-testid="guest-confirm-modal">
+    <div className="fixed inset-0 z-modal flex items-center justify-center bg-black/50 backdrop-blur-sm" data-testid="guest-confirm-modal">
       <div className="bg-card border border-border rounded-2xl shadow-2xl w-full max-w-md p-6 text-center">
         {session.guest_photo ? (
-          <img src={session.guest_photo} alt="" className="w-24 h-24 rounded-full object-cover mx-auto mb-4 border-4 border-primary/20" />
+          <img src={session.guest_photo} alt="" className="w-24 h-24 rounded-full object-cover mx-auto mb-4 border-4 border-border" />
         ) : (
-          <div className="w-24 h-24 rounded-full bg-muted flex items-center justify-center mx-auto mb-4 border-4 border-primary/20">
+          <div className="w-24 h-24 rounded-full bg-muted flex items-center justify-center mx-auto mb-4 border-4 border-border">
             <User className="h-10 w-10 text-muted-foreground" />
           </div>
         )}
         <h2 className="text-xl font-bold mb-1" data-testid="confirm-guest-name">{session.guest_name}</h2>
         {session.tab_number && (
-          <span className="inline-block bg-primary/10 text-primary font-bold px-3 py-1 rounded-full text-sm mb-4" data-testid="confirm-tab-number">Tab #{session.tab_number}</span>
+          <span className="inline-block bg-muted text-foreground font-bold px-3 py-1 rounded-full text-sm mb-4" data-testid="confirm-tab-number">Tab #{session.tab_number}</span>
         )}
         <p className="text-sm text-muted-foreground mb-6">Confirm this is the correct guest before proceeding.</p>
         <div className="flex gap-3">
           <Button variant="outline" className="flex-1 h-11" onClick={onCancel} data-testid="confirm-cancel-btn">Cancel</Button>
           <Button className="flex-1 h-11" onClick={onConfirm} data-testid="confirm-guest-btn">
-            <ShieldCheck className="h-4 w-4 mr-2" /> Confirm this guest
+            <ShieldCheck className="h-4 w-4 mr-2" /> Confirm
           </Button>
         </div>
       </div>
@@ -227,15 +230,8 @@ export const TapPage = () => {
     const cleaned = raw.startsWith('#') ? raw.slice(1) : raw;
     const isNumeric = /^\d+$/.test(cleaned);
     let match;
-    if (isNumeric) {
-      match = sessions.find(s => s.tab_number && s.tab_number.toString() === cleaned);
-    }
-    if (!match) {
-      match = sessions.find(s =>
-        s.guest_name?.toLowerCase().includes(raw.toLowerCase()) ||
-        (s.tab_number && s.tab_number.toString() === cleaned)
-      );
-    }
+    if (isNumeric) match = sessions.find(s => s.tab_number && s.tab_number.toString() === cleaned);
+    if (!match) match = sessions.find(s => s.guest_name?.toLowerCase().includes(raw.toLowerCase()) || (s.tab_number && s.tab_number.toString() === cleaned));
     if (match) { setActiveSessionId(match.session_id || match.id); setScanInput(''); }
     else toast.error('No matching tab');
   };
@@ -247,10 +243,7 @@ export const TapPage = () => {
       const fd = new FormData();
       fd.append('venue_id', VENUE_ID()); fd.append('guest_name', newTabName.trim());
       const barmanObj = barmen.find(b => b.name === selectedBarman);
-      if (barmanObj) {
-        fd.append('bartender_id', barmanObj.id);
-        fd.append('bartender_name', barmanObj.name);
-      }
+      if (barmanObj) { fd.append('bartender_id', barmanObj.id); fd.append('bartender_name', barmanObj.name); }
       const res = await tapAPI.openSession(fd);
       setActiveSessionId(res.data.session_id); setNewTabName(''); setShowNewTab(false);
       await loadData(); toast.success(`Tab #${res.data.tab_number} opened`);
@@ -317,21 +310,13 @@ export const TapPage = () => {
 
   const handleCloseTab = async (method, location) => {
     if (!activeSessionId) return;
-    if (location === 'pay_at_register') {
-      setPaymentProcessed(true);
-      toast.success('Sent to register — done.');
-      return;
-    }
+    if (location === 'pay_at_register') { setPaymentProcessed(true); toast.success('Sent to register'); return; }
     setLoading(true);
     try {
-      const fd = new FormData();
-      fd.append('payment_method', method);
-      fd.append('payment_location', location);
+      const fd = new FormData(); fd.append('payment_method', method); fd.append('payment_location', location);
       const res = await tapAPI.closeSession(activeSessionId, fd);
       setClosedSessionForTip({ id: activeSessionId, total: res.data.total, guest_name: activeSession?.guest_name, tab_number: activeSession?.tab_number });
-      setCloseStep('tip');
-      setPaymentProcessed(true);
-      await loadData();
+      setCloseStep('tip'); setPaymentProcessed(true); await loadData();
     } catch { toast.error('Failed'); }
     setLoading(false);
   };
@@ -344,9 +329,8 @@ export const TapPage = () => {
       if (tipType === 'amount') fd.append('tip_amount', parseFloat(tipInput).toString());
       else fd.append('tip_percent', parseFloat(tipInput).toString());
       const res = await tapAPI.recordTip(closedSessionForTip.id, fd);
-      setTipResult(res.data);
-      toast.success(`Tip $${res.data.tip_amount} recorded`);
-    } catch { toast.error('Failed to record tip'); }
+      setTipResult(res.data); toast.success(`Tip $${res.data.tip_amount.toFixed(2)} recorded`);
+    } catch { toast.error('Failed'); }
     setLoading(false);
   };
 
@@ -383,12 +367,11 @@ export const TapPage = () => {
 
   const reloadSession = async () => {
     if (!activeSessionId) return;
-    try {
-      const res = await tapAPI.getSession(activeSessionId);
-      setActiveSession(res.data);
-    } catch {}
+    try { const res = await tapAPI.getSession(activeSessionId); setActiveSession(res.data); } catch {}
     await loadData();
   };
+
+  const activeCat = getCatMeta(selectedCategory);
 
   if (moduleBlocked) {
     return (
@@ -404,44 +387,38 @@ export const TapPage = () => {
   return (
     <div className="min-h-screen bg-background" data-testid="tap-page">
       {showCamera && <CameraModal onCapture={file => setCustomPhoto(file)} onClose={() => setShowCamera(false)} />}
-      {pendingConfirmSession && (
-        <GuestConfirmModal session={pendingConfirmSession} onConfirm={handleConfirmGuest} onCancel={handleCancelConfirm} />
-      )}
+      {pendingConfirmSession && <GuestConfirmModal session={pendingConfirmSession} onConfirm={handleConfirmGuest} onCancel={handleCancelConfirm} />}
       {customizingItem && activeSessionId && (
-        <ItemCustomizeModal
-          item={customizingItem}
-          sessionId={activeSessionId}
-          token={getToken()}
-          onClose={() => setCustomizingItem(null)}
-          onSaved={reloadSession}
-        />
+        <ItemCustomizeModal item={customizingItem} sessionId={activeSessionId} token={getToken()} onClose={() => setCustomizingItem(null)} onSaved={reloadSession} />
       )}
 
-      {/* ── Header ── */}
-      <header className="h-14 border-b border-border/60 bg-card/80 backdrop-blur-md px-6 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => navigate('/pulse/bar')} data-testid="back-btn">
+      {/* ── Header — clean, minimal ── */}
+      <header className="h-12 border-b border-border bg-card px-5 flex items-center justify-between relative z-30">
+        <div className="flex items-center gap-2.5">
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigate('/pulse/bar')} data-testid="back-btn">
             <ArrowLeft className="h-4 w-4" />
           </Button>
-          <span className="text-base font-bold tracking-tight">TAP</span>
-          <span className="text-[10px] font-semibold bg-primary/10 text-primary px-2 py-0.5 rounded-full uppercase tracking-wider">DISCO</span>
-          <div className="h-5 w-px bg-border" />
-          <label className="flex items-center gap-2 cursor-pointer" data-testid="table-toggle">
-            <LayoutGrid className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm text-muted-foreground" onClick={() => navigate('/table')}>Table</span>
-          </label>
-          <div className="h-5 w-px bg-border" />
-          {/* Barman Selector */}
+          <span className="text-sm font-bold tracking-tight">TAP</span>
+          <span className="text-[9px] font-bold bg-primary/15 text-primary px-1.5 py-0.5 rounded uppercase tracking-wider">DISCO</span>
+          <div className="h-4 w-px bg-border" />
+          <button className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1" onClick={() => navigate('/table')} data-testid="table-toggle">
+            <LayoutGrid className="h-3.5 w-3.5" /> Table
+          </button>
+          <div className="h-4 w-px bg-border" />
+
+          {/* Barman Selector — FIXED z-index */}
           <div className="relative">
             <button onClick={() => setShowBarmanMenu(!showBarmanMenu)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm hover:bg-muted"
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
+                selectedBarman ? 'bg-emerald-500/10 text-emerald-600' : 'bg-red-500/10 text-red-500 animate-pulse'
+              }`}
               data-testid="barman-selector">
-              <User className="h-3.5 w-3.5 text-muted-foreground" />
-              <span className="text-muted-foreground">{selectedBarman || 'Select barman'}</span>
-              <ChevronDown className="h-3 w-3 text-muted-foreground" />
+              <User className="h-3 w-3" />
+              <span>{selectedBarman || 'Select barman'}</span>
+              <ChevronDown className="h-3 w-3" />
             </button>
             {showBarmanMenu && (
-              <div className="absolute top-full left-0 mt-1 bg-card border border-border rounded-lg shadow-lg z-50 min-w-[220px] py-1" data-testid="barman-dropdown">
+              <div className="absolute top-full left-0 mt-1 bg-card border border-border rounded-lg shadow-2xl min-w-[220px] py-1" style={{ zIndex: 9999 }} data-testid="barman-dropdown">
                 {barmen.map(b => (
                   <div key={b.id} className="flex items-center group">
                     {editingBarman === b.id ? (
@@ -483,61 +460,55 @@ export const TapPage = () => {
             )}
           </div>
         </div>
-        <div className="flex items-center gap-3">
-          <span className="text-sm text-muted-foreground">Tabs: <strong className="text-foreground">{stats.open_tabs || 0}</strong></span>
-          <div className="h-5 w-px bg-border" />
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-muted-foreground">Tabs: <strong className="text-foreground">{stats.open_tabs || 0}</strong></span>
+          <div className="h-4 w-px bg-border" />
           <ThemeToggle />
-          <Button variant="ghost" size="icon" onClick={() => navigate('/venue/home')} data-testid="home-btn"><Home className="h-4 w-4" /></Button>
-          <Button variant="ghost" size="icon" onClick={() => { localStorage.removeItem('spetap_token'); navigate('/login'); }} data-testid="logout-btn"><LogOut className="h-4 w-4" /></Button>
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigate('/venue/home')} data-testid="home-btn"><Home className="h-3.5 w-3.5" /></Button>
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { localStorage.removeItem('spetap_token'); navigate('/login'); }} data-testid="logout-btn"><LogOut className="h-3.5 w-3.5" /></Button>
         </div>
       </header>
 
       {/* ── Main POS Layout ── */}
-      <main className="h-[calc(100vh-56px)] flex overflow-hidden">
+      <main className="h-[calc(100vh-48px)] flex overflow-hidden">
 
-        {/* LEFT: Tabs List */}
-        <div className="w-56 flex-shrink-0 border-r border-border bg-card/50 flex flex-col">
-          <div className="p-3 space-y-2 border-b border-border">
+        {/* LEFT: Tabs List — narrow, clean */}
+        <div className="w-52 flex-shrink-0 border-r border-border bg-card flex flex-col">
+          <div className="p-3 border-b border-border">
             <form onSubmit={handleScan}>
-              <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground mb-1.5 uppercase font-semibold tracking-wider">
+              <div className="flex items-center gap-1.5 text-[9px] text-muted-foreground mb-1 uppercase font-semibold tracking-wider">
                 <ScanLine className="h-3 w-3" /> Scan / Search
               </div>
-              <Input value={scanInput} onChange={e => setScanInput(e.target.value)} placeholder="Name or #tab..." className="h-9 text-sm" data-testid="tap-scan-input" />
+              <Input value={scanInput} onChange={e => setScanInput(e.target.value)} placeholder="Name or #tab..." className="h-8 text-xs" data-testid="tap-scan-input" />
             </form>
           </div>
           <div className="flex items-center justify-between px-3 py-2">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Open Tabs ({sessions.length})</span>
+            <span className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground">Open Tabs ({sessions.length})</span>
             <button onClick={() => setShowNewTab(true)} className="text-primary hover:text-primary/80" data-testid="new-tab-btn"><Plus className="h-4 w-4" /></button>
           </div>
           {showNewTab && (
-            <div className="mx-3 mb-2 p-2.5 rounded-lg border border-primary/30 bg-primary/5 space-y-2" data-testid="new-tab-form">
-              <Input value={newTabName} onChange={e => setNewTabName(e.target.value)} placeholder="Guest name" className="h-8 text-sm" autoFocus data-testid="new-tab-name-input" />
+            <div className="mx-3 mb-2 p-2.5 rounded-lg border border-border bg-muted/30 space-y-2" data-testid="new-tab-form">
+              <Input value={newTabName} onChange={e => setNewTabName(e.target.value)} placeholder="Guest name" className="h-8 text-xs" autoFocus data-testid="new-tab-name-input" />
               <div className="flex gap-1">
-                <Button size="sm" className="flex-1 h-8 text-xs" onClick={handleOpenTab} disabled={!newTabName.trim() || !selectedBarman || loading}>Open</Button>
-                <Button size="sm" variant="ghost" className="h-8" onClick={() => setShowNewTab(false)}><X className="h-3 w-3" /></Button>
+                <Button size="sm" className="flex-1 h-7 text-[10px]" onClick={handleOpenTab} disabled={!newTabName.trim() || !selectedBarman || loading}>Open</Button>
+                <Button size="sm" variant="ghost" className="h-7" onClick={() => setShowNewTab(false)}><X className="h-3 w-3" /></Button>
               </div>
             </div>
           )}
-          <div className="flex-1 overflow-y-auto px-2 pb-2 space-y-1">
+          <div className="flex-1 overflow-y-auto px-1.5 pb-2 space-y-0.5">
             {sessions.map(s => (
               <button key={s.session_id || s.id}
                 onClick={() => !s._isPulseOnly && setActiveSessionId(s.session_id || s.id)}
-                className={`w-full text-left px-3 py-2.5 rounded-lg border transition-all text-sm ${
-                  s._isPulseOnly ? 'border-border/50 bg-muted/30 opacity-60' :
-                  (s.session_id || s.id) === activeSessionId ? 'border-primary bg-primary/10 shadow-sm' : 'border-transparent hover:border-border hover:bg-card'
+                className={`w-full text-left px-2.5 py-2 rounded-lg transition-all text-xs ${
+                  s._isPulseOnly ? 'opacity-40 cursor-default' :
+                  (s.session_id || s.id) === activeSessionId ? 'bg-foreground/[0.06] ring-1 ring-foreground/10' : 'hover:bg-muted'
                 }`} data-testid={`tab-${s.tab_number || s.session_id || s.id}`}>
                 <div className="flex justify-between items-center">
                   <div className="truncate">
-                    <span className="font-semibold">{s.guest_name}</span>
-                    {s.tab_number ? (
-                      <span className="text-primary font-bold ml-1.5 text-xs">#{s.tab_number}</span>
-                    ) : (
-                      <span className="text-muted-foreground text-xs ml-1">(inside)</span>
-                    )}
+                    <span className="font-medium">{s.guest_name}</span>
+                    {s.tab_number && <span className="text-muted-foreground font-bold ml-1">#{s.tab_number}</span>}
                   </div>
-                  <span className={`font-bold text-xs ${s._isPulseOnly && s.status === 'closed' ? 'text-muted-foreground' : 'text-primary'}`}>
-                    ${(s.total || 0).toFixed(2)}
-                  </span>
+                  <span className="font-bold tabular-nums">${(s.total || 0).toFixed(2)}</span>
                 </div>
               </button>
             ))}
@@ -546,8 +517,8 @@ export const TapPage = () => {
 
         {/* CENTER: Category Sidebar + Items Grid */}
         <div className="flex-1 flex overflow-hidden">
-          {/* Category Sidebar */}
-          <div className="w-24 flex-shrink-0 bg-secondary/30 border-r border-border flex flex-col py-2 overflow-y-auto" data-testid="category-sidebar">
+          {/* Category Sidebar — Toast-like colored icons */}
+          <div className="w-[72px] flex-shrink-0 border-r border-border bg-card flex flex-col py-2 overflow-y-auto" data-testid="category-sidebar">
             {CATEGORIES.map(cat => {
               const Icon = cat.icon;
               const isActive = selectedCategory === cat.name;
@@ -555,33 +526,37 @@ export const TapPage = () => {
                 <button
                   key={cat.name}
                   onClick={() => { setSelectedCategory(cat.name); setEditingItem(null); }}
-                  className={`flex flex-col items-center gap-1 px-2 py-3 mx-1.5 rounded-xl transition-all text-center ${
+                  className={`flex flex-col items-center gap-0.5 px-1 py-2.5 mx-1 rounded-lg transition-all text-center ${
                     isActive
-                      ? 'bg-primary text-primary-foreground shadow-md'
+                      ? `${cat.css} bg-[hsl(var(--cat-bg))] text-[hsl(var(--cat-fg))] font-bold`
                       : 'text-muted-foreground hover:bg-muted hover:text-foreground'
                   }`}
                   data-testid={`cat-tab-${cat.name.toLowerCase().replace(/[^a-z]/g, '-')}`}
                 >
-                  <Icon className="h-5 w-5" />
-                  <span className="text-[10px] font-semibold leading-tight">{cat.name}</span>
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isActive ? '' : 'bg-muted/50'}`}>
+                    <Icon className="h-4 w-4" />
+                  </div>
+                  <span className="text-[9px] font-semibold leading-tight">{cat.name}</span>
                 </button>
               );
             })}
             <button
               onClick={() => setShowCustomItem(!showCustomItem)}
-              className="flex flex-col items-center gap-1 px-2 py-3 mx-1.5 rounded-xl text-primary hover:bg-primary/10 transition-all mt-auto"
+              className="flex flex-col items-center gap-0.5 px-1 py-2.5 mx-1 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-all mt-auto"
               data-testid="add-custom-menu-btn"
             >
-              <Plus className="h-5 w-5" />
-              <span className="text-[10px] font-semibold leading-tight">Custom</span>
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center border border-dashed border-muted-foreground/30">
+                <Plus className="h-4 w-4" />
+              </div>
+              <span className="text-[9px] font-semibold leading-tight">Custom</span>
             </button>
           </div>
 
-          {/* Items Grid */}
-          <div className="flex-1 p-5 overflow-y-auto">
+          {/* Items Grid — clean, spacious */}
+          <div className="flex-1 p-6 overflow-y-auto bg-background">
             {/* Custom Item Form */}
             {showCustomItem && (
-              <div className="bg-card border border-primary/20 rounded-xl p-4 mb-5 space-y-3" data-testid="custom-item-form">
+              <div className="bg-card border border-border rounded-xl p-4 mb-6 space-y-3" data-testid="custom-item-form">
                 <div className="grid grid-cols-3 gap-2">
                   <Input value={customItem.name} onChange={e => setCustomItem(p => ({ ...p, name: e.target.value }))} placeholder="Item name" className="text-sm col-span-2" data-testid="custom-item-name" />
                   <Input type="number" step="0.01" value={customItem.price} onChange={e => setCustomItem(p => ({ ...p, price: e.target.value }))} placeholder="$ Price" className="text-sm" data-testid="custom-item-price" />
@@ -605,20 +580,24 @@ export const TapPage = () => {
               </div>
             )}
 
-            {/* Category Title */}
-            <h3 className="font-bold text-lg mb-4 flex items-center gap-2" data-testid="category-title">
-              {(() => { const cat = CATEGORIES.find(c => c.name === selectedCategory); return cat ? <cat.icon className="h-5 w-5 text-primary" /> : null; })()}
-              {selectedCategory}
-              <span className="text-sm text-muted-foreground font-normal">({filteredItems.length})</span>
-            </h3>
+            {/* Category Header */}
+            <div className="flex items-center gap-3 mb-5">
+              <div className={`${activeCat.css} w-9 h-9 rounded-lg flex items-center justify-center bg-[hsl(var(--cat-bg))]`}>
+                <activeCat.icon className="h-5 w-5 text-[hsl(var(--cat-fg))]" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold" data-testid="category-title">{selectedCategory}</h3>
+                <span className="text-xs text-muted-foreground">{filteredItems.length} items</span>
+              </div>
+            </div>
 
-            {/* Large Touch-Friendly Grid */}
-            <div className="grid grid-cols-4 gap-3" data-testid="items-list">
+            {/* Large Touch Grid — 4 columns, clean tiles */}
+            <div className="grid grid-cols-4 gap-4" data-testid="items-list">
               {filteredItems.length === 0 ? (
-                <p className="text-sm text-muted-foreground py-12 text-center col-span-4">No items in {selectedCategory}</p>
+                <p className="text-sm text-muted-foreground py-16 text-center col-span-4">No items in {selectedCategory}</p>
               ) : filteredItems.map(item => (
                 editingItem === item.id ? (
-                  <div key={item.id} className="p-4 rounded-xl border border-primary/30 bg-primary/5 space-y-2 col-span-4">
+                  <div key={item.id} className="p-4 rounded-xl border border-border bg-card space-y-2 col-span-4">
                     <div className="grid grid-cols-3 gap-2">
                       <Input value={editForm.name} onChange={e => setEditForm(p => ({ ...p, name: e.target.value }))} className="text-sm col-span-2" />
                       <Input type="number" step="0.01" value={editForm.price} onChange={e => setEditForm(p => ({ ...p, price: e.target.value }))} className="text-sm" />
@@ -632,27 +611,26 @@ export const TapPage = () => {
                   <div
                     key={item.id}
                     onClick={() => handleAddItem(item)}
-                    className="relative group flex flex-col rounded-xl border border-border bg-card hover:border-primary/50 hover:shadow-lg transition-all overflow-hidden text-left active:scale-[0.98] cursor-pointer"
+                    className={`${activeCat.css} relative group rounded-xl border bg-card hover:bg-[hsl(var(--cat-bg)/0.4)] hover:border-[hsl(var(--cat-border))] transition-all cursor-pointer active:scale-[0.97]`}
                     data-testid={`item-${item.id}`}
                     role="button"
                     tabIndex={0}
                     onKeyDown={e => e.key === 'Enter' && handleAddItem(item)}
                   >
-                    {item.image_url && (
-                      <img src={item.image_url} alt="" className="w-full h-20 object-cover" />
-                    )}
-                    <div className="p-4 flex-1 flex flex-col justify-between min-h-[80px]">
-                      <span className="font-semibold text-sm leading-snug block mb-2">{item.name}</span>
-                      <span className="text-primary font-bold text-base">${item.price.toFixed(2)}</span>
+                    {/* Color accent stripe */}
+                    <div className={`h-1 rounded-t-xl ${activeCat.color} opacity-60`} />
+                    <div className="px-4 py-4">
+                      <span className="text-sm font-semibold leading-snug block mb-3">{item.name}</span>
+                      <span className="text-base font-bold tabular-nums">${item.price.toFixed(2)}</span>
                     </div>
-                    {/* Edit/Delete overlay */}
-                    <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    {/* Edit/Delete — visible on hover */}
+                    <div className="absolute top-2.5 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity" style={{ zIndex: 10 }}>
                       <button onClick={(e) => { e.stopPropagation(); setEditingItem(item.id); setEditForm({ name: item.name, price: item.price, category: item.category }); }}
-                        className="p-1.5 rounded-lg bg-card/90 hover:bg-muted border border-border shadow-sm" data-testid={`edit-item-${item.id}`}>
+                        className="p-1.5 rounded-lg bg-card border border-border shadow-sm hover:bg-muted" data-testid={`edit-item-${item.id}`}>
                         <Pencil className="h-3 w-3 text-muted-foreground" />
                       </button>
                       <button onClick={(e) => { e.stopPropagation(); handleDeleteItem(item.id); }}
-                        className="p-1.5 rounded-lg bg-card/90 hover:bg-destructive/10 border border-border shadow-sm" data-testid={`delete-item-${item.id}`}>
+                        className="p-1.5 rounded-lg bg-card border border-border shadow-sm hover:bg-destructive/10" data-testid={`delete-item-${item.id}`}>
                         <Trash2 className="h-3 w-3 text-muted-foreground" />
                       </button>
                     </div>
@@ -663,135 +641,140 @@ export const TapPage = () => {
           </div>
         </div>
 
-        {/* RIGHT: Active Tab / Order Summary */}
-        <div className="w-80 flex-shrink-0 border-l border-border bg-card/50 flex flex-col">
+        {/* RIGHT: Order Panel — STRONG, operational control */}
+        <div className="w-[340px] flex-shrink-0 border-l border-border bg-card flex flex-col">
           {activeSession ? (
             <div data-testid="active-tab-detail" className="flex flex-col h-full">
-              {/* Tab Header */}
-              <div className="p-4 border-b border-border">
-                <div className="flex items-center justify-between mb-1">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-bold bg-primary/10 text-primary px-2.5 py-1 rounded-lg" data-testid="active-tab-number">#{activeSession.tab_number || '-'}</span>
-                    <h2 className="text-base font-semibold truncate">{activeSession.guest_name}</h2>
+              {/* Tab Header — bold, prominent */}
+              <div className="px-5 py-4 border-b border-border bg-foreground/[0.02]">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="flex items-center gap-2 mb-0.5">
+                      <span className="text-xs font-bold bg-foreground/[0.08] text-foreground px-2 py-0.5 rounded" data-testid="active-tab-number">#{activeSession.tab_number || '-'}</span>
+                      <h2 className="text-base font-bold">{activeSession.guest_name}</h2>
+                    </div>
+                    <span className="text-[10px] text-muted-foreground">opened {new Date(activeSession.opened_at).toLocaleTimeString()}</span>
                   </div>
+                  <button onClick={handleCancelOrder} className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground">
+                    <X className="h-4 w-4" />
+                  </button>
                 </div>
-                <p className="text-[11px] text-muted-foreground">opened {new Date(activeSession.opened_at).toLocaleTimeString()}</p>
               </div>
 
-              {/* Items */}
-              <div className="flex-1 overflow-y-auto p-3 space-y-0.5">
+              {/* Order Items — CLEAR with visible edit action */}
+              <div className="flex-1 overflow-y-auto">
                 {(activeSession.items || []).length === 0 ? (
-                  <p className="text-sm text-muted-foreground py-8 text-center">No items — add from menu</p>
-                ) : activeSession.items.map(item => (
-                  <div key={item.id} className="py-2.5 px-3 rounded-lg hover:bg-muted/30 text-sm group">
-                    <div className="flex items-center gap-2.5">
-                      <span className="w-6 h-6 rounded bg-primary/10 text-primary text-xs font-bold flex items-center justify-center flex-shrink-0">{item.qty}</span>
-                      <span className="font-medium flex-1 truncate">{item.name}</span>
-                      <span className="font-bold text-sm">${item.line_total.toFixed(2)}</span>
-                      {activeSession.status === 'open' && (
-                        <>
-                          <button onClick={() => setCustomizingItem(item)}
-                            className="p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-primary/10 text-muted-foreground hover:text-primary transition-opacity"
-                            data-testid={`customize-item-${item.id}`}>
-                            <Pencil className="h-3.5 w-3.5" />
-                          </button>
-                          <button onClick={() => handleVoidItem(item.id)}
-                            className="p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-opacity"
-                            data-testid={`void-item-${item.id}`}>
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </button>
-                        </>
-                      )}
-                    </div>
-                    {/* Show modifiers/extras/notes under item */}
-                    {(item.modifiers?.removed?.length > 0 || item.modifiers?.extras?.length > 0 || item.notes) && (
-                      <div className="ml-[34px] mt-1 space-y-0.5">
-                        {item.modifiers?.removed?.map(r => (
-                          <span key={r} className="block text-[11px] text-red-400 italic">No {r}</span>
-                        ))}
-                        {item.modifiers?.extras?.map(e => (
-                          <span key={e} className="block text-[11px] text-green-400 italic">Extra {e}</span>
-                        ))}
-                        {item.notes && (
-                          <span className="block text-[11px] text-muted-foreground italic">{item.notes}</span>
+                  <div className="flex flex-col items-center justify-center h-full text-muted-foreground px-6">
+                    <Receipt className="h-8 w-8 mb-2 opacity-30" />
+                    <p className="text-sm text-center">Tap an item to add to order</p>
+                  </div>
+                ) : (
+                  <div className="divide-y divide-border/50">
+                    {activeSession.items.map(item => (
+                      <div key={item.id} className="px-5 py-3 hover:bg-muted/20 group">
+                        <div className="flex items-start gap-3">
+                          {/* Quantity badge */}
+                          <span className="w-7 h-7 rounded-lg bg-foreground/[0.06] text-foreground text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">{item.qty}</span>
+                          {/* Item info */}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm font-semibold">{item.name}</span>
+                              <span className="text-sm font-bold tabular-nums ml-2">${item.line_total.toFixed(2)}</span>
+                            </div>
+                            {/* Modifiers display */}
+                            {(item.modifiers?.removed?.length > 0 || item.modifiers?.extras?.length > 0 || item.notes) && (
+                              <div className="mt-1 space-y-0.5">
+                                {item.modifiers?.removed?.map(r => (
+                                  <span key={r} className="block text-[11px] text-red-500 font-medium">No {r}</span>
+                                ))}
+                                {item.modifiers?.extras?.map(e => (
+                                  <span key={e} className="block text-[11px] text-emerald-500 font-medium">+ {e}</span>
+                                ))}
+                                {item.notes && (
+                                  <span className="block text-[11px] text-muted-foreground italic">{item.notes}</span>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        {/* VISIBLE EDIT ACTIONS — not hidden */}
+                        {activeSession.status === 'open' && (
+                          <div className="flex items-center gap-1 mt-2 ml-10 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button onClick={() => setCustomizingItem(item)}
+                              className="flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-medium text-foreground/60 hover:text-foreground hover:bg-muted border border-transparent hover:border-border transition-all"
+                              data-testid={`customize-item-${item.id}`}>
+                              <Pencil className="h-3 w-3" /> Item details
+                            </button>
+                            <button onClick={() => handleVoidItem(item.id)}
+                              className="flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-medium text-foreground/60 hover:text-red-500 hover:bg-red-500/10 border border-transparent hover:border-red-500/20 transition-all"
+                              data-testid={`void-item-${item.id}`}>
+                              <Trash2 className="h-3 w-3" /> Remove
+                            </button>
+                          </div>
                         )}
                       </div>
-                    )}
+                    ))}
                   </div>
-                ))}
+                )}
               </div>
 
-              {/* Total */}
-              <div className="px-4 py-3 border-t border-border">
+              {/* Total — prominent */}
+              <div className="px-5 py-4 border-t border-border bg-foreground/[0.02]">
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground font-medium">Total</span>
-                  <span className="text-2xl font-bold text-primary" data-testid="tab-total">${activeSession.total.toFixed(2)}</span>
+                  <span className="text-sm text-muted-foreground">Total</span>
+                  <span className="text-2xl font-extrabold tabular-nums" data-testid="tab-total">${activeSession.total.toFixed(2)}</span>
                 </div>
               </div>
 
-              {/* Action Area */}
-              <div className="p-3 border-t border-border space-y-2">
-                {/* Confirm Order */}
+              {/* Action Buttons */}
+              <div className="px-4 py-3 border-t border-border space-y-2">
                 {activeSession.status === 'open' && !closeStep && !orderConfirmed && (
-                  <div className="grid grid-cols-2 gap-2" data-testid="order-action-buttons">
-                    <Button variant="destructive" className="h-11 text-xs font-semibold" onClick={handleCancelOrder} data-testid="cancel-order-btn">
-                      <X className="h-4 w-4 mr-1" /> Cancel
-                    </Button>
-                    <Button className="h-11 text-xs font-semibold" onClick={handleConfirmOrder}
-                      disabled={(activeSession.items || []).length === 0} data-testid="confirm-order-btn">
-                      <Check className="h-4 w-4 mr-1" /> Confirm
-                    </Button>
-                  </div>
+                  <Button className="w-full h-11 font-semibold text-sm" onClick={handleConfirmOrder}
+                    disabled={(activeSession.items || []).length === 0} data-testid="confirm-order-btn">
+                    <Check className="h-4 w-4 mr-1.5" /> Confirm Order
+                  </Button>
                 )}
 
-                {/* Payment */}
                 {activeSession.status === 'open' && !closeStep && orderConfirmed && !paymentProcessed && (
                   <div className="space-y-2" data-testid="payment-section">
-                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Payment</p>
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Payment method</p>
                     <div className="grid grid-cols-2 gap-2">
-                      <Button variant="outline" className="h-11 text-xs" onClick={() => handleCloseTab('card', 'pay_here')} disabled={loading} data-testid="pay-here-btn">
-                        <CreditCard className="h-4 w-4 mr-1" /> Pay Here
+                      <Button variant="outline" className="h-11 text-xs font-medium" onClick={() => handleCloseTab('card', 'pay_here')} disabled={loading} data-testid="pay-here-btn">
+                        <CreditCard className="h-4 w-4 mr-1.5" /> Pay Here
                       </Button>
-                      <Button variant="outline" className="h-11 text-xs" onClick={() => handleCloseTab('card', 'pay_at_register')} disabled={loading} data-testid="pay-register-btn">
-                        <Banknote className="h-4 w-4 mr-1" /> Register
+                      <Button variant="outline" className="h-11 text-xs font-medium" onClick={() => handleCloseTab('card', 'pay_at_register')} disabled={loading} data-testid="pay-register-btn">
+                        <Banknote className="h-4 w-4 mr-1.5" /> Register
                       </Button>
                     </div>
-                    <Button variant="ghost" className="w-full text-xs text-muted-foreground" onClick={() => setOrderConfirmed(false)} data-testid="back-to-items-btn">
+                    <button onClick={() => setOrderConfirmed(false)} className="w-full text-[10px] text-muted-foreground hover:text-foreground py-1" data-testid="back-to-items-btn">
                       Back to items
-                    </Button>
+                    </button>
                   </div>
                 )}
 
-                {/* After payment */}
                 {activeSession.status === 'open' && !closeStep && orderConfirmed && paymentProcessed && (
-                  <Button className="w-full h-12 bg-green-600 hover:bg-green-700 text-white font-semibold" onClick={handleFinalDone} data-testid="done-btn">
+                  <Button className="w-full h-12 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold" onClick={handleFinalDone} data-testid="done-btn">
                     <Check className="h-4 w-4 mr-1.5" /> Done
                   </Button>
                 )}
 
-                {/* Tip Recording */}
                 {closeStep === 'tip' && closedSessionForTip && !tipResult && (
-                  <div className="border border-primary/30 rounded-xl p-3 bg-primary/5 space-y-2" data-testid="tip-recording">
-                    <h4 className="font-semibold text-sm">Tip</h4>
-                    <p className="text-[10px] text-muted-foreground">
-                      {closedSessionForTip.guest_name} — #{closedSessionForTip.tab_number} — ${closedSessionForTip.total?.toFixed(2)}
-                    </p>
+                  <div className="border border-border rounded-xl p-3 space-y-2" data-testid="tip-recording">
+                    <h4 className="font-semibold text-sm">Add Tip</h4>
+                    <p className="text-[10px] text-muted-foreground">{closedSessionForTip.guest_name} — #{closedSessionForTip.tab_number} — ${closedSessionForTip.total?.toFixed(2)}</p>
                     <div className="flex gap-1.5">
                       {[18, 20, 22].map(pct => (
                         <Button key={pct} size="sm" variant={tipType === 'percent' && tipInput === pct.toString() ? 'default' : 'outline'}
-                          onClick={() => { setTipType('percent'); setTipInput(pct.toString()); }}
-                          className="text-xs" data-testid={`tip-${pct}-btn`}>
+                          onClick={() => { setTipType('percent'); setTipInput(pct.toString()); }} className="text-xs" data-testid={`tip-${pct}-btn`}>
                           {pct}%
                         </Button>
                       ))}
-                      <Button size="sm" variant="outline" onClick={() => { setTipType('amount'); setTipInput(''); }}
-                        className="text-xs" data-testid="tip-custom-btn">$</Button>
+                      <Button size="sm" variant="outline" onClick={() => { setTipType('amount'); setTipInput(''); }} className="text-xs" data-testid="tip-custom-btn">$</Button>
                     </div>
                     <div className="flex gap-2">
                       <div className="flex-1 flex items-center gap-1">
                         <span className="text-sm font-medium text-muted-foreground">{tipType === 'amount' ? '$' : '%'}</span>
-                        <Input value={tipInput} onChange={e => setTipInput(e.target.value)} type="number" step="0.01"
-                          placeholder={tipType === 'amount' ? '0.00' : '20'} className="h-9" data-testid="tip-input" />
+                        <Input value={tipInput} onChange={e => setTipInput(e.target.value)} type="number" step="0.01" placeholder={tipType === 'amount' ? '0.00' : '20'} className="h-9" data-testid="tip-input" />
                       </div>
                       <Button size="sm" onClick={handleRecordTip} disabled={!tipInput || loading} data-testid="record-tip-btn">Record</Button>
                     </div>
@@ -799,30 +782,19 @@ export const TapPage = () => {
                   </div>
                 )}
 
-                {/* Tip Result */}
                 {tipResult && (
-                  <div className="border border-green-500/30 rounded-xl p-3 bg-green-500/5" data-testid="tip-result">
-                    <h4 className="font-semibold text-sm text-green-600 mb-1">Tip: ${tipResult.tip_amount.toFixed(2)} ({tipResult.tip_percent}%)</h4>
-                    {tipResult.distribution?.length > 0 && (
-                      <div className="space-y-0.5 mt-2">
-                        {tipResult.distribution.map((d, i) => (
-                          <div key={i} className="flex justify-between text-xs">
-                            <span className="text-muted-foreground">{(d.proportion * 100).toFixed(0)}%</span>
-                            <span className="font-bold text-green-600">${d.tip.toFixed(2)}</span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
+                  <div className="border border-emerald-500/30 rounded-xl p-3 bg-emerald-500/5" data-testid="tip-result">
+                    <h4 className="font-semibold text-sm text-emerald-600 mb-1">Tip: ${tipResult.tip_amount.toFixed(2)} ({tipResult.tip_percent}%)</h4>
                     <Button size="sm" className="mt-2 w-full" onClick={handleCloseTipFlow} data-testid="done-tip-btn">Done</Button>
                   </div>
                 )}
               </div>
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center flex-1 text-muted-foreground px-6">
-              <Receipt className="h-14 w-14 mb-4 opacity-20" />
-              <p className="text-base font-medium mb-1">Select a tab</p>
-              <p className="text-sm text-center">Scan NFC or choose from the list</p>
+            <div className="flex flex-col items-center justify-center flex-1 text-muted-foreground px-8">
+              <Receipt className="h-12 w-12 mb-3 opacity-15" />
+              <p className="text-sm font-medium mb-1">No active order</p>
+              <p className="text-xs text-center text-muted-foreground/70">Select a tab or scan NFC to start</p>
             </div>
           )}
         </div>
