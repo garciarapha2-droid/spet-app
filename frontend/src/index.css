@@ -19,65 +19,79 @@
     --card-foreground: 222 47% 11%;
     --popover: 0 0% 100%;
     --popover-foreground: 222 47% 11%;
-    --primary: 262 83% 58%;
+    --primary: 258 75% 58%;
     --primary-foreground: 0 0% 100%;
+    --primary-glow: 263 80% 66%;
     --secondary: 220 20% 92%;
     --secondary-foreground: 222 47% 11%;
     --muted: 220 20% 95%;
     --muted-foreground: 222 17% 46%;
-    --accent: 262 83% 58%;
+    --accent: 263 80% 62%;
     --accent-foreground: 0 0% 100%;
-    --destructive: 0 84% 60%;
+    --destructive: 0 62% 50%;
     --destructive-foreground: 0 0% 100%;
     --border: 220 20% 88%;
     --input: 220 20% 88%;
-    --ring: 262 83% 58%;
+    --ring: 258 75% 58%;
     --radius: 0.5rem;
-    --sidebar-background: 222 50% 6%;
-    --sidebar-foreground: 221 30% 70%;
-    --sidebar-primary: 262 83% 58%;
+    --text-secondary: 226 30% 40%;
+    --text-tertiary: 226 20% 55%;
+    --sidebar-background: 222 47% 2%;
+    --sidebar-foreground: 226 30% 65%;
+    --sidebar-primary: 258 75% 58%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 223 30% 12%;
-    --sidebar-accent-foreground: 221 30% 70%;
-    --sidebar-border: 223 26% 16%;
-    --sidebar-ring: 262 83% 58%;
+    --sidebar-accent: 222 30% 10%;
+    --sidebar-accent-foreground: 226 30% 65%;
+    --sidebar-border: 226 20% 14%;
+    --sidebar-ring: 258 75% 58%;
   }
 
-  /* Dark Mode — Primary Experience
-     Background: #020617  → 229 84% 5%
-     Card:       #0B1120  → 223 49% 8%
-     Border:     #1E2433  → 223 26% 16%
-     Primary:    #7C3AED  → 262 83% 58%
+  /* Dark Mode — EXACT Lovable Tokens
+     --background:    #020617  → 222 47% 2%
+     --foreground:    #FFFFFF  → 0 0% 100%
+     --primary:       #7C3AED  → 258 75% 58%
+     --primary-glow:  #9461FB  → 263 80% 66%
+     --secondary:     #121929  → 222 30% 10%
+     --muted:         #181D27  → 222 20% 11%
+     --accent:        #8B5CF6  → 263 80% 62%
+     --card:          #0B1120  → 220 30% 6%
+     --border:        #1E2433  → 226 20% 14%
+     --destructive:   #CF2D2D  → 0 62% 50%
+     --text-secondary:#9DABC9  → 226 30% 72%
+     --text-tertiary: #626E8A  → 226 20% 48%
   */
   [data-theme="dark"] {
-    --background: 229 84% 5%;
-    --foreground: 210 40% 96%;
-    --card: 223 49% 8%;
-    --card-foreground: 210 40% 96%;
-    --popover: 223 49% 8%;
-    --popover-foreground: 210 40% 96%;
-    --primary: 262 83% 58%;
+    --background: 222 47% 2%;
+    --foreground: 0 0% 100%;
+    --card: 220 30% 6%;
+    --card-foreground: 0 0% 100%;
+    --popover: 220 30% 6%;
+    --popover-foreground: 0 0% 100%;
+    --primary: 258 75% 58%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 223 30% 14%;
-    --secondary-foreground: 215 20% 65%;
-    --muted: 223 30% 12%;
-    --muted-foreground: 215 20% 55%;
-    --accent: 262 83% 58%;
+    --primary-glow: 263 80% 66%;
+    --secondary: 222 30% 10%;
+    --secondary-foreground: 226 50% 88%;
+    --muted: 222 20% 11%;
+    --muted-foreground: 226 30% 65%;
+    --accent: 263 80% 62%;
     --accent-foreground: 0 0% 100%;
-    --destructive: 0 63% 31%;
+    --destructive: 0 62% 50%;
     --destructive-foreground: 0 0% 100%;
-    --border: 223 26% 16%;
-    --input: 223 26% 16%;
-    --ring: 262 83% 58%;
+    --border: 226 20% 14%;
+    --input: 226 20% 14%;
+    --ring: 258 75% 58%;
     --radius: 0.5rem;
-    --sidebar-background: 229 84% 4%;
-    --sidebar-foreground: 215 20% 65%;
-    --sidebar-primary: 262 83% 58%;
+    --text-secondary: 226 30% 72%;
+    --text-tertiary: 226 20% 48%;
+    --sidebar-background: 222 47% 2%;
+    --sidebar-foreground: 226 30% 65%;
+    --sidebar-primary: 258 75% 58%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 223 30% 12%;
-    --sidebar-accent-foreground: 215 20% 65%;
-    --sidebar-border: 223 26% 16%;
-    --sidebar-ring: 262 83% 58%;
+    --sidebar-accent: 222 30% 10%;
+    --sidebar-accent-foreground: 226 30% 65%;
+    --sidebar-border: 226 20% 14%;
+    --sidebar-ring: 258 75% 58%;
   }
 
   * {
@@ -163,12 +177,12 @@ p, li, span, div {
   -webkit-backdrop-filter: blur(16px);
 }
 
-/* Purple glow effect for primary elements — #7C3AED */
+/* Purple glow effect — #7C3AED (258 75% 58%) / #9461FB (263 80% 66%) */
 .glow-primary {
-  box-shadow: 0 0 20px hsl(262 83% 58% / 0.15), 0 0 40px hsl(262 83% 58% / 0.05);
+  box-shadow: 0 0 20px hsl(258 75% 58% / 0.15), 0 0 40px hsl(263 80% 66% / 0.08);
 }
 .glow-blue {
-  box-shadow: 0 0 20px hsl(262 83% 58% / 0.15), 0 0 40px hsl(262 83% 58% / 0.05);
+  box-shadow: 0 0 20px hsl(258 75% 58% / 0.15), 0 0 40px hsl(263 80% 66% / 0.08);
 }
 
 /* Smooth transitions */
