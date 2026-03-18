@@ -192,7 +192,7 @@ const KanbanColumn = ({ title, tickets, status, onStatusChange, onSetTime, isDel
         <h2 className="text-sm font-bold tracking-tight">{title}</h2>
         <span className="text-xs text-muted-foreground">({tickets.length})</span>
       </div>
-      <div className="space-y-3 min-h-[180px] px-1">
+      <div className="space-y-4 min-h-[180px] px-1">
         {tickets.length === 0 ? (
           <div className="border-2 border-dashed border-border/40 rounded-xl p-8 text-center text-muted-foreground/25 text-xs">
             Drop here
@@ -392,8 +392,8 @@ export const KitchenPage = () => {
         </div>
       </header>
 
-      <main className="w-full px-5 py-5">
-        <div className="grid grid-cols-5 gap-5">
+      <main className="w-full px-6 py-6">
+        <div className="grid grid-cols-5 gap-6">
           <KanbanColumn title="Pending" tickets={pending} status="pending" onStatusChange={handleRequestStatusChange} onSetTime={handleSetTime} onDrop={handleDrop} />
           <KanbanColumn title="Preparing" tickets={preparing} status="preparing" onStatusChange={handleRequestStatusChange} onSetTime={handleSetTime} onDrop={handleDrop} />
           <KanbanColumn title="Ready" tickets={ready} status="ready" onStatusChange={handleRequestStatusChange} onSetTime={handleSetTime} onDrop={handleDrop} />

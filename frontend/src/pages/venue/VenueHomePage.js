@@ -186,7 +186,7 @@ function EventDetailPanel({ event, venueId, onClose, onEventEnded }) {
                 />
                 {/* Search Dropdown */}
                 {(searchResults.length > 0 || searching) && (
-                  <div className="absolute top-full left-0 right-0 mt-1 bg-card border border-border rounded-lg shadow-lg z-20 max-h-48 overflow-y-auto">
+                <div className="absolute top-full left-0 right-0 mt-1 bg-card border border-border rounded-lg shadow-lg max-h-48 overflow-y-auto" style={{ zIndex: 9999 }}>
                     {searching && <p className="p-3 text-xs text-muted-foreground text-center">Searching...</p>}
                     {searchResults.map(g => (
                       <button key={g.id} onClick={() => addGuest(g.id)}
@@ -787,7 +787,7 @@ export const VenueSelectPage = () => {
         </div>
         <div className="flex items-center gap-4">
           {data?.modules && (
-            <div className="relative">
+            <div className="relative" style={{ zIndex: 100 }}>
               <button onClick={() => setShowModulesMenu(!showModulesMenu)}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-muted transition-colors border border-border"
                 data-testid="modules-dropdown">
@@ -796,7 +796,7 @@ export const VenueSelectPage = () => {
                 <ChevronDown className="h-3 w-3" />
               </button>
               {showModulesMenu && (
-                <div className="absolute top-full right-0 mt-1 bg-card border border-border rounded-lg shadow-lg z-50 min-w-[200px] py-1" data-testid="modules-menu">
+                <div className="absolute top-full right-0 mt-1 bg-card border border-border rounded-lg shadow-lg min-w-[200px] py-1" style={{ zIndex: 9999 }} data-testid="modules-menu">
                   {data.modules
                     .filter(m => m.enabled)
                     .filter(m => m.key !== 'ceo' || isCEO)

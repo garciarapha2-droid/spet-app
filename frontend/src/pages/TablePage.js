@@ -244,6 +244,11 @@ export const TablePage = () => {
   const [tablePaymentDone, setTablePaymentDone] = useState(false);
   const [tableOrderConfirmed, setTableOrderConfirmed] = useState(false);
   const [customizingItem, setCustomizingItem] = useState(null);
+  const [showAddTable, setShowAddTable] = useState(false);
+  const [newTableNumber, setNewTableNumber] = useState('');
+  const [newTableZone, setNewTableZone] = useState('main');
+  const [newTableCapacity, setNewTableCapacity] = useState('4');
+  const [addTableError, setAddTableError] = useState('');
 
   const getToken = () => localStorage.getItem('spetap_token');
 
@@ -333,6 +338,26 @@ export const TablePage = () => {
   };
 
   const filteredItems = catalog.filter(i => i.category === selectedCategory).sort((a, b) => a.name.localeCompare(b.name));
+
+  const handleAddTable = async () => {
+    setAddTableError('');
+    if (!newTableNumber.trim()) { setAddTableError('Enter table number'); return; }
+    if (tables.some(t => t.table_number === newTableNumber.trim())) { setAddTableError(`Table #${newTableNumber.trim()} already exists`); return; }
+    if (!/^\d+$/.test(newTableNumber.trim())) { setAddTableError('Table number must be numeric'); return; }
+    try {
+      const fd = new FormData();
+      fd.append('venue_id', VENUE_ID());
+      fd.append('table_number', newTableNumber.trim());
+      fd.append('zone', newTableZone);
+      fd.append('capacity', newTableCapacity);
+      await tableAPI.addTable(fd);
+      setNewTableNumber(''); setNewTableZone('main'); setNewTableCapacity('4'); setShowAddTable(false);
+      await loadTables(); toast.success(`Table #${newTableNumber.trim()} added`);
+    } catch (e) {
+      const msg = e.response?.data?.detail || 'Failed to add table';
+      setAddTableError(msg); toast.error(msg);
+    }
+  };
   const currentTable = tables.find(t => t.id === selectedTable);
   const activeCat = getCatMeta(selectedCategory);
 
@@ -370,8 +395,8 @@ export const TablePage = () => {
         />
       )}
 
-      {/* Header */}
-      <header className="h-12 border-b border-border bg-card px-5 flex items-center justify-between relative z-30">
+      {/* Header — always on top */}
+      <header className="h-12 border-b border-border bg-card px-5 flex items-center justify-between" style={{ position: 'relative', zIndex: 50 }}>
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon" onClick={() => navigate('/tap')} data-testid="back-to-home-btn">
             <ArrowLeft className="h-4 w-4" />
@@ -379,12 +404,12 @@ export const TablePage = () => {
           <span className="text-base font-bold tracking-tight">TABLE</span>
           <div className="h-5 w-px bg-border" />
           <label className="flex items-center gap-2 cursor-pointer" data-testid="disco-mode-toggle">
-            <LayoutGrid className="h-4 w-4 text-primary" />
-            <span className="text-sm text-primary font-medium" onClick={() => navigate('/tap')}>DISCO MODE</span>
+            <LayoutGrid className="h-4 w-4 text-foreground/60" />
+            <span className="text-sm text-foreground/80 font-medium" onClick={() => navigate('/tap')}>DISCO MODE</span>
           </label>
           <div className="h-5 w-px bg-border" />
-          {/* Server Selector */}
-          <div className="relative">
+          {/* Server Selector — proper layering */}
+          <div className="relative" style={{ zIndex: 100 }}>
             <button onClick={() => setShowServerMenu(!showServerMenu)}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium ${
                 selectedServer ? 'bg-blue-500/10 text-blue-600 hover:bg-blue-500/20' : 'bg-red-500/10 text-red-500 hover:bg-red-500/20 animate-pulse'
@@ -415,32 +440,62 @@ export const TablePage = () => {
       {/* Main POS Layout */}
       <main className="h-[calc(100vh-48px)] flex overflow-hidden">
 
-        {/* LEFT: Table Map */}
-        <div className="w-52 flex-shrink-0 border-r border-border bg-card/50 flex flex-col">
-          <div className="px-3 py-2">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Tables</span>
+        {/* LEFT: Table Map — improved spacing */}
+        <div className="w-56 flex-shrink-0 border-r border-border bg-card/50 flex flex-col">
+          <div className="px-3 py-3 flex items-center justify-between border-b border-border/50">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Tables ({tables.length})</span>
+            <button onClick={() => setShowAddTable(!showAddTable)}
+              className="p-1.5 rounded-lg hover:bg-muted text-primary transition-colors" data-testid="add-table-btn">
+              <Plus className="h-4 w-4" />
+            </button>
           </div>
-          <div className="flex-1 overflow-y-auto px-2 pb-2">
-            <div className="grid grid-cols-2 gap-2">
+          {showAddTable && (
+            <div className="mx-3 mt-2 p-3 rounded-xl border border-border bg-card space-y-2.5" data-testid="add-table-form">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Add New Table</p>
+              <Input
+                value={newTableNumber} onChange={e => { setNewTableNumber(e.target.value); setAddTableError(''); }}
+                placeholder="Table number" className="h-8 text-xs" autoFocus data-testid="new-table-number" />
+              <div className="grid grid-cols-2 gap-2">
+                <select value={newTableZone} onChange={e => setNewTableZone(e.target.value)}
+                  className="h-8 rounded-md border border-input bg-background px-2 text-xs" data-testid="new-table-zone">
+                  <option value="main">Main</option>
+                  <option value="vip">VIP</option>
+                  <option value="terrace">Terrace</option>
+                  <option value="bar">Bar</option>
+                </select>
+                <select value={newTableCapacity} onChange={e => setNewTableCapacity(e.target.value)}
+                  className="h-8 rounded-md border border-input bg-background px-2 text-xs" data-testid="new-table-capacity">
+                  {[2, 4, 6, 8, 10, 12].map(n => <option key={n} value={n}>{n} seats</option>)}
+                </select>
+              </div>
+              {addTableError && <p className="text-[10px] text-red-500 font-medium" data-testid="add-table-error">{addTableError}</p>}
+              <div className="flex gap-1.5">
+                <Button size="sm" className="flex-1 h-7 text-[10px]" onClick={handleAddTable} disabled={!newTableNumber.trim()}>Add</Button>
+                <Button size="sm" variant="ghost" className="h-7" onClick={() => { setShowAddTable(false); setAddTableError(''); }}><X className="h-3 w-3" /></Button>
+              </div>
+            </div>
+          )}
+          <div className="flex-1 overflow-y-auto px-2.5 py-2">
+            <div className="grid grid-cols-2 gap-2.5">
               {tables.map(t => (
                 <div key={t.id} onClick={() => setSelectedTable(t.id)}
-                  className={`p-2.5 rounded-xl border-2 text-center transition-all cursor-pointer ${
+                  className={`p-3 rounded-xl border-2 text-center transition-all cursor-pointer ${
                     selectedTable === t.id ? 'border-primary bg-primary/5 ring-2 ring-primary/20' :
                     t.status === 'occupied' ? 'border-orange-500/30 bg-orange-500/5' :
                     'border-border hover:border-primary/30'
                   }`} data-testid={`table-${t.table_number}`}>
-                  <span className="text-sm font-bold">#{t.table_number}</span>
-                  <div className="flex items-center justify-center gap-0.5 text-[10px] text-muted-foreground">
-                    <Users className="h-2.5 w-2.5" /> {t.capacity}
+                  <span className="text-sm font-bold block">#{t.table_number}</span>
+                  <div className="flex items-center justify-center gap-1 text-[10px] text-muted-foreground mt-1">
+                    <Users className="h-2.5 w-2.5" /> <span>{t.capacity}</span>
                   </div>
-                  <span className={`mt-0.5 inline-block text-[9px] font-medium px-1.5 py-0.5 rounded-full ${
+                  <span className={`mt-1.5 inline-block text-[9px] font-medium px-1.5 py-0.5 rounded-full ${
                     t.status === 'occupied' ? 'bg-orange-500/10 text-orange-600' : 'bg-green-500/10 text-green-600'
                   }`}>{t.status === 'occupied' ? 'Busy' : 'Free'}</span>
                   {t.status === 'occupied' && t.session_guest && (
-                    <p className="text-[10px] text-primary mt-0.5 truncate font-medium">{t.session_guest}</p>
+                    <p className="text-[10px] text-primary mt-1 truncate font-medium">{t.session_guest}</p>
                   )}
                   {t.status === 'occupied' && (
-                    <div className="mt-1" onClick={e => e.stopPropagation()}>
+                    <div className="mt-1.5" onClick={e => e.stopPropagation()}>
                       <ServerAssign tableId={t.id} currentServer={t.server_name} barmen={barmen} onAssigned={loadTables} />
                     </div>
                   )}
@@ -636,15 +691,15 @@ export const TablePage = () => {
                             )}
                           </div>
                         </div>
-                        {/* Visible edit actions */}
-                        <div className="flex items-center gap-1 mt-2 ml-10 opacity-0 group-hover:opacity-100 transition-opacity">
+                        {/* Always visible edit actions */}
+                        <div className="flex items-center gap-1.5 mt-2 ml-10">
                           <button onClick={() => setCustomizingItem(item)}
-                            className="flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-medium text-foreground/60 hover:text-foreground hover:bg-muted border border-transparent hover:border-border transition-all"
+                            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-semibold bg-muted/60 text-foreground/70 hover:bg-primary/10 hover:text-primary border border-border/40 hover:border-primary/30 transition-all"
                             data-testid={`table-customize-item-${item.id}`}>
                             <Pencil className="h-3 w-3" /> Item details
                           </button>
                           <button onClick={() => handleVoidItem(item.id)}
-                            className="flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-medium text-foreground/60 hover:text-red-500 hover:bg-red-500/10 border border-transparent hover:border-red-500/20 transition-all"
+                            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-semibold text-muted-foreground hover:text-red-500 hover:bg-red-500/10 border border-border/40 hover:border-red-500/20 transition-all"
                             data-testid={`table-void-item-${item.id}`}>
                             <Trash2 className="h-3 w-3" /> Remove
                           </button>

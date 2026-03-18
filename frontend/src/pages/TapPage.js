@@ -392,22 +392,22 @@ export const TapPage = () => {
         <ItemCustomizeModal item={customizingItem} sessionId={activeSessionId} token={getToken()} onClose={() => setCustomizingItem(null)} onSaved={reloadSession} />
       )}
 
-      {/* ── Header — clean, minimal ── */}
-      <header className="h-12 border-b border-border bg-card px-5 flex items-center justify-between relative z-30">
+      {/* ── Header — clean, minimal — always on top ── */}
+      <header className="h-12 border-b border-border bg-card px-5 flex items-center justify-between" style={{ position: 'relative', zIndex: 50 }}>
         <div className="flex items-center gap-2.5">
           <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigate('/pulse/bar')} data-testid="back-btn">
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <span className="text-sm font-bold tracking-tight">TAP</span>
-          <span className="text-[9px] font-bold bg-primary/15 text-primary px-1.5 py-0.5 rounded uppercase tracking-wider">DISCO</span>
+          <span className="text-[9px] font-bold bg-foreground/10 text-foreground/60 px-1.5 py-0.5 rounded uppercase tracking-wider">DISCO</span>
           <div className="h-4 w-px bg-border" />
           <button className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1" onClick={() => navigate('/table')} data-testid="table-toggle">
             <LayoutGrid className="h-3.5 w-3.5" /> Table
           </button>
           <div className="h-4 w-px bg-border" />
 
-          {/* Barman Selector — FIXED z-index */}
-          <div className="relative">
+          {/* Barman Selector — proper layering with portal-style dropdown */}
+          <div className="relative" style={{ zIndex: 100 }}>
             <button onClick={() => setShowBarmanMenu(!showBarmanMenu)}
               className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
                 selectedBarman ? 'bg-emerald-500/10 text-emerald-600' : 'bg-red-500/10 text-red-500 animate-pulse'
@@ -495,23 +495,31 @@ export const TapPage = () => {
               </div>
             </div>
           )}
-          <div className="flex-1 overflow-y-auto px-1.5 pb-2 space-y-0.5">
-            {sessions.map(s => (
-              <button key={s.session_id || s.id}
-                onClick={() => !s._isPulseOnly && setActiveSessionId(s.session_id || s.id)}
-                className={`w-full text-left px-2.5 py-2 rounded-lg transition-all text-xs ${
-                  s._isPulseOnly ? 'opacity-40 cursor-default' :
-                  (s.session_id || s.id) === activeSessionId ? 'bg-foreground/[0.06] ring-1 ring-foreground/10' : 'hover:bg-muted'
-                }`} data-testid={`tab-${s.tab_number || s.session_id || s.id}`}>
-                <div className="flex justify-between items-center">
-                  <div className="truncate">
-                    <span className="font-medium">{s.guest_name}</span>
-                    {s.tab_number && <span className="text-muted-foreground font-bold ml-1">#{s.tab_number}</span>}
+          <div className="flex-1 overflow-y-auto px-2 pb-2 space-y-1.5">
+            {sessions.map(s => {
+              const isActive = (s.session_id || s.id) === activeSessionId;
+              return (
+                <button key={s.session_id || s.id}
+                  onClick={() => !s._isPulseOnly && setActiveSessionId(s.session_id || s.id)}
+                  className={`w-full text-left rounded-xl transition-all border ${
+                    s._isPulseOnly ? 'opacity-30 cursor-default border-border/30' :
+                    isActive ? 'bg-foreground/[0.05] border-foreground/15 shadow-sm' : 'border-transparent hover:bg-muted/60 hover:border-border/40'
+                  }`} data-testid={`tab-${s.tab_number || s.session_id || s.id}`}>
+                  <div className="px-3 py-2.5">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs font-bold text-foreground truncate">{s.guest_name}</span>
+                      {s.tab_number && (
+                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${isActive ? 'bg-primary/15 text-primary' : 'bg-muted text-muted-foreground'}`}>#{s.tab_number}</span>
+                      )}
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] text-muted-foreground">{s.tab_number ? `Tab #${s.tab_number}` : 'No tab'}</span>
+                      <span className="text-sm font-extrabold tabular-nums text-foreground">${(s.total || 0).toFixed(2)}</span>
+                    </div>
                   </div>
-                  <span className="font-bold tabular-nums">${(s.total || 0).toFixed(2)}</span>
-                </div>
-              </button>
-            ))}
+                </button>
+              );
+            })}
           </div>
         </div>
 
@@ -697,16 +705,16 @@ export const TapPage = () => {
                             )}
                           </div>
                         </div>
-                        {/* VISIBLE EDIT ACTIONS — not hidden */}
+                        {/* ALWAYS VISIBLE edit actions */}
                         {activeSession.status === 'open' && (
-                          <div className="flex items-center gap-1 mt-2 ml-10 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <div className="flex items-center gap-1.5 mt-2 ml-10">
                             <button onClick={() => setCustomizingItem(item)}
-                              className="flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-medium text-foreground/60 hover:text-foreground hover:bg-muted border border-transparent hover:border-border transition-all"
+                              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-semibold bg-muted/60 text-foreground/70 hover:bg-primary/10 hover:text-primary border border-border/40 hover:border-primary/30 transition-all"
                               data-testid={`customize-item-${item.id}`}>
                               <Pencil className="h-3 w-3" /> Item details
                             </button>
                             <button onClick={() => handleVoidItem(item.id)}
-                              className="flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-medium text-foreground/60 hover:text-red-500 hover:bg-red-500/10 border border-transparent hover:border-red-500/20 transition-all"
+                              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-semibold text-muted-foreground hover:text-red-500 hover:bg-red-500/10 border border-border/40 hover:border-red-500/20 transition-all"
                               data-testid={`void-item-${item.id}`}>
                               <Trash2 className="h-3 w-3" /> Remove
                             </button>

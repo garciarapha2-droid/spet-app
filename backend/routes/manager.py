@@ -217,6 +217,68 @@ async def revenue_breakdown(venue_id: str, user: dict = Depends(require_auth)):
 
 
 
+# ─── TIPS DETAIL ────────────────────────────────────────────────
+@router.get("/tips-detail")
+async def tips_detail(venue_id: str, date_from: str = None, date_to: str = None, user: dict = Depends(require_auth)):
+    """Get detailed tips data: server name, tab number, total spent, tip amount, timestamp."""
+    pool = get_postgres_pool()
+    vid = _vid(venue_id)
+    today = _today_start()
+
+    if date_from:
+        start = datetime.fromisoformat(date_from + "T00:00:00").replace(tzinfo=timezone.utc)
+    else:
+        start = today
+    if date_to:
+        end = datetime.fromisoformat(date_to + "T23:59:59").replace(tzinfo=timezone.utc)
+    else:
+        end = datetime.now(timezone.utc)
+
+    async with pool.acquire() as conn:
+        rows = await conn.fetch(
+            """SELECT id, total, meta, closed_at
+               FROM tap_sessions WHERE venue_id=$1 AND status='closed'
+               AND closed_at>=$2 AND closed_at<=$3
+               ORDER BY closed_at DESC""",
+            vid, start, end)
+
+    tips_list = []
+    total_tips = 0
+    for r in rows:
+        meta = _parse_meta(r["meta"])
+        tip_amount = meta.get("tip_amount", 0)
+        if tip_amount <= 0:
+            continue
+        total_tips += tip_amount
+        tips_list.append({
+            "session_id": str(r["id"]),
+            "server_name": meta.get("bartender_name") or meta.get("server_name") or "Unknown",
+            "tab_number": meta.get("tab_number"),
+            "guest_name": meta.get("guest_name", "Guest"),
+            "total_spent": float(r["total"]) if r["total"] else 0,
+            "tip_amount": round(tip_amount, 2),
+            "tip_percent": round(meta.get("tip_percent", 0), 1),
+            "closed_at": r["closed_at"].isoformat() if r["closed_at"] else None,
+        })
+
+    # Group by server
+    by_server = {}
+    for t in tips_list:
+        sn = t["server_name"]
+        if sn not in by_server:
+            by_server[sn] = {"server_name": sn, "total_tips": 0, "count": 0}
+        by_server[sn]["total_tips"] = round(by_server[sn]["total_tips"] + t["tip_amount"], 2)
+        by_server[sn]["count"] += 1
+
+    return {
+        "tips": tips_list,
+        "total_tips": round(total_tips, 2),
+        "count": len(tips_list),
+        "by_server": list(by_server.values()),
+    }
+
+
+
 # ─── STAFF & ROLES ────────────────────────────────────────────────
 @router.get("/staff")
 async def list_staff(venue_id: str, user: dict = Depends(require_auth)):

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { managerAPI, tapAPI, staffAPI } from '../services/api';
+import { managerAPI, tapAPI, staffAPI, venueAPI } from '../services/api';
 import { toast } from 'sonner';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -24,6 +24,7 @@ const TABS = [
   { key: 'menu', label: 'Menu / Products', icon: UtensilsCrossed },
   { key: 'shifts', label: 'Shifts & Ops', icon: Clock },
   { key: 'shift-ops', label: 'Shift vs Ops', icon: TrendingUp },
+  { key: 'tips', label: 'Tips', icon: DollarSign },
   { key: 'guests', label: 'NFC & Guests', icon: Nfc },
   { key: 'reports', label: 'Reports & Finance', icon: BarChart3 },
   { key: 'loyalty', label: 'Loyalty & Rewards', icon: Gift },
@@ -62,7 +63,7 @@ export const ManagerPage = () => {
             return (
               <button key={tab.key} onClick={() => setActiveTab(tab.key)}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                  activeTab === tab.key ? 'bg-primary/10 text-primary border-l-2 border-primary' : 'text-muted-foreground hover:bg-muted'}`}
+                  activeTab === tab.key ? 'bg-foreground/[0.06] text-foreground font-semibold border-l-2 border-foreground' : 'text-muted-foreground hover:bg-muted'}`}
                 data-testid={`manager-tab-${tab.key}`}>
                 <Icon className="h-4 w-4 shrink-0" /> {tab.label}
               </button>
@@ -78,6 +79,7 @@ export const ManagerPage = () => {
           {activeTab === 'menu' && <MenuSection />}
           {activeTab === 'shifts' && <ShiftsSection />}
           {activeTab === 'shift-ops' && <ShiftOpsSection />}
+          {activeTab === 'tips' && <TipsSection />}
           {activeTab === 'guests' && <GuestsSection />}
           {activeTab === 'reports' && <ReportsSection />}
           {activeTab === 'loyalty' && <LoyaltySection />}
@@ -191,7 +193,7 @@ function OverviewSection({ onNavigate }) {
               const max = Math.max(...charts.revenue_by_hour.map(x => x.total), 1);
               return (
                 <div key={i} className="flex-1 flex flex-col items-center gap-1">
-                  <div className="w-full bg-primary/80 rounded-t" style={{ height: `${(h.total / max) * 120}px` }} title={`$${h.total.toFixed(0)}`} />
+                  <div className="w-full bg-emerald-500/80 rounded-t" style={{ height: `${(h.total / max) * 120}px` }} title={`$${h.total.toFixed(0)}`} />
                   <span className="text-[10px] text-muted-foreground">{h.hour}h</span>
                 </div>
               );
@@ -552,6 +554,7 @@ function MenuSection() {
   const [newItem, setNewItem] = useState({ name: '', price: '', category: 'Snacks', is_alcohol: false });
   const [editItem, setEditItem] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [viewMode, setViewMode] = useState('list');
 
   const load = useCallback(() => {
     tapAPI.getCatalog(VID()).then(r => setCatalog(r.data.items || [])).catch(() => {}).finally(() => setLoading(false));
@@ -598,7 +601,17 @@ function MenuSection() {
           <h2 className="text-xl font-bold">Menu / Products</h2>
           <p className="text-sm text-muted-foreground">{catalog.length} items across {categories.length - 1} categories</p>
         </div>
-        <Button onClick={() => setShowAdd(!showAdd)} data-testid="add-menu-item-btn"><Plus className="h-4 w-4 mr-2" /> Add Item</Button>
+        <div className="flex items-center gap-2">
+          <div className="flex rounded-lg border border-border overflow-hidden" data-testid="menu-view-toggle">
+            <button onClick={() => setViewMode('list')}
+              className={`px-3 py-1.5 text-xs font-medium transition-colors ${viewMode === 'list' ? 'bg-foreground text-background' : 'text-muted-foreground hover:bg-muted'}`}
+              data-testid="menu-view-list">List</button>
+            <button onClick={() => setViewMode('kanban')}
+              className={`px-3 py-1.5 text-xs font-medium transition-colors ${viewMode === 'kanban' ? 'bg-foreground text-background' : 'text-muted-foreground hover:bg-muted'}`}
+              data-testid="menu-view-kanban">Kanban</button>
+          </div>
+          <Button onClick={() => setShowAdd(!showAdd)} data-testid="add-menu-item-btn"><Plus className="h-4 w-4 mr-2" /> Add Item</Button>
+        </div>
       </div>
 
       {showAdd && (
@@ -629,40 +642,72 @@ function MenuSection() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-px">
-        <div className="grid grid-cols-6 gap-4 px-4 py-2 text-xs font-medium text-muted-foreground uppercase"><span>Item</span><span>Category</span><span>Price</span><span>Type</span><span>Photo</span><span></span></div>
-        {filtered.map(item => (
-          <div key={item.id} className="grid grid-cols-6 gap-4 px-4 py-2.5 rounded-lg hover:bg-muted/20 items-center text-sm border-b border-border/30">
-            {editItem?.id === item.id ? (
-              <>
-                <Input value={editItem.name} onChange={e => setEditItem(p => ({ ...p, name: e.target.value }))} className="h-8 text-sm" />
-                <select value={editItem.category} onChange={e => setEditItem(p => ({ ...p, category: e.target.value }))} className="h-8 rounded-md border border-input bg-background px-2 text-sm">
-                  <option>Snacks</option><option>Starters</option><option>Mains</option><option>Cocktails</option><option>Beers</option><option>Spirits</option><option>Non-alcoholic</option>
-                </select>
-                <Input type="number" step="0.01" value={editItem.price} onChange={e => setEditItem(p => ({ ...p, price: e.target.value }))} className="h-8 text-sm" />
-                <span />
-                <span />
-                <div className="flex gap-1">
-                  <Button size="sm" variant="ghost" onClick={saveEdit}><Check className="h-3.5 w-3.5 text-green-500" /></Button>
-                  <Button size="sm" variant="ghost" onClick={() => setEditItem(null)}><X className="h-3.5 w-3.5" /></Button>
+      {viewMode === 'list' ? (
+        <div className="grid grid-cols-1 gap-px">
+          <div className="grid grid-cols-6 gap-4 px-4 py-2 text-xs font-medium text-muted-foreground uppercase"><span>Item</span><span>Category</span><span>Price</span><span>Type</span><span>Photo</span><span></span></div>
+          {filtered.map(item => (
+            <div key={item.id} className="grid grid-cols-6 gap-4 px-4 py-2.5 rounded-lg hover:bg-muted/20 items-center text-sm border-b border-border/30">
+              {editItem?.id === item.id ? (
+                <>
+                  <Input value={editItem.name} onChange={e => setEditItem(p => ({ ...p, name: e.target.value }))} className="h-8 text-sm" />
+                  <select value={editItem.category} onChange={e => setEditItem(p => ({ ...p, category: e.target.value }))} className="h-8 rounded-md border border-input bg-background px-2 text-sm">
+                    <option>Snacks</option><option>Starters</option><option>Mains</option><option>Cocktails</option><option>Beers</option><option>Spirits</option><option>Non-alcoholic</option>
+                  </select>
+                  <Input type="number" step="0.01" value={editItem.price} onChange={e => setEditItem(p => ({ ...p, price: e.target.value }))} className="h-8 text-sm" />
+                  <span />
+                  <span />
+                  <div className="flex gap-1">
+                    <Button size="sm" variant="ghost" onClick={saveEdit}><Check className="h-3.5 w-3.5 text-green-500" /></Button>
+                    <Button size="sm" variant="ghost" onClick={() => setEditItem(null)}><X className="h-3.5 w-3.5" /></Button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <span className="font-medium">{item.name}</span>
+                  <span className="text-muted-foreground">{item.category}</span>
+                  <span className="font-bold">${item.price?.toFixed(2)}</span>
+                  <span>{item.is_alcohol ? <span className="text-xs bg-yellow-500/10 text-yellow-600 px-2 py-0.5 rounded-full">Alcohol</span> : <span className="text-xs bg-green-500/10 text-green-600 px-2 py-0.5 rounded-full">No Alcohol</span>}</span>
+                  <span>{item.image_url ? <span className="text-xs text-green-500">Has photo</span> : <span className="text-xs text-muted-foreground">No photo</span>}</span>
+                  <div className="flex gap-1">
+                    <Button size="sm" variant="ghost" onClick={() => setEditItem({ ...item })}><Pencil className="h-3.5 w-3.5" /></Button>
+                    <Button size="sm" variant="ghost" className="text-destructive" onClick={() => deleteItem(item.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
+                  </div>
+                </>
+              )}
+            </div>
+          ))}
+        </div>
+      ) : (
+        /* Kanban View — grouped by category */
+        <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+          {categories.filter(c => c !== 'All').map(cat => {
+            const catItems = filtered.filter(i => i.category === cat);
+            if (catItems.length === 0) return null;
+            return (
+              <div key={cat} className="bg-card border border-border rounded-xl overflow-hidden" data-testid={`menu-kanban-${cat}`}>
+                <div className="px-4 py-3 bg-muted/30 border-b border-border">
+                  <h4 className="text-sm font-bold">{cat}</h4>
+                  <span className="text-xs text-muted-foreground">{catItems.length} items</span>
                 </div>
-              </>
-            ) : (
-              <>
-                <span className="font-medium">{item.name}</span>
-                <span className="text-muted-foreground">{item.category}</span>
-                <span className="font-bold text-primary">${item.price?.toFixed(2)}</span>
-                <span>{item.is_alcohol ? <span className="text-xs bg-yellow-500/10 text-yellow-600 px-2 py-0.5 rounded-full">Alcohol</span> : <span className="text-xs bg-green-500/10 text-green-600 px-2 py-0.5 rounded-full">No Alcohol</span>}</span>
-                <span>{item.image_url ? <span className="text-xs text-green-500">Has photo</span> : <span className="text-xs text-muted-foreground">No photo</span>}</span>
-                <div className="flex gap-1">
-                  <Button size="sm" variant="ghost" onClick={() => setEditItem({ ...item })}><Pencil className="h-3.5 w-3.5" /></Button>
-                  <Button size="sm" variant="ghost" className="text-destructive" onClick={() => deleteItem(item.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
+                <div className="p-3 space-y-2 max-h-[400px] overflow-y-auto">
+                  {catItems.map(item => (
+                    <div key={item.id} className="flex items-center justify-between p-2.5 rounded-lg border border-border/40 hover:bg-muted/20 transition-colors">
+                      <div className="flex-1 min-w-0">
+                        <span className="text-sm font-medium block truncate">{item.name}</span>
+                        <span className="text-xs font-bold">${item.price?.toFixed(2)}</span>
+                      </div>
+                      <div className="flex gap-0.5 ml-2">
+                        <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => setEditItem({ ...item })}><Pencil className="h-3 w-3" /></Button>
+                        <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive" onClick={() => deleteItem(item.id)}><Trash2 className="h-3 w-3" /></Button>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              </>
-            )}
-          </div>
-        ))}
-      </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
@@ -1118,6 +1163,9 @@ function LoyaltySection() {
 function SettingsSection() {
   const [settings, setSettings] = useState({});
   const [loading, setLoading] = useState(true);
+  const [showCreateVenue, setShowCreateVenue] = useState(false);
+  const [newVenueName, setNewVenueName] = useState('');
+  const [newVenueMode, setNewVenueMode] = useState('disco');
 
   useEffect(() => {
     managerAPI.getSettings(VID()).then(r => setSettings(r.data)).finally(() => setLoading(false));
@@ -1129,32 +1177,48 @@ function SettingsSection() {
     if (settings.venue_name) fd.append('venue_name', settings.venue_name);
     if (settings.bar_mode) fd.append('bar_mode', settings.bar_mode);
     if (settings.kds_enabled !== undefined) fd.append('kds_enabled', settings.kds_enabled.toString());
+    if (settings.currency) fd.append('currency', settings.currency);
     await managerAPI.updateSettings(fd);
+    // Update local storage with new name
+    if (settings.venue_name) localStorage.setItem('active_venue_name', settings.venue_name);
     toast.success('Settings saved');
+  };
+
+  const handleCreateVenue = async () => {
+    if (!newVenueName.trim()) { toast.error('Enter venue name'); return; }
+    try {
+      const { venueAPI: vAPI } = await import('../services/api');
+      const fd = new FormData();
+      fd.append('name', newVenueName.trim());
+      fd.append('bar_mode', newVenueMode);
+      await vAPI.createVenue(fd);
+      setNewVenueName(''); setShowCreateVenue(false);
+      toast.success('Venue created! Refresh to see it.');
+    } catch { toast.error('Failed to create venue'); }
   };
 
   if (loading) return <Skeleton />;
 
   return (
     <div data-testid="settings-section">
-      <h2 className="text-xl font-bold mb-4">Settings</h2>
+      <h2 className="text-xl font-bold mb-5">Settings</h2>
       <div className="max-w-lg space-y-5">
         <div className="space-y-2">
           <label className="text-sm font-medium">Venue Name</label>
-          <Input value={settings.venue_name || VNAME()} onChange={e => setSettings(p => ({ ...p, venue_name: e.target.value }))} />
+          <Input value={settings.venue_name || VNAME()} onChange={e => setSettings(p => ({ ...p, venue_name: e.target.value }))} data-testid="setting-venue-name" />
         </div>
         <div className="space-y-2">
           <label className="text-sm font-medium">Operating Mode</label>
-          <select value={settings.bar_mode || 'disco'} onChange={e => setSettings(p => ({ ...p, bar_mode: e.target.value }))} className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm">
+          <select value={settings.bar_mode || 'disco'} onChange={e => setSettings(p => ({ ...p, bar_mode: e.target.value }))} className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm" data-testid="setting-bar-mode">
             <option value="disco">Club / Disco</option><option value="restaurant">Restaurant</option><option value="bar">Bar</option><option value="event">Event Space</option>
           </select>
         </div>
         <div className="space-y-2">
           <label className="text-sm font-medium">Currency</label>
-          <Input value={settings.currency || 'USD'} onChange={e => setSettings(p => ({ ...p, currency: e.target.value }))} />
+          <Input value={settings.currency || 'USD'} onChange={e => setSettings(p => ({ ...p, currency: e.target.value }))} data-testid="setting-currency" />
         </div>
         <div className="flex items-center gap-3">
-          <input type="checkbox" checked={settings.kds_enabled !== false} onChange={e => setSettings(p => ({ ...p, kds_enabled: e.target.checked }))} className="w-4 h-4" />
+          <input type="checkbox" checked={settings.kds_enabled !== false} onChange={e => setSettings(p => ({ ...p, kds_enabled: e.target.checked }))} className="w-4 h-4" data-testid="setting-kds" />
           <label className="text-sm font-medium">KDS Enabled</label>
         </div>
 
@@ -1173,6 +1237,29 @@ function SettingsSection() {
         </div>
 
         <Button onClick={save} data-testid="save-settings-btn">Save Settings</Button>
+
+        {/* Create New Venue */}
+        <div className="pt-4 border-t border-border">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-semibold">Venue Management</h3>
+            <Button size="sm" variant="outline" onClick={() => setShowCreateVenue(!showCreateVenue)} data-testid="create-venue-toggle">
+              <Plus className="h-3.5 w-3.5 mr-1" /> New Venue
+            </Button>
+          </div>
+          {showCreateVenue && (
+            <div className="bg-card border border-border rounded-xl p-4 space-y-3" data-testid="create-venue-form">
+              <Input value={newVenueName} onChange={e => setNewVenueName(e.target.value)} placeholder="Venue name" data-testid="new-venue-name" />
+              <select value={newVenueMode} onChange={e => setNewVenueMode(e.target.value)}
+                className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm" data-testid="new-venue-mode">
+                <option value="disco">Club / Disco</option><option value="restaurant">Restaurant</option><option value="bar">Bar</option><option value="event">Event Space</option>
+              </select>
+              <div className="flex gap-2">
+                <Button onClick={handleCreateVenue} disabled={!newVenueName.trim()} data-testid="create-venue-submit">Create Venue</Button>
+                <Button variant="outline" onClick={() => setShowCreateVenue(false)}>Cancel</Button>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -1188,9 +1275,31 @@ function TablesByServerSection() {
   const [tableDetail, setTableDetail] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
 
-  useEffect(() => {
-    managerAPI.getTablesByServer(VID()).then(r => setData(r.data)).catch(() => toast.error('Failed')).finally(() => setLoading(false));
+  const load = useCallback(() => {
+    managerAPI.getTablesByServer(VID()).then(r => setData(r.data)).catch(() => {}).finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  // Real-time WebSocket refresh
+  useEffect(() => {
+    const backendUrl = process.env.REACT_APP_BACKEND_URL || '';
+    const wsProtocol = backendUrl.startsWith('https') ? 'wss' : 'ws';
+    const wsHost = backendUrl.replace(/^https?:\/\//, '');
+    const wsUrl = `${wsProtocol}://${wsHost}/api/ws/manager/${VID()}`;
+    let ws = null;
+    let timer = null;
+    function connect() {
+      ws = new WebSocket(wsUrl);
+      ws.onmessage = () => load();
+      ws.onclose = () => { timer = setTimeout(connect, 3000); };
+      ws.onerror = () => ws.close();
+    }
+    connect();
+    // Also poll every 10s as fallback
+    const poll = setInterval(load, 10000);
+    return () => { clearInterval(poll); if (timer) clearTimeout(timer); if (ws) { ws.onclose = null; ws.close(); } };
+  }, [load]);
 
   const handleTableClick = async (tableId) => {
     setSelectedTableId(tableId);
@@ -1899,6 +2008,90 @@ function ShiftOpsSection() {
         </div>
 
         <p className="text-[10px] text-muted-foreground text-center mt-2">AI insights are read-only. Always validate decisions with your team.</p>
+      </div>
+    </div>
+  );
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   TIPS VIEW
+   ═══════════════════════════════════════════════════════════════════ */
+function TipsSection() {
+  const [tips, setTips] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [dateFrom, setDateFrom] = useState(new Date().toISOString().slice(0, 10));
+  const [dateTo, setDateTo] = useState(new Date().toISOString().slice(0, 10));
+
+  const load = useCallback(() => {
+    setLoading(true);
+    managerAPI.getTipsDetail(VID(), dateFrom, dateTo)
+      .then(r => setTips(r.data))
+      .catch(() => toast.error('Failed to load tips'))
+      .finally(() => setLoading(false));
+  }, [dateFrom, dateTo]);
+
+  useEffect(() => { load(); }, [load]);
+
+  if (loading) return <Skeleton />;
+  if (!tips) return <p className="text-muted-foreground">No data</p>;
+
+  return (
+    <div data-testid="tips-section">
+      <div className="flex items-center justify-between mb-5">
+        <div>
+          <h2 className="text-xl font-bold">Tips</h2>
+          <p className="text-sm text-muted-foreground">{tips.count} tips recorded &mdash; Total: ${tips.total_tips.toFixed(2)}</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="w-36 h-9 text-sm" />
+          <span className="text-sm text-muted-foreground">to</span>
+          <Input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className="w-36 h-9 text-sm" />
+        </div>
+      </div>
+
+      {/* Summary by Server */}
+      {tips.by_server?.length > 0 && (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          {tips.by_server.map(s => (
+            <div key={s.server_name} className="bg-card border border-border rounded-xl p-4" data-testid={`tips-server-${s.server_name}`}>
+              <div className="flex items-center gap-2 mb-2">
+                <User className="h-4 w-4 text-blue-500" />
+                <span className="text-sm font-bold">{s.server_name}</span>
+              </div>
+              <p className="text-2xl font-extrabold text-blue-500">${s.total_tips.toFixed(2)}</p>
+              <p className="text-xs text-muted-foreground">{s.count} tip{s.count !== 1 ? 's' : ''}</p>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Detail Table */}
+      <div className="bg-card border border-border rounded-xl overflow-hidden">
+        <div className="grid grid-cols-7 gap-3 px-5 py-3 text-xs font-medium text-muted-foreground uppercase border-b border-border bg-muted/30">
+          <span>Server</span>
+          <span>Guest</span>
+          <span>Tab #</span>
+          <span className="text-right">Total Spent</span>
+          <span className="text-right">Tip</span>
+          <span className="text-right">%</span>
+          <span className="text-right">Time</span>
+        </div>
+        <div className="max-h-[500px] overflow-y-auto divide-y divide-border/30">
+          {tips.tips.length === 0 ? (
+            <p className="text-sm text-muted-foreground py-10 text-center">No tips recorded for this period</p>
+          ) : tips.tips.map((t, i) => (
+            <div key={i} className="grid grid-cols-7 gap-3 px-5 py-3 text-sm items-center hover:bg-muted/20 transition-colors" data-testid={`tip-row-${i}`}>
+              <span className="font-medium text-blue-600">{t.server_name}</span>
+              <span className="truncate">{t.guest_name}</span>
+              <span className="font-bold">{t.tab_number ? `#${t.tab_number}` : '-'}</span>
+              <span className="text-right font-medium">${t.total_spent.toFixed(2)}</span>
+              <span className="text-right font-bold text-blue-500">${t.tip_amount.toFixed(2)}</span>
+              <span className="text-right text-muted-foreground">{t.tip_percent > 0 ? `${t.tip_percent}%` : '-'}</span>
+              <span className="text-right text-xs text-muted-foreground">{t.closed_at ? new Date(t.closed_at).toLocaleTimeString() : '-'}</span>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );

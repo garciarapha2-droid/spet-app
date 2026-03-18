@@ -407,3 +407,44 @@ async def remove_staff_from_event(
     if result.deleted_count == 0:
         raise HTTPException(404, "Staff not found in this event")
     return {"deleted": True, "staff_id": staff_id, "event_id": event_id}
+
+
+# ─── CREATE VENUE ──────────────────────────────────────────────
+@router.post("/create-venue")
+async def create_venue(
+    user: dict = Depends(require_auth),
+    name: str = Form(...),
+    bar_mode: str = Form("disco"),
+):
+    """Create a new venue for this user's company."""
+    db = get_mongo_db()
+    roles = user.get("roles", [])
+    if not roles:
+        raise HTTPException(403, "No roles found")
+    
+    company_id = roles[0].get("company_id", "")
+    new_venue_id = str(uuid.uuid4())
+    
+    await db.venue_configs.insert_one({
+        "venue_id": new_venue_id,
+        "venue_name": name,
+        "bar_mode": bar_mode,
+        "kds_enabled": True,
+        "currency": "USD",
+        "modules": ["pulse", "tap", "table", "kds"],
+        "created_at": datetime.now(timezone.utc),
+    })
+    
+    # Add venue to user's roles
+    pool = get_postgres_pool()
+    async with pool.acquire() as conn:
+        await conn.execute(
+            """INSERT INTO user_roles (user_id, company_id, venue_id, role, permissions)
+               VALUES ($1::uuid, $2::uuid, $3::uuid, $4, $5)""",
+            uuid.UUID(user["sub"]), uuid.UUID(company_id), uuid.UUID(new_venue_id),
+            roles[0].get("role", "manager"),
+            json.dumps({"pulse": True, "tap": True, "table": True, "kds": True})
+        )
+    
+    return {"venue_id": new_venue_id, "name": name}
+

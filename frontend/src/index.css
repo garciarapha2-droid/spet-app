@@ -151,10 +151,15 @@ p, li, span, div {
   letter-spacing: -0.02em;
 }
 
-/* ═══ Z-INDEX HIERARCHY ═══ */
+/* ═══ Z-INDEX HIERARCHY — Active screen always on top ═══ */
+.z-header { z-index: 30; }
 .z-dropdown { z-index: 40; }
-.z-modal { z-index: 50; }
 .z-popover { z-index: 45; }
+.z-panel { z-index: 50; }
+.z-modal { z-index: 60; }
+.z-overlay { z-index: 70; }
+.z-toast { z-index: 80; }
+.z-top { z-index: 100; }
 
 /* ═══ OPERATIONAL PALETTE — Toast-like category colors ═══ */
 .cat-beers { --cat-bg: 35 100% 95%; --cat-fg: 35 90% 38%; --cat-border: 35 80% 80%; }

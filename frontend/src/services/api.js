@@ -54,6 +54,7 @@ export const venueAPI = {
   removeStaffFromEvent: (venueId, eventId, staffId) => api.delete(`/venue/${venueId}/events/${eventId}/staff/${staffId}`),
   // Module access check
   checkModuleAccess: (moduleKey, venueId) => api.get(`/venue/check-module/${moduleKey}`, { params: { venue_id: venueId } }),
+  createVenue: (fd) => api.post('/venue/create-venue', fd),
 };
 
 // Pulse
@@ -180,6 +181,7 @@ export const managerAPI = {
   saveShiftSnapshot: (fd) => api.post('/manager/shift-snapshot', fd),
   shiftAI: (fd) => api.post('/manager/shift-ai', fd),
   getRevenueBreakdown: (venueId) => api.get('/manager/revenue-breakdown', { params: { venue_id: venueId } }),
+  getTipsDetail: (venueId, dateFrom, dateTo) => api.get('/manager/tips-detail', { params: { venue_id: venueId, date_from: dateFrom, date_to: dateTo } }),
 };
 
 // Owner
