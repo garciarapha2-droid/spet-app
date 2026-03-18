@@ -14,16 +14,16 @@ import {
 
 const VENUE_ID = () => localStorage.getItem('active_venue_id') || '40a24e04-75b6-435d-bfff-ab0d469ce543';
 
-/* Category colors — Toast-inspired vivid operational palette */
+/* Category colors — FULL BACKGROUND for visual impact */
 const CATEGORIES = [
-  { name: 'Beers', icon: Beer, css: 'cat-beers', color: 'bg-amber-500' },
-  { name: 'Cocktails', icon: Wine, css: 'cat-cocktails', color: 'bg-pink-500' },
-  { name: 'Spirits', icon: GlassWater, css: 'cat-spirits', color: 'bg-orange-500' },
-  { name: 'Non-alcoholic', icon: Coffee, css: 'cat-non-alcoholic', color: 'bg-emerald-500' },
-  { name: 'Snacks', icon: Sandwich, css: 'cat-snacks', color: 'bg-yellow-500' },
-  { name: 'Starters', icon: Salad, css: 'cat-starters', color: 'bg-lime-500' },
-  { name: 'Mains', icon: Beef, css: 'cat-mains', color: 'bg-red-500' },
-  { name: 'Plates', icon: CakeSlice, css: 'cat-plates', color: 'bg-violet-500' },
+  { name: 'Beers', icon: Beer, css: 'cat-beers', color: 'bg-amber-500', bgFull: 'bg-amber-500/15 border-amber-500/30', tileBg: 'bg-amber-500/10 hover:bg-amber-500/20 border-amber-500/25' },
+  { name: 'Cocktails', icon: Wine, css: 'cat-cocktails', color: 'bg-pink-500', bgFull: 'bg-pink-500/15 border-pink-500/30', tileBg: 'bg-pink-500/10 hover:bg-pink-500/20 border-pink-500/25' },
+  { name: 'Spirits', icon: GlassWater, css: 'cat-spirits', color: 'bg-orange-500', bgFull: 'bg-orange-500/15 border-orange-500/30', tileBg: 'bg-orange-500/10 hover:bg-orange-500/20 border-orange-500/25' },
+  { name: 'Non-alcoholic', icon: Coffee, css: 'cat-non-alcoholic', color: 'bg-emerald-500', bgFull: 'bg-emerald-500/15 border-emerald-500/30', tileBg: 'bg-emerald-500/10 hover:bg-emerald-500/20 border-emerald-500/25' },
+  { name: 'Snacks', icon: Sandwich, css: 'cat-snacks', color: 'bg-yellow-500', bgFull: 'bg-yellow-500/15 border-yellow-500/30', tileBg: 'bg-yellow-500/10 hover:bg-yellow-500/20 border-yellow-500/25' },
+  { name: 'Starters', icon: Salad, css: 'cat-starters', color: 'bg-lime-500', bgFull: 'bg-lime-500/15 border-lime-500/30', tileBg: 'bg-lime-500/10 hover:bg-lime-500/20 border-lime-500/25' },
+  { name: 'Mains', icon: Beef, css: 'cat-mains', color: 'bg-red-500', bgFull: 'bg-red-500/15 border-red-500/30', tileBg: 'bg-red-500/10 hover:bg-red-500/20 border-red-500/25' },
+  { name: 'Plates', icon: CakeSlice, css: 'cat-plates', color: 'bg-violet-500', bgFull: 'bg-violet-500/15 border-violet-500/30', tileBg: 'bg-violet-500/10 hover:bg-violet-500/20 border-violet-500/25' },
 ];
 
 const CATEGORY_NAMES = CATEGORIES.map(c => c.name);
@@ -133,6 +133,9 @@ export const TapPage = () => {
   const [paymentProcessed, setPaymentProcessed] = useState(false);
   const [orderConfirmed, setOrderConfirmed] = useState(false);
   const [customizingItem, setCustomizingItem] = useState(null);
+  const [tabStatuses, setTabStatuses] = useState({});
+  const [showStatusMenu, setShowStatusMenu] = useState(null);
+  const [ageVerifyItem, setAgeVerifyItem] = useState(null);
 
   const getToken = () => localStorage.getItem('spetap_token');
 
@@ -255,12 +258,28 @@ export const TapPage = () => {
     if (!activeSessionId) { toast.error('Select a tab first'); return; }
     if (!selectedBarman) { toast.error('Select barman first'); return; }
     if (!confirmedSessions.has(activeSessionId)) { toast.error('Confirm guest first'); return; }
+    // Age verification for alcohol items
+    if (item.is_alcohol) {
+      setAgeVerifyItem(item);
+      return;
+    }
+    await doAddItem(item);
+  };
+
+  const doAddItem = async (item) => {
     try {
       const fd = new FormData(); fd.append('item_id', item.id); fd.append('qty', '1');
       await tapAPI.addItem(activeSessionId, fd);
       const res = await tapAPI.getSession(activeSessionId); setActiveSession(res.data);
       await loadData();
     } catch { toast.error('Failed'); }
+  };
+
+  const confirmAgeAndAdd = () => {
+    if (ageVerifyItem) {
+      doAddItem(ageVerifyItem);
+      setAgeVerifyItem(null);
+    }
   };
 
   const handleAddCustomItem = async () => {
@@ -392,6 +411,28 @@ export const TapPage = () => {
         <ItemCustomizeModal item={customizingItem} sessionId={activeSessionId} token={getToken()} onClose={() => setCustomizingItem(null)} onSaved={reloadSession} />
       )}
 
+      {/* Age Verification Modal */}
+      {ageVerifyItem && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center" style={{ zIndex: 9999 }} data-testid="age-verify-modal">
+          <div className="bg-card border border-border rounded-2xl p-8 max-w-sm w-full mx-4 text-center shadow-2xl">
+            <ShieldCheck className="h-12 w-12 mx-auto mb-4 text-amber-500" />
+            <h3 className="text-lg font-bold mb-2">Age Verification Required</h3>
+            <p className="text-sm text-muted-foreground mb-1">
+              <strong>{ageVerifyItem.name}</strong> is an alcoholic beverage.
+            </p>
+            <p className="text-sm text-muted-foreground mb-6">I confirm this guest is 21+ years old.</p>
+            <div className="flex gap-3">
+              <Button variant="outline" className="flex-1" onClick={() => setAgeVerifyItem(null)} data-testid="age-verify-cancel">
+                Cancel
+              </Button>
+              <Button className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white" onClick={confirmAgeAndAdd} data-testid="age-verify-confirm">
+                <ShieldCheck className="h-4 w-4 mr-2" /> Confirm 21+
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ── Header — clean, minimal — always on top ── */}
       <header className="h-12 border-b border-border bg-card px-5 flex items-center justify-between" style={{ position: 'relative', zIndex: 50 }}>
         <div className="flex items-center gap-2.5">
@@ -410,7 +451,7 @@ export const TapPage = () => {
           <div className="relative" style={{ zIndex: 100 }}>
             <button onClick={() => setShowBarmanMenu(!showBarmanMenu)}
               className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
-                selectedBarman ? 'bg-emerald-500/10 text-emerald-600' : 'bg-red-500/10 text-red-500 animate-pulse'
+                selectedBarman ? 'bg-emerald-500/10 text-emerald-600' : 'bg-muted text-muted-foreground'
               }`}
               data-testid="barman-selector">
               <User className="h-3 w-3" />
@@ -465,7 +506,7 @@ export const TapPage = () => {
           <div className="h-4 w-px bg-border" />
           <ThemeToggle />
           <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigate('/venue/home')} data-testid="home-btn"><Home className="h-3.5 w-3.5" /></Button>
-          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { localStorage.removeItem('spetap_token'); navigate('/login'); }} data-testid="logout-btn"><LogOut className="h-3.5 w-3.5" /></Button>
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { localStorage.removeItem('spetap_token'); window.location.href = process.env.REACT_APP_LOVABLE_LOGIN_URL || 'https://spet.lovable.app/login'; }} data-testid="logout-btn"><LogOut className="h-3.5 w-3.5" /></Button>
         </div>
       </header>
 
@@ -497,27 +538,52 @@ export const TapPage = () => {
           )}
           <div className="flex-1 overflow-y-auto px-2 pb-2 space-y-1.5">
             {sessions.map(s => {
-              const isActive = (s.session_id || s.id) === activeSessionId;
+              const sid = s.session_id || s.id;
+              const isActive = sid === activeSessionId;
+              const status = tabStatuses[sid] || 'normal';
+              const statusDot = status === 'warning' ? 'bg-yellow-400' : status === 'issue' ? 'bg-red-500' : 'bg-emerald-400';
               return (
-                <button key={s.session_id || s.id}
-                  onClick={() => !s._isPulseOnly && setActiveSessionId(s.session_id || s.id)}
-                  className={`w-full text-left rounded-xl transition-all border ${
-                    s._isPulseOnly ? 'opacity-30 cursor-default border-border/30' :
-                    isActive ? 'bg-foreground/[0.05] border-foreground/15 shadow-sm' : 'border-transparent hover:bg-muted/60 hover:border-border/40'
-                  }`} data-testid={`tab-${s.tab_number || s.session_id || s.id}`}>
-                  <div className="px-3 py-2.5">
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs font-bold text-foreground truncate">{s.guest_name}</span>
-                      {s.tab_number && (
-                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${isActive ? 'bg-primary/15 text-primary' : 'bg-muted text-muted-foreground'}`}>#{s.tab_number}</span>
-                      )}
+                <div key={sid} className="relative">
+                  <button
+                    onClick={() => { if (!s._isPulseOnly) setActiveSessionId(sid); }}
+                    className={`w-full text-left rounded-xl transition-all border ${
+                      s._isPulseOnly ? 'opacity-50 cursor-default border-border/30' :
+                      isActive ? 'bg-foreground/[0.05] border-foreground/15 shadow-sm' : 'border-transparent hover:bg-muted/60 hover:border-border/40'
+                    }`} data-testid={`tab-${s.tab_number || sid}`}>
+                    <div className="px-3 py-2.5">
+                      <div className="flex items-center justify-between mb-1">
+                        <div className="flex items-center gap-1.5">
+                          <span className={`w-2 h-2 rounded-full ${statusDot} flex-shrink-0`} />
+                          <span className="text-xs font-bold text-foreground truncate">{s.guest_name}</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          {s.tab_number && (
+                            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${isActive ? 'bg-foreground/10 text-foreground' : 'bg-muted text-muted-foreground'}`}>#{s.tab_number}</span>
+                          )}
+                          <button onClick={(e) => { e.stopPropagation(); setShowStatusMenu(showStatusMenu === sid ? null : sid); }}
+                            className="p-0.5 rounded hover:bg-muted/60 transition-colors" data-testid={`tab-status-${sid}`}>
+                            <ChevronDown className="h-2.5 w-2.5 text-muted-foreground" />
+                          </button>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] text-muted-foreground">{s.tab_number ? `Tab #${s.tab_number}` : 'No tab'}</span>
+                        <span className="text-sm font-extrabold tabular-nums text-foreground">${(s.total || 0).toFixed(2)}</span>
+                      </div>
                     </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] text-muted-foreground">{s.tab_number ? `Tab #${s.tab_number}` : 'No tab'}</span>
-                      <span className="text-sm font-extrabold tabular-nums text-foreground">${(s.total || 0).toFixed(2)}</span>
+                  </button>
+                  {/* Status dropdown */}
+                  {showStatusMenu === sid && (
+                    <div className="absolute right-2 top-1 bg-card border border-border rounded-lg shadow-xl py-1 min-w-[130px]" style={{ zIndex: 9999 }} data-testid={`status-menu-${sid}`}>
+                      {[{ key: 'normal', label: 'Normal', color: 'bg-emerald-400' }, { key: 'warning', label: 'Warning', color: 'bg-yellow-400' }, { key: 'issue', label: 'Issue', color: 'bg-red-500' }].map(st => (
+                        <button key={st.key} onClick={(e) => { e.stopPropagation(); setTabStatuses(p => ({ ...p, [sid]: st.key })); setShowStatusMenu(null); }}
+                          className="w-full flex items-center gap-2 px-3 py-1.5 text-xs hover:bg-muted transition-colors">
+                          <span className={`w-2 h-2 rounded-full ${st.color}`} /> {st.label}
+                        </button>
+                      ))}
                     </div>
-                  </div>
-                </button>
+                  )}
+                </div>
               );
             })}
           </div>
@@ -588,10 +654,10 @@ export const TapPage = () => {
               </div>
             )}
 
-            {/* Category Header */}
-            <div className="flex items-center gap-3 mb-5">
-              <div className={`${activeCat.css} w-9 h-9 rounded-lg flex items-center justify-center bg-[hsl(var(--cat-bg))]`}>
-                <activeCat.icon className="h-5 w-5 text-[hsl(var(--cat-fg))]" />
+            {/* Category Header — full color block */}
+            <div className={`flex items-center gap-3 mb-5 p-3 rounded-xl border ${activeCat.bgFull}`}>
+              <div className={`w-9 h-9 rounded-lg flex items-center justify-center bg-card/60`}>
+                <activeCat.icon className="h-5 w-5" />
               </div>
               <div>
                 <h3 className="text-base font-bold" data-testid="category-title">{selectedCategory}</h3>
@@ -602,7 +668,12 @@ export const TapPage = () => {
             {/* Large Touch Grid — 4 columns, clean tiles */}
             <div className="grid grid-cols-4 gap-4" data-testid="items-list">
               {filteredItems.length === 0 ? (
-                <p className="text-sm text-muted-foreground py-16 text-center col-span-4">No items in {selectedCategory}</p>
+                <div className="col-span-4 flex flex-col items-center justify-center py-16 text-center">
+                  <p className="text-sm text-muted-foreground mb-3">No items in {selectedCategory}</p>
+                  <Button size="sm" variant="outline" onClick={() => setShowCustomItem(true)} data-testid="add-item-empty-cat">
+                    <Plus className="h-3.5 w-3.5 mr-1" /> Add Item
+                  </Button>
+                </div>
               ) : filteredItems.map(item => (
                 editingItem === item.id ? (
                   <div key={item.id} className="p-4 rounded-xl border border-border bg-card space-y-2 col-span-4">
@@ -619,14 +690,12 @@ export const TapPage = () => {
                   <div
                     key={item.id}
                     onClick={() => handleAddItem(item)}
-                    className={`${activeCat.css} relative group rounded-xl border bg-card hover:bg-[hsl(var(--cat-bg)/0.4)] hover:border-[hsl(var(--cat-border))] transition-all cursor-pointer active:scale-[0.97]`}
+                    className={`relative group rounded-xl border transition-all cursor-pointer active:scale-[0.97] ${activeCat.tileBg}`}
                     data-testid={`item-${item.id}`}
                     role="button"
                     tabIndex={0}
                     onKeyDown={e => e.key === 'Enter' && handleAddItem(item)}
                   >
-                    {/* Color accent stripe */}
-                    <div className={`h-1 rounded-t-xl ${activeCat.color} opacity-60`} />
                     <div className="px-4 py-4">
                       <span className="text-sm font-semibold leading-snug block mb-3">{item.name}</span>
                       <span className="text-base font-bold tabular-nums">${item.price.toFixed(2)}</span>

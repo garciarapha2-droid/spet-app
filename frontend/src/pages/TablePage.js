@@ -16,14 +16,14 @@ import {
 const VENUE_ID = () => localStorage.getItem('active_venue_id') || '40a24e04-75b6-435d-bfff-ab0d469ce543';
 
 const CATEGORIES = [
-  { name: 'Beers', icon: Beer, css: 'cat-beers', color: 'bg-amber-500' },
-  { name: 'Cocktails', icon: Wine, css: 'cat-cocktails', color: 'bg-pink-500' },
-  { name: 'Spirits', icon: GlassWater, css: 'cat-spirits', color: 'bg-orange-500' },
-  { name: 'Non-alcoholic', icon: Coffee, css: 'cat-non-alcoholic', color: 'bg-emerald-500' },
-  { name: 'Snacks', icon: Sandwich, css: 'cat-snacks', color: 'bg-yellow-500' },
-  { name: 'Starters', icon: Salad, css: 'cat-starters', color: 'bg-lime-500' },
-  { name: 'Mains', icon: Beef, css: 'cat-mains', color: 'bg-red-500' },
-  { name: 'Plates', icon: CakeSlice, css: 'cat-plates', color: 'bg-violet-500' },
+  { name: 'Beers', icon: Beer, css: 'cat-beers', color: 'bg-amber-500', bgFull: 'bg-amber-500/15 border-amber-500/30', tileBg: 'bg-amber-500/10 hover:bg-amber-500/20 border-amber-500/25' },
+  { name: 'Cocktails', icon: Wine, css: 'cat-cocktails', color: 'bg-pink-500', bgFull: 'bg-pink-500/15 border-pink-500/30', tileBg: 'bg-pink-500/10 hover:bg-pink-500/20 border-pink-500/25' },
+  { name: 'Spirits', icon: GlassWater, css: 'cat-spirits', color: 'bg-orange-500', bgFull: 'bg-orange-500/15 border-orange-500/30', tileBg: 'bg-orange-500/10 hover:bg-orange-500/20 border-orange-500/25' },
+  { name: 'Non-alcoholic', icon: Coffee, css: 'cat-non-alcoholic', color: 'bg-emerald-500', bgFull: 'bg-emerald-500/15 border-emerald-500/30', tileBg: 'bg-emerald-500/10 hover:bg-emerald-500/20 border-emerald-500/25' },
+  { name: 'Snacks', icon: Sandwich, css: 'cat-snacks', color: 'bg-yellow-500', bgFull: 'bg-yellow-500/15 border-yellow-500/30', tileBg: 'bg-yellow-500/10 hover:bg-yellow-500/20 border-yellow-500/25' },
+  { name: 'Starters', icon: Salad, css: 'cat-starters', color: 'bg-lime-500', bgFull: 'bg-lime-500/15 border-lime-500/30', tileBg: 'bg-lime-500/10 hover:bg-lime-500/20 border-lime-500/25' },
+  { name: 'Mains', icon: Beef, css: 'cat-mains', color: 'bg-red-500', bgFull: 'bg-red-500/15 border-red-500/30', tileBg: 'bg-red-500/10 hover:bg-red-500/20 border-red-500/25' },
+  { name: 'Plates', icon: CakeSlice, css: 'cat-plates', color: 'bg-violet-500', bgFull: 'bg-violet-500/15 border-violet-500/30', tileBg: 'bg-violet-500/10 hover:bg-violet-500/20 border-violet-500/25' },
 ];
 
 const CATEGORY_NAMES = CATEGORIES.map(c => c.name);
@@ -66,7 +66,7 @@ function CameraModal({ onCapture, onClose }) {
 function IDVerificationModal({ onConfirm, onCancel }) {
   const [checked, setChecked] = useState(false);
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" data-testid="id-verification-modal">
+    <div className="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm" style={{ zIndex: 9999 }} data-testid="id-verification-modal">
       <div className="bg-card border border-border rounded-2xl shadow-2xl w-full max-w-md p-6">
         <div className="flex items-center gap-3 mb-4">
           <div className="w-12 h-12 rounded-xl bg-yellow-500/10 flex items-center justify-center">
@@ -412,7 +412,7 @@ export const TablePage = () => {
           <div className="relative" style={{ zIndex: 100 }}>
             <button onClick={() => setShowServerMenu(!showServerMenu)}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium ${
-                selectedServer ? 'bg-blue-500/10 text-blue-600 hover:bg-blue-500/20' : 'bg-red-500/10 text-red-500 hover:bg-red-500/20 animate-pulse'
+                selectedServer ? 'bg-blue-500/10 text-blue-600 hover:bg-blue-500/20' : 'bg-muted text-muted-foreground hover:bg-muted/80'
               }`} data-testid="server-selector">
               <User className="h-3.5 w-3.5" />
               <span>{selectedServer || 'Select Server'}</span>
@@ -433,7 +433,7 @@ export const TablePage = () => {
         <div className="flex items-center gap-3">
           <ThemeToggle />
           <Button variant="ghost" size="icon" onClick={() => navigate('/venue/home')} data-testid="home-btn"><Home className="h-4 w-4" /></Button>
-          <Button variant="ghost" size="icon" onClick={() => { localStorage.removeItem('spetap_token'); navigate('/login'); }} data-testid="logout-btn"><LogOut className="h-4 w-4" /></Button>
+          <Button variant="ghost" size="icon" onClick={() => { localStorage.removeItem('spetap_token'); window.location.href = process.env.REACT_APP_LOVABLE_LOGIN_URL || 'https://spet.lovable.app/login'; }} data-testid="logout-btn"><LogOut className="h-4 w-4" /></Button>
         </div>
       </header>
 
@@ -480,16 +480,16 @@ export const TablePage = () => {
               {tables.map(t => (
                 <div key={t.id} onClick={() => setSelectedTable(t.id)}
                   className={`p-3 rounded-xl border-2 text-center transition-all cursor-pointer ${
-                    selectedTable === t.id ? 'border-primary bg-primary/5 ring-2 ring-primary/20' :
-                    t.status === 'occupied' ? 'border-orange-500/30 bg-orange-500/5' :
-                    'border-border hover:border-primary/30'
+                    selectedTable === t.id ? 'border-foreground ring-2 ring-foreground/20' :
+                    t.status === 'occupied' ? 'border-foreground/20 bg-foreground/[0.08]' :
+                    'border-emerald-500/30 bg-emerald-500/10 hover:border-emerald-500/50'
                   }`} data-testid={`table-${t.table_number}`}>
                   <span className="text-sm font-bold block">#{t.table_number}</span>
                   <div className="flex items-center justify-center gap-1 text-[10px] text-muted-foreground mt-1">
                     <Users className="h-2.5 w-2.5" /> <span>{t.capacity}</span>
                   </div>
                   <span className={`mt-1.5 inline-block text-[9px] font-medium px-1.5 py-0.5 rounded-full ${
-                    t.status === 'occupied' ? 'bg-orange-500/10 text-orange-600' : 'bg-green-500/10 text-green-600'
+                    t.status === 'occupied' ? 'bg-foreground/10 text-foreground/70' : 'bg-emerald-500/10 text-emerald-600'
                   }`}>{t.status === 'occupied' ? 'Busy' : 'Free'}</span>
                   {t.status === 'occupied' && t.session_guest && (
                     <p className="text-[10px] text-primary mt-1 truncate font-medium">{t.session_guest}</p>
@@ -589,10 +589,10 @@ export const TablePage = () => {
               </div>
             )}
 
-            {/* Category Title */}
-            <div className="flex items-center gap-3 mb-5">
-              <div className={`${activeCat.css} w-9 h-9 rounded-lg flex items-center justify-center bg-[hsl(var(--cat-bg))]`}>
-                <activeCat.icon className="h-5 w-5 text-[hsl(var(--cat-fg))]" />
+            {/* Category Title — full color block */}
+            <div className={`flex items-center gap-3 mb-5 p-3 rounded-xl border ${activeCat.bgFull}`}>
+              <div className="w-9 h-9 rounded-lg flex items-center justify-center bg-card/60">
+                <activeCat.icon className="h-5 w-5" />
               </div>
               <div>
                 <h3 className="text-base font-bold" data-testid="table-category-title">{selectedCategory}</h3>
@@ -603,7 +603,12 @@ export const TablePage = () => {
             {/* Large Touch-Friendly Grid */}
             <div className="grid grid-cols-4 gap-4" data-testid="table-items-list">
               {filteredItems.length === 0 ? (
-                <p className="text-sm text-muted-foreground py-16 text-center col-span-4">No items</p>
+                <div className="col-span-4 flex flex-col items-center justify-center py-16 text-center">
+                  <p className="text-sm text-muted-foreground mb-3">No items in {selectedCategory}</p>
+                  <Button size="sm" variant="outline" onClick={() => setShowCustomItem(true)} data-testid="table-add-item-empty">
+                    <Plus className="h-3.5 w-3.5 mr-1" /> Add Item
+                  </Button>
+                </div>
               ) : filteredItems.map(item => (
                 editingItem === item.id ? (
                   <div key={item.id} className="p-4 rounded-xl border border-border bg-card space-y-2 col-span-4">
@@ -619,10 +624,9 @@ export const TablePage = () => {
                 ) : (
                   <div key={item.id}
                     onClick={() => handleAddItem(item)}
-                    className={`${activeCat.css} relative group rounded-xl border bg-card hover:bg-[hsl(var(--cat-bg)/0.4)] hover:border-[hsl(var(--cat-border))] transition-all cursor-pointer active:scale-[0.97]`}
+                    className={`relative group rounded-xl border transition-all cursor-pointer active:scale-[0.97] ${activeCat.tileBg}`}
                     data-testid={`table-item-${item.id}`}
                     role="button" tabIndex={0} onKeyDown={e => e.key === 'Enter' && handleAddItem(item)}>
-                    <div className={`h-1 rounded-t-xl ${activeCat.color} opacity-60`} />
                     <div className="px-4 py-4">
                       <span className="text-sm font-semibold leading-snug block mb-3">{item.name}</span>
                       <span className="text-base font-bold tabular-nums">${item.price.toFixed(2)}</span>
@@ -868,7 +872,7 @@ function ServerAssign({ tableId, currentServer, barmen, onAssigned }) {
         className={`w-full text-[9px] font-semibold px-1.5 py-0.5 rounded transition-colors ${
           currentServer
             ? 'bg-blue-500/10 text-blue-600 hover:bg-blue-500/20'
-            : 'bg-red-500/10 text-red-500 hover:bg-red-500/20 animate-pulse'
+            : 'bg-muted text-muted-foreground hover:bg-muted/80'
         }`} data-testid={`assign-server-${tableId}`}>
         <User className="h-2.5 w-2.5 inline mr-0.5" />
         {currentServer || 'Assign'}

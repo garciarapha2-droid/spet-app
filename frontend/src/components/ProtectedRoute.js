@@ -1,19 +1,25 @@
 import React from 'react';
-import { Navigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+
+const LOVABLE_LOGIN = process.env.REACT_APP_LOVABLE_LOGIN_URL || 'https://spet.lovable.app/login';
 
 export const ProtectedRoute = ({ children }) => {
   const { isAuthenticated, loading } = useAuth();
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      <div className="flex items-center justify-center min-h-screen bg-background">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-foreground/30"></div>
       </div>
     );
   }
 
-  return isAuthenticated ? children : <Navigate to="/login" replace />;
+  if (!isAuthenticated) {
+    window.location.href = LOVABLE_LOGIN;
+    return null;
+  }
+
+  return children;
 };
 
 export const CEORoute = ({ children }) => {
@@ -21,13 +27,22 @@ export const CEORoute = ({ children }) => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      <div className="flex items-center justify-center min-h-screen bg-background">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-foreground/30"></div>
       </div>
     );
   }
 
-  if (!isAuthenticated) return <Navigate to="/login" replace />;
-  if (!isCEO) return <Navigate to="/venue/home" replace />;
+  if (!isAuthenticated) {
+    window.location.href = LOVABLE_LOGIN;
+    return null;
+  }
+
+  if (!isCEO) {
+    // Redirect non-CEO users to venue home
+    window.location.href = '/venue/home';
+    return null;
+  }
+
   return children;
 };

@@ -5,10 +5,8 @@ import { ThemeProvider } from './contexts/ThemeContext';
 import { Toaster } from './components/ui/sonner';
 import { ProtectedRoute, CEORoute } from './components/ProtectedRoute';
 
-// Pages
-import { LoginPage } from './pages/LoginPage';
+// Pages — Internal SaaS app only (no public pages)
 import { AuthHandoffPage } from './pages/AuthHandoffPage';
-import { ModulesPage } from './pages/ModulesPage';
 import { VenueSelectPage } from './pages/venue/VenueHomePage';
 import { PulseEntryPage } from './pages/pulse/PulseEntryPage';
 import { PulseInsidePage } from './pages/pulse/PulseInsidePage';
@@ -22,8 +20,6 @@ import { KitchenPage } from './pages/KitchenPage';
 import { ManagerPage } from './pages/ManagerPage';
 import { OwnerPage } from './pages/OwnerPage';
 import CeoPage from './pages/CeoPage';
-import PricingPage from './pages/PricingPage';
-import CheckoutSuccessPage from './pages/CheckoutSuccessPage';
 const CEOPage = CeoPage;
 
 function App() {
@@ -33,131 +29,28 @@ function App() {
         <BrowserRouter>
           <div className="App">
             <Routes>
-              <Route path="/pricing" element={<PricingPage />} />
-              <Route path="/checkout/success" element={<CheckoutSuccessPage />} />
-              <Route path="/login" element={<LoginPage />} />
+              {/* Auth handoff — Lovable redirects here with a code */}
               <Route path="/auth/handoff" element={<AuthHandoffPage />} />
-              <Route
-                path="/venue/home"
-                element={
-                  <ProtectedRoute>
-                    <VenueSelectPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/modules"
-                element={
-                  <ProtectedRoute>
-                    <Navigate to="/venue/home" replace />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/pulse"
-                element={
-                  <ProtectedRoute>
-                    <Navigate to="/pulse/entry" replace />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/pulse/entry"
-                element={
-                  <ProtectedRoute>
-                    <PulseEntryPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/pulse/inside"
-                element={
-                  <ProtectedRoute>
-                    <PulseInsidePage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/pulse/bar"
-                element={
-                  <ProtectedRoute>
-                    <PulseBarPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/pulse/exit"
-                element={
-                  <ProtectedRoute>
-                    <PulseExitPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/pulse/rewards"
-                element={
-                  <ProtectedRoute>
-                    <PulseRewardsPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/pulse/guest/:guestId"
-                element={
-                  <ProtectedRoute>
-                    <GuestProfilePage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/tap"
-                element={
-                  <ProtectedRoute>
-                    <TapPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/manager"
-                element={
-                  <ProtectedRoute>
-                    <ManagerPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/table"
-                element={
-                  <ProtectedRoute>
-                    <TablePage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/kitchen"
-                element={
-                  <ProtectedRoute>
-                    <KitchenPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/owner"
-                element={
-                  <ProtectedRoute>
-                    <OwnerPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/ceo"
-                element={
-                  <CEORoute>
-                    <CEOPage />
-                  </CEORoute>
-                }
-              />
-              <Route path="/" element={<Navigate to="/pricing" replace />} />
+
+              {/* Protected internal routes */}
+              <Route path="/venue/home" element={<ProtectedRoute><VenueSelectPage /></ProtectedRoute>} />
+              <Route path="/modules" element={<ProtectedRoute><Navigate to="/venue/home" replace /></ProtectedRoute>} />
+              <Route path="/pulse" element={<ProtectedRoute><Navigate to="/pulse/entry" replace /></ProtectedRoute>} />
+              <Route path="/pulse/entry" element={<ProtectedRoute><PulseEntryPage /></ProtectedRoute>} />
+              <Route path="/pulse/inside" element={<ProtectedRoute><PulseInsidePage /></ProtectedRoute>} />
+              <Route path="/pulse/bar" element={<ProtectedRoute><PulseBarPage /></ProtectedRoute>} />
+              <Route path="/pulse/exit" element={<ProtectedRoute><PulseExitPage /></ProtectedRoute>} />
+              <Route path="/pulse/rewards" element={<ProtectedRoute><PulseRewardsPage /></ProtectedRoute>} />
+              <Route path="/pulse/guest/:guestId" element={<ProtectedRoute><GuestProfilePage /></ProtectedRoute>} />
+              <Route path="/tap" element={<ProtectedRoute><TapPage /></ProtectedRoute>} />
+              <Route path="/manager" element={<ProtectedRoute><ManagerPage /></ProtectedRoute>} />
+              <Route path="/table" element={<ProtectedRoute><TablePage /></ProtectedRoute>} />
+              <Route path="/kitchen" element={<ProtectedRoute><KitchenPage /></ProtectedRoute>} />
+              <Route path="/owner" element={<ProtectedRoute><OwnerPage /></ProtectedRoute>} />
+              <Route path="/ceo" element={<CEORoute><CEOPage /></CEORoute>} />
+
+              {/* Default — send to venue home (ProtectedRoute handles unauthenticated) */}
+              <Route path="*" element={<ProtectedRoute><Navigate to="/venue/home" replace /></ProtectedRoute>} />
             </Routes>
             <Toaster />
           </div>

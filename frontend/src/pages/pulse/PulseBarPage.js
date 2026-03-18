@@ -77,7 +77,7 @@ function CameraModal({ onCapture, onClose }) {
 function BarGuestConfirmModal({ result, onConfirm, onCancel }) {
   if (!result) return null;
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" data-testid="bar-guest-confirm-modal">
+    <div className="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm" style={{ zIndex: 9999 }} data-testid="bar-guest-confirm-modal">
       <div className="bg-card border border-border rounded-2xl shadow-2xl w-full max-w-md p-6 text-center">
         {result.guest_photo ? (
           <img src={result.guest_photo} alt="" className="w-24 h-24 rounded-full object-cover mx-auto mb-4 border-4 border-primary/20" />
@@ -343,14 +343,14 @@ export const PulseBarPage = () => {
               <label className="text-[10px] font-semibold uppercase text-muted-foreground mb-1 block">Bartender</label>
               <div className="relative">
                 <select value={selectedBarman} onChange={e => setSelectedBarman(e.target.value)}
-                  className={`w-full h-9 rounded-md border bg-background px-2 text-sm appearance-none ${!selectedBarman ? 'border-red-500/50 text-muted-foreground' : 'border-primary/50 text-foreground font-medium'}`}
+                  className={`w-full h-9 rounded-md border bg-background px-2 text-sm appearance-none ${!selectedBarman ? 'border-border text-muted-foreground' : 'border-emerald-500/50 text-foreground font-medium'}`}
                   data-testid="pulse-barman-select">
                   <option value="">Select...</option>
                   {barmen.map(b => <option key={b.id} value={b.name}>{b.name}</option>)}
                 </select>
                 <ChevronDown className="h-3.5 w-3.5 absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
               </div>
-              {!selectedBarman && <p className="text-[9px] text-red-500 mt-0.5">Required before serving</p>}
+              {!selectedBarman && <p className="text-[9px] text-muted-foreground mt-0.5">Required before serving</p>}
             </div>
 
             <form onSubmit={handleScan} className="space-y-2">

@@ -186,7 +186,7 @@ function EventDetailPanel({ event, venueId, onClose, onEventEnded }) {
                 />
                 {/* Search Dropdown */}
                 {(searchResults.length > 0 || searching) && (
-                <div className="absolute top-full left-0 right-0 mt-1 bg-card border border-border rounded-lg shadow-lg max-h-48 overflow-y-auto" style={{ zIndex: 9999 }}>
+                <div className="absolute top-full left-0 right-0 mt-1 bg-card border border-border rounded-lg shadow-lg max-h-48 overflow-y-auto" style={{ zIndex: 200 }}>
                     {searching && <p className="p-3 text-xs text-muted-foreground text-center">Searching...</p>}
                     {searchResults.map(g => (
                       <button key={g.id} onClick={() => addGuest(g.id)}
@@ -824,7 +824,7 @@ export const VenueSelectPage = () => {
           <div className="h-5 w-px bg-border" />
           <ThemeToggle />
           <div className="h-5 w-px bg-border" />
-          <Button variant="ghost" size="icon" onClick={() => { logout(); navigate('/login'); }} data-testid="logout-btn">
+          <Button variant="ghost" size="icon" onClick={() => { logout(); window.location.href = process.env.REACT_APP_LOVABLE_LOGIN_URL || 'https://spet.lovable.app/login'; }} data-testid="logout-btn">
             <LogOut className="h-4 w-4" />
           </Button>
         </div>

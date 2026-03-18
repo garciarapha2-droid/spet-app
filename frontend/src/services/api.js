@@ -19,7 +19,8 @@ api.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       localStorage.removeItem('spetap_token');
-      window.location.href = '/login';
+      const lovableLogin = process.env.REACT_APP_LOVABLE_LOGIN_URL || 'https://spet.lovable.app/login';
+      window.location.href = lovableLogin;
     }
     return Promise.reject(error);
   }
