@@ -571,14 +571,14 @@ export const TapPage = () => {
               </div>
             )}
 
-            {/* Category Title + Items List */}
-            <h3 className="text-center font-bold text-lg mb-3" data-testid="category-title">{selectedCategory}</h3>
-            <div className="space-y-1 max-h-[calc(100vh-280px)] overflow-y-auto" data-testid="items-list">
+            {/* Category Title + Items Grid (Toast-style) */}
+            <h3 className="font-bold text-sm uppercase tracking-wider text-muted-foreground mb-3" data-testid="category-title">{selectedCategory}</h3>
+            <div className="grid grid-cols-3 gap-2.5 max-h-[calc(100vh-280px)] overflow-y-auto pr-1" data-testid="items-list">
               {filteredItems.length === 0 ? (
-                <p className="text-sm text-muted-foreground py-8 text-center">No items in {selectedCategory}</p>
+                <p className="text-sm text-muted-foreground py-8 text-center col-span-3">No items in {selectedCategory}</p>
               ) : filteredItems.map(item => (
                 editingItem === item.id ? (
-                  <div key={item.id} className="p-3 rounded-lg border border-primary/30 bg-primary/5 space-y-2">
+                  <div key={item.id} className="p-3 rounded-lg border border-primary/30 bg-primary/5 space-y-2 col-span-3">
                     <div className="grid grid-cols-3 gap-2">
                       <Input value={editForm.name} onChange={e => setEditForm(p => ({ ...p, name: e.target.value }))} className="text-sm col-span-2" />
                       <Input type="number" step="0.01" value={editForm.price} onChange={e => setEditForm(p => ({ ...p, price: e.target.value }))} className="text-sm" />
@@ -590,27 +590,25 @@ export const TapPage = () => {
                   </div>
                 ) : (
                   <div key={item.id}
-                    className="flex items-center gap-3 px-4 py-2.5 rounded-lg border border-border bg-card hover:border-primary/30 transition-all group"
+                    className="relative group flex flex-col rounded-xl border border-border bg-card hover:border-primary/40 transition-all cursor-pointer overflow-hidden"
                     data-testid={`item-${item.id}`}>
-                    {item.image_url ? (
-                      <img src={item.image_url} alt="" className="w-9 h-9 rounded-lg object-cover flex-shrink-0" />
-                    ) : (
-                      <div className="w-9 h-9 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
-                        <Beer className="h-4 w-4 text-muted-foreground" />
-                      </div>
-                    )}
-                    <button className="flex-1 text-left" onClick={() => handleAddItem(item)}>
-                      <span className="font-medium text-sm">{item.name}</span>
+                    <button className="flex flex-col items-start p-3.5 pb-2.5 w-full text-left" onClick={() => handleAddItem(item)}>
+                      {item.image_url ? (
+                        <img src={item.image_url} alt="" className="w-full h-16 rounded-lg object-cover mb-2" />
+                      ) : null}
+                      <span className="font-medium text-sm leading-tight">{item.name}</span>
+                      <span className="text-primary font-bold text-sm mt-1">${item.price.toFixed(2)}</span>
                     </button>
-                    <span className="text-primary font-bold text-sm">${item.price.toFixed(2)}</span>
-                    <button onClick={() => { setEditingItem(item.id); setEditForm({ name: item.name, price: item.price, category: item.category }); }}
-                      className="p-1.5 rounded opacity-0 group-hover:opacity-100 hover:bg-muted" data-testid={`edit-item-${item.id}`}>
-                      <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
-                    </button>
-                    <button onClick={() => handleDeleteItem(item.id)}
-                      className="p-1.5 rounded opacity-0 group-hover:opacity-100 hover:bg-destructive/10" data-testid={`delete-item-${item.id}`}>
-                      <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
-                    </button>
+                    <div className="absolute top-1.5 right-1.5 flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button onClick={() => { setEditingItem(item.id); setEditForm({ name: item.name, price: item.price, category: item.category }); }}
+                        className="p-1 rounded bg-card/90 hover:bg-muted border border-border" data-testid={`edit-item-${item.id}`}>
+                        <Pencil className="h-3 w-3 text-muted-foreground" />
+                      </button>
+                      <button onClick={() => handleDeleteItem(item.id)}
+                        className="p-1 rounded bg-card/90 hover:bg-destructive/10 border border-border" data-testid={`delete-item-${item.id}`}>
+                        <Trash2 className="h-3 w-3 text-muted-foreground" />
+                      </button>
+                    </div>
                   </div>
                 )
               ))}
@@ -632,25 +630,21 @@ export const TapPage = () => {
                   <span className="text-2xl font-bold text-primary" data-testid="tab-total">${activeSession.total.toFixed(2)}</span>
                 </div>
 
-                <div className="space-y-1 mb-4 flex-1 max-h-[350px] overflow-y-auto">
+                <div className="space-y-0.5 mb-4 flex-1 max-h-[350px] overflow-y-auto">
                   {(activeSession.items || []).length === 0 ? (
                     <p className="text-sm text-muted-foreground py-4 text-center">No items — add from menu</p>
                   ) : activeSession.items.map(item => (
-                    <div key={item.id} className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-muted/30 text-sm border border-transparent hover:border-border">
-                      <div className="flex-1">
-                        <span className="font-medium">{item.name}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-muted-foreground">x{item.qty}</span>
-                        <span className="font-medium w-16 text-right">${item.line_total.toFixed(2)}</span>
-                        {activeSession.status === 'open' && (
-                          <button onClick={() => handleVoidItem(item.id)}
-                            className="p-1.5 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive"
-                            data-testid={`void-item-${item.id}`}>
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </button>
-                        )}
-                      </div>
+                    <div key={item.id} className="flex items-center gap-3 py-2.5 px-3 rounded-lg hover:bg-muted/30 text-sm border border-transparent hover:border-border group">
+                      <span className="w-6 h-6 rounded bg-primary/10 text-primary text-xs font-bold flex items-center justify-center flex-shrink-0">{item.qty}</span>
+                      <span className="font-medium flex-1 truncate">{item.name}</span>
+                      <span className="font-bold text-sm w-16 text-right">${item.line_total.toFixed(2)}</span>
+                      {activeSession.status === 'open' && (
+                        <button onClick={() => handleVoidItem(item.id)}
+                          className="p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-opacity"
+                          data-testid={`void-item-${item.id}`}>
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      )}
                     </div>
                   ))}
                 </div>

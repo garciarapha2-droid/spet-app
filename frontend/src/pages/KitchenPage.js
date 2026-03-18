@@ -70,75 +70,80 @@ const TicketCard = ({ ticket, onStatusChange, onSetTime, isDelayed }) => {
   const handleDragEnd = (e) => { e.target.style.opacity = '1'; };
 
   return (
-    <div className={`rounded-xl border-2 p-5 transition-all cursor-grab active:cursor-grabbing ${colors.border} ${colors.bg} ${isDelayed ? 'ring-2 ring-red-500/30' : ''}`}
+    <div className={`rounded-xl border-2 overflow-hidden transition-all cursor-grab active:cursor-grabbing ${colors.border} ${isDelayed ? 'ring-2 ring-red-500/30' : ''}`}
       draggable="true"
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
       data-testid={`ticket-${ticket.id}`}>
-      <div className="flex items-center justify-between mb-3">
+      {/* Header band — color-coded status */}
+      <div className={`px-4 py-2.5 flex items-center justify-between ${colors.bg}`}>
         <div className="flex items-center gap-2">
-          {ticket.table_number && <span className="text-lg font-bold">T{ticket.table_number}</span>}
-          {ticket.guest_name && <span className="text-sm text-muted-foreground truncate">{ticket.guest_name}</span>}
+          {ticket.table_number && <span className="text-lg font-extrabold">T{ticket.table_number}</span>}
+          {ticket.guest_name && <span className="text-sm font-medium text-muted-foreground">{ticket.guest_name}</span>}
         </div>
-        <span className={`px-2 py-1 rounded-full text-xs font-semibold ${colors.badge}`}>
+        <span className={`px-2.5 py-1 rounded-md text-xs font-bold uppercase tracking-wide ${colors.badge}`}>
           {isDelayed ? 'Delayed' : STATUS_LABELS[ticket.status]}
         </span>
       </div>
 
-      <div className="space-y-1.5 mb-3">
-        {ticket.items.map((item, i) => (
-          <div key={item.id || i} className="flex items-center gap-2 text-sm">
-            <span className="font-bold text-primary">{item.qty}x</span>
-            <span className="font-medium">{item.name}</span>
+      <div className="p-4">
+        {/* Timer row */}
+        <div className="mb-3 pb-3 border-b border-border/50">
+          {ticket.status === 'preparing' ? (
+            <TimerDisplay startTime={ticket.started_at} estimatedMinutes={ticket.estimated_minutes} isDelayed={isDelayed} />
+          ) : (
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <Clock className="h-3.5 w-3.5" /> {elapsed}m ago
+              {ticket.estimated_minutes && <span>| ~{ticket.estimated_minutes}m est.</span>}
+            </div>
+          )}
+        </div>
+
+        {/* Items — qty aligned left, name clear */}
+        <div className="space-y-2 mb-4">
+          {ticket.items.map((item, i) => (
+            <div key={item.id || i} className="flex items-start gap-2.5 text-sm">
+              <span className="w-6 h-6 rounded bg-primary/10 text-primary text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">{item.qty}</span>
+              <span className="font-medium leading-snug">{item.name}</span>
+            </div>
+          ))}
+        </div>
+
+        {showEstimate && (
+          <div className="flex gap-2 mb-3">
+            <input type="number" min="1" max="120" value={estimateInput}
+              onChange={e => setEstimateInput(e.target.value)}
+              placeholder="Min"
+              className="w-20 px-2 py-1.5 text-sm rounded border border-border bg-background"
+              data-testid="estimate-input" />
+            <Button size="sm" variant="outline"
+              onClick={() => { onSetTime(ticket.id, parseInt(estimateInput)); setShowEstimate(false); setEstimateInput(''); }}
+              disabled={!estimateInput}>Set</Button>
+            <Button size="sm" variant="ghost" onClick={() => setShowEstimate(false)}>
+              <X className="h-3 w-3" />
+            </Button>
           </div>
-        ))}
-      </div>
-
-      {/* Timer */}
-      {ticket.status === 'preparing' ? (
-        <div className="mb-3">
-          <TimerDisplay startTime={ticket.started_at} estimatedMinutes={ticket.estimated_minutes} isDelayed={isDelayed} />
-        </div>
-      ) : (
-        <div className="flex items-center gap-2 text-xs text-muted-foreground mb-3">
-          <Clock className="h-3 w-3" /> {elapsed}m ago
-          {ticket.estimated_minutes && <span className="ml-1">| ~{ticket.estimated_minutes}m est.</span>}
-        </div>
-      )}
-
-      {showEstimate && (
-        <div className="flex gap-2 mb-3">
-          <input type="number" min="1" max="120" value={estimateInput}
-            onChange={e => setEstimateInput(e.target.value)}
-            placeholder="Min"
-            className="w-20 px-2 py-1.5 text-sm rounded border border-border bg-background"
-            data-testid="estimate-input" />
-          <Button size="sm" variant="outline"
-            onClick={() => { onSetTime(ticket.id, parseInt(estimateInput)); setShowEstimate(false); setEstimateInput(''); }}
-            disabled={!estimateInput}>Set</Button>
-          <Button size="sm" variant="ghost" onClick={() => setShowEstimate(false)}>
-            <X className="h-3 w-3" />
-          </Button>
-        </div>
-      )}
-
-      <div className="flex gap-2">
-        {NEXT_STATUS[ticket.status] && (
-          <Button size="sm" className={`flex-1 ${isDelayed ? 'bg-red-500 hover:bg-red-600' : ''}`}
-            onClick={() => onStatusChange(ticket.id, NEXT_STATUS[ticket.status])}
-            data-testid={`ticket-action-${ticket.id}`}>
-            {ticket.status === 'pending' && <ChefHat className="h-4 w-4 mr-1" />}
-            {ticket.status === 'preparing' && <CheckCircle className="h-4 w-4 mr-1" />}
-            {ticket.status === 'ready' && <CheckCircle className="h-4 w-4 mr-1" />}
-            {ACTION_LABELS[ticket.status]}
-          </Button>
         )}
-        {ticket.status === 'pending' && (
-          <Button size="sm" variant="outline" onClick={() => setShowEstimate(!showEstimate)}
-            data-testid={`set-time-${ticket.id}`}>
-            <Timer className="h-4 w-4" />
-          </Button>
-        )}
+
+        {/* Action buttons — large, clear, spaced */}
+        <div className="flex gap-2">
+          {NEXT_STATUS[ticket.status] && (
+            <Button size="sm" className={`flex-1 h-10 text-sm font-semibold ${isDelayed ? 'bg-red-500 hover:bg-red-600' : ''}`}
+              onClick={() => onStatusChange(ticket.id, NEXT_STATUS[ticket.status])}
+              data-testid={`ticket-action-${ticket.id}`}>
+              {ticket.status === 'pending' && <ChefHat className="h-4 w-4 mr-1.5" />}
+              {ticket.status === 'preparing' && <CheckCircle className="h-4 w-4 mr-1.5" />}
+              {ticket.status === 'ready' && <PackageCheck className="h-4 w-4 mr-1.5" />}
+              {ACTION_LABELS[ticket.status]}
+            </Button>
+          )}
+          {ticket.status === 'pending' && (
+            <Button size="sm" variant="outline" className="h-10" onClick={() => setShowEstimate(!showEstimate)}
+              data-testid={`set-time-${ticket.id}`}>
+              <Timer className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
       </div>
     </div>
   );
