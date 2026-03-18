@@ -1,101 +1,85 @@
 # SPET — Product Requirements Document
 
 ## Original Problem Statement
-Build a high-performance POS platform (SPET) inspired by Toast, with role-based access, operational screens for Kitchen, Tap, Table, and Manager dashboards. The platform includes NFC wristband integration, real-time order management, SaaS checkout flow, and item customization.
+Build a high-performance POS platform (SPET) inspired by Toast, with role-based access, operational screens for Kitchen, Tap, Table, and Manager dashboards.
 
-## Architecture Decision
-- **Lovable** = public experience (landing page, signup, login, checkout, user entry point)
-- **Emergent** = protected SaaS app (internal dashboard, no public access)
-- Unauthenticated users → redirect to Lovable login (REACT_APP_LOVABLE_LOGIN_URL)
-- Auth backend stays in Emergent (JWT + RBAC)
-
-## Core Requirements
-1. **Authentication**: JWT with role-based access control (CEO, Owner, Manager, Staff)
-2. **Venue Management**: Multi-venue support with module access per company
-3. **Operational Screens**: Kitchen KDS, Tap (bar), Table (restaurant), Pulse (entry)
-4. **Manager Dashboard**: Overview, Staff, Tables by Server, Menu, Shifts, Tips, Reports, Settings
-5. **SaaS Checkout**: 2-step onboarding with Stripe integration (on Lovable side)
-6. **Item Customization**: Modifier system for order items
+## Architecture
+- **Lovable** = public experience (landing, signup, login, checkout)
+- **Emergent** = protected SaaS app (no public access)
+- Unauthenticated users → redirect to Lovable (REACT_APP_LOVABLE_LOGIN_URL)
 
 ## Tech Stack
-- **Frontend**: React, Tailwind CSS, Shadcn/UI, Lucide Icons
-- **Backend**: FastAPI (Python)
-- **Databases**: PostgreSQL (transactional), MongoDB (config/catalog)
-- **Payments**: Stripe via emergentintegrations
-- **Real-time**: WebSocket for manager updates
-
-## Design Direction
-- Toast-like operational clarity
-- Neutral palette (white/gray/black) on operational screens
-- **Full-color category blocks** (amber for Beers, pink for Cocktails, etc.)
-- Table cards: green (free), dark gray (busy) — no orange/red
-- Bartender/Server selectors: neutral gray (not red)
-- Tab cards with status indicators: green (normal), yellow (warning), red (issue)
-- Global rule: Active screen always on top (z-index)
-
-## Protected Users System
-- File: `/app/backend/protected_users.py`
-- Runs on every backend startup
-- Guarantees: garcia.rapha2@gmail.com (CEO) and teste@teste.com (USER) ALWAYS exist
-- Auto-recreates if missing, verifies if present
+- Frontend: React, Tailwind CSS, Shadcn/UI, Lucide Icons
+- Backend: FastAPI (Python)
+- Databases: PostgreSQL (transactional), MongoDB (config/catalog)
+- Payments: Stripe via emergentintegrations
+- Real-time: WebSocket for manager updates
 
 ## Completed Features
 
 ### Architecture: Lovable/Emergent Separation
 - Removed login/signup/landing pages from Emergent
 - ProtectedRoute redirects to Lovable login
-- API 401 interceptor redirects to Lovable
-- Auth handoff route preserved for Lovable → Emergent flow
+- Auth backend intact (JWT + RBAC)
 
-### Phase 1: Kitchen Order Cards (Toast KDS)
-- 5-column kanban with timer display
-- Improved card spacing (gap-6)
+### Phase 1-2: Kitchen KDS + Menu Grid
+- Toast-style KDS cards, touch-friendly menu grid
 
-### Phase 2: Menu Grid (Touch-friendly POS)
-- Category sidebar with full-color backgrounds
-- Color-coded item tiles with category-matching backgrounds
-- Fast-add click + pencil edit flow
+### Phase 3: Item Modifiers & Notes + Priced Extras
+- ItemCustomizeModal with remove/add ingredients, extras, notes
+- **Extras support pricing**: {name: "cheese", price: 2.00}
+- Line total recalculated: (base_price + extras_total) * qty
+- Session total updated automatically
+- Backward compatible with string-only extras
+- Prices shown in order summary, kitchen tickets, and bill
 
-### Phase 3: Item Modifiers & Notes
-- ItemCustomizeModal component
-- Remove/add ingredients, extras, notes
+### ID Verification (Fixed)
+- TABLE: Click alcohol item → modal appears → check checkbox → confirm → item added
+- TAP: Age verification modal (ShieldCheck "Confirm 21+") for alcohol items
+- After first verification, subsequent alcohol items add directly
+- Full error handling with explicit toast messages
 
-### Phase 4: Premium SaaS Checkout
-- PricingPage + CheckoutSuccessPage (on Lovable side now)
-- Stripe checkout integration
-
-### UI/UX Refinement Pass (March 2026)
-- Global z-index hierarchy (header:50, dropdown:9999, modal:9999)
-- Tab cards with green/yellow/red status dots + manual status control
-- Full-color category blocks (TAP + TABLE)
-- Table cards: green=free, dark gray=busy (no orange/red)
+### UI/UX Refinement
+- Global z-index (active screen always on top)
+- Full-color category blocks (amber, pink, orange, etc.)
+- Table cards: green=free, dark gray=busy
 - Bartender/Server selectors: neutral gray
-- Age verification modal for alcohol items (TAP)
-- ID verification modal z-index fix (TABLE)
-- Empty category shows "Add Item" button
-- Add new table UI with form validation
-- Item details buttons always visible (not hover-only)
-- Tips view in Manager panel
+- Tab cards with green/yellow/red status dots + manual control
+- Item details buttons always visible
+
+### Manager Panel
+- Tips view with server detail table
 - Menu list/kanban toggle
 - Settings with venue creation
-- Tables by Server with WebSocket + polling real-time
+- Tables by Server with WebSocket + polling
 
-## Upcoming Tasks
-- Manager Panel refinement (next phase after user approval)
+### Protected Users System
+- Auto-recovery on every backend startup
+- garcia.rapha2@gmail.com (CEO) + teste@teste.com always exist
+
+## Approval Status
+- Architecture direction: APPROVED
+- General design direction: APPROVED
+- ID Verification: FIXED (iteration_55 confirmed)
+- Priced Extras: IMPLEMENTED (iteration_55 confirmed)
+- Final approval: PENDING USER REVIEW
+
+## Upcoming Tasks (After Approval)
+- Manager Panel refinement
 - Server History View
 - PWA support
-- Live Activity Feed
-- Per-Event Dashboard
-- KDS/Bar routing enhancements
-- Push notifications
-- Stripe Webhooks
-- Offline-First capabilities
+- Live Activity Feed, Per-Event Dashboard
+- KDS/Bar routing, Push notifications
+- Stripe Webhooks, Offline-First
 
 ## Test Credentials
 - CEO: garcia.rapha2@gmail.com / 12345
 - Regular: teste@teste.com / 12345
 - Venue ID: 40a24e04-75b6-435d-bfff-ab0d469ce543
 
-## Known Limitations
-- PostgreSQL non-persistent in preview — protected users auto-recovered on startup
-- Lovable integration URL is placeholder (https://spet.lovable.app/login)
+## Key API Endpoints
+- POST /api/auth/login
+- PUT /api/tap/session/{sid}/item/{iid} — update modifiers with priced extras
+- POST /api/tap/session/{sid}/verify-id — age/ID verification
+- GET /api/manager/tips-detail
+- POST /api/venue/create-venue
