@@ -1,7 +1,7 @@
 # SPET — Product Requirements Document
 
 ## Original Problem Statement
-SPET is a multi-tenant SaaS platform for real-time venue operations. The platform integrates with an external landing/login page built in Lovable, requiring production-ready auth, seamless auth handoff, and design system alignment across the entire application.
+SPET is a multi-tenant SaaS platform for real-time venue operations. The platform integrates with an external landing/login page built in Lovable, requiring production-ready auth, seamless auth handoff, and design system alignment.
 
 ## Design System — EXACT Lovable Tokens (Source of Truth)
 
@@ -28,18 +28,22 @@ SPET is a multi-tenant SaaS platform for real-time venue operations. The platfor
 - Font: Inter (400/500/600/700/800)
 - Body: 15px, line-height 1.75
 - Small labels: 13px
-- Headings: tight tracking, bold
 
 ### Logo
 - CSS-rendered icon (dark rounded rect #2A2D35, white S, purple dot)
-- Wordmark: "spet." lowercase, font-bold, purple dot using --primary
+- Wordmark: "spet." lowercase, font-bold, purple dot
 
 ## Completed Work
 - Production-Ready Auth System
 - Seamless Auth Handoff (one-time code)
-- **Design System Alignment — EXACT Lovable Tokens** (2026-03-18)
-- Logo replacement (HD icon + wordmark)
-- Typography overhaul (body 15px, line-height 1.75)
+- Design System — EXACT Lovable Tokens (2026-03-18)
+- Logo (HD icon + wordmark) (2026-03-18)
+- Typography overhaul (2026-03-18)
+- **UI/UX Refinement — Toast POS Patterns** (2026-03-18):
+  - TAP: Menu items → 3-column grid tiles (touch-friendly)
+  - TAP/Table: Order items → qty badge (left) → name → price layout
+  - KDS: Ticket cards → color-coded header band, timer section, qty badges, larger action buttons
+  - Table: Same grid improvements
 - Workflow Consistency (Tap/Table follow Pulse flow)
 - CEO Permissions & User Management
 - Alcohol ID Verification fix
