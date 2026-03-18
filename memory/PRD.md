@@ -1,125 +1,93 @@
 # SPET — Product Requirements Document
 
 ## Original Problem Statement
-Build a premium restaurant POS/operational platform ("SPET") with:
-- Real-time Kitchen Display System (KDS)
-- Touch-friendly POS for Tap (bar) and Table service
-- Guest management (Pulse module)
-- Manager & CEO dashboards with role-based access
-- SaaS onboarding with Stripe checkout
-- Item modifiers & customization system
-- Dark theme design system with precise brand tokens
+Build a high-performance POS platform (SPET) inspired by Toast, with role-based access, operational screens for Kitchen, Tap, Table, and Manager dashboards. The platform includes NFC wristband integration, real-time order management, SaaS checkout flow, and item customization.
 
-## User Personas
-- **CEO**: Full platform access, company-level analytics, user management
-- **Manager**: Venue operations, staff management, revenue dashboards
-- **Staff (USER)**: POS operations (Tap, Table, Kitchen)
-
-## Core Modules
-1. **Pulse** — Guest entry/exit, inside tracking, rewards
-2. **Tap** — Bar POS with tab management, NFC scan
-3. **Table** — Table service POS with server assignment
-4. **Kitchen** — KDS with kanban workflow, timers, delayed order alerts
-5. **Manager** — Revenue dashboards, staff management
-6. **Owner** — Venue configuration, billing
-7. **CEO** — Multi-company analytics (restricted access)
-8. **Pricing/Checkout** — Public landing page, lead capture, Stripe payment
+## Core Requirements
+1. **Authentication**: JWT with role-based access control (CEO, Owner, Manager, Staff)
+2. **Venue Management**: Multi-venue support with module access per company
+3. **Operational Screens**: Kitchen KDS, Tap (bar), Table (restaurant), Pulse (entry)
+4. **Manager Dashboard**: Overview, Staff, Tables by Server, Menu, Shifts, Tips, Reports, Settings
+5. **SaaS Checkout**: 2-step onboarding with Stripe integration
+6. **Item Customization**: Modifier system for order items (Phase 3)
 
 ## Tech Stack
-- **Frontend**: React, Tailwind CSS, Shadcn/UI, Lucide icons
-- **Backend**: FastAPI, PostgreSQL (auth + orders), MongoDB (catalog + operations)
+- **Frontend**: React, Tailwind CSS, Shadcn/UI, Lucide Icons
+- **Backend**: FastAPI (Python)
+- **Databases**: PostgreSQL (transactional), MongoDB (config/catalog)
 - **Payments**: Stripe via emergentintegrations
-- **Auth**: JWT with RBAC (CEO, USER roles)
-- **Deployment**: Supervisor-managed, Kubernetes
+- **Real-time**: WebSocket for manager updates
 
-## Design System
-- Dark theme by default with exact HSL tokens in index.css
-- SpetLogo component (CSS-based, theme-aware)
-- Inter font family
-- Primary color: purple/violet accent
+## Design Direction
+- Toast-like operational clarity
+- Neutral palette (white/gray/black) on operational screens
+- Color only for: categories, status, highlights
+- Typography: item name → strong dark, price → bold dark, secondary → muted gray
+- Global rule: Active screen always on top (z-index)
 
-## What's Been Implemented
+## Completed Features
 
-### RBAC System ✅
-- CEO and USER roles with backend enforcement
-- Permanent system accounts (undeletable)
-- Frontend route protection (CEORoute)
-
-### Design System ✅
-- 15 dark mode CSS tokens matched exactly
-- SpetLogo component across all pages
-- Typography hierarchy with Inter font
-
-### Phase 1: Kitchen Order Cards (Toast-style) ✅
+### Phase 1: Kitchen Order Cards (Toast KDS)
 - 5-column kanban: Pending, Preparing, Ready, Delivered, Delayed
-- Toast KDS card structure: order #, guest, timer, type, status badge
-- Item list with quantities and modifiers display
-- Drag-and-drop between columns
-- ETA modal for preparation time
-- Delayed order popup alerts
+- Timer display per ticket
 - Kitchen/Bar toggle
+- Improved card spacing (gap-6)
 
-### Phase 2: Menu Grid (POS-style) ✅
-- Vertical category sidebar with icons (8 categories)
-- Large touch-friendly item tile grid (4 columns)
-- Fixed left panel (tabs/table map)
-- Fixed right panel (order summary)
-- Both TapPage and TablePage share same POS pattern
+### Phase 2: Menu Grid (Touch-friendly POS)
+- Category sidebar with icons
+- Color-coded item tiles
+- Fast-add click + pencil edit flow
+- Custom item creation
 
-### Phase 3: Item Modifiers & Notes ✅
-- **ItemCustomizeModal** component with ingredient toggles, extras, notes
-- Click on item = fast add (unchanged)
-- Pencil icon on order items opens customization modal
-- Ingredients loaded from catalog (default_ingredients field)
-- Modifiers stored as JSONB: {removed: [...], extras: [...]}
-- Notes stored in text field
-- **Backend**: PUT /api/tap/session/{id}/item/{id} updates modifiers
-- **Backend**: GET /api/tap/catalog/{id} returns default_ingredients
-- **KDS reflection**: Kitchen cards show "No X" (red) and "Extra X" (green)
-- Backward-compatible — no existing flows broken
+### Phase 3: Item Modifiers & Notes
+- ItemCustomizeModal component
+- Remove/add ingredients, extras, notes
+- Backend: modifiers JSONB column in tap_items & kds_ticket_items
+- PUT /api/tap/session/{id}/item/{item_id}
 
-### Checkout Flow (2-step) ✅
-- Public pricing page at /pricing with hero, features, plans
-- 3 plans: Starter ($79), Growth ($149), Enterprise ($299)
-- 2-step modal: Lead capture (name, email, phone) → Stripe redirect
-- Backend lead storage + Stripe checkout session creation
-- Success page with payment status polling
+### Phase 4: Premium SaaS Checkout
+- PricingPage.js with 2-step onboarding
+- Stripe checkout integration
+- CheckoutSuccessPage.js
 
-## Pending (On Hold)
-- **Phase 4**: Server History View — awaiting user review
+### Design Refinement Pass (Current Session - March 2026)
+- Global z-index hierarchy (header:50, dropdown:9999, modal:60)
+- Barman/Server dropdown layering fixed
+- Tab cards redesigned (name, tab#, total - Pulse style)
+- Item details buttons always visible (not hover-only)
+- Table module: add new table UI with validation
+- Table cards: improved spacing with seats/status
+- Manager: Tips view with server detail table
+- Manager: Menu list/kanban toggle
+- Manager: Settings with venue creation
+- Manager: Tables by Server with WebSocket + polling real-time
+- Revenue chart: emerald (not purple)
+- Sidebar tabs: neutral foreground (not purple)
+- KDS: increased spacing between cards
+- Venue module: z-index fix for modules dropdown
 
-## Backlog / Future
+## Upcoming Tasks
+- Phase 5: Server History View (manager dashboard)
 - PWA support
 - Live Activity Feed
 - Per-Event Dashboard
-- Module access control per company (SaaS)
-- KDS / Bar Order Routing enhancements
+- KDS/Bar routing enhancements
 - Push notifications
 - Stripe Webhooks for subscriptions
-- Offline-First
-- Event Wallet / Native app
+- Offline-First capabilities
+
+## Key API Endpoints
+- POST /api/auth/login
+- GET /api/manager/tips-detail?venue_id=X
+- GET /api/manager/tables-by-server?venue_id=X
+- POST /api/venue/create-venue
+- PUT /api/tap/session/{id}/item/{item_id}
+- POST /api/onboarding/create-checkout-session
 
 ## Test Credentials
 - CEO: garcia.rapha2@gmail.com / 12345
-- USER: teste@teste.com / 12345
+- Regular: teste@teste.com / 12345
+- Venue ID: 40a24e04-75b6-435d-bfff-ab0d469ce543
 
-## Key Files
-- `frontend/src/components/ItemCustomizeModal.js` — Customization modal
-- `frontend/src/pages/KitchenPage.js` — KDS kanban
-- `frontend/src/pages/TapPage.js` — Bar POS
-- `frontend/src/pages/TablePage.js` — Table POS
-- `frontend/src/pages/PricingPage.js` — Landing + checkout
-- `frontend/src/pages/CheckoutSuccessPage.js` — Post-payment
-- `backend/routes/tap.py` — Tap API (modifiers, items, sessions)
-- `backend/routes/kds.py` — KDS tickets with modifiers
-- `backend/routes/onboarding.py` — Plans, leads, Stripe checkout
-- `frontend/src/index.css` — Design tokens (source of truth)
-
-## Database Schema Changes
-- `tap_items`: Added `modifiers JSONB DEFAULT '{}'`
-- `kds_ticket_items`: Added `modifiers JSONB DEFAULT '{}'`
-- MongoDB `venue_catalog`: Added `default_ingredients` array field
-
-## Environment Notes
-- PostgreSQL is NON-PERSISTENT in preview — needs re-seeding on restart
-- Seed sequence: start postgres, start mongo, run init_postgres.sql, run seed_demo.py, run seed_ingredients.py
+## Known Limitations
+- PostgreSQL is non-persistent in preview environment (requires re-seed on restart)
