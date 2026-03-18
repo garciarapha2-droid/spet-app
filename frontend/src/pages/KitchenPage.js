@@ -7,32 +7,24 @@ import SpetLogo from '../components/SpetLogo';
 import {
   UtensilsCrossed, Beer, Clock, ChefHat, CheckCircle,
   ArrowLeft, Timer, LogOut, Home, AlertTriangle, X, PackageCheck,
-  Printer, Zap, WifiOff, History
+  Zap
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const VENUE_ID = () => localStorage.getItem('active_venue_id') || '40a24e04-75b6-435d-bfff-ab0d469ce543';
 
-/* Color-coded header bands by status — Toast style adapted to SPET dark mode */
+/* Color-coded header bands by status — Toast KDS style */
 const HEADER_COLORS = {
-  pending:   { band: 'bg-amber-500/20 border-b border-amber-500/30', text: 'text-amber-400' },
-  preparing: { band: 'bg-primary/15 border-b border-primary/30', text: 'text-primary' },
-  ready:     { band: 'bg-emerald-500/15 border-b border-emerald-500/30', text: 'text-emerald-400' },
-  delivered: { band: 'bg-muted border-b border-border', text: 'text-muted-foreground' },
-  delayed:   { band: 'bg-red-500/15 border-b border-red-500/30', text: 'text-red-400' },
-};
-
-const COLUMN_COLORS = {
-  pending:   { dot: 'bg-amber-500', border: 'border-amber-500/30' },
-  preparing: { dot: 'bg-primary', border: 'border-primary/30' },
-  ready:     { dot: 'bg-emerald-500', border: 'border-emerald-500/30' },
-  delivered: { dot: 'bg-blue-500', border: 'border-blue-500/30' },
-  delayed:   { dot: 'bg-red-500', border: 'border-red-500/30' },
+  pending:   { band: 'bg-amber-500/15 border-b border-amber-500/25', text: 'text-amber-400', badge: 'bg-amber-500/20 text-amber-400' },
+  preparing: { band: 'bg-primary/10 border-b border-primary/25', text: 'text-primary', badge: 'bg-primary/20 text-primary' },
+  ready:     { band: 'bg-emerald-500/12 border-b border-emerald-500/25', text: 'text-emerald-400', badge: 'bg-emerald-500/20 text-emerald-400' },
+  delivered: { band: 'bg-muted border-b border-border', text: 'text-muted-foreground', badge: 'bg-muted text-muted-foreground' },
+  delayed:   { band: 'bg-red-500/12 border-b border-red-500/25', text: 'text-red-400', badge: 'bg-red-500/20 text-red-400' },
 };
 
 const NEXT_STATUS = { pending: 'preparing', preparing: 'ready', ready: 'delivered', delayed: 'ready' };
 const ACTION_LABELS = { pending: 'Start', preparing: 'Ready', ready: 'Deliver', delayed: 'Ready' };
-const STATUS_LABELS = { pending: 'NEW', preparing: 'PREPARING', ready: 'READY', delivered: 'DONE', delayed: 'DELAYED' };
+const STATUS_LABELS = { pending: 'NEW', preparing: 'IN PREP', ready: 'READY', delivered: 'DONE', delayed: 'DELAYED' };
 
 /* Generate short order number from ID */
 const shortOrderNum = (id) => {
@@ -66,13 +58,14 @@ const LiveTimer = ({ startTime, estimatedMinutes, isDelayed }) => {
       : `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 
   return (
-    <span className={`font-mono font-bold text-sm ${isOvertime || isDelayed ? 'text-red-400' : 'text-muted-foreground'}`}>
-      {display}
-    </span>
+    <div className={`flex items-center gap-1.5 ${isOvertime || isDelayed ? 'text-red-400' : 'text-muted-foreground'}`}>
+      <Clock className="h-3.5 w-3.5" />
+      <span className="font-mono font-bold text-sm tracking-tight">{display}</span>
+    </div>
   );
 };
 
-/* ═══════ TICKET CARD — Toast Kanban Style ═══════ */
+/* ═══════ TICKET CARD — Toast KDS Style ═══════ */
 const TicketCard = ({ ticket, onStatusChange, onSetTime, isDelayed }) => {
   const status = isDelayed ? 'delayed' : ticket.status;
   const hdr = HEADER_COLORS[status] || HEADER_COLORS.pending;
@@ -90,55 +83,53 @@ const TicketCard = ({ ticket, onStatusChange, onSetTime, isDelayed }) => {
 
   return (
     <div
-      className={`rounded-xl border border-border bg-card overflow-hidden transition-all cursor-grab active:cursor-grabbing ${isDelayed ? 'ring-2 ring-red-500/40' : 'hover:border-border/80'}`}
+      className={`rounded-xl border border-border bg-card overflow-hidden transition-all cursor-grab active:cursor-grabbing shadow-sm ${isDelayed ? 'ring-2 ring-red-500/40' : 'hover:border-border/80 hover:shadow-md'}`}
       draggable="true"
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
       data-testid={`ticket-${ticket.id}`}
     >
-      {/* ── Header Band (color-coded) ── */}
-      <div className={`px-4 py-3 ${hdr.band}`}>
-        <div className="flex items-center justify-between mb-1">
-          <div className="flex items-center gap-2">
-            <span className={`text-lg font-extrabold tracking-tight ${hdr.text}`}>{shortOrderNum(ticket.id)}</span>
-            <span className="text-xs text-muted-foreground">·</span>
-            <span className="text-sm font-medium truncate max-w-[120px]">
+      {/* ── Header Band ── */}
+      <div className={`px-4 py-3.5 ${hdr.band}`}>
+        {/* Row 1: Order # + Guest + Timer */}
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-2.5">
+            <span className={`text-xl font-extrabold tracking-tight ${hdr.text}`} data-testid={`ticket-num-${ticket.id}`}>
+              {shortOrderNum(ticket.id)}
+            </span>
+            <span className="text-muted-foreground/40">|</span>
+            <span className="text-sm font-semibold truncate max-w-[130px]">
               {ticket.guest_name || (ticket.table_number ? `Table ${ticket.table_number}` : 'Guest')}
             </span>
           </div>
-          {/* Timer */}
           {ticket.status === 'preparing' || isDelayed ? (
             <LiveTimer startTime={ticket.started_at || ticket.created_at} estimatedMinutes={ticket.estimated_minutes} isDelayed={isDelayed} />
           ) : (
-            <span className="text-xs text-muted-foreground font-mono">{elapsed}m</span>
+            <span className="text-xs text-muted-foreground font-mono flex items-center gap-1">
+              <Clock className="h-3 w-3" /> {elapsed}m
+            </span>
           )}
         </div>
-        {/* Type + Status */}
+        {/* Row 2: Type + Status badge */}
         <div className="flex items-center justify-between">
-          <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">{orderType}</span>
-          <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide ${
-            status === 'delayed' ? 'bg-red-500/20 text-red-400' :
-            status === 'ready' ? 'bg-emerald-500/20 text-emerald-400' :
-            status === 'preparing' ? 'bg-primary/20 text-primary' :
-            status === 'delivered' ? 'bg-blue-500/20 text-blue-400' :
-            'bg-amber-500/20 text-amber-400'
-          }`}>
+          <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-muted-foreground/70">{orderType}</span>
+          <span className={`px-2.5 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider ${hdr.badge}`}>
             {STATUS_LABELS[status]}
           </span>
         </div>
       </div>
 
-      {/* ── Items ── */}
-      <div className="px-4 py-3">
-        <div className="space-y-2.5 mb-4">
+      {/* ── Items List ── */}
+      <div className="px-4 py-4">
+        <div className="space-y-3 mb-4">
           {ticket.items.map((item, i) => (
             <div key={item.id || i} className="flex items-start gap-3">
-              <span className="text-base font-bold text-muted-foreground w-5 text-right flex-shrink-0 mt-px">{item.qty}</span>
+              <span className="text-lg font-bold text-primary/70 w-6 text-right flex-shrink-0 leading-tight">{item.qty}</span>
               <div className="flex-1 min-w-0">
-                <span className="text-sm font-semibold leading-snug block">{item.name}</span>
-                {item.notes && <span className="text-xs text-muted-foreground/70 italic block mt-0.5">{item.notes}</span>}
+                <span className="text-[15px] font-semibold leading-snug block">{item.name}</span>
+                {item.notes && <span className="text-xs text-muted-foreground/60 italic block mt-0.5">{item.notes}</span>}
                 {item.modifiers && item.modifiers.length > 0 && item.modifiers.map((mod, mi) => (
-                  <span key={mi} className="text-xs text-muted-foreground/70 italic block mt-0.5">
+                  <span key={mi} className="text-xs text-muted-foreground/60 italic block mt-0.5">
                     {mod.type === 'remove' ? `No ${mod.name}` : mod.type === 'add' ? `Extra ${mod.name}` : mod.name}
                   </span>
                 ))}
@@ -165,27 +156,27 @@ const TicketCard = ({ ticket, onStatusChange, onSetTime, isDelayed }) => {
         )}
 
         {/* ── Action Buttons ── */}
-        <div className="flex gap-2 pt-2 border-t border-border/40">
+        <div className="flex gap-2 pt-3 border-t border-border/30">
           {NEXT_STATUS[status] && (
-            <Button size="sm" className={`flex-1 h-9 text-xs font-bold uppercase tracking-wide ${isDelayed ? 'bg-red-500 hover:bg-red-600' : ''}`}
+            <Button size="sm" className={`flex-1 h-10 text-xs font-bold uppercase tracking-wide ${isDelayed ? 'bg-red-500 hover:bg-red-600' : ''}`}
               onClick={() => onStatusChange(ticket.id, NEXT_STATUS[status])}
               data-testid={`ticket-action-${ticket.id}`}>
-              {status === 'pending' && <ChefHat className="h-3.5 w-3.5 mr-1.5" />}
-              {status === 'preparing' && <CheckCircle className="h-3.5 w-3.5 mr-1.5" />}
-              {(status === 'ready' || status === 'delayed') && <PackageCheck className="h-3.5 w-3.5 mr-1.5" />}
+              {status === 'pending' && <ChefHat className="h-4 w-4 mr-1.5" />}
+              {status === 'preparing' && <CheckCircle className="h-4 w-4 mr-1.5" />}
+              {(status === 'ready' || status === 'delayed') && <PackageCheck className="h-4 w-4 mr-1.5" />}
               {ACTION_LABELS[status]}
             </Button>
           )}
           {status === 'pending' && (
-            <Button size="sm" variant="outline" className="h-9 px-2.5" onClick={() => setShowEstimate(!showEstimate)}
+            <Button size="sm" variant="outline" className="h-10 px-3" onClick={() => setShowEstimate(!showEstimate)}
               data-testid={`set-time-${ticket.id}`} title="Set timer">
-              <Timer className="h-3.5 w-3.5" />
+              <Timer className="h-4 w-4" />
             </Button>
           )}
           {(status === 'preparing' || status === 'pending') && (
-            <Button size="sm" variant="outline" className="h-9 px-2.5" title="Rush order"
+            <Button size="sm" variant="outline" className="h-10 px-3" title="Rush order"
               onClick={() => toast.info('Rush sent to team')}>
-              <Zap className="h-3.5 w-3.5" />
+              <Zap className="h-4 w-4" />
             </Button>
           )}
         </div>
@@ -210,14 +201,15 @@ const KanbanColumn = ({ title, tickets, dotColor, onStatusChange, onSetTime, isD
 
   return (
     <div onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop}
-      className={`transition-all rounded-xl p-2 ${dragOver ? 'bg-primary/10 ring-2 ring-primary/30' : ''}`}>
-      <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+      className={`transition-all rounded-xl p-3 ${dragOver ? 'bg-primary/10 ring-2 ring-primary/30' : ''}`}>
+      <div className="flex items-center gap-2.5 mb-5">
         <span className={`w-3 h-3 rounded-full ${dotColor}`} />
-        {title} <span className="text-muted-foreground font-normal">({tickets.length})</span>
-      </h2>
+        <h2 className="text-base font-bold tracking-tight">{title}</h2>
+        <span className="text-sm text-muted-foreground font-normal">({tickets.length})</span>
+      </div>
       <div className="space-y-4 min-h-[200px]">
         {tickets.length === 0 ? (
-          <div className="border-2 border-dashed border-border rounded-xl p-8 text-center text-muted-foreground/40 text-sm">
+          <div className="border-2 border-dashed border-border/60 rounded-xl p-10 text-center text-muted-foreground/30 text-sm">
             Drop here
           </div>
         ) : tickets.map(t => (
@@ -257,25 +249,20 @@ export const KitchenPage = () => {
     const checkDelayed = () => {
       const now = Date.now();
       const delayedTickets = tickets.filter(t => {
-        // Explicitly delayed status
         if (t.status === 'delayed') return true;
-        // Preparing but over time
         if (t.status !== 'preparing' || !t.estimated_minutes || !t.started_at) return false;
         const started = new Date(t.started_at).getTime();
         const deadline = started + t.estimated_minutes * 60000;
         return now > deadline;
       });
       const unDismissed = delayedTickets.filter(t => !dismissedIds.has(t.id));
-      // If current popup was dismissed, clear it
       if (delayedPopup && dismissedIds.has(delayedPopup.id)) {
         setDelayedPopup(null);
         return;
       }
-      // Show next undismissed delayed order
       if (unDismissed.length > 0 && !delayedPopup) {
         setDelayedPopup(unDismissed[0]);
       }
-      // Clear popup if no more delayed orders
       if (unDismissed.length === 0 && delayedPopup) {
         setDelayedPopup(null);
       }
@@ -285,7 +272,7 @@ export const KitchenPage = () => {
     return () => clearInterval(iv);
   }, [tickets, delayedPopup, dismissedIds]);
 
-  const [etaModal, setEtaModal] = useState(null); // { ticketId, etaValue }
+  const [etaModal, setEtaModal] = useState(null);
 
   const handleStatusChange = async (ticketId, newStatus, etaMinutes) => {
     try {
@@ -299,7 +286,6 @@ export const KitchenPage = () => {
     } catch { toast.error('Failed to update'); }
   };
 
-  // Intercept: when moving from pending→preparing, show ETA modal first
   const handleRequestStatusChange = (ticketId, newStatus) => {
     const ticket = tickets.find(t => t.id === ticketId);
     if (ticket && ticket.status === 'pending' && newStatus === 'preparing') {
@@ -369,7 +355,7 @@ export const KitchenPage = () => {
                 <div key={i} className="text-sm font-medium">{item.qty}x {item.name}</div>
               ))}
               <div className="mt-3">
-                <TimerDisplay startTime={delayedPopup.started_at} estimatedMinutes={delayedPopup.estimated_minutes} isDelayed />
+                <LiveTimer startTime={delayedPopup.started_at} estimatedMinutes={delayedPopup.estimated_minutes} isDelayed />
               </div>
             </div>
             <div className="flex gap-3">
@@ -385,7 +371,7 @@ export const KitchenPage = () => {
         </div>
       )}
 
-      {/* ETA Modal — appears when moving Pending → Preparing */}
+      {/* ETA Modal */}
       {etaModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" data-testid="eta-modal">
           <div className="bg-card border-2 border-primary rounded-2xl p-8 max-w-sm w-full mx-4 shadow-2xl animate-in zoom-in-95">
@@ -417,14 +403,13 @@ export const KitchenPage = () => {
         </div>
       )}
 
+      {/* Header */}
       <header className="h-14 border-b border-border/60 px-6 flex items-center justify-between bg-card/80 backdrop-blur-md">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
             <ArrowLeft className="h-4 w-4" />
           </Button>
-          <div className="flex items-center gap-2">
-            <SpetLogo size="default" />
-          </div>
+          <SpetLogo size="default" />
           <span className="text-sm text-muted-foreground">KDS — {destination === 'kitchen' ? 'Kitchen' : 'Bar'} Display</span>
           {delayed.length > 0 && (
             <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-red-500 text-white animate-pulse">
@@ -459,7 +444,7 @@ export const KitchenPage = () => {
       </header>
 
       <main className="w-full px-6 py-6">
-        <div className="grid grid-cols-5 gap-5">
+        <div className="grid grid-cols-5 gap-6">
           <KanbanColumn title="Pending" tickets={pending} dotColor="bg-yellow-500"
             onStatusChange={handleRequestStatusChange} onSetTime={handleSetTime} onDrop={handleDrop} />
           <KanbanColumn title="Preparing" tickets={preparing} dotColor="bg-primary"

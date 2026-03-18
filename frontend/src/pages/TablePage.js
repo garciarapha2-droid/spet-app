@@ -6,12 +6,26 @@ import { Input } from '../components/ui/input';
 import { Button } from '../components/ui/button';
 import { ThemeToggle } from '../components/ThemeToggle';
 import {
-  ArrowLeft, LayoutGrid, Plus, Users, X, Trash2, CreditCard, Banknote, Beer,
-  Home, LogOut, Pencil, Check, Camera, Upload, User, ChevronDown, Clock, ShieldCheck, ShieldAlert, Video, Lock
+  ArrowLeft, LayoutGrid, Plus, Users, X, Trash2, CreditCard, Banknote,
+  Home, LogOut, Pencil, Check, Camera, Upload, User, ChevronDown, Clock,
+  ShieldCheck, ShieldAlert, Video, Lock, Beer, Wine, GlassWater, Coffee,
+  Sandwich, Salad, Beef, CakeSlice
 } from 'lucide-react';
 
 const VENUE_ID = () => localStorage.getItem('active_venue_id') || '40a24e04-75b6-435d-bfff-ab0d469ce543';
-const CATEGORIES = ['Beers', 'Cocktails', 'Spirits', 'Non-alcoholic', 'Snacks', 'Starters', 'Mains', 'Plates'];
+
+const CATEGORIES = [
+  { name: 'Beers', icon: Beer },
+  { name: 'Cocktails', icon: Wine },
+  { name: 'Spirits', icon: GlassWater },
+  { name: 'Non-alcoholic', icon: Coffee },
+  { name: 'Snacks', icon: Sandwich },
+  { name: 'Starters', icon: Salad },
+  { name: 'Mains', icon: Beef },
+  { name: 'Plates', icon: CakeSlice },
+];
+
+const CATEGORY_NAMES = CATEGORIES.map(c => c.name);
 
 /* Camera Capture Modal */
 function CameraModal({ onCapture, onClose }) {
@@ -46,7 +60,7 @@ function CameraModal({ onCapture, onClose }) {
   );
 }
 
-/* ─── ID Verification Modal (Table ONLY — alcohol compliance) ─────── */
+/* ID Verification Modal */
 function IDVerificationModal({ onConfirm, onCancel }) {
   const [checked, setChecked] = useState(false);
   return (
@@ -61,26 +75,14 @@ function IDVerificationModal({ onConfirm, onCancel }) {
             <p className="text-sm text-muted-foreground">Alcohol service compliance</p>
           </div>
         </div>
-
-        <p className="text-sm text-muted-foreground mb-5">
-          Please verify the guest is 21+ before serving alcohol.
-        </p>
-
+        <p className="text-sm text-muted-foreground mb-5">Please verify the guest is 21+ before serving alcohol.</p>
         <label className="flex items-start gap-3 p-3 rounded-lg border border-border bg-muted/30 mb-5 cursor-pointer" data-testid="id-verify-checkbox-label">
-          <input
-            type="checkbox"
-            checked={checked}
-            onChange={e => setChecked(e.target.checked)}
-            className="mt-0.5 h-4 w-4 rounded border-gray-300"
-            data-testid="id-verify-checkbox"
-          />
+          <input type="checkbox" checked={checked} onChange={e => setChecked(e.target.checked)}
+            className="mt-0.5 h-4 w-4 rounded border-gray-300" data-testid="id-verify-checkbox" />
           <span className="text-sm font-medium">I have verified this guest's ID (21+)</span>
         </label>
-
         <div className="flex gap-3">
-          <Button variant="outline" className="flex-1 h-11" onClick={onCancel} data-testid="id-verify-cancel-btn">
-            Cancel
-          </Button>
+          <Button variant="outline" className="flex-1 h-11" onClick={onCancel} data-testid="id-verify-cancel-btn">Cancel</Button>
           <Button className="flex-1 h-11" onClick={onConfirm} disabled={!checked} data-testid="id-verify-confirm-btn">
             <ShieldCheck className="h-4 w-4 mr-2" /> Confirm & Add Item
           </Button>
@@ -104,7 +106,7 @@ const ElapsedTime = ({ openedAt }) => {
     const iv = setInterval(update, 30000);
     return () => clearInterval(iv);
   }, [openedAt]);
-  return <span className="text-xs text-muted-foreground flex items-center gap-1"><Clock className="h-3 w-3" /> {elapsed || '—'}</span>;
+  return <span className="text-xs text-muted-foreground flex items-center gap-1"><Clock className="h-3 w-3" /> {elapsed || '-'}</span>;
 };
 
 export const TablePage = () => {
@@ -128,7 +130,6 @@ export const TablePage = () => {
   const [editForm, setEditForm] = useState({ name: '', price: '', category: '' });
   const [barmen, setBarmen] = useState([]);
   const fileInputRef = useRef(null);
-  const cameraInputRef = useRef(null);
   const [showCamera, setShowCamera] = useState(false);
   const [pendingAlcoholItem, setPendingAlcoholItem] = useState(null);
   const [showIdModal, setShowIdModal] = useState(false);
@@ -164,15 +165,14 @@ export const TablePage = () => {
 
   const handleOpenTable = async () => {
     if (!guestName.trim()) { toast.error('Enter guest name'); return; }
-    if (!selectedServer) { toast.error('Select a server first — mandatory'); return; }
-    if (!seatCount) { toast.error('Select number of seats — mandatory'); return; }
+    if (!selectedServer) { toast.error('Select a server first'); return; }
+    if (!seatCount) { toast.error('Select number of seats'); return; }
     setLoading(true);
     try {
       const fd = new FormData();
       fd.append('venue_id', VENUE_ID()); fd.append('table_id', selectedTable);
       fd.append('guest_name', guestName.trim()); fd.append('server_name', selectedServer);
       fd.append('seats', seatCount);
-      // Send bartender_id for tip ownership
       const serverObj = barmen.find(b => b.name === selectedServer);
       if (serverObj) fd.append('bartender_id', serverObj.id);
       await tableAPI.openTable(fd);
@@ -186,7 +186,6 @@ export const TablePage = () => {
   const handleAddItem = async (item) => {
     if (!tableDetail?.session) { toast.error('Open the table first'); return; }
     if (!tableDetail.session.server_name && !selectedServer) { toast.error('Select a server first'); return; }
-    // Check if item is alcohol and session not ID-verified
     if (item.is_alcohol && !tableDetail.session.id_verified) {
       setPendingAlcoholItem(item);
       setShowIdModal(true);
@@ -210,9 +209,7 @@ export const TablePage = () => {
     const itemToAdd = pendingAlcoholItem;
     setShowIdModal(false);
     setPendingAlcoholItem(null);
-    // Best-effort: mark session as ID-verified on backend
     try { await tapAPI.verifyId(sessionId); } catch {}
-    // Always add the item after confirmation — ID check is a frontend gate only
     if (itemToAdd) {
       try {
         const fd = new FormData(); fd.append('item_id', itemToAdd.id); fd.append('qty', '1');
@@ -225,10 +222,7 @@ export const TablePage = () => {
     }
   };
 
-  const handleIdCancel = () => {
-    setShowIdModal(false);
-    setPendingAlcoholItem(null);
-  };
+  const handleIdCancel = () => { setShowIdModal(false); setPendingAlcoholItem(null); };
 
   const handleVoidItem = async (itemId) => {
     if (!tableDetail?.session) return;
@@ -245,7 +239,6 @@ export const TablePage = () => {
   const [tableTipInput, setTableTipInput] = useState('');
   const [tableTipType, setTableTipType] = useState('percent');
   const [tableTipResult, setTableTipResult] = useState(null);
-
   const [tablePaymentDone, setTablePaymentDone] = useState(false);
   const [tableOrderConfirmed, setTableOrderConfirmed] = useState(false);
 
@@ -253,7 +246,7 @@ export const TablePage = () => {
     if (!tableDetail?.session) return;
     if (location === 'pay_at_register') {
       setTablePaymentDone(true);
-      toast.success('Sent to register — done.');
+      toast.success('Sent to register');
       return;
     }
     setLoading(true);
@@ -280,8 +273,7 @@ export const TablePage = () => {
     if (!tablePaymentDone) { toast.error('Choose payment method first'); return; }
     setTableDetail(null); setTablePaymentDone(false); setTableOrderConfirmed(false);
     setTableCloseStep(null); setTableTipSession(null); setTableTipInput(''); setTableTipResult(null);
-    loadTables();
-    toast.success('Order completed');
+    loadTables(); toast.success('Order completed');
   };
 
   const handleTableCancelOrder = () => {
@@ -343,7 +335,7 @@ export const TablePage = () => {
       <div className="min-h-screen bg-background flex flex-col items-center justify-center" data-testid="module-blocked">
         <Lock className="h-12 w-12 text-muted-foreground mb-4" />
         <h2 className="text-xl font-bold mb-2">Module Not Available</h2>
-        <p className="text-muted-foreground mb-6">You do not have access to the Table module for this venue.</p>
+        <p className="text-muted-foreground mb-6">You do not have access to the Table module.</p>
         <Button onClick={() => navigate('/venue/home')} data-testid="back-to-home-btn">Back to Home</Button>
       </div>
     );
@@ -352,10 +344,9 @@ export const TablePage = () => {
   return (
     <div className="min-h-screen bg-background" data-testid="table-page">
       {showCamera && <CameraModal onCapture={file => setCustomPhoto(file)} onClose={() => setShowCamera(false)} />}
-      {/* ID Verification Modal */}
-      {showIdModal && (
-        <IDVerificationModal onConfirm={handleIdVerified} onCancel={handleIdCancel} />
-      )}
+      {showIdModal && <IDVerificationModal onConfirm={handleIdVerified} onCancel={handleIdCancel} />}
+
+      {/* Header */}
       <header className="h-14 border-b border-border/60 bg-card/80 backdrop-blur-md px-6 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon" onClick={() => navigate('/tap')} data-testid="back-to-home-btn">
@@ -368,7 +359,7 @@ export const TablePage = () => {
             <span className="text-sm text-primary font-medium" onClick={() => navigate('/tap')}>DISCO MODE</span>
           </label>
           <div className="h-5 w-px bg-border" />
-          {/* Server Selector — mandatory */}
+          {/* Server Selector */}
           <div className="relative">
             <button onClick={() => setShowServerMenu(!showServerMenu)}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium ${
@@ -397,15 +388,19 @@ export const TablePage = () => {
         </div>
       </header>
 
-      <main className="w-full px-6 py-4">
-        <div className="grid grid-cols-12 gap-6">
-          {/* Left: Table Grid */}
-          <div className="col-span-2">
-            <h3 className="text-xs font-semibold uppercase text-muted-foreground mb-3">Tables</h3>
+      {/* Main POS Layout */}
+      <main className="h-[calc(100vh-56px)] flex overflow-hidden">
+
+        {/* LEFT: Table Map */}
+        <div className="w-52 flex-shrink-0 border-r border-border bg-card/50 flex flex-col">
+          <div className="px-3 py-2">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Tables</span>
+          </div>
+          <div className="flex-1 overflow-y-auto px-2 pb-2">
             <div className="grid grid-cols-2 gap-2">
               {tables.map(t => (
                 <div key={t.id} onClick={() => setSelectedTable(t.id)}
-                  className={`p-2 rounded-xl border-2 text-center transition-all cursor-pointer ${
+                  className={`p-2.5 rounded-xl border-2 text-center transition-all cursor-pointer ${
                     selectedTable === t.id ? 'border-primary bg-primary/5 ring-2 ring-primary/20' :
                     t.status === 'occupied' ? 'border-orange-500/30 bg-orange-500/5' :
                     'border-border hover:border-primary/30'
@@ -416,12 +411,9 @@ export const TablePage = () => {
                   </div>
                   <span className={`mt-0.5 inline-block text-[9px] font-medium px-1.5 py-0.5 rounded-full ${
                     t.status === 'occupied' ? 'bg-orange-500/10 text-orange-600' : 'bg-green-500/10 text-green-600'
-                  }`}>{t.status === 'occupied' ? 'Occupied' : 'Available'}</span>
+                  }`}>{t.status === 'occupied' ? 'Busy' : 'Free'}</span>
                   {t.status === 'occupied' && t.session_guest && (
                     <p className="text-[10px] text-primary mt-0.5 truncate font-medium">{t.session_guest}</p>
-                  )}
-                  {t.status === 'occupied' && t.tab_number && (
-                    <p className="text-[9px] text-muted-foreground font-medium">#{t.tab_number}</p>
                   )}
                   {t.status === 'occupied' && (
                     <div className="mt-1" onClick={e => e.stopPropagation()}>
@@ -432,14 +424,42 @@ export const TablePage = () => {
               ))}
             </div>
           </div>
+        </div>
 
-          {/* Center: Kanban Menu */}
-          <div className="col-span-6">
-            {/* Table Context Bar — shows table, guest, server clearly */}
+        {/* CENTER: Category Sidebar + Items Grid */}
+        <div className="flex-1 flex overflow-hidden">
+          {/* Category Sidebar */}
+          <div className="w-24 flex-shrink-0 bg-secondary/30 border-r border-border flex flex-col py-2 overflow-y-auto" data-testid="table-category-tabs">
+            {CATEGORIES.map(cat => {
+              const Icon = cat.icon;
+              const isActive = selectedCategory === cat.name;
+              return (
+                <button key={cat.name}
+                  onClick={() => { setSelectedCategory(cat.name); setEditingItem(null); }}
+                  className={`flex flex-col items-center gap-1 px-2 py-3 mx-1.5 rounded-xl transition-all text-center ${
+                    isActive ? 'bg-primary text-primary-foreground shadow-md' : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                  }`}
+                  data-testid={`table-cat-${cat.name.toLowerCase().replace(/[^a-z]/g, '-')}`}>
+                  <Icon className="h-5 w-5" />
+                  <span className="text-[10px] font-semibold leading-tight">{cat.name}</span>
+                </button>
+              );
+            })}
+            <button onClick={() => setShowCustomItem(!showCustomItem)}
+              className="flex flex-col items-center gap-1 px-2 py-3 mx-1.5 rounded-xl text-primary hover:bg-primary/10 transition-all mt-auto"
+              data-testid="table-custom-btn">
+              <Plus className="h-5 w-5" />
+              <span className="text-[10px] font-semibold leading-tight">Custom</span>
+            </button>
+          </div>
+
+          {/* Items Grid */}
+          <div className="flex-1 p-5 overflow-y-auto">
+            {/* Table Context Bar */}
             {currentTable && tableDetail?.session && (
               <div className="bg-card border border-border rounded-xl p-3 mb-4" data-testid="table-context-bar">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-3">
                     <div className="bg-primary/10 text-primary font-bold px-3 py-1.5 rounded-lg text-sm" data-testid="ctx-table-name">
                       Table #{currentTable.table_number}
                     </div>
@@ -466,28 +486,9 @@ export const TablePage = () => {
               </div>
             )}
 
-            {/* Horizontal Category Tabs */}
-            <div className="flex items-center gap-1 mb-4 overflow-x-auto pb-1" data-testid="table-category-tabs">
-              {CATEGORIES.map(cat => (
-                <button key={cat} onClick={() => { setSelectedCategory(cat); setEditingItem(null); }}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all ${
-                    selectedCategory === cat
-                      ? 'bg-primary text-primary-foreground shadow-sm'
-                      : 'bg-card border border-border text-muted-foreground hover:text-foreground hover:border-primary/30'
-                  }`} data-testid={`table-cat-${cat.toLowerCase().replace(/[^a-z]/g, '-')}`}>
-                  {cat}
-                </button>
-              ))}
-              <button onClick={() => setShowCustomItem(!showCustomItem)}
-                className="px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap bg-card border border-dashed border-primary/40 text-primary hover:bg-primary/5"
-                data-testid="table-custom-btn">
-                <Plus className="h-3.5 w-3.5 inline mr-1" /> Custom
-              </button>
-            </div>
-
             {/* Custom Item Form */}
             {showCustomItem && (
-              <div className="bg-card border border-primary/20 rounded-xl p-4 mb-4 space-y-3" data-testid="table-custom-form">
+              <div className="bg-card border border-primary/20 rounded-xl p-4 mb-5 space-y-3" data-testid="table-custom-form">
                 <div className="grid grid-cols-3 gap-2">
                   <Input value={customItem.name} onChange={e => setCustomItem(p => ({ ...p, name: e.target.value }))} placeholder="Item name" className="text-sm col-span-2" />
                   <Input type="number" step="0.01" value={customItem.price} onChange={e => setCustomItem(p => ({ ...p, price: e.target.value }))} placeholder="$ Price" className="text-sm" />
@@ -495,7 +496,7 @@ export const TablePage = () => {
                 <div className="flex gap-2 items-center">
                   <select value={customItem.category} onChange={e => setCustomItem(p => ({ ...p, category: e.target.value }))}
                     className="h-9 rounded-md border border-input bg-background px-2 text-sm flex-1">
-                    {CATEGORIES.map(c => <option key={c}>{c}</option>)}
+                    {CATEGORY_NAMES.map(c => <option key={c}>{c}</option>)}
                   </select>
                   <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={e => e.target.files[0] && setCustomPhoto(e.target.files[0])} />
                   <Button type="button" size="sm" variant="outline" onClick={() => setShowCamera(true)}><Camera className="h-3.5 w-3.5 mr-1" /> Photo</Button>
@@ -505,14 +506,20 @@ export const TablePage = () => {
               </div>
             )}
 
-            {/* Category Title + Items Grid (Toast-style) */}
-            <h3 className="font-bold text-sm uppercase tracking-wider text-muted-foreground mb-3" data-testid="table-category-title">{selectedCategory}</h3>
-            <div className="grid grid-cols-3 gap-2.5 max-h-[calc(100vh-340px)] overflow-y-auto pr-1" data-testid="table-items-list">
+            {/* Category Title */}
+            <h3 className="font-bold text-lg mb-4 flex items-center gap-2" data-testid="table-category-title">
+              {(() => { const cat = CATEGORIES.find(c => c.name === selectedCategory); return cat ? <cat.icon className="h-5 w-5 text-primary" /> : null; })()}
+              {selectedCategory}
+              <span className="text-sm text-muted-foreground font-normal">({filteredItems.length})</span>
+            </h3>
+
+            {/* Large Touch-Friendly Grid */}
+            <div className="grid grid-cols-4 gap-3" data-testid="table-items-list">
               {filteredItems.length === 0 ? (
-                <p className="text-sm text-muted-foreground py-8 text-center col-span-3">No items</p>
+                <p className="text-sm text-muted-foreground py-12 text-center col-span-4">No items</p>
               ) : filteredItems.map(item => (
                 editingItem === item.id ? (
-                  <div key={item.id} className="p-3 rounded-lg border border-primary/30 bg-primary/5 space-y-2 col-span-3">
+                  <div key={item.id} className="p-4 rounded-xl border border-primary/30 bg-primary/5 space-y-2 col-span-4">
                     <div className="grid grid-cols-3 gap-2">
                       <Input value={editForm.name} onChange={e => setEditForm(p => ({ ...p, name: e.target.value }))} className="text-sm col-span-2" />
                       <Input type="number" step="0.01" value={editForm.price} onChange={e => setEditForm(p => ({ ...p, price: e.target.value }))} className="text-sm" />
@@ -523,100 +530,103 @@ export const TablePage = () => {
                     </div>
                   </div>
                 ) : (
-                  <div key={item.id}
-                    className="relative group flex flex-col rounded-xl border border-border bg-card hover:border-primary/40 transition-all cursor-pointer overflow-hidden"
+                  <button key={item.id}
+                    onClick={() => handleAddItem(item)}
+                    className="relative group flex flex-col rounded-xl border border-border bg-card hover:border-primary/50 hover:shadow-lg transition-all overflow-hidden text-left active:scale-[0.98]"
                     data-testid={`table-item-${item.id}`}>
-                    <button className="flex flex-col items-start p-3.5 pb-2.5 w-full text-left" onClick={() => handleAddItem(item)}>
-                      {item.image_url ? (
-                        <img src={item.image_url} alt="" className="w-full h-16 rounded-lg object-cover mb-2" />
-                      ) : null}
-                      <span className="font-medium text-sm leading-tight">{item.name}</span>
-                      <span className="text-primary font-bold text-sm mt-1">${item.price.toFixed(2)}</span>
-                    </button>
-                    <div className="absolute top-1.5 right-1.5 flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button onClick={() => { setEditingItem(item.id); setEditForm({ name: item.name, price: item.price, category: item.category }); }}
-                        className="p-1 rounded bg-card/90 hover:bg-muted border border-border"><Pencil className="h-3 w-3 text-muted-foreground" /></button>
-                      <button onClick={() => handleDeleteItem(item.id)}
-                        className="p-1 rounded bg-card/90 hover:bg-destructive/10 border border-border"><Trash2 className="h-3 w-3 text-muted-foreground" /></button>
+                    {item.image_url && <img src={item.image_url} alt="" className="w-full h-20 object-cover" />}
+                    <div className="p-4 flex-1 flex flex-col justify-between min-h-[80px]">
+                      <span className="font-semibold text-sm leading-snug block mb-2">{item.name}</span>
+                      <span className="text-primary font-bold text-base">${item.price.toFixed(2)}</span>
                     </div>
-                  </div>
+                    <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button onClick={(e) => { e.stopPropagation(); setEditingItem(item.id); setEditForm({ name: item.name, price: item.price, category: item.category }); }}
+                        className="p-1.5 rounded-lg bg-card/90 hover:bg-muted border border-border shadow-sm"><Pencil className="h-3 w-3 text-muted-foreground" /></button>
+                      <button onClick={(e) => { e.stopPropagation(); handleDeleteItem(item.id); }}
+                        className="p-1.5 rounded-lg bg-card/90 hover:bg-destructive/10 border border-border shadow-sm"><Trash2 className="h-3 w-3 text-muted-foreground" /></button>
+                    </div>
+                  </button>
                 )
               ))}
             </div>
           </div>
+        </div>
 
-          {/* Right: Table Detail & Tab */}
-          <div className="col-span-4 border-l border-border pl-6">
-            {selectedTable ? (
-              tableDetail ? (
-                tableDetail.session ? (
-                  <div data-testid="table-session-detail">
-                    <div className="flex items-center justify-between mb-4">
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="font-bold text-sm bg-primary/10 text-primary px-2.5 py-1 rounded-lg" data-testid="table-detail-tab-number">#{tableDetail.session.tab_number || '—'}</span>
-                          <h2 className="text-lg font-semibold">{tableDetail.session.guest_name}</h2>
-                        </div>
-                        <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
-                          <span>Table #{tableDetail.table_number}</span>
-                          <ElapsedTime openedAt={tableDetail.session.opened_at} />
-                          <span className="flex items-center gap-1"><User className="h-3 w-3" /> {tableDetail.session.server_name || 'No server'}</span>
-                          {tableDetail.session.id_verified && (
-                            <span className="flex items-center gap-1 bg-green-500/10 text-green-600 px-2 py-0.5 rounded-full font-medium" data-testid="id-verified-badge">
-                              <ShieldCheck className="h-3 w-3" /> ID verified
-                            </span>
-                          )}
-                        </div>
+        {/* RIGHT: Table Detail / Order */}
+        <div className="w-80 flex-shrink-0 border-l border-border bg-card/50 flex flex-col">
+          {selectedTable ? (
+            tableDetail ? (
+              tableDetail.session ? (
+                <div data-testid="table-session-detail" className="flex flex-col h-full">
+                  {/* Session Header */}
+                  <div className="p-4 border-b border-border">
+                    <div className="flex items-center justify-between mb-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-sm bg-primary/10 text-primary px-2.5 py-1 rounded-lg" data-testid="table-detail-tab-number">#{tableDetail.session.tab_number || '-'}</span>
+                        <h2 className="text-base font-semibold truncate">{tableDetail.session.guest_name}</h2>
                       </div>
+                    </div>
+                    <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
+                      <span>Table #{tableDetail.table_number}</span>
+                      <ElapsedTime openedAt={tableDetail.session.opened_at} />
+                      <span className="flex items-center gap-1"><User className="h-3 w-3" /> {tableDetail.session.server_name || 'No server'}</span>
+                      {tableDetail.session.id_verified && (
+                        <span className="flex items-center gap-1 bg-green-500/10 text-green-600 px-2 py-0.5 rounded-full font-medium" data-testid="id-verified-badge">
+                          <ShieldCheck className="h-3 w-3" /> ID
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Items */}
+                  <div className="flex-1 overflow-y-auto p-3 space-y-0.5">
+                    {(tableDetail.items || []).length === 0 ? (
+                      <p className="text-sm text-muted-foreground py-8 text-center">No items — add from menu</p>
+                    ) : tableDetail.items.map(item => (
+                      <div key={item.id} className="flex items-center gap-2.5 py-2.5 px-3 rounded-lg hover:bg-muted/30 text-sm group">
+                        <span className="w-6 h-6 rounded bg-primary/10 text-primary text-xs font-bold flex items-center justify-center flex-shrink-0">{item.qty}</span>
+                        <span className="font-medium flex-1 truncate">{item.name}</span>
+                        <span className="font-bold text-sm">${item.line_total.toFixed(2)}</span>
+                        <button onClick={() => handleVoidItem(item.id)}
+                          className="p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-opacity"
+                          data-testid={`table-void-item-${item.id}`}>
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Total */}
+                  <div className="px-4 py-3 border-t border-border">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-muted-foreground font-medium">Total</span>
                       <span className="text-2xl font-bold text-primary" data-testid="table-total">${(tableDetail.session.total || 0).toFixed(2)}</span>
                     </div>
+                  </div>
 
-                    <div className="space-y-0.5 mb-6 max-h-[300px] overflow-y-auto">
-                      {(tableDetail.items || []).length === 0 ? (
-                        <p className="text-sm text-muted-foreground py-4 text-center">No items — add from menu</p>
-                      ) : tableDetail.items.map(item => (
-                        <div key={item.id} className="flex items-center gap-3 py-2.5 px-3 rounded-lg hover:bg-muted/30 text-sm border border-transparent hover:border-border group">
-                          <span className="w-6 h-6 rounded bg-primary/10 text-primary text-xs font-bold flex items-center justify-center flex-shrink-0">{item.qty}</span>
-                          <span className="font-medium flex-1 truncate">{item.name}</span>
-                          <span className="font-bold text-sm w-16 text-right">${item.line_total.toFixed(2)}</span>
-                          <button onClick={() => handleVoidItem(item.id)}
-                            className="p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-opacity"
-                            data-testid={`table-void-item-${item.id}`}>
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* STEP 5: Confirm Order (before payment) */}
+                  {/* Actions */}
+                  <div className="p-3 border-t border-border space-y-2">
                     {!tableCloseStep && !tableOrderConfirmed && (
-                      <div className="grid grid-cols-2 gap-3 pt-4 border-t border-border" data-testid="table-order-action-buttons">
-                        <Button variant="destructive" className="h-12 text-sm font-semibold" onClick={handleTableCancelOrder} data-testid="table-cancel-order-btn">
-                          <X className="h-4 w-4 mr-1.5" /> Cancel Order
+                      <div className="grid grid-cols-2 gap-2" data-testid="table-order-action-buttons">
+                        <Button variant="destructive" className="h-11 text-xs font-semibold" onClick={handleTableCancelOrder} data-testid="table-cancel-order-btn">
+                          <X className="h-4 w-4 mr-1" /> Cancel
                         </Button>
-                        <Button
-                          className="h-12 text-sm font-semibold bg-primary hover:bg-primary/90 text-primary-foreground"
-                          onClick={handleTableConfirmOrder}
-                          disabled={(tableDetail.items || []).length === 0}
-                          data-testid="table-confirm-order-btn">
-                          <Check className="h-4 w-4 mr-1.5" /> Confirm Order
+                        <Button className="h-11 text-xs font-semibold" onClick={handleTableConfirmOrder}
+                          disabled={(tableDetail.items || []).length === 0} data-testid="table-confirm-order-btn">
+                          <Check className="h-4 w-4 mr-1" /> Confirm
                         </Button>
-                        {(tableDetail.items || []).length === 0 && (
-                          <p className="col-span-2 text-[10px] text-muted-foreground text-center">Add items before confirming</p>
-                        )}
                       </div>
                     )}
 
-                    {/* STEP 6: Payment screen (only after order confirmed) */}
                     {!tableCloseStep && tableOrderConfirmed && !tablePaymentDone && (
-                      <div className="space-y-3 pt-4 border-t border-border" data-testid="table-payment-section">
-                        <p className="text-sm font-medium text-muted-foreground">Choose Payment Method</p>
+                      <div className="space-y-2" data-testid="table-payment-section">
+                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Payment</p>
                         <div className="grid grid-cols-2 gap-2">
-                          <Button variant="outline" className="h-11" onClick={() => handleCloseTable('card', 'pay_here')} disabled={loading} data-testid="table-pay-here-btn">
+                          <Button variant="outline" className="h-11 text-xs" onClick={() => handleCloseTable('card', 'pay_here')} disabled={loading} data-testid="table-pay-here-btn">
                             <CreditCard className="h-4 w-4 mr-1" /> Pay Here
                           </Button>
-                          <Button variant="outline" className="h-11" onClick={() => handleCloseTable('card', 'pay_at_register')} disabled={loading} data-testid="table-pay-register-btn">
-                            <Banknote className="h-4 w-4 mr-1" /> Pay at Register
+                          <Button variant="outline" className="h-11 text-xs" onClick={() => handleCloseTable('card', 'pay_at_register')} disabled={loading} data-testid="table-pay-register-btn">
+                            <Banknote className="h-4 w-4 mr-1" /> Register
                           </Button>
                         </div>
                         <Button variant="ghost" className="w-full text-xs text-muted-foreground" onClick={() => setTableOrderConfirmed(false)} data-testid="table-back-to-items-btn">
@@ -625,113 +635,99 @@ export const TablePage = () => {
                       </div>
                     )}
 
-                    {/* After payment done (non-tip flow) */}
                     {!tableCloseStep && tableOrderConfirmed && tablePaymentDone && (
-                      <div className="pt-4 border-t border-border">
-                        <Button className="w-full h-12 bg-green-600 hover:bg-green-700 text-white font-semibold" onClick={handleTableFinalDone} data-testid="table-done-btn">
-                          <Check className="h-4 w-4 mr-1.5" /> Done
-                        </Button>
-                      </div>
+                      <Button className="w-full h-12 bg-green-600 hover:bg-green-700 text-white font-semibold" onClick={handleTableFinalDone} data-testid="table-done-btn">
+                        <Check className="h-4 w-4 mr-1.5" /> Done
+                      </Button>
                     )}
 
-                    {/* Tip Recording */}
                     {tableCloseStep === 'tip' && tableTipSession && !tableTipResult && (
-                      <div className="space-y-3 pt-4 border-t border-border">
-                        <div className="border border-primary/30 rounded-xl p-4 bg-primary/5" data-testid="table-tip-recording">
-                          <h4 className="font-semibold text-sm mb-1">Enter tip from receipt</h4>
-                          <p className="text-xs text-muted-foreground mb-3">
-                            {tableTipSession.guest_name} — Tab #{tableTipSession.tab_number} — Total: ${tableTipSession.total?.toFixed(2)}
-                          </p>
-                          <div className="flex gap-2 mb-3">
-                            {[18, 20, 22].map(pct => (
-                              <Button key={pct} size="sm" variant={tableTipType === 'percent' && tableTipInput === pct.toString() ? 'default' : 'outline'}
-                                onClick={() => { setTableTipType('percent'); setTableTipInput(pct.toString()); }}>
-                                {pct}%
-                              </Button>
-                            ))}
-                            <Button size="sm" variant="outline" onClick={() => { setTableTipType('amount'); setTableTipInput(''); }}>Custom</Button>
-                          </div>
-                          <div className="flex gap-2">
-                            <div className="flex-1 flex items-center gap-1">
-                              <span className="text-sm font-medium text-muted-foreground">{tableTipType === 'amount' ? '$' : '%'}</span>
-                              <Input value={tableTipInput} onChange={e => setTableTipInput(e.target.value)} type="number" step="0.01"
-                                placeholder={tableTipType === 'amount' ? '0.00' : '20'} className="h-9" data-testid="table-tip-input" />
-                            </div>
-                            <Button onClick={handleTableRecordTip} disabled={!tableTipInput || loading} data-testid="table-record-tip-btn">Record Tip</Button>
-                          </div>
-                          <button onClick={handleTableTipDone} className="text-xs text-muted-foreground mt-2 hover:underline">Skip (no tip)</button>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Tip Result */}
-                    {tableTipResult && (
-                      <div className="space-y-3 pt-4 border-t border-border">
-                        <div className="border border-green-500/30 rounded-xl p-4 bg-green-500/5" data-testid="table-tip-result">
-                          <h4 className="font-semibold text-sm text-green-600 mb-2">Tip: ${tableTipResult.tip_amount.toFixed(2)} ({tableTipResult.tip_percent}%)</h4>
-                          {tableTipResult.distribution?.length > 0 && (
-                            <div className="space-y-1">
-                              <p className="text-[10px] font-bold text-muted-foreground uppercase">Distribution</p>
-                              {tableTipResult.distribution.map((d, i) => (
-                                <div key={i} className="flex justify-between text-sm">
-                                  <span className="text-muted-foreground">Staff (sold ${d.sold.toFixed(2)} — {(d.proportion * 100).toFixed(0)}%)</span>
-                                  <span className="font-bold text-green-600">${d.tip.toFixed(2)}</span>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                          <Button size="sm" className="mt-3 w-full" onClick={handleTableTipDone} data-testid="table-done-tip-btn">Done</Button>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* (removed duplicate buttons) */}
-                  </div>
-                ) : (
-                  <div className="text-center py-10" data-testid="open-table-panel">
-                    <p className="text-lg font-semibold mb-1">Table #{tableDetail.table_number}</p>
-                    <p className="text-sm text-muted-foreground mb-4">{tableDetail.zone} — {tableDetail.capacity} seats</p>
-                    {!showOpenForm ? (
-                      <Button onClick={() => setShowOpenForm(true)} data-testid="open-table-btn"><Plus className="h-4 w-4 mr-1" /> Open Table</Button>
-                    ) : (
-                      <div className="space-y-3 max-w-xs mx-auto text-left" data-testid="open-table-form">
-                        <Input value={guestName} onChange={e => setGuestName(e.target.value)} placeholder="Guest name" autoFocus data-testid="open-table-guest-name" />
-                        <div>
-                          <select value={selectedServer} onChange={e => setSelectedServer(e.target.value)}
-                            className={`w-full h-10 rounded-md border bg-background px-3 text-sm ${!selectedServer ? 'border-red-500/50 ring-1 ring-red-500/20' : 'border-input'}`}
-                            data-testid="open-table-server">
-                            <option value="">Select server (required)...</option>
-                            {barmen.map(b => <option key={b.id} value={b.name}>{b.name}</option>)}
-                          </select>
-                          {!selectedServer && <p className="text-[10px] text-red-500 mt-1">Server must be selected before opening table</p>}
-                        </div>
-                        <div>
-                          <select value={seatCount} onChange={e => setSeatCount(e.target.value)}
-                            className={`w-full h-10 rounded-md border bg-background px-3 text-sm ${!seatCount ? 'border-red-500/50 ring-1 ring-red-500/20' : 'border-input'}`}
-                            data-testid="open-table-seats">
-                            <option value="">Seats (required)...</option>
-                            {[1,2,3,4,5,6,7,8,10,12].map(n => <option key={n} value={n}>{n} {n === 1 ? 'seat' : 'seats'}</option>)}
-                          </select>
-                          {!seatCount && <p className="text-[10px] text-red-500 mt-1">Number of seats must be selected</p>}
+                      <div className="border border-primary/30 rounded-xl p-3 bg-primary/5 space-y-2" data-testid="table-tip-recording">
+                        <h4 className="font-semibold text-sm">Tip</h4>
+                        <p className="text-[10px] text-muted-foreground">
+                          {tableTipSession.guest_name} — #{tableTipSession.tab_number} — ${tableTipSession.total?.toFixed(2)}
+                        </p>
+                        <div className="flex gap-1.5">
+                          {[18, 20, 22].map(pct => (
+                            <Button key={pct} size="sm" variant={tableTipType === 'percent' && tableTipInput === pct.toString() ? 'default' : 'outline'}
+                              onClick={() => { setTableTipType('percent'); setTableTipInput(pct.toString()); }} className="text-xs">
+                              {pct}%
+                            </Button>
+                          ))}
+                          <Button size="sm" variant="outline" onClick={() => { setTableTipType('amount'); setTableTipInput(''); }} className="text-xs">$</Button>
                         </div>
                         <div className="flex gap-2">
-                          <Button className="flex-1" onClick={handleOpenTable} disabled={!guestName.trim() || !selectedServer || !seatCount || loading} data-testid="open-table-submit-btn">Open</Button>
-                          <Button variant="outline" onClick={() => setShowOpenForm(false)}><X className="h-4 w-4" /></Button>
+                          <div className="flex-1 flex items-center gap-1">
+                            <span className="text-sm font-medium text-muted-foreground">{tableTipType === 'amount' ? '$' : '%'}</span>
+                            <Input value={tableTipInput} onChange={e => setTableTipInput(e.target.value)} type="number" step="0.01"
+                              placeholder={tableTipType === 'amount' ? '0.00' : '20'} className="h-9" data-testid="table-tip-input" />
+                          </div>
+                          <Button size="sm" onClick={handleTableRecordTip} disabled={!tableTipInput || loading} data-testid="table-record-tip-btn">Record</Button>
                         </div>
+                        <button onClick={handleTableTipDone} className="text-[10px] text-muted-foreground hover:underline">Skip</button>
+                      </div>
+                    )}
+
+                    {tableTipResult && (
+                      <div className="border border-green-500/30 rounded-xl p-3 bg-green-500/5" data-testid="table-tip-result">
+                        <h4 className="font-semibold text-sm text-green-600 mb-1">Tip: ${tableTipResult.tip_amount.toFixed(2)} ({tableTipResult.tip_percent}%)</h4>
+                        {tableTipResult.distribution?.length > 0 && (
+                          <div className="space-y-0.5 mt-2">
+                            {tableTipResult.distribution.map((d, i) => (
+                              <div key={i} className="flex justify-between text-xs">
+                                <span className="text-muted-foreground">{(d.proportion * 100).toFixed(0)}%</span>
+                                <span className="font-bold text-green-600">${d.tip.toFixed(2)}</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        <Button size="sm" className="mt-2 w-full" onClick={handleTableTipDone} data-testid="table-done-tip-btn">Done</Button>
                       </div>
                     )}
                   </div>
-                )
+                </div>
               ) : (
-                <p className="text-sm text-muted-foreground py-10 text-center">Loading...</p>
+                /* Empty Table — Open Form */
+                <div className="flex flex-col items-center justify-center flex-1 px-6" data-testid="open-table-panel">
+                  <p className="text-lg font-semibold mb-1">Table #{tableDetail.table_number}</p>
+                  <p className="text-sm text-muted-foreground mb-4">{tableDetail.zone} — {tableDetail.capacity} seats</p>
+                  {!showOpenForm ? (
+                    <Button onClick={() => setShowOpenForm(true)} data-testid="open-table-btn"><Plus className="h-4 w-4 mr-1" /> Open Table</Button>
+                  ) : (
+                    <div className="space-y-3 w-full max-w-xs text-left" data-testid="open-table-form">
+                      <Input value={guestName} onChange={e => setGuestName(e.target.value)} placeholder="Guest name" autoFocus data-testid="open-table-guest-name" />
+                      <select value={selectedServer} onChange={e => setSelectedServer(e.target.value)}
+                        className={`w-full h-10 rounded-md border bg-background px-3 text-sm ${!selectedServer ? 'border-red-500/50 ring-1 ring-red-500/20' : 'border-input'}`}
+                        data-testid="open-table-server">
+                        <option value="">Select server (required)...</option>
+                        {barmen.map(b => <option key={b.id} value={b.name}>{b.name}</option>)}
+                      </select>
+                      <select value={seatCount} onChange={e => setSeatCount(e.target.value)}
+                        className={`w-full h-10 rounded-md border bg-background px-3 text-sm ${!seatCount ? 'border-red-500/50 ring-1 ring-red-500/20' : 'border-input'}`}
+                        data-testid="open-table-seats">
+                        <option value="">Seats (required)...</option>
+                        {[1,2,3,4,5,6,7,8,10,12].map(n => <option key={n} value={n}>{n} {n === 1 ? 'seat' : 'seats'}</option>)}
+                      </select>
+                      <div className="flex gap-2">
+                        <Button className="flex-1" onClick={handleOpenTable} disabled={!guestName.trim() || !selectedServer || !seatCount || loading} data-testid="open-table-submit-btn">Open</Button>
+                        <Button variant="outline" onClick={() => setShowOpenForm(false)}><X className="h-4 w-4" /></Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
               )
             ) : (
-              <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
-                <LayoutGrid className="h-12 w-12 mb-4 opacity-30" />
-                <p className="text-lg">Select a table</p>
+              <div className="flex items-center justify-center flex-1">
+                <p className="text-sm text-muted-foreground">Loading...</p>
               </div>
-            )}
-          </div>
+            )
+          ) : (
+            <div className="flex flex-col items-center justify-center flex-1 text-muted-foreground px-6">
+              <LayoutGrid className="h-14 w-14 mb-4 opacity-20" />
+              <p className="text-base font-medium mb-1">Select a table</p>
+              <p className="text-sm text-center">Choose a table from the map</p>
+            </div>
+          )}
         </div>
       </main>
     </div>
@@ -763,7 +759,7 @@ function ServerAssign({ tableId, currentServer, barmen, onAssigned }) {
             : 'bg-red-500/10 text-red-500 hover:bg-red-500/20 animate-pulse'
         }`} data-testid={`assign-server-${tableId}`}>
         <User className="h-2.5 w-2.5 inline mr-0.5" />
-        {currentServer || 'Assign Server'}
+        {currentServer || 'Assign'}
       </button>
     );
   }

@@ -22,6 +22,8 @@ import { KitchenPage } from './pages/KitchenPage';
 import { ManagerPage } from './pages/ManagerPage';
 import { OwnerPage } from './pages/OwnerPage';
 import CeoPage from './pages/CeoPage';
+import PricingPage from './pages/PricingPage';
+import CheckoutSuccessPage from './pages/CheckoutSuccessPage';
 const CEOPage = CeoPage;
 
 function App() {
@@ -31,6 +33,8 @@ function App() {
         <BrowserRouter>
           <div className="App">
             <Routes>
+              <Route path="/pricing" element={<PricingPage />} />
+              <Route path="/checkout/success" element={<CheckoutSuccessPage />} />
               <Route path="/login" element={<LoginPage />} />
               <Route path="/auth/handoff" element={<AuthHandoffPage />} />
               <Route
@@ -153,7 +157,7 @@ function App() {
                   </CEORoute>
                 }
               />
-              <Route path="/" element={<Navigate to="/venue/home" replace />} />
+              <Route path="/" element={<Navigate to="/pricing" replace />} />
             </Routes>
             <Toaster />
           </div>
