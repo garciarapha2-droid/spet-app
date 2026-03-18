@@ -7,6 +7,7 @@ import { ProtectedRoute } from './components/ProtectedRoute';
 
 // Pages
 import { LoginPage } from './pages/LoginPage';
+import { AuthHandoffPage } from './pages/AuthHandoffPage';
 import { ModulesPage } from './pages/ModulesPage';
 import { VenueSelectPage } from './pages/venue/VenueHomePage';
 import { PulseEntryPage } from './pages/pulse/PulseEntryPage';
@@ -31,6 +32,7 @@ function App() {
           <div className="App">
             <Routes>
               <Route path="/login" element={<LoginPage />} />
+              <Route path="/auth/handoff" element={<AuthHandoffPage />} />
               <Route
                 path="/venue/home"
                 element={

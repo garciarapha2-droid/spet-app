@@ -1,17 +1,66 @@
-# SPET API — Authentication Endpoints
+# SPET API — Authentication + Handoff Documentation
 # Base URL: https://table-verify-fix.preview.emergentagent.com
 # Production: https://spetapp.com (when deployed)
 
 ---
 
-## 1. POST /api/auth/signup
+## LOVABLE → EMERGENT AUTH HANDOFF
 
-### Request
+Two methods are available. Use whichever fits best:
+
+### Method 1: Token Handoff (Simpler)
+
+After login/signup on Lovable, redirect directly with the JWT:
+
 ```
-POST /api/auth/signup
-Content-Type: application/json
+https://table-verify-fix.preview.emergentagent.com/auth/handoff?token=<JWT>
 ```
 
+**Lovable code example:**
+```javascript
+// After successful login
+const res = await fetch("https://table-verify-fix.preview.emergentagent.com/api/auth/login", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ email, password }),
+});
+const data = await res.json();
+
+// Redirect to Emergent app — user lands directly on dashboard
+window.location.href = `https://table-verify-fix.preview.emergentagent.com/auth/handoff?token=${data.access_token}`;
+```
+
+### Method 2: One-Time Code (More Secure)
+
+Uses a short-lived one-time code exchange (code expires in 60 seconds):
+
+```javascript
+// Step 1: Login
+const loginRes = await fetch("https://table-verify-fix.preview.emergentagent.com/api/auth/login", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ email, password }),
+});
+const { access_token } = await loginRes.json();
+
+// Step 2: Create handoff code
+const handoffRes = await fetch("https://table-verify-fix.preview.emergentagent.com/api/auth/handoff/create", {
+  method: "POST",
+  headers: { "Authorization": `Bearer ${access_token}` },
+});
+const { code } = await handoffRes.json();
+
+// Step 3: Redirect — user lands directly on dashboard
+window.location.href = `https://table-verify-fix.preview.emergentagent.com/auth/handoff?code=${code}`;
+```
+
+---
+
+## API ENDPOINTS
+
+### POST /api/auth/signup
+
+**Request:**
 ```json
 {
   "name": "Carlos Oliveira",
@@ -21,46 +70,36 @@ Content-Type: application/json
 }
 ```
 
-| Field       | Type   | Required | Notes                                               |
-|-------------|--------|----------|-----------------------------------------------------|
-| name        | string | No       | User display name                                   |
-| email       | string | Yes      | Must be unique, will be lowercased                   |
-| password    | string | Yes      | Will be hashed with bcrypt                           |
-| venue_type  | string | No       | Default: "bar". Options: bar, nightclub, restaurant, lounge |
+| Field      | Type   | Required | Notes                                         |
+|------------|--------|----------|-----------------------------------------------|
+| name       | string | No       | Display name                                  |
+| email      | string | Yes      | Unique, lowercased                            |
+| password   | string | Yes      | Hashed with bcrypt                            |
+| venue_type | string | No       | Default: "bar". Options: bar, nightclub, restaurant, lounge |
 
-### Response (201 OK)
+**Success Response (200):**
 ```json
 {
-  "access_token": "eyJhbGciOiJIUzI1NiIs...",
+  "access_token": "eyJhbG...",
   "token_type": "bearer",
   "user": {
-    "id": "532924e0-2886-42d6-978f-5080bbef3621",
+    "id": "uuid",
     "email": "carlos@example.com",
     "name": "Carlos Oliveira",
     "status": "active",
-    "created_at": "2026-03-18T08:51:26.518393Z"
+    "created_at": "2026-03-18T08:51:26Z"
   },
-  "next": {
-    "type": "route",
-    "route": "/venue/home"
-  }
+  "next": { "type": "route", "route": "/venue/home" }
 }
 ```
 
-### Error Responses
-- `400` → `{"detail": "Email already registered"}`
-- `422` → Validation error (missing email/password)
+**Errors:** `400` Email exists | `422` Validation error
 
 ---
 
-## 2. POST /api/auth/login
+### POST /api/auth/login
 
-### Request
-```
-POST /api/auth/login
-Content-Type: application/json
-```
-
+**Request:**
 ```json
 {
   "email": "carlos@example.com",
@@ -68,167 +107,101 @@ Content-Type: application/json
 }
 ```
 
-### Response (200 OK)
-```json
-{
-  "access_token": "eyJhbGciOiJIUzI1NiIs...",
-  "token_type": "bearer",
-  "user": {
-    "id": "532924e0-2886-42d6-978f-5080bbef3621",
-    "email": "carlos@example.com",
-    "name": "Carlos Oliveira",
-    "status": "active",
-    "created_at": "2026-03-18T08:51:26.518393Z"
-  },
-  "next": {
-    "type": "route",
-    "route": "/venue/home"
-  }
-}
-```
+**Success Response (200):** Same format as signup
 
-### Error Responses
-- `401` → `{"detail": "Invalid credentials"}`
-- `403` → `{"detail": "Account inactive"}`
+**Errors:** `401` Invalid credentials | `403` Account inactive
 
 ---
 
-## 3. POST /api/auth/logout
+### POST /api/auth/logout
 
-### Request
-```
-POST /api/auth/logout
-Authorization: Bearer <access_token>
-```
+**Request:** No body. Requires `Authorization: Bearer <token>` header.
 
-No body required.
-
-### Response (200 OK)
+**Response:**
 ```json
-{
-  "message": "Logged out successfully"
-}
+{ "message": "Logged out successfully" }
 ```
-
-### Error Responses
-- `401` → `{"detail": "Not authenticated"}`
 
 ---
 
-## 4. GET /api/auth/me
+### GET /api/auth/me
 
-### Request
-```
-GET /api/auth/me
-Authorization: Bearer <access_token>
-```
+**Request:** Requires `Authorization: Bearer <token>` header.
 
-### Response (200 OK)
+**Response:**
 ```json
 {
-  "id": "532924e0-2886-42d6-978f-5080bbef3621",
+  "id": "uuid",
   "name": "Carlos Oliveira",
   "email": "carlos@example.com",
   "status": "active",
-  "created_at": "2026-03-18T08:51:26.518393+00:00",
-  "roles": [
-    {
-      "company_id": "c0ba193d-74ba-4930-9a73-57898ca240a7",
-      "venue_id": "ea16d854-a5ac-4587-86a2-1e0b260877c6",
-      "role": "owner",
-      "permissions": {
-        "pulse": true,
-        "tap": true,
-        "table": true,
-        "kds": true,
-        "HOST_COLLECT_DOB": true
-      }
-    }
-  ],
-  "venues": [
-    {
-      "id": "ea16d854-a5ac-4587-86a2-1e0b260877c6",
-      "company_id": "c0ba193d-74ba-4930-9a73-57898ca240a7",
-      "name": "Carlos Oliveira's Venue",
-      "venue_type": "nightclub",
-      "status": "active",
-      "created_at": "2026-03-18T08:51:26.518393+00:00"
-    }
-  ]
-}
-```
-
-### Error Responses
-- `401` → `{"detail": "Not authenticated"}` (invalid/expired/blacklisted token)
-- `404` → `{"detail": "User not found"}`
-
----
-
-## Lovable Integration Example (JavaScript)
-
-```javascript
-const API_BASE = "https://table-verify-fix.preview.emergentagent.com/api";
-
-// SIGNUP
-async function signup(name, email, password, venueType) {
-  const res = await fetch(`${API_BASE}/auth/signup`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ name, email, password, venue_type: venueType }),
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.detail);
-  localStorage.setItem("token", data.access_token);
-  return data;
-}
-
-// LOGIN
-async function login(email, password) {
-  const res = await fetch(`${API_BASE}/auth/login`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, password }),
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.detail);
-  localStorage.setItem("token", data.access_token);
-  return data;
-}
-
-// GET CURRENT USER
-async function getMe() {
-  const token = localStorage.getItem("token");
-  const res = await fetch(`${API_BASE}/auth/me`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  if (!res.ok) {
-    localStorage.removeItem("token");
-    throw new Error("Not authenticated");
-  }
-  return await res.json();
-}
-
-// LOGOUT
-async function logout() {
-  const token = localStorage.getItem("token");
-  await fetch(`${API_BASE}/auth/logout`, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  localStorage.removeItem("token");
+  "created_at": "2026-03-18T08:51:26+00:00",
+  "roles": [{
+    "company_id": "uuid",
+    "venue_id": "uuid",
+    "role": "owner",
+    "permissions": { "pulse": true, "tap": true, "table": true, "kds": true }
+  }],
+  "venues": [{
+    "id": "uuid",
+    "company_id": "uuid",
+    "name": "Carlos Oliveira's Venue",
+    "venue_type": "nightclub",
+    "status": "active",
+    "created_at": "2026-03-18T08:51:26+00:00"
+  }]
 }
 ```
 
 ---
 
-## CORS Configuration
-Allowed origins:
-- https://spetapp.com
-- https://www.spetapp.com
-- https://table-verify-fix.preview.emergentagent.com (preview/dev)
+### POST /api/auth/handoff/create
+
+Creates a one-time code for cross-domain handoff.
+Requires `Authorization: Bearer <token>` header.
+
+**Response:**
+```json
+{ "code": "wHKg8NQnM2P3...", "expires_in": 60 }
+```
+
+---
+
+### POST /api/auth/handoff/exchange
+
+Exchanges a one-time code for a JWT. **No auth required.**
+
+**Request:**
+```json
+{ "code": "wHKg8NQnM2P3..." }
+```
+
+**Response:**
+```json
+{
+  "access_token": "eyJhbG...",
+  "token_type": "bearer",
+  "user": { "id": "uuid", "email": "...", "name": "...", "status": "active" }
+}
+```
+
+**Errors:** `401` Invalid/expired code | `400` Missing code
+
+---
+
+## URLS SUMMARY
+
+| Purpose           | URL                                                                    |
+|-------------------|------------------------------------------------------------------------|
+| API base          | `https://table-verify-fix.preview.emergentagent.com/api`               |
+| App (frontend)    | `https://table-verify-fix.preview.emergentagent.com`                   |
+| Token handoff     | `https://table-verify-fix.preview.emergentagent.com/auth/handoff?token=<JWT>` |
+| Code handoff      | `https://table-verify-fix.preview.emergentagent.com/auth/handoff?code=<CODE>` |
+| Dashboard         | `https://table-verify-fix.preview.emergentagent.com/venue/home`        |
+
+## CORS
+Allowed origins: `spetapp.com`, `www.spetapp.com`, preview domain
 
 ## Security
-- Passwords: bcrypt hashed
-- Tokens: JWT (HS256), 7-day expiry
-- Logout: Token blacklisted in MongoDB
-- Protected routes: All /api/* except /auth/login and /auth/signup
+- Passwords: bcrypt | JWT: HS256, 7-day expiry | Logout: token blacklist
+- Handoff codes: one-time use, 60-second TTL, stored in MongoDB

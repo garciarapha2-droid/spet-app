@@ -233,3 +233,104 @@ async def delete_user(user_id: str, user: dict = Depends(require_auth)):
         await conn.execute("DELETE FROM user_access WHERE user_id = $1", uid)
         await conn.execute("DELETE FROM users WHERE id = $1", uid)
     return {"deleted": True, "user_id": user_id}
+
+
+import secrets
+
+HANDOFF_TTL_SECONDS = 60
+
+
+@router.post("/handoff/create")
+async def create_handoff(user: dict = Depends(require_auth)):
+    """Create a one-time handoff code for cross-domain auth.
+    Called by Lovable after login/signup. Returns a short-lived code
+    that the Emergent frontend exchanges for the actual JWT."""
+    db = get_mongo_db()
+    pool = get_postgres_pool()
+
+    code = secrets.token_urlsafe(48)
+    now = datetime.now(timezone.utc)
+
+    async with pool.acquire() as conn:
+        user_row = await conn.fetchrow(
+            "SELECT id, name, email, password_hash, status, created_at FROM users WHERE id = $1::uuid",
+            user["sub"],
+        )
+        if not user_row:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        rows = await conn.fetch(
+            "SELECT user_id, company_id, venue_id, role, permissions FROM user_access WHERE user_id = $1",
+            user_row["id"],
+        )
+
+    access_roles = [
+        {
+            "user_id": str(r["user_id"]),
+            "company_id": str(r["company_id"]) if r["company_id"] else None,
+            "venue_id": str(r["venue_id"]) if r["venue_id"] else None,
+            "role": r["role"],
+            "permissions": json.loads(r["permissions"]) if isinstance(r["permissions"], str) else r["permissions"],
+        }
+        for r in rows
+    ]
+
+    token_data = {
+        "sub": str(user_row["id"]),
+        "email": user_row["email"],
+        "roles": access_roles,
+    }
+    fresh_token = create_access_token(token_data)
+
+    await db.auth_handoff_codes.insert_one({
+        "code": code,
+        "token": fresh_token,
+        "user_id": user["sub"],
+        "user_email": user_row["email"],
+        "user_name": user_row["name"],
+        "user_status": user_row["status"],
+        "created_at": now.isoformat(),
+        "expires_at": (now + __import__("datetime").timedelta(seconds=HANDOFF_TTL_SECONDS)).isoformat(),
+        "used": False,
+    })
+
+    return {"code": code, "expires_in": HANDOFF_TTL_SECONDS}
+
+
+@router.post("/handoff/exchange")
+async def exchange_handoff(request: Request):
+    """Exchange a one-time handoff code for a JWT.
+    Called by the Emergent frontend. No auth required — the code IS the auth.
+    Idempotent: returns cached result if code was recently used (handles StrictMode double-calls)."""
+    body = await request.json()
+    code = body.get("code")
+    if not code:
+        raise HTTPException(status_code=400, detail="Code is required")
+
+    db = get_mongo_db()
+    now = datetime.now(timezone.utc)
+
+    doc = await db.auth_handoff_codes.find_one({"code": code})
+    if not doc:
+        raise HTTPException(status_code=401, detail="Invalid or expired code")
+
+    expires_at = datetime.fromisoformat(doc["expires_at"])
+    if now > expires_at:
+        await db.auth_handoff_codes.delete_one({"_id": doc["_id"]})
+        raise HTTPException(status_code=401, detail="Code expired")
+
+    if not doc.get("used"):
+        await db.auth_handoff_codes.update_one(
+            {"_id": doc["_id"]}, {"$set": {"used": True}}
+        )
+
+    return {
+        "access_token": doc["token"],
+        "token_type": "bearer",
+        "user": {
+            "id": doc["user_id"],
+            "email": doc["user_email"],
+            "name": doc.get("user_name"),
+            "status": doc["user_status"],
+        },
+    }
