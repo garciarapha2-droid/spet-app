@@ -605,3 +605,116 @@ async def get_payment_status(user: dict = Depends(require_auth)):
             "created_at": latest_tx.get("created_at"),
         } if latest_tx else None,
     }
+
+
+@router.post("/verify-payment")
+async def verify_payment(request: Request, user: dict = Depends(require_auth)):
+    """Verify a Stripe Checkout session and activate the user.
+
+    This is the official post-payment activation endpoint.
+    The frontend calls this after Stripe redirects back on successful payment.
+    The backend verifies directly with Stripe — it does NOT trust the frontend blindly.
+    """
+    body = await request.json()
+    session_id = (body.get("session_id") or "").strip()
+    if not session_id:
+        raise HTTPException(status_code=400, detail="session_id is required")
+
+    pool = get_postgres_pool()
+    db = get_mongo_db()
+    now = datetime.now(timezone.utc)
+
+    # 1. Fetch current user from DB
+    async with pool.acquire() as conn:
+        user_row = await conn.fetchrow(
+            "SELECT id, email, status, plan_id FROM users WHERE id = $1::uuid",
+            user["sub"],
+        )
+        if not user_row:
+            raise HTTPException(status_code=404, detail="User not found")
+
+    # Idempotent: if user is already active, return success without hitting Stripe
+    if user_row["status"] == "active":
+        raw_plan_id = user_row.get("plan_id")
+        plan_id = resolve_plan_id(raw_plan_id) if raw_plan_id else None
+        plan = get_plan(plan_id) if plan_id else None
+        return {
+            "activated": True,
+            "already_active": True,
+            "status": "active",
+            "plan_id": plan_id,
+            "plan": plan["name"] if plan else None,
+        }
+
+    # 2. Verify the Stripe session directly
+    settings = get_settings()
+    stripe_checkout = StripeCheckout(
+        api_key=settings.stripe_api_key,
+        webhook_url="",
+    )
+
+    try:
+        stripe_status = await stripe_checkout.get_checkout_status(session_id)
+    except Exception as e:
+        logger.error(f"[VERIFY-PAYMENT] Stripe verification failed for session {session_id}: {e}")
+        raise HTTPException(status_code=400, detail="Could not verify payment with Stripe. Invalid or expired session.")
+
+    if stripe_status.payment_status != "paid":
+        return {
+            "activated": False,
+            "status": user_row["status"],
+            "payment_status": stripe_status.payment_status,
+            "stripe_session_status": stripe_status.status,
+            "message": "Payment not completed yet",
+        }
+
+    # 3. Payment confirmed — activate user
+    # Try to extract plan from our transaction records or from session metadata
+    plan_id = None
+    tx = await db.payment_transactions.find_one(
+        {"stripe_session_id": session_id}, {"_id": 0}
+    )
+    if tx:
+        plan_id = tx.get("plan_id")
+        # Update transaction status
+        await db.payment_transactions.update_one(
+            {"stripe_session_id": session_id},
+            {"$set": {"payment_status": "paid", "updated_at": now.isoformat()}},
+        )
+
+    # Fall back to user's existing plan_id
+    if not plan_id:
+        plan_id = resolve_plan_id(user_row.get("plan_id") or "core")
+
+    plan = get_plan(plan_id)
+
+    async with pool.acquire() as conn:
+        await conn.execute(
+            "UPDATE users SET status = 'active', plan_id = $1, updated_at = $2 WHERE id = $3::uuid AND status = 'pending_payment'",
+            plan_id, now, user["sub"],
+        )
+
+    # 4. Record the payment if no transaction existed (edge-function-initiated checkout)
+    if not tx:
+        await db.payment_transactions.insert_one({
+            "id": str(uuid.uuid4()),
+            "user_id": user["sub"],
+            "stripe_session_id": session_id,
+            "plan_id": plan_id,
+            "plan_name": plan["name"] if plan else None,
+            "amount": stripe_status.amount_total,
+            "currency": stripe_status.currency,
+            "payment_status": "paid",
+            "source": "frontend_verify",
+            "created_at": now.isoformat(),
+        })
+
+    logger.info(f"[VERIFY-PAYMENT] User {user['sub']} activated via verify-payment (session: {session_id})")
+
+    return {
+        "activated": True,
+        "already_active": False,
+        "status": "active",
+        "plan_id": plan_id,
+        "plan": plan["name"] if plan else None,
+    }

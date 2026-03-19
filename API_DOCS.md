@@ -233,6 +233,82 @@ Check payment/subscription status. **Requires: Bearer token**
 
 ---
 
+### POST `/api/auth/verify-payment`
+**Official post-payment activation endpoint.** Verifies a Stripe Checkout session and activates the user. **Requires: Bearer token**
+
+The backend verifies directly with Stripe — it does NOT trust the frontend. This is the source of truth for payment activation.
+
+**Body:**
+```json
+{ "session_id": "cs_xxx" }
+```
+
+**Response (200) — Payment verified, user activated:**
+```json
+{
+  "success": true,
+  "data": {
+    "activated": true,
+    "already_active": false,
+    "status": "active",
+    "plan_id": "core",
+    "plan": "Spet Core"
+  },
+  "error": null
+}
+```
+
+**Response (200) — User already active (idempotent):**
+```json
+{
+  "success": true,
+  "data": {
+    "activated": true,
+    "already_active": true,
+    "status": "active",
+    "plan_id": "core",
+    "plan": "Spet Core"
+  },
+  "error": null
+}
+```
+
+**Response (200) — Payment not completed yet:**
+```json
+{
+  "success": true,
+  "data": {
+    "activated": false,
+    "status": "pending_payment",
+    "payment_status": "unpaid",
+    "stripe_session_status": "open",
+    "message": "Payment not completed yet"
+  },
+  "error": null
+}
+```
+
+**Error Cases:**
+- `400`: Missing `session_id` or invalid/expired Stripe session
+- `401`: No auth token
+- `404`: User not found
+
+**Frontend Flow:**
+```
+1. User completes Stripe Checkout → redirected to /payment/success?session_id=cs_xxx
+2. Frontend calls POST /api/auth/verify-payment { session_id: "cs_xxx" }
+3. If activated=true → redirect to /onboarding or /app
+4. If activated=false → show "payment pending" message, retry after delay
+5. After activation, /auth/me and /auth/permissions will reflect status="active"
+```
+
+**Edge Cases:**
+- Calling multiple times with same session_id is safe (idempotent)
+- Works with sessions created by backend OR by frontend edge functions
+- If user is already active, returns immediately without hitting Stripe
+
+---
+
 ### POST `/api/auth/logout`
 Invalidate current token. **Requires: Bearer token**
 
