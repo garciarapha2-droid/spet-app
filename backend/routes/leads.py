@@ -20,8 +20,6 @@ SOURCE_FROM_MAP = {
 
 NOTIFICATION_TO = os.environ.get("LEAD_NOTIFICATION_TO", "r.collasos@spetapp.com")
 
-RESEND_FALLBACK_FROM = "SPET Leads <onboarding@resend.dev>"
-
 VALID_SOURCES = {"signup", "contact", "support"}
 
 
@@ -75,18 +73,6 @@ async def _send_lead_email(lead: dict) -> str | None:
         logger.info(f"[LEADS] Email sent: {email_id} (source={lead['source']}, from={from_addr})")
         return email_id
     except Exception as e:
-        # If custom domain fails, retry with Resend's test sender
-        if "not verified" in str(e).lower():
-            logger.warning(f"[LEADS] Domain not verified, retrying with fallback sender")
-            params["from"] = RESEND_FALLBACK_FROM
-            try:
-                result = await asyncio.to_thread(resend.Emails.send, params)
-                email_id = result.get("id") if isinstance(result, dict) else getattr(result, "id", None)
-                logger.info(f"[LEADS] Email sent via fallback: {email_id}")
-                return email_id
-            except Exception as e2:
-                logger.error(f"[LEADS] Fallback email also failed: {e2}")
-                return None
         logger.error(f"[LEADS] Email failed: {e}")
         return None
 
