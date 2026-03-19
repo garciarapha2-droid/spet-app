@@ -18,7 +18,7 @@ import pytest
 import requests
 import os
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://minimal-aesthetic-1.preview.emergentagent.com').rstrip('/')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://saas-health-hub.preview.emergentagent.com').rstrip('/')
 VENUE_ID = '40a24e04-75b6-435d-bfff-ab0d469ce543'
 
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ceoAPI } from '../services/api';
 import { toast } from 'sonner';
@@ -7,21 +7,101 @@ import { Button } from '../components/ui/button';
 import {
   ArrowLeft, DollarSign, TrendingUp, Users, Building2, Activity,
   Target, AlertTriangle, ChevronRight, BarChart3, ShieldAlert,
-  Zap, ArrowUpRight, ArrowDownRight, X, Check, Layers, UserPlus, Pencil, Trash2, Power,
-  ContactRound, Eye, StickyNote, CreditCard, UserCheck, Rocket
+  Zap, ArrowUpRight, ArrowDownRight, X, Check, Layers, UserPlus,
+  Pencil, Trash2, ContactRound, Eye, StickyNote, CreditCard,
+  UserCheck, Rocket, LayoutGrid, List, ChevronDown, Mail, Phone,
+  Calendar, Globe, Shield, AlertCircle, ArrowRight, Grip
 } from 'lucide-react';
 
+/* ─── Constants ─── */
 const TABS = [
-  { key: 'crm', label: 'CRM / Leads', icon: ContactRound },
-  { key: 'health', label: 'Company Health', icon: Activity },
-  { key: 'revenue', label: 'Revenue & Profit', icon: DollarSign },
+  { key: 'crm', label: 'CRM', icon: ContactRound },
+  { key: 'health', label: 'Business Health', icon: Activity },
+  { key: 'revenue', label: 'Revenue', icon: DollarSign },
   { key: 'companies', label: 'Companies', icon: Building2 },
-  { key: 'modules', label: 'Module Adoption', icon: Layers },
-  { key: 'users', label: 'User Management', icon: Users },
+  { key: 'modules', label: 'Modules', icon: Layers },
+  { key: 'users', label: 'Users', icon: Users },
   { key: 'alerts', label: 'Risk & Alerts', icon: AlertTriangle },
-  { key: 'pipeline', label: 'Growth Pipeline', icon: TrendingUp },
+  { key: 'pipeline', label: 'Pipeline', icon: TrendingUp },
 ];
 
+const LEAD_STATUSES = ['new', 'contacted', 'qualified', 'paid', 'onboarding', 'active', 'lost'];
+const STATUS_COLORS = {
+  new: { bg: 'bg-slate-100 dark:bg-slate-800', text: 'text-slate-600 dark:text-slate-300', dot: 'bg-slate-400' },
+  contacted: { bg: 'bg-blue-50 dark:bg-blue-900/20', text: 'text-blue-600 dark:text-blue-400', dot: 'bg-blue-500' },
+  qualified: { bg: 'bg-violet-50 dark:bg-violet-900/20', text: 'text-violet-600 dark:text-violet-400', dot: 'bg-violet-500' },
+  paid: { bg: 'bg-emerald-50 dark:bg-emerald-900/20', text: 'text-emerald-600 dark:text-emerald-400', dot: 'bg-emerald-500' },
+  onboarding: { bg: 'bg-amber-50 dark:bg-amber-900/20', text: 'text-amber-600 dark:text-amber-400', dot: 'bg-amber-500' },
+  active: { bg: 'bg-green-50 dark:bg-green-900/20', text: 'text-green-600 dark:text-green-400', dot: 'bg-green-500' },
+  lost: { bg: 'bg-red-50 dark:bg-red-900/20', text: 'text-red-600 dark:text-red-400', dot: 'bg-red-400' },
+};
+const SOURCE_COLORS = {
+  signup: { bg: 'bg-indigo-50 dark:bg-indigo-900/20', text: 'text-indigo-600 dark:text-indigo-400' },
+  contact: { bg: 'bg-sky-50 dark:bg-sky-900/20', text: 'text-sky-600 dark:text-sky-400' },
+  support: { bg: 'bg-orange-50 dark:bg-orange-900/20', text: 'text-orange-600 dark:text-orange-400' },
+};
+
+/* ─── Reusable: Right Side Panel ─── */
+function SidePanel({ open, onClose, title, children }) {
+  if (!open) return null;
+  return (
+    <>
+      <div className="fixed inset-0 bg-black/20 dark:bg-black/40 z-40 transition-opacity" onClick={onClose} />
+      <div className="fixed right-0 top-0 bottom-0 w-[420px] bg-card border-l border-border z-50 shadow-2xl overflow-y-auto transition-transform" data-testid="side-panel">
+        <div className="sticky top-0 bg-card border-b border-border px-5 py-4 flex items-center justify-between z-10">
+          <h3 className="font-semibold text-base">{title}</h3>
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-muted transition-colors" data-testid="side-panel-close">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+        <div className="p-5">{children}</div>
+      </div>
+    </>
+  );
+}
+
+/* ─── Reusable: Badge ─── */
+function Badge({ children, className = '' }) {
+  return <span className={`inline-flex items-center px-2 py-0.5 text-[10px] font-semibold rounded-full ${className}`}>{children}</span>;
+}
+
+/* ─── Reusable: Metric Card ─── */
+function MetricCard({ label, value, icon: Icon, accent = 'text-blue-600', trend, trendUp, onClick }) {
+  return (
+    <div onClick={onClick} className={`bg-card border border-border/60 rounded-2xl p-5 transition-all duration-200 ${onClick ? 'cursor-pointer hover:shadow-lg hover:border-blue-200 dark:hover:border-blue-800' : ''}`} data-testid={`metric-${label.toLowerCase().replace(/\s/g, '-')}`}>
+      <div className="flex items-center justify-between mb-3">
+        <div className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+          <Icon className={`h-4 w-4 ${accent}`} />
+        </div>
+        {trend !== undefined && (
+          <div className={`flex items-center gap-0.5 text-xs font-medium ${trendUp ? 'text-emerald-600' : 'text-red-500'}`}>
+            {trendUp ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
+            {trend}
+          </div>
+        )}
+      </div>
+      <p className="text-2xl font-bold tracking-tight">{value}</p>
+      <p className="text-xs text-muted-foreground mt-1">{label}</p>
+    </div>
+  );
+}
+
+/* ─── Skeleton ─── */
+function Skeleton() {
+  return (
+    <div className="space-y-5 animate-pulse">
+      <div className="h-7 w-36 bg-muted rounded-lg" />
+      <div className="grid grid-cols-4 gap-4">
+        {[1,2,3,4].map(i => <div key={i} className="h-28 bg-muted rounded-2xl" />)}
+      </div>
+      <div className="h-52 bg-muted rounded-2xl" />
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════════════════════════════
+   MAIN CEO DASHBOARD
+   ════════════════════════════════════════════════════════════════ */
 export default function CeoPage() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('crm');
@@ -51,77 +131,85 @@ export default function CeoPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background" data-testid="ceo-dashboard">
+    <div className="min-h-screen bg-[#f8fafc] dark:bg-background" data-testid="ceo-dashboard">
       {/* Header */}
-      <header className="h-14 border-b border-border bg-card px-6 flex items-center justify-between relative z-50">
+      <header className="h-14 border-b border-border/40 bg-white dark:bg-card px-6 flex items-center justify-between relative z-50 shadow-sm">
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => navigate('/venue/home')} data-testid="ceo-back-btn">
+          <button onClick={() => navigate('/venue/home')} className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-muted transition-colors" data-testid="ceo-back-btn">
             <ArrowLeft className="h-4 w-4" />
-          </Button>
-          <span className="text-lg font-bold tracking-tight">CEO DASHBOARD</span>
-          <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">Founder View</span>
+          </button>
+          <div>
+            <span className="text-sm font-bold tracking-tight">Founder Dashboard</span>
+            <span className="text-[10px] text-muted-foreground ml-2 bg-slate-100 dark:bg-muted px-2 py-0.5 rounded-md">CEO</span>
+          </div>
         </div>
       </header>
 
       <div className="flex">
-        {/* Left Sidebar: Targets Panel */}
-        <aside className="w-72 border-r border-border bg-card/50 min-h-[calc(100vh-3.5rem)] p-4 flex-shrink-0" data-testid="targets-panel">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-sm font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-              <Target className="h-4 w-4 text-primary" /> Targets
-            </h2>
-            <button onClick={() => { setEditingTargets(!editingTargets); if (!editingTargets && targets) { setTargetForm({ weekly: targets.weekly?.goal || '', monthly: targets.monthly?.goal || '', annual: targets.annual?.goal || '' }); } }}
-              className="text-xs text-primary hover:underline" data-testid="edit-targets-btn">
-              {editingTargets ? 'Cancel' : 'Edit'}
-            </button>
+        {/* Sidebar */}
+        <aside className="w-56 border-r border-border/40 bg-white dark:bg-card/50 min-h-[calc(100vh-3.5rem)] flex flex-col flex-shrink-0">
+          {/* Targets */}
+          <div className="p-4 border-b border-border/40">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Targets</span>
+              <button onClick={() => { setEditingTargets(!editingTargets); if (!editingTargets && targets) { setTargetForm({ weekly: targets.weekly?.goal || '', monthly: targets.monthly?.goal || '', annual: targets.annual?.goal || '' }); } }}
+                className="text-[10px] text-blue-600 hover:underline" data-testid="edit-targets-btn">
+                {editingTargets ? 'Cancel' : 'Edit'}
+              </button>
+            </div>
+            {editingTargets ? (
+              <div className="space-y-2" data-testid="targets-edit-form">
+                {['weekly', 'monthly', 'annual'].map(k => (
+                  <div key={k}>
+                    <label className="text-[10px] text-muted-foreground capitalize">{k}</label>
+                    <Input type="number" value={targetForm[k]} onChange={e => setTargetForm(p => ({ ...p, [k]: e.target.value }))} className="h-7 text-xs" />
+                  </div>
+                ))}
+                <Button size="sm" className="w-full h-7 text-xs" onClick={handleSaveTargets} data-testid="save-targets-btn">Save</Button>
+              </div>
+            ) : targetsLoading ? (
+              <div className="space-y-2 animate-pulse">{[1,2,3].map(i => <div key={i} className="h-10 bg-muted rounded-lg" />)}</div>
+            ) : targets ? (
+              <div className="space-y-2">
+                {[{k:'weekly',c:'blue'},{k:'monthly',c:'emerald'},{k:'annual',c:'violet'}].map(({k,c}) => {
+                  const d = targets[k]; if (!d) return null;
+                  return (
+                    <div key={k} className="rounded-lg bg-slate-50 dark:bg-muted/30 p-2.5" data-testid={`target-${k}`}>
+                      <div className="flex items-center justify-between text-[10px] mb-1">
+                        <span className="font-semibold uppercase text-muted-foreground">{k}</span>
+                        <span className={`font-bold text-${c}-600`}>{d.pct || 0}%</span>
+                      </div>
+                      <div className="w-full h-1.5 bg-slate-200 dark:bg-muted rounded-full">
+                        <div className={`h-1.5 rounded-full bg-${c}-500 transition-all`} style={{ width: `${Math.min(d.pct || 0, 100)}%` }} />
+                      </div>
+                      <div className="flex justify-between text-[9px] text-muted-foreground mt-1">
+                        <span>${(d.actual || 0).toLocaleString()}</span>
+                        <span>${(d.goal || 0).toLocaleString()}</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : null}
           </div>
 
-          {editingTargets ? (
-            <div className="space-y-3" data-testid="targets-edit-form">
-              <div>
-                <label className="text-xs text-muted-foreground">Weekly Goal ($)</label>
-                <Input type="number" value={targetForm.weekly} onChange={e => setTargetForm(p => ({ ...p, weekly: e.target.value }))} className="h-8 text-sm" />
-              </div>
-              <div>
-                <label className="text-xs text-muted-foreground">Monthly Goal ($)</label>
-                <Input type="number" value={targetForm.monthly} onChange={e => setTargetForm(p => ({ ...p, monthly: e.target.value }))} className="h-8 text-sm" />
-              </div>
-              <div>
-                <label className="text-xs text-muted-foreground">Annual Goal ($)</label>
-                <Input type="number" value={targetForm.annual} onChange={e => setTargetForm(p => ({ ...p, annual: e.target.value }))} className="h-8 text-sm" />
-              </div>
-              <Button size="sm" className="w-full" onClick={handleSaveTargets} data-testid="save-targets-btn">
-                <Check className="h-3 w-3 mr-1" /> Save
-              </Button>
-            </div>
-          ) : targetsLoading ? (
-            <div className="space-y-4 animate-pulse">
-              <div className="h-24 bg-muted rounded-xl" />
-              <div className="h-24 bg-muted rounded-xl" />
-              <div className="h-24 bg-muted rounded-xl" />
-            </div>
-          ) : targets ? (
-            <div className="space-y-3">
-              <TargetCard label="Weekly" data={targets.weekly} color="blue" />
-              <TargetCard label="Monthly" data={targets.monthly} color="emerald" />
-              <TargetCard label="Annual" data={targets.annual} color="purple" />
-            </div>
-          ) : null}
-
-          {/* Nav Tabs */}
-          <div className="mt-6 space-y-1">
+          {/* Nav */}
+          <nav className="flex-1 p-2 space-y-0.5">
             {TABS.map(t => {
               const Icon = t.icon;
               return (
                 <button key={t.key} onClick={() => setActiveTab(t.key)}
-                  className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
-                    activeTab === t.key ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'}`}
+                  className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] font-medium transition-all duration-150 ${
+                    activeTab === t.key
+                      ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400'
+                      : 'text-slate-500 dark:text-muted-foreground hover:bg-slate-50 dark:hover:bg-muted/30 hover:text-slate-700 dark:hover:text-foreground'
+                  }`}
                   data-testid={`ceo-tab-${t.key}`}>
                   <Icon className="h-4 w-4" /> {t.label}
                 </button>
               );
             })}
-          </div>
+          </nav>
         </aside>
 
         {/* Main Content */}
@@ -140,87 +228,35 @@ export default function CeoPage() {
   );
 }
 
-/* ─── Target Card ─── */
-function TargetCard({ label, data, color }) {
-  if (!data) return null;
-  const pct = data.pct || 0;
-  const colorMap = { blue: 'bg-blue-500', emerald: 'bg-emerald-500', purple: 'bg-purple-500' };
-  const textMap = { blue: 'text-blue-500', emerald: 'text-emerald-500', purple: 'text-purple-500' };
-  const bgMap = { blue: 'bg-blue-500/10', emerald: 'bg-emerald-500/10', purple: 'bg-purple-500/10' };
-
-  return (
-    <div className={`rounded-xl border border-border p-3 ${bgMap[color]}`} data-testid={`target-${label.toLowerCase()}`}>
-      <div className="flex items-center justify-between mb-1">
-        <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{label}</span>
-        <span className={`text-xs font-bold ${textMap[color]}`}>{pct}%</span>
-      </div>
-      <div className="w-full h-2 bg-muted rounded-full mb-2">
-        <div className={`h-2 rounded-full transition-all ${colorMap[color]}`} style={{ width: `${Math.min(pct, 100)}%` }} />
-      </div>
-      <div className="grid grid-cols-2 gap-1 text-xs">
-        <div>
-          <span className="text-muted-foreground">Actual: </span>
-          <span className="font-bold">${(data.actual || 0).toLocaleString()}</span>
-        </div>
-        <div>
-          <span className="text-muted-foreground">Goal: </span>
-          <span className="font-bold">${(data.goal || 0).toLocaleString()}</span>
-        </div>
-        <div>
-          <span className="text-muted-foreground">Left: </span>
-          <span className="font-bold">${(data.remaining || 0).toLocaleString()}</span>
-        </div>
-        <div>
-          <span className="text-muted-foreground">Pace: </span>
-          <span className={`font-bold ${textMap[color]}`}>${(data.pace_needed || 0).toLocaleString()}/day</span>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ─── CRM: Leads Management ─── */
+/* ════════════════════════════════════════════════════════════════
+   CRM SECTION — Kanban + Table + Reports
+   ════════════════════════════════════════════════════════════════ */
 function CRMSection() {
   const [leads, setLeads] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedLead, setSelectedLead] = useState(null);
   const [noteText, setNoteText] = useState('');
-  const [filterSource, setFilterSource] = useState('all');
-  const [filterStatus, setFilterStatus] = useState('all');
   const [saving, setSaving] = useState(false);
+  const [viewMode, setViewMode] = useState('kanban');
+  const [subTab, setSubTab] = useState('leads');
+  const [filterSource, setFilterSource] = useState('all');
+  const dragItem = useRef(null);
 
   const loadLeads = useCallback(() => {
     setLoading(true);
-    ceoAPI.getLeads()
-      .then(r => setLeads(r.data.leads || []))
-      .catch(() => toast.error('Failed to load leads'))
-      .finally(() => setLoading(false));
+    ceoAPI.getLeads().then(r => setLeads(r.data.leads || [])).catch(() => toast.error('Failed')).finally(() => setLoading(false));
   }, []);
-
   useEffect(() => { loadLeads(); }, [loadLeads]);
 
-  const updateStatus = async (leadId, status) => {
+  const updateField = async (leadId, field, value) => {
     setSaving(true);
     const fd = new FormData();
-    fd.append('status', status);
+    fd.append(field, value);
     try {
       await ceoAPI.updateLeadStatus(leadId, fd);
-      toast.success(`Status → ${status}`);
-      setLeads(prev => prev.map(l => l.id === leadId ? { ...l, status } : l));
-      if (selectedLead?.id === leadId) setSelectedLead(prev => ({ ...prev, status }));
-    } catch { toast.error('Failed'); }
-    setSaving(false);
-  };
-
-  const updatePaymentStatus = async (leadId, paymentStatus) => {
-    setSaving(true);
-    const fd = new FormData();
-    fd.append('payment_status', paymentStatus);
-    try {
-      await ceoAPI.updateLeadStatus(leadId, fd);
-      toast.success(`Payment → ${paymentStatus}`);
-      setLeads(prev => prev.map(l => l.id === leadId ? { ...l, payment_status: paymentStatus } : l));
-      if (selectedLead?.id === leadId) setSelectedLead(prev => ({ ...prev, payment_status: paymentStatus }));
+      setLeads(prev => prev.map(l => l.id === leadId ? { ...l, [field]: value } : l));
+      if (selectedLead?.id === leadId) setSelectedLead(prev => ({ ...prev, [field]: value }));
+      toast.success(`Updated`);
     } catch { toast.error('Failed'); }
     setSaving(false);
   };
@@ -232,180 +268,218 @@ function CRMSection() {
     fd.append('notes', noteText);
     try {
       await ceoAPI.updateLeadStatus(leadId, fd);
-      toast.success('Note saved');
       setLeads(prev => prev.map(l => l.id === leadId ? { ...l, notes: noteText } : l));
       if (selectedLead?.id === leadId) setSelectedLead(prev => ({ ...prev, notes: noteText }));
+      toast.success('Note saved');
     } catch { toast.error('Failed'); }
     setSaving(false);
   };
 
-  const STATUSES = ['new', 'contacted', 'qualified', 'paid', 'onboarding', 'active', 'lost'];
-  const statusColors = {
-    new: 'bg-gray-500/10 text-gray-500', contacted: 'bg-blue-500/10 text-blue-500',
-    qualified: 'bg-purple-500/10 text-purple-500', paid: 'bg-emerald-500/10 text-emerald-500',
-    onboarding: 'bg-amber-500/10 text-amber-500', active: 'bg-green-500/10 text-green-600',
-    lost: 'bg-red-500/10 text-red-500',
-  };
-  const sourceColors = {
-    signup: 'bg-indigo-500/10 text-indigo-500', contact: 'bg-sky-500/10 text-sky-500',
-    support: 'bg-orange-500/10 text-orange-500',
+  const handleDrop = (status) => {
+    if (dragItem.current && dragItem.current.status !== status) {
+      updateField(dragItem.current.id, 'status', status);
+    }
+    dragItem.current = null;
   };
 
-  const filtered = leads.filter(l =>
-    (filterSource === 'all' || l.source === filterSource) &&
-    (filterStatus === 'all' || l.status === filterStatus)
-  );
+  const filtered = leads.filter(l => filterSource === 'all' || l.source === filterSource);
+  const stats = {
+    total: leads.length,
+    new: leads.filter(l => l.status === 'new').length,
+    paid: leads.filter(l => l.status === 'paid' || l.payment_status === 'paid').length,
+    active: leads.filter(l => l.status === 'active').length,
+    conversion: leads.length > 0 ? Math.round((leads.filter(l => l.status === 'active' || l.status === 'paid').length / leads.length) * 100) : 0,
+  };
 
   if (loading) return <Skeleton />;
 
   return (
-    <div className="flex gap-6" data-testid="ceo-crm-section">
-      {/* Leads Table */}
-      <div className={`${selectedLead ? 'flex-1 min-w-0' : 'w-full'}`}>
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h2 className="text-xl font-bold">CRM / Leads</h2>
-            <p className="text-xs text-muted-foreground">{filtered.length} of {leads.length} leads</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <select value={filterSource} onChange={e => setFilterSource(e.target.value)}
-              className="h-8 text-xs bg-background border border-border rounded-md px-2" data-testid="crm-filter-source">
-              <option value="all">All Sources</option>
-              <option value="signup">Signup</option>
-              <option value="contact">Contact</option>
-              <option value="support">Support</option>
-            </select>
-            <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)}
-              className="h-8 text-xs bg-background border border-border rounded-md px-2" data-testid="crm-filter-status">
-              <option value="all">All Status</option>
-              {STATUSES.map(s => <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>)}
-            </select>
-          </div>
+    <div data-testid="ceo-crm-section">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-5">
+        <div>
+          <h2 className="text-lg font-bold tracking-tight">CRM</h2>
+          <p className="text-xs text-muted-foreground">{leads.length} leads total</p>
         </div>
-
-        {/* Stats row */}
-        <div className="grid grid-cols-4 gap-3 mb-4">
-          {[
-            { label: 'Total', value: leads.length, color: 'text-foreground' },
-            { label: 'New', value: leads.filter(l => l.status === 'new').length, color: 'text-gray-500' },
-            { label: 'Paid', value: leads.filter(l => l.status === 'paid' || l.payment_status === 'paid').length, color: 'text-emerald-500' },
-            { label: 'Active', value: leads.filter(l => l.status === 'active').length, color: 'text-green-500' },
-          ].map(s => (
-            <div key={s.label} className="bg-card border border-border rounded-lg p-3 text-center">
-              <p className={`text-xl font-bold ${s.color}`}>{s.value}</p>
-              <p className="text-[10px] text-muted-foreground">{s.label}</p>
-            </div>
-          ))}
-        </div>
-
-        {/* Table */}
-        <div className="bg-card border border-border rounded-xl overflow-hidden">
-          <table className="w-full text-sm" data-testid="crm-leads-table">
-            <thead>
-              <tr className="border-b border-border bg-muted/30">
-                <th className="text-left px-4 py-2.5 text-xs font-semibold text-muted-foreground">Name</th>
-                <th className="text-left px-3 py-2.5 text-xs font-semibold text-muted-foreground">Source</th>
-                <th className="text-left px-3 py-2.5 text-xs font-semibold text-muted-foreground">Interest</th>
-                <th className="text-left px-3 py-2.5 text-xs font-semibold text-muted-foreground">Status</th>
-                <th className="text-left px-3 py-2.5 text-xs font-semibold text-muted-foreground">Payment</th>
-                <th className="text-left px-3 py-2.5 text-xs font-semibold text-muted-foreground">Date</th>
-                <th className="text-center px-3 py-2.5 text-xs font-semibold text-muted-foreground">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.length === 0 ? (
-                <tr><td colSpan={7} className="text-center py-8 text-muted-foreground text-sm">No leads found</td></tr>
-              ) : filtered.map(l => (
-                <tr key={l.id} className={`border-b border-border/50 hover:bg-muted/20 transition-colors cursor-pointer ${selectedLead?.id === l.id ? 'bg-primary/5' : ''}`}
-                  onClick={() => { setSelectedLead(l); setNoteText(l.notes || ''); }}
-                  data-testid={`crm-lead-row-${l.id}`}>
-                  <td className="px-4 py-3">
-                    <p className="font-medium text-sm truncate max-w-[160px]">{l.full_name}</p>
-                    <p className="text-[10px] text-muted-foreground truncate max-w-[160px]">{l.email}</p>
-                  </td>
-                  <td className="px-3 py-3">
-                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${sourceColors[l.source] || 'bg-muted text-muted-foreground'}`}>
-                      {l.source}
-                    </span>
-                  </td>
-                  <td className="px-3 py-3 text-xs text-muted-foreground">{l.product_interest || '—'}</td>
-                  <td className="px-3 py-3">
-                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${statusColors[l.status] || 'bg-muted'}`}>
-                      {l.status}
-                    </span>
-                  </td>
-                  <td className="px-3 py-3">
-                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${l.payment_status === 'paid' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-muted text-muted-foreground'}`}>
-                      {l.payment_status}
-                    </span>
-                  </td>
-                  <td className="px-3 py-3 text-xs text-muted-foreground">{l.created_at ? new Date(l.created_at).toLocaleDateString() : '—'}</td>
-                  <td className="px-3 py-3 text-center">
-                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); setSelectedLead(l); setNoteText(l.notes || ''); }}
-                      data-testid={`crm-view-${l.id}`}>
-                      <Eye className="h-3.5 w-3.5" />
-                    </Button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="flex items-center gap-2">
+          {/* Sub-tabs */}
+          <div className="flex bg-slate-100 dark:bg-muted/50 rounded-lg p-0.5 mr-2">
+            {['leads', 'reports'].map(t => (
+              <button key={t} onClick={() => setSubTab(t)}
+                className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${subTab === t ? 'bg-white dark:bg-card text-foreground shadow-sm' : 'text-muted-foreground'}`}
+                data-testid={`crm-subtab-${t}`}>
+                {t.charAt(0).toUpperCase() + t.slice(1)}
+              </button>
+            ))}
+          </div>
+          {subTab === 'leads' && (
+            <>
+              <select value={filterSource} onChange={e => setFilterSource(e.target.value)}
+                className="h-8 text-xs bg-white dark:bg-card border border-border/60 rounded-lg px-2" data-testid="crm-filter-source">
+                <option value="all">All Sources</option>
+                <option value="signup">Signup</option>
+                <option value="contact">Contact</option>
+                <option value="support">Support</option>
+              </select>
+              <div className="flex bg-slate-100 dark:bg-muted/50 rounded-lg p-0.5">
+                <button onClick={() => setViewMode('kanban')} className={`p-1.5 rounded-md transition-all ${viewMode === 'kanban' ? 'bg-white dark:bg-card shadow-sm' : ''}`} data-testid="crm-view-kanban">
+                  <LayoutGrid className="h-3.5 w-3.5" />
+                </button>
+                <button onClick={() => setViewMode('table')} className={`p-1.5 rounded-md transition-all ${viewMode === 'table' ? 'bg-white dark:bg-card shadow-sm' : ''}`} data-testid="crm-view-table">
+                  <List className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            </>
+          )}
         </div>
       </div>
 
-      {/* Detail Panel */}
-      {selectedLead && (
-        <div className="w-96 flex-shrink-0 bg-card border border-border rounded-xl p-5 h-fit sticky top-0" data-testid="crm-lead-detail">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-bold text-base">Lead Details</h3>
-            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setSelectedLead(null)}
-              data-testid="crm-close-detail"><X className="h-4 w-4" /></Button>
+      {/* KPI Strip */}
+      <div className="grid grid-cols-5 gap-3 mb-5">
+        {[
+          { label: 'Total Leads', value: stats.total, accent: 'text-slate-700 dark:text-slate-200' },
+          { label: 'New', value: stats.new, accent: 'text-slate-500' },
+          { label: 'Paid', value: stats.paid, accent: 'text-emerald-600' },
+          { label: 'Active', value: stats.active, accent: 'text-green-600' },
+          { label: 'Conversion', value: `${stats.conversion}%`, accent: 'text-blue-600' },
+        ].map(s => (
+          <div key={s.label} className="bg-white dark:bg-card border border-border/40 rounded-xl p-3.5 text-center">
+            <p className={`text-xl font-bold ${s.accent}`}>{s.value}</p>
+            <p className="text-[10px] text-muted-foreground mt-0.5">{s.label}</p>
           </div>
+        ))}
+      </div>
 
-          <div className="space-y-4">
-            {/* Contact Info */}
-            <div className="space-y-2">
-              <p className="text-xs font-semibold text-muted-foreground uppercase">Contact</p>
-              <div className="bg-muted/30 rounded-lg p-3 space-y-1.5">
-                <p className="text-sm font-medium">{selectedLead.full_name}</p>
-                <p className="text-xs text-muted-foreground">{selectedLead.email}</p>
-                <p className="text-xs text-muted-foreground">{selectedLead.phone || 'No phone'}</p>
+      {subTab === 'leads' ? (
+        viewMode === 'kanban' ? (
+          /* ─── Kanban View ─── */
+          <div className="flex gap-3 overflow-x-auto pb-4" data-testid="crm-kanban">
+            {LEAD_STATUSES.map(status => {
+              const cols = STATUS_COLORS[status];
+              const cards = filtered.filter(l => l.status === status);
+              return (
+                <div key={status}
+                  className="flex-shrink-0 w-56 min-h-[400px] rounded-xl bg-slate-50/80 dark:bg-muted/20 border border-border/30"
+                  onDragOver={e => e.preventDefault()}
+                  onDrop={() => handleDrop(status)}
+                  data-testid={`kanban-col-${status}`}>
+                  {/* Column Header */}
+                  <div className="px-3 py-2.5 border-b border-border/30 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className={`w-2 h-2 rounded-full ${cols.dot}`} />
+                      <span className="text-xs font-semibold capitalize">{status}</span>
+                    </div>
+                    <span className="text-[10px] text-muted-foreground bg-white dark:bg-card px-1.5 py-0.5 rounded-md font-medium">{cards.length}</span>
+                  </div>
+                  {/* Cards */}
+                  <div className="p-2 space-y-2">
+                    {cards.map(lead => (
+                      <div key={lead.id}
+                        draggable
+                        onDragStart={() => { dragItem.current = lead; }}
+                        onClick={() => { setSelectedLead(lead); setNoteText(lead.notes || ''); }}
+                        className="bg-white dark:bg-card border border-border/40 rounded-lg p-3 cursor-pointer hover:shadow-md hover:border-blue-200 dark:hover:border-blue-700 transition-all duration-200 group"
+                        data-testid={`kanban-card-${lead.id}`}>
+                        <div className="flex items-start justify-between mb-2">
+                          <p className="text-[13px] font-semibold leading-tight truncate max-w-[140px]">{lead.full_name}</p>
+                          <Grip className="h-3 w-3 text-muted-foreground/30 group-hover:text-muted-foreground transition-colors flex-shrink-0" />
+                        </div>
+                        {lead.company_name !== 'N/A' && (
+                          <p className="text-[10px] text-muted-foreground mb-1.5 truncate">{lead.company_name}</p>
+                        )}
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <Badge className={`${SOURCE_COLORS[lead.source]?.bg} ${SOURCE_COLORS[lead.source]?.text}`}>{lead.source}</Badge>
+                          {lead.product_interest && <Badge className="bg-slate-100 dark:bg-muted text-slate-500 dark:text-muted-foreground">{lead.product_interest}</Badge>}
+                        </div>
+                        <div className="flex items-center justify-between mt-2 pt-2 border-t border-border/30">
+                          <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${lead.payment_status === 'paid' ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600' : 'text-muted-foreground'}`}>
+                            {lead.payment_status === 'paid' ? 'Paid' : lead.payment_status}
+                          </span>
+                          <span className="text-[10px] text-muted-foreground">
+                            {lead.created_at ? new Date(lead.created_at).toLocaleDateString('en', { month: 'short', day: 'numeric' }) : ''}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                    {cards.length === 0 && <p className="text-[10px] text-muted-foreground text-center py-6">No leads</p>}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          /* ─── Table View ─── */
+          <div className="bg-white dark:bg-card border border-border/40 rounded-xl overflow-hidden" data-testid="crm-table">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border/40 bg-slate-50 dark:bg-muted/20">
+                  {['Name', 'Source', 'Interest', 'Status', 'Payment', 'Company', 'Date'].map(h => (
+                    <th key={h} className="text-left px-4 py-2.5 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map(l => (
+                  <tr key={l.id} onClick={() => { setSelectedLead(l); setNoteText(l.notes || ''); }}
+                    className="border-b border-border/20 hover:bg-slate-50 dark:hover:bg-muted/10 cursor-pointer transition-colors"
+                    data-testid={`crm-lead-row-${l.id}`}>
+                    <td className="px-4 py-3">
+                      <p className="text-[13px] font-medium">{l.full_name}</p>
+                      <p className="text-[10px] text-muted-foreground">{l.email}</p>
+                    </td>
+                    <td className="px-4 py-3"><Badge className={`${SOURCE_COLORS[l.source]?.bg} ${SOURCE_COLORS[l.source]?.text}`}>{l.source}</Badge></td>
+                    <td className="px-4 py-3 text-xs text-muted-foreground">{l.product_interest || '—'}</td>
+                    <td className="px-4 py-3"><Badge className={`${STATUS_COLORS[l.status]?.bg} ${STATUS_COLORS[l.status]?.text}`}>{l.status}</Badge></td>
+                    <td className="px-4 py-3"><Badge className={l.payment_status === 'paid' ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600' : 'bg-slate-100 dark:bg-muted text-muted-foreground'}>{l.payment_status}</Badge></td>
+                    <td className="px-4 py-3 text-xs text-muted-foreground">{l.company_name}</td>
+                    <td className="px-4 py-3 text-xs text-muted-foreground">{l.created_at ? new Date(l.created_at).toLocaleDateString() : ''}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )
+      ) : (
+        /* ─── Reports Sub-Tab ─── */
+        <CRMReports leads={leads} stats={stats} />
+      )}
+
+      {/* Lead Detail Side Panel */}
+      <SidePanel open={!!selectedLead} onClose={() => setSelectedLead(null)} title="Lead Details">
+        {selectedLead && (
+          <div className="space-y-5">
+            {/* Contact */}
+            <div>
+              <p className="text-lg font-bold">{selectedLead.full_name}</p>
+              <div className="mt-2 space-y-1.5">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground"><Mail className="h-3.5 w-3.5" />{selectedLead.email}</div>
+                {selectedLead.phone && <div className="flex items-center gap-2 text-sm text-muted-foreground"><Phone className="h-3.5 w-3.5" />{selectedLead.phone}</div>}
               </div>
             </div>
 
-            {/* Details */}
-            <div className="space-y-2">
-              <p className="text-xs font-semibold text-muted-foreground uppercase">Details</p>
-              <div className="grid grid-cols-2 gap-2 text-xs">
-                <div className="bg-muted/30 rounded-lg p-2.5">
-                  <p className="text-muted-foreground mb-0.5">Source</p>
-                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${sourceColors[selectedLead.source] || ''}`}>{selectedLead.source}</span>
+            {/* Info Grid */}
+            <div className="grid grid-cols-2 gap-2">
+              {[
+                { label: 'Source', value: selectedLead.source, badge: true, colors: SOURCE_COLORS[selectedLead.source] },
+                { label: 'Interest', value: selectedLead.product_interest || '—' },
+                { label: 'Company', value: selectedLead.company_name },
+                { label: 'Account', value: selectedLead.has_account ? 'Created' : 'None' },
+              ].map(item => (
+                <div key={item.label} className="bg-slate-50 dark:bg-muted/30 rounded-lg p-3">
+                  <p className="text-[10px] text-muted-foreground mb-1">{item.label}</p>
+                  {item.badge ? <Badge className={`${item.colors?.bg} ${item.colors?.text}`}>{item.value}</Badge> : <p className="text-xs font-medium">{item.value}</p>}
                 </div>
-                <div className="bg-muted/30 rounded-lg p-2.5">
-                  <p className="text-muted-foreground mb-0.5">Interest</p>
-                  <p className="font-medium">{selectedLead.product_interest || '—'}</p>
-                </div>
-                <div className="bg-muted/30 rounded-lg p-2.5">
-                  <p className="text-muted-foreground mb-0.5">Company</p>
-                  <p className="font-medium">{selectedLead.company_name}</p>
-                </div>
-                <div className="bg-muted/30 rounded-lg p-2.5">
-                  <p className="text-muted-foreground mb-0.5">Account</p>
-                  <p className="font-medium">{selectedLead.has_account ? 'Yes' : 'No'}</p>
-                </div>
-              </div>
+              ))}
             </div>
 
-            {/* Status Actions */}
-            <div className="space-y-2">
-              <p className="text-xs font-semibold text-muted-foreground uppercase">Lead Status</p>
+            {/* Status */}
+            <div>
+              <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">Status</p>
               <div className="flex flex-wrap gap-1.5">
-                {STATUSES.map(s => (
-                  <button key={s} disabled={saving} onClick={() => updateStatus(selectedLead.id, s)}
-                    className={`px-2.5 py-1 text-[10px] font-medium rounded-md border transition-all ${
-                      selectedLead.status === s
-                        ? 'border-primary bg-primary/10 text-primary'
-                        : 'border-border text-muted-foreground hover:border-primary/30'
+                {LEAD_STATUSES.map(s => (
+                  <button key={s} disabled={saving} onClick={() => updateField(selectedLead.id, 'status', s)}
+                    className={`px-2.5 py-1 text-[11px] font-medium rounded-lg border transition-all duration-150 ${
+                      selectedLead.status === s ? 'border-blue-300 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400' : 'border-border/60 text-muted-foreground hover:border-blue-200'
                     }`} data-testid={`crm-status-${s}`}>
                     {s.charAt(0).toUpperCase() + s.slice(1)}
                   </button>
@@ -413,197 +487,210 @@ function CRMSection() {
               </div>
             </div>
 
-            {/* Payment Quick Actions */}
-            <div className="space-y-2">
-              <p className="text-xs font-semibold text-muted-foreground uppercase">Payment</p>
+            {/* Payment */}
+            <div>
+              <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">Payment</p>
               <div className="flex gap-2">
                 {['N/A', 'pending', 'paid'].map(ps => (
-                  <button key={ps} disabled={saving} onClick={() => updatePaymentStatus(selectedLead.id, ps)}
-                    className={`flex-1 px-2 py-1.5 text-[10px] font-medium rounded-md border transition-all ${
-                      selectedLead.payment_status === ps
-                        ? 'border-primary bg-primary/10 text-primary'
-                        : 'border-border text-muted-foreground hover:border-primary/30'
+                  <button key={ps} disabled={saving} onClick={() => updateField(selectedLead.id, 'payment_status', ps)}
+                    className={`flex-1 py-1.5 text-[11px] font-medium rounded-lg border transition-all duration-150 ${
+                      selectedLead.payment_status === ps ? 'border-blue-300 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400' : 'border-border/60 text-muted-foreground hover:border-blue-200'
                     }`} data-testid={`crm-payment-${ps}`}>
-                    {ps === 'paid' && <CreditCard className="h-3 w-3 inline mr-1" />}
-                    {ps.charAt(0).toUpperCase() + ps.slice(1)}
+                    {ps === 'paid' && <CreditCard className="h-3 w-3 inline mr-1" />}{ps.charAt(0).toUpperCase() + ps.slice(1)}
                   </button>
                 ))}
               </div>
             </div>
 
-            {/* Lifecycle Actions */}
-            <div className="space-y-2">
-              <p className="text-xs font-semibold text-muted-foreground uppercase">Quick Actions</p>
-              <div className="grid grid-cols-2 gap-2">
-                <Button size="sm" variant="outline" disabled={saving} className="text-xs h-8"
-                  onClick={() => { updatePaymentStatus(selectedLead.id, 'paid'); updateStatus(selectedLead.id, 'paid'); }}
-                  data-testid="crm-mark-paid">
-                  <CreditCard className="h-3 w-3 mr-1" /> Mark Paid
-                </Button>
-                <Button size="sm" variant="outline" disabled={saving} className="text-xs h-8"
-                  onClick={() => updateStatus(selectedLead.id, 'onboarding')}
-                  data-testid="crm-mark-onboarding">
-                  <Rocket className="h-3 w-3 mr-1" /> Onboarding
-                </Button>
-                <Button size="sm" variant="outline" disabled={saving} className="text-xs h-8 col-span-2"
-                  onClick={() => updateStatus(selectedLead.id, 'active')}
-                  data-testid="crm-mark-active">
-                  <UserCheck className="h-3 w-3 mr-1" /> Mark Active
-                </Button>
-              </div>
-            </div>
-
-            {/* Notes */}
-            <div className="space-y-2">
-              <p className="text-xs font-semibold text-muted-foreground uppercase flex items-center gap-1">
-                <StickyNote className="h-3 w-3" /> Internal Notes
-              </p>
-              <textarea value={noteText} onChange={e => setNoteText(e.target.value)}
-                className="w-full h-20 text-xs bg-background border border-border rounded-lg p-2.5 resize-none focus:ring-1 focus:ring-primary"
-                placeholder="Add internal notes..." data-testid="crm-notes-input" />
-              <Button size="sm" className="w-full text-xs h-8" disabled={saving}
-                onClick={() => saveNote(selectedLead.id)} data-testid="crm-save-notes">
-                <Check className="h-3 w-3 mr-1" /> Save Note
+            {/* Quick Actions */}
+            <div className="grid grid-cols-3 gap-2">
+              <Button size="sm" variant="outline" disabled={saving} className="text-[11px] h-8" onClick={() => { updateField(selectedLead.id, 'payment_status', 'paid'); updateField(selectedLead.id, 'status', 'paid'); }} data-testid="crm-mark-paid">
+                <CreditCard className="h-3 w-3 mr-1" />Paid
+              </Button>
+              <Button size="sm" variant="outline" disabled={saving} className="text-[11px] h-8" onClick={() => updateField(selectedLead.id, 'status', 'onboarding')} data-testid="crm-mark-onboarding">
+                <Rocket className="h-3 w-3 mr-1" />Onboard
+              </Button>
+              <Button size="sm" variant="outline" disabled={saving} className="text-[11px] h-8" onClick={() => updateField(selectedLead.id, 'status', 'active')} data-testid="crm-mark-active">
+                <UserCheck className="h-3 w-3 mr-1" />Active
               </Button>
             </div>
 
-            {/* Metadata */}
-            <div className="pt-2 border-t border-border/50 text-[10px] text-muted-foreground space-y-0.5">
-              <p>Lead ID: {selectedLead.id}</p>
+            {/* Notes */}
+            <div>
+              <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">Internal Notes</p>
+              <textarea value={noteText} onChange={e => setNoteText(e.target.value)}
+                className="w-full h-20 text-xs bg-slate-50 dark:bg-muted/30 border border-border/40 rounded-lg p-3 resize-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                placeholder="Add notes..." data-testid="crm-notes-input" />
+              <Button size="sm" className="w-full text-xs h-8 mt-2" disabled={saving} onClick={() => saveNote(selectedLead.id)} data-testid="crm-save-notes">
+                <Check className="h-3 w-3 mr-1" />Save
+              </Button>
+            </div>
+
+            {/* Meta */}
+            <div className="text-[10px] text-muted-foreground space-y-0.5 pt-3 border-t border-border/30">
+              <p>ID: {selectedLead.id}</p>
               <p>Created: {selectedLead.created_at ? new Date(selectedLead.created_at).toLocaleString() : '—'}</p>
-              <p>Email notified: {selectedLead.email_sent ? 'Yes' : 'No'}</p>
+              <p>Email sent: {selectedLead.email_sent ? 'Yes' : 'No'}</p>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </SidePanel>
     </div>
   );
 }
 
-/* ─── 1. Company Health ─── */
+/* ─── CRM Reports ─── */
+function CRMReports({ leads, stats }) {
+  const funnel = [
+    { label: 'Awareness', key: 'total', value: leads.length, color: 'bg-blue-500' },
+    { label: 'Interest', key: 'contacted', value: leads.filter(l => ['contacted','qualified','paid','onboarding','active'].includes(l.status)).length, color: 'bg-indigo-500' },
+    { label: 'Intent', key: 'qualified', value: leads.filter(l => ['qualified','paid','onboarding','active'].includes(l.status)).length, color: 'bg-violet-500' },
+    { label: 'Evaluation', key: 'paid', value: leads.filter(l => ['paid','onboarding','active'].includes(l.status)).length, color: 'bg-emerald-500' },
+    { label: 'Purchase', key: 'active', value: leads.filter(l => l.status === 'active').length, color: 'bg-green-500' },
+  ];
+  const maxFunnel = Math.max(...funnel.map(f => f.value), 1);
+
+  const sourceBreakdown = ['signup', 'contact', 'support'].map(s => ({
+    source: s,
+    total: leads.filter(l => l.source === s).length,
+    paid: leads.filter(l => l.source === s && (l.status === 'paid' || l.status === 'active')).length,
+  }));
+
+  return (
+    <div className="space-y-6" data-testid="crm-reports">
+      {/* KPIs */}
+      <div className="grid grid-cols-4 gap-4">
+        <MetricCard label="Total Leads" value={stats.total} icon={Users} accent="text-slate-600" />
+        <MetricCard label="Conversion Rate" value={`${stats.conversion}%`} icon={TrendingUp} accent="text-blue-600" />
+        <MetricCard label="Paid Users" value={stats.paid} icon={CreditCard} accent="text-emerald-600" />
+        <MetricCard label="Active Users" value={stats.active} icon={UserCheck} accent="text-green-600" />
+      </div>
+
+      {/* Funnel */}
+      <div className="bg-white dark:bg-card border border-border/40 rounded-2xl p-6">
+        <h3 className="text-sm font-bold mb-4">Lead Funnel</h3>
+        <div className="space-y-3">
+          {funnel.map((f, i) => (
+            <div key={f.label} className="flex items-center gap-4" data-testid={`funnel-${f.key}`}>
+              <span className="text-xs font-medium w-24 text-right text-muted-foreground">{f.label}</span>
+              <div className="flex-1 relative">
+                <div className={`h-10 ${f.color} rounded-lg flex items-center justify-end px-4 transition-all duration-500`}
+                  style={{ width: `${Math.max((f.value / maxFunnel) * 100, 12)}%`, opacity: 1 - (i * 0.1) }}>
+                  <span className="text-white text-sm font-bold">{f.value}</span>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Source Performance */}
+      <div className="bg-white dark:bg-card border border-border/40 rounded-2xl p-6">
+        <h3 className="text-sm font-bold mb-4">Source Performance</h3>
+        <div className="grid grid-cols-3 gap-4">
+          {sourceBreakdown.map(s => (
+            <div key={s.source} className="bg-slate-50 dark:bg-muted/30 rounded-xl p-4 text-center">
+              <Badge className={`${SOURCE_COLORS[s.source]?.bg} ${SOURCE_COLORS[s.source]?.text} mb-2`}>{s.source}</Badge>
+              <p className="text-2xl font-bold mt-1">{s.total}</p>
+              <p className="text-xs text-muted-foreground">leads</p>
+              <div className="mt-2 pt-2 border-t border-border/30">
+                <p className="text-sm font-bold text-emerald-600">{s.total > 0 ? Math.round((s.paid / s.total) * 100) : 0}%</p>
+                <p className="text-[10px] text-muted-foreground">conversion</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════════════════════════════
+   BUSINESS HEALTH
+   ════════════════════════════════════════════════════════════════ */
 function HealthSection() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [kpiModal, setKpiModal] = useState(null);
+  const [detailPanel, setDetailPanel] = useState(null);
   const [kpiBreakdown, setKpiBreakdown] = useState(null);
-  const [kpiBreakdownLoading, setKpiBreakdownLoading] = useState(false);
 
   useEffect(() => {
     ceoAPI.getHealth().then(r => setData(r.data.kpis)).catch(() => toast.error('Failed')).finally(() => setLoading(false));
   }, []);
 
-  const openKpiBreakdown = async (kpiKey, kpiLabel) => {
-    setKpiModal(kpiLabel);
-    setKpiBreakdownLoading(true);
+  const openDetail = async (kpiKey, label) => {
+    setDetailPanel(label);
     try {
       const res = await ceoAPI.getKpiBreakdown(kpiKey);
       setKpiBreakdown(res.data);
-    } catch { toast.error('Failed to load breakdown'); }
-    setKpiBreakdownLoading(false);
+    } catch { toast.error('Failed'); }
   };
 
   if (loading) return <Skeleton />;
   if (!data) return <p className="text-muted-foreground">No data</p>;
 
-  const clickableKpis = { 'MRR': 'mrr', 'Gross Revenue': 'gross_revenue', 'Net Profit': 'net_profit' };
-
-  const kpis = [
-    { label: 'MRR', value: `$${(data.mrr || 0).toLocaleString()}`, icon: DollarSign, accent: 'text-green-500', status: data.mrr > 0 ? 'green' : 'red' },
-    { label: 'Gross Revenue', value: `$${(data.gross_revenue || 0).toLocaleString()}`, icon: BarChart3, accent: 'text-emerald-500', status: 'green' },
-    { label: 'Net Profit', value: `$${(data.net_profit || 0).toLocaleString()}`, icon: DollarSign, accent: 'text-blue-500', status: data.net_profit > 0 ? 'green' : 'yellow' },
-    { label: 'Active Companies', value: data.active_companies, icon: Building2, accent: 'text-purple-500', status: 'green' },
-    { label: 'Active Venues', value: data.active_venues, icon: Building2, accent: 'text-indigo-500', status: 'green' },
-    { label: 'Churn Rate', value: `${data.churn_rate}%`, icon: AlertTriangle, accent: data.churn_rate > 5 ? 'text-red-500' : 'text-green-500', status: data.churn_rate > 5 ? 'red' : data.churn_rate > 2 ? 'yellow' : 'green' },
-    { label: 'Activation Rate', value: `${data.activation_rate}%`, icon: Zap, accent: data.activation_rate > 50 ? 'text-green-500' : 'text-yellow-500', status: data.activation_rate > 50 ? 'green' : 'yellow' },
-    { label: 'Avg Rev/Company', value: `$${(data.avg_rev_company || 0).toLocaleString()}`, icon: TrendingUp, accent: 'text-teal-500', status: 'green' },
-  ];
-
   return (
     <div data-testid="ceo-health-section">
-      <h2 className="text-xl font-bold mb-5">Company Health</h2>
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {kpis.map((k, i) => {
-          const Icon = k.icon;
-          const statusColor = k.status === 'green' ? 'border-green-500/30' : k.status === 'yellow' ? 'border-yellow-500/30' : 'border-red-500/30';
-          const dotColor = k.status === 'green' ? 'bg-green-500' : k.status === 'yellow' ? 'bg-yellow-500' : 'bg-red-500';
-          const isClickable = !!clickableKpis[k.label];
-          return (
-            <div key={i} className={`bg-card border-2 ${statusColor} rounded-xl p-4 hover:shadow-md transition-all ${isClickable ? 'cursor-pointer hover:border-primary/50 hover:bg-muted/30' : 'cursor-default'}`}
-              data-testid={`ceo-kpi-${k.label.toLowerCase().replace(/[^a-z]/g, '-')}`}
-              onClick={() => isClickable && openKpiBreakdown(clickableKpis[k.label], k.label)}>
-              <div className="flex items-center justify-between mb-2">
-                <div className={`w-8 h-8 rounded-lg bg-muted flex items-center justify-center`}>
-                  <Icon className={`h-4 w-4 ${k.accent}`} />
-                </div>
-                <div className="flex items-center gap-1.5">
-                  {isClickable && <ChevronRight className="h-3 w-3 text-muted-foreground" />}
-                  <div className={`w-2.5 h-2.5 rounded-full ${dotColor}`} />
-                </div>
-              </div>
-              <p className={`text-2xl font-bold ${k.accent}`}>{k.value}</p>
-              <p className="text-xs text-muted-foreground mt-0.5">{k.label}{isClickable && <span className="ml-1 opacity-50">Click for details</span>}</p>
-            </div>
-          );
-        })}
+      <h2 className="text-lg font-bold tracking-tight mb-5">Business Health</h2>
+
+      {/* Primary Metrics */}
+      <div className="grid grid-cols-4 gap-4 mb-5">
+        <MetricCard label="MRR" value={`$${(data.mrr || 0).toLocaleString()}`} icon={DollarSign} accent="text-emerald-600" trend={`${data.growth_pct > 0 ? '+' : ''}${data.growth_pct}%`} trendUp={data.growth_pct >= 0} onClick={() => openDetail('mrr', 'MRR')} />
+        <MetricCard label="Total Customers" value={data.active_companies || 0} icon={Building2} accent="text-blue-600" />
+        <MetricCard label="Active Subscriptions" value={data.active_venues || 0} icon={Zap} accent="text-violet-600" />
+        <MetricCard label="Churn Rate" value={`${data.churn_rate || 0}%`} icon={AlertTriangle} accent={data.churn_rate > 5 ? 'text-red-500' : 'text-emerald-600'} />
       </div>
 
-      {/* KPI Breakdown Modal */}
-      {(kpiModal || kpiBreakdownLoading) && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center" onClick={() => { setKpiModal(null); setKpiBreakdown(null); setKpiBreakdownLoading(false); }} data-testid="ceo-kpi-breakdown-modal">
-          <div className="bg-card border border-border rounded-xl p-5 w-full max-w-xl max-h-[70vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-bold text-lg">{kpiModal} — Breakdown by Venue</h3>
-              <Button variant="ghost" size="sm" onClick={() => { setKpiModal(null); setKpiBreakdown(null); setKpiBreakdownLoading(false); }} data-testid="close-ceo-kpi-modal"><X className="h-4 w-4" /></Button>
-            </div>
-            {kpiBreakdownLoading ? <p className="text-sm text-muted-foreground animate-pulse py-8 text-center">Loading...</p> : kpiBreakdown && (
-              <div className="space-y-4">
-                <div className="bg-muted/30 rounded-lg p-3 text-center">
-                  <p className="text-xs text-muted-foreground">Total {kpiBreakdown.kpi?.replace('_', ' ')}</p>
-                  <p className="text-2xl font-bold text-green-500" data-testid="ceo-breakdown-total">${(kpiBreakdown.total || 0).toFixed(2)}</p>
-                </div>
-                <div className="space-y-2">
-                  {(kpiBreakdown.venues || []).map((v, i) => (
-                    <div key={i} className="flex items-center justify-between p-3 rounded-lg border border-border/50 hover:bg-muted/20" data-testid={`ceo-breakdown-venue-${i}`}>
-                      <div>
-                        <p className="text-sm font-medium">{v.venue_name}</p>
-                        <p className="text-xs text-muted-foreground">{v.sessions_closed} sessions · ${v.tips.toFixed(2)} tips · Today: ${v.revenue_today.toFixed(2)}</p>
-                      </div>
-                      <p className="text-lg font-bold text-green-500">${v.value.toFixed(2)}</p>
-                    </div>
-                  ))}
-                  {(!kpiBreakdown.venues || kpiBreakdown.venues.length === 0) && (
-                    <p className="text-sm text-muted-foreground text-center py-4">No venue data available</p>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-      {/* Growth indicator */}
-      <div className="mt-6 bg-card border border-border rounded-xl p-5 flex items-center justify-between" data-testid="ceo-growth-banner">
+      {/* Secondary Metrics */}
+      <div className="grid grid-cols-4 gap-4 mb-5">
+        <MetricCard label="Activation Rate" value={`${data.activation_rate || 0}%`} icon={Activity} accent={data.activation_rate > 50 ? 'text-green-600' : 'text-amber-500'} />
+        <MetricCard label="Avg Revenue / Customer" value={`$${(data.avg_rev_company || 0).toLocaleString()}`} icon={TrendingUp} accent="text-blue-600" onClick={() => openDetail('gross_revenue', 'Revenue')} />
+        <MetricCard label="Revenue Today" value={`$${(data.revenue_today || 0).toLocaleString()}`} icon={BarChart3} accent="text-emerald-600" />
+        <MetricCard label="Revenue YTD" value={`$${(data.revenue_ytd || 0).toLocaleString()}`} icon={DollarSign} accent="text-blue-600" />
+      </div>
+
+      {/* Growth Banner */}
+      <div className="bg-white dark:bg-card border border-border/40 rounded-2xl p-6 flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${data.growth_pct >= 0 ? 'bg-green-500/10' : 'bg-red-500/10'}`}>
-            {data.growth_pct >= 0 ? <ArrowUpRight className="h-6 w-6 text-green-500" /> : <ArrowDownRight className="h-6 w-6 text-red-500" />}
+          <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${data.growth_pct >= 0 ? 'bg-emerald-50 dark:bg-emerald-900/20' : 'bg-red-50 dark:bg-red-900/20'}`}>
+            {data.growth_pct >= 0 ? <ArrowUpRight className="h-6 w-6 text-emerald-600" /> : <ArrowDownRight className="h-6 w-6 text-red-500" />}
           </div>
           <div>
-            <p className="text-sm text-muted-foreground">Month-over-Month Growth</p>
-            <p className={`text-3xl font-bold ${data.growth_pct >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+            <p className="text-xs text-muted-foreground">Month-over-Month Growth</p>
+            <p className={`text-3xl font-bold tracking-tight ${data.growth_pct >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
               {data.growth_pct > 0 ? '+' : ''}{data.growth_pct}%
             </p>
           </div>
         </div>
-        <div className="text-right">
-          <p className="text-sm text-muted-foreground">Revenue Today</p>
-          <p className="text-2xl font-bold">${(data.revenue_today || 0).toLocaleString()}</p>
-          <p className="text-xs text-muted-foreground">YTD: ${(data.revenue_ytd || 0).toLocaleString()}</p>
-        </div>
       </div>
+
+      {/* Detail Side Panel */}
+      <SidePanel open={!!detailPanel} onClose={() => { setDetailPanel(null); setKpiBreakdown(null); }} title={`${detailPanel} — Breakdown`}>
+        {kpiBreakdown ? (
+          <div className="space-y-4">
+            <div className="bg-slate-50 dark:bg-muted/30 rounded-xl p-4 text-center">
+              <p className="text-xs text-muted-foreground">Total</p>
+              <p className="text-2xl font-bold text-emerald-600">${(kpiBreakdown.total || 0).toFixed(2)}</p>
+            </div>
+            {(kpiBreakdown.venues || []).map((v, i) => (
+              <div key={i} className="flex items-center justify-between p-3 rounded-xl border border-border/30 hover:bg-slate-50 dark:hover:bg-muted/20 transition-colors">
+                <div>
+                  <p className="text-sm font-medium">{v.venue_name}</p>
+                  <p className="text-[10px] text-muted-foreground">{v.sessions_closed} sessions</p>
+                </div>
+                <p className="text-base font-bold text-emerald-600">${v.value.toFixed(2)}</p>
+              </div>
+            ))}
+          </div>
+        ) : <div className="animate-pulse h-32 bg-muted rounded-xl" />}
+      </SidePanel>
     </div>
   );
 }
 
-/* ─── 2. Revenue & Profit ─── */
+/* ════════════════════════════════════════════════════════════════
+   REVENUE & PROFIT
+   ════════════════════════════════════════════════════════════════ */
 function RevenueSection() {
   const [data, setData] = useState(null);
   const [period, setPeriod] = useState('month');
@@ -613,13 +700,9 @@ function RevenueSection() {
     setLoading(true);
     ceoAPI.getRevenue(p || period).then(r => setData(r.data)).catch(() => toast.error('Failed')).finally(() => setLoading(false));
   }, [period]);
-
   useEffect(() => { load(); }, [load]);
 
-  const switchPeriod = (p) => { setPeriod(p); load(p); };
-
   if (loading) return <Skeleton />;
-
   const chart = data?.chart || [];
   const maxRev = Math.max(...chart.map(c => c.revenue), 1);
   const totalRev = chart.reduce((s, c) => s + c.revenue, 0);
@@ -629,12 +712,11 @@ function RevenueSection() {
   return (
     <div data-testid="ceo-revenue-section">
       <div className="flex items-center justify-between mb-5">
-        <h2 className="text-xl font-bold">Revenue vs Profit</h2>
-        <div className="flex items-center bg-muted/50 rounded-lg p-1" data-testid="revenue-period-switcher">
+        <h2 className="text-lg font-bold tracking-tight">Revenue & Profit</h2>
+        <div className="flex bg-slate-100 dark:bg-muted/50 rounded-lg p-0.5">
           {['week', 'month', 'year'].map(p => (
-            <button key={p} onClick={() => switchPeriod(p)}
-              className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${
-                period === p ? 'bg-card text-primary shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+            <button key={p} onClick={() => { setPeriod(p); load(p); }}
+              className={`px-4 py-1.5 rounded-md text-xs font-medium transition-all ${period === p ? 'bg-white dark:bg-card text-foreground shadow-sm' : 'text-muted-foreground'}`}
               data-testid={`period-${p}`}>
               {p.charAt(0).toUpperCase() + p.slice(1)}
             </button>
@@ -642,30 +724,16 @@ function RevenueSection() {
         </div>
       </div>
 
-      {/* Summary KPIs */}
       <div className="grid grid-cols-4 gap-4 mb-6">
-        <div className="bg-card border border-border rounded-xl p-4">
-          <p className="text-xs text-muted-foreground">Gross Revenue</p>
-          <p className="text-2xl font-bold text-green-500">${totalRev.toLocaleString()}</p>
-        </div>
-        <div className="bg-card border border-border rounded-xl p-4">
-          <p className="text-xs text-muted-foreground">Net Revenue</p>
-          <p className="text-2xl font-bold text-emerald-500">${(totalRev - totalFees).toLocaleString()}</p>
-        </div>
-        <div className="bg-card border border-border rounded-xl p-4">
-          <p className="text-xs text-muted-foreground">Est. Net Profit</p>
-          <p className="text-2xl font-bold text-blue-500">${totalProfit.toLocaleString()}</p>
-        </div>
-        <div className="bg-card border border-border rounded-xl p-4">
-          <p className="text-xs text-muted-foreground">Avg Rev/Company</p>
-          <p className="text-2xl font-bold text-purple-500">${totalRev > 0 ? totalRev.toLocaleString() : '0'}</p>
-        </div>
+        <MetricCard label="Gross Revenue" value={`$${totalRev.toLocaleString()}`} icon={DollarSign} accent="text-emerald-600" />
+        <MetricCard label="Net Revenue" value={`$${(totalRev - totalFees).toLocaleString()}`} icon={BarChart3} accent="text-blue-600" />
+        <MetricCard label="Net Profit" value={`$${totalProfit.toLocaleString()}`} icon={TrendingUp} accent="text-green-600" />
+        <MetricCard label="Fees & Costs" value={`$${totalFees.toLocaleString()}`} icon={AlertCircle} accent="text-red-400" />
       </div>
 
-      {/* Bar Chart */}
       {chart.length > 0 ? (
-        <div className="bg-card border border-border rounded-xl p-5" data-testid="revenue-chart">
-          <div className="flex items-end gap-1 h-48">
+        <div className="bg-white dark:bg-card border border-border/40 rounded-2xl p-6" data-testid="revenue-chart">
+          <div className="flex items-end gap-1.5 h-48">
             {chart.map((c, i) => {
               const revH = (c.revenue / maxRev) * 100;
               const profH = (c.profit / maxRev) * 100;
@@ -673,42 +741,42 @@ function RevenueSection() {
                 ? new Date(c.period).toLocaleDateString('en', { month: 'short' })
                 : new Date(c.period).toLocaleDateString('en', { day: 'numeric', month: 'short' });
               return (
-                <div key={i} className="flex-1 flex flex-col items-center gap-0.5" data-testid={`chart-bar-${i}`}>
+                <div key={i} className="flex-1 flex flex-col items-center gap-0.5 group" data-testid={`chart-bar-${i}`}>
                   <div className="w-full flex gap-0.5 items-end h-40">
-                    <div className="flex-1 bg-green-500/80 rounded-t" style={{ height: `${revH}%` }} title={`Rev: $${c.revenue}`} />
-                    <div className="flex-1 bg-blue-500/80 rounded-t" style={{ height: `${profH}%` }} title={`Profit: $${c.profit}`} />
+                    <div className="flex-1 bg-emerald-400 rounded-t-md transition-all duration-300 group-hover:bg-emerald-500" style={{ height: `${revH}%` }} />
+                    <div className="flex-1 bg-blue-400 rounded-t-md transition-all duration-300 group-hover:bg-blue-500" style={{ height: `${profH}%` }} />
                   </div>
                   <span className="text-[9px] text-muted-foreground truncate w-full text-center">{label}</span>
                 </div>
               );
             })}
           </div>
-          <div className="flex items-center justify-center gap-4 mt-3">
-            <span className="flex items-center gap-1 text-xs"><div className="w-3 h-3 rounded bg-green-500/80" /> Revenue</span>
-            <span className="flex items-center gap-1 text-xs"><div className="w-3 h-3 rounded bg-blue-500/80" /> Profit</span>
+          <div className="flex items-center justify-center gap-6 mt-4 pt-3 border-t border-border/30">
+            <span className="flex items-center gap-1.5 text-xs"><div className="w-2.5 h-2.5 rounded-sm bg-emerald-400" />Revenue</span>
+            <span className="flex items-center gap-1.5 text-xs"><div className="w-2.5 h-2.5 rounded-sm bg-blue-400" />Profit</span>
           </div>
         </div>
       ) : (
-        <div className="bg-card border-2 border-dashed border-border rounded-xl p-8 text-center">
-          <BarChart3 className="h-10 w-10 mx-auto mb-3 text-muted-foreground opacity-30" />
-          <p className="text-sm text-muted-foreground">No revenue data for this period</p>
+        <div className="bg-white dark:bg-card border-2 border-dashed border-border/40 rounded-2xl p-12 text-center">
+          <BarChart3 className="h-8 w-8 mx-auto mb-3 text-muted-foreground/30" />
+          <p className="text-sm text-muted-foreground">No data for this period</p>
         </div>
       )}
     </div>
   );
 }
 
-/* ─── 3. Companies & Venues ─── */
+/* ════════════════════════════════════════════════════════════════
+   COMPANIES
+   ════════════════════════════════════════════════════════════════ */
 function CompaniesSection() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [expandedCompany, setExpandedCompany] = useState(null);
-  const [moduleToggles, setModuleToggles] = useState({});
+  const [selected, setSelected] = useState(null);
 
   const load = useCallback(() => {
     ceoAPI.getCompanies().then(r => setData(r.data)).catch(() => toast.error('Failed')).finally(() => setLoading(false));
   }, []);
-
   useEffect(() => { load(); }, [load]);
 
   const toggleModule = async (company, venue, mod) => {
@@ -719,9 +787,9 @@ function CompaniesSection() {
     fd.append('modules', newMods.join(','));
     try {
       await ceoAPI.updateCompanyModules(company.user_id, fd);
-      toast.success(`Modules updated for ${venue.name}`);
+      toast.success('Modules updated');
       load();
-    } catch { toast.error('Failed to update modules'); }
+    } catch { toast.error('Failed'); }
   };
 
   const updateStatus = async (company, newStatus) => {
@@ -729,162 +797,163 @@ function CompaniesSection() {
     fd.append('status', newStatus);
     try {
       await ceoAPI.updateCompanyStatus(company.user_id, fd);
-      toast.success(`Status updated to ${newStatus}`);
+      toast.success(`Status → ${newStatus}`);
       load();
-    } catch { toast.error('Failed to update status'); }
+    } catch { toast.error('Failed'); }
   };
 
   if (loading) return <Skeleton />;
-
   const allModules = ['pulse', 'tap', 'table', 'kds'];
+  const modColors = { pulse: 'bg-pink-100 dark:bg-pink-900/20 text-pink-600', tap: 'bg-blue-100 dark:bg-blue-900/20 text-blue-600', table: 'bg-emerald-100 dark:bg-emerald-900/20 text-emerald-600', kds: 'bg-orange-100 dark:bg-orange-900/20 text-orange-600' };
 
   return (
     <div data-testid="ceo-companies-section">
-      <h2 className="text-xl font-bold mb-5">Company Management</h2>
-      <div className="space-y-3">
+      <h2 className="text-lg font-bold tracking-tight mb-5">Companies</h2>
+      <div className="space-y-2">
         {data?.companies?.map((c, i) => (
-          <div key={c.user_id} className="bg-card border border-border rounded-xl overflow-hidden" data-testid={`company-card-${i}`}>
-            {/* Company Row */}
-            <div className="flex items-center p-4 cursor-pointer hover:bg-muted/20 transition-colors"
-              onClick={() => setExpandedCompany(expandedCompany === c.user_id ? null : c.user_id)}>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <p className="font-medium">{c.name}</p>
-                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${
-                    c.status === 'active' ? 'bg-green-500/10 text-green-600' : c.status === 'suspended' ? 'bg-red-500/10 text-red-600' : 'bg-yellow-500/10 text-yellow-600'}`}>
-                    {c.status}
-                  </span>
-                </div>
-                <p className="text-xs text-muted-foreground">{c.email} · {c.venue_count} venue(s)</p>
+          <div key={c.user_id} onClick={() => setSelected(c)}
+            className="bg-white dark:bg-card border border-border/40 rounded-xl p-4 flex items-center cursor-pointer hover:shadow-md hover:border-blue-200 dark:hover:border-blue-700 transition-all duration-200"
+            data-testid={`company-card-${i}`}>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-1">
+                <p className="font-semibold text-sm">{c.name}</p>
+                <Badge className={c.status === 'active' ? 'bg-green-50 dark:bg-green-900/20 text-green-600' : 'bg-red-50 dark:bg-red-900/20 text-red-600'}>{c.status}</Badge>
               </div>
-              <div className="flex items-center gap-4">
-                <p className="font-bold text-green-500">${c.mrr.toLocaleString()}</p>
-                <ChevronRight className={`h-4 w-4 text-muted-foreground transition-transform ${expandedCompany === c.user_id ? 'rotate-90' : ''}`} />
+              <p className="text-xs text-muted-foreground">{c.email} &middot; {c.venue_count} venue(s)</p>
+              <div className="flex gap-1 mt-1.5">
+                {(c.venues?.[0]?.modules || []).map(m => <Badge key={m} className={modColors[m] || 'bg-muted text-muted-foreground'}>{m}</Badge>)}
               </div>
             </div>
-
-            {/* Expanded Management Panel */}
-            {expandedCompany === c.user_id && (
-              <div className="border-t border-border p-4 bg-muted/10 space-y-4" data-testid={`company-management-${i}`}>
-                {/* Status Management */}
-                <div>
-                  <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">User Status</p>
-                  <div className="flex gap-2">
-                    {['active', 'suspended', 'pending'].map(st => (
-                      <button key={st} onClick={() => updateStatus(c, st)}
-                        className={`px-3 py-1.5 text-xs font-medium rounded-lg border transition-all ${
-                          c.status === st ? 'border-primary bg-primary/10 text-primary' : 'border-border text-muted-foreground hover:border-primary/30'}`}
-                        data-testid={`status-btn-${st}-${i}`}>
-                        {st.charAt(0).toUpperCase() + st.slice(1)}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Module Management per Venue */}
-                {c.venues?.map((v, vi) => (
-                  <div key={v.venue_id} data-testid={`venue-modules-${vi}`}>
-                    <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">{v.name} — Modules</p>
-                    <div className="flex gap-2 flex-wrap">
-                      {allModules.map(mod => {
-                        const isActive = (v.modules || []).includes(mod);
-                        return (
-                          <button key={mod} onClick={() => toggleModule(c, v, mod)}
-                            className={`px-3 py-1.5 text-xs font-medium rounded-lg border transition-all ${
-                              isActive ? 'border-primary bg-primary/10 text-primary' : 'border-border text-muted-foreground hover:border-primary/30 opacity-50'}`}
-                            data-testid={`module-toggle-${mod}-${vi}`}>
-                            {isActive ? <Check className="h-3 w-3 inline mr-1" /> : null}
-                            {mod.toUpperCase()}
-                          </button>
-                        );
-                      })}
-                    </div>
-                    <p className="text-[10px] text-muted-foreground mt-1">MRR: ${v.mrr.toLocaleString()}</p>
-                  </div>
-                ))}
-
-                {/* Account Info */}
-                <div className="text-xs text-muted-foreground pt-2 border-t border-border/50">
-                  <p>User ID: {c.user_id}</p>
-                  <p>Created: {c.created_at ? new Date(c.created_at).toLocaleDateString() : '—'}</p>
-                </div>
-              </div>
-            )}
+            <div className="flex items-center gap-3">
+              <p className="font-bold text-emerald-600">${c.mrr.toLocaleString()}</p>
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+            </div>
           </div>
         ))}
       </div>
+
+      <SidePanel open={!!selected} onClose={() => setSelected(null)} title={selected?.name || 'Company'}>
+        {selected && (
+          <div className="space-y-5">
+            <div className="bg-slate-50 dark:bg-muted/30 rounded-xl p-4 text-center">
+              <p className="text-xs text-muted-foreground">MRR</p>
+              <p className="text-2xl font-bold text-emerald-600">${selected.mrr.toLocaleString()}</p>
+            </div>
+            <div>
+              <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">Status</p>
+              <div className="flex gap-2">
+                {['active', 'suspended', 'pending'].map(st => (
+                  <button key={st} onClick={() => updateStatus(selected, st)}
+                    className={`flex-1 py-1.5 text-[11px] font-medium rounded-lg border transition-all ${selected.status === st ? 'border-blue-300 bg-blue-50 dark:bg-blue-900/20 text-blue-700' : 'border-border/60 text-muted-foreground'}`}
+                    data-testid={`status-btn-${st}`}>{st.charAt(0).toUpperCase() + st.slice(1)}</button>
+                ))}
+              </div>
+            </div>
+            {selected.venues?.map((v, vi) => (
+              <div key={v.venue_id}>
+                <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">{v.name} — Modules</p>
+                <div className="flex gap-2 flex-wrap">
+                  {allModules.map(mod => {
+                    const isActive = (v.modules || []).includes(mod);
+                    return (
+                      <button key={mod} onClick={() => toggleModule(selected, v, mod)}
+                        className={`px-3 py-1.5 text-[11px] font-medium rounded-lg border transition-all ${isActive ? 'border-blue-300 bg-blue-50 dark:bg-blue-900/20 text-blue-700' : 'border-border/60 text-muted-foreground opacity-50'}`}
+                        data-testid={`module-toggle-${mod}-${vi}`}>
+                        {isActive && <Check className="h-3 w-3 inline mr-1" />}{mod.toUpperCase()}
+                      </button>
+                    );
+                  })}
+                </div>
+                <p className="text-[10px] text-muted-foreground mt-1">MRR: ${v.mrr.toLocaleString()}</p>
+              </div>
+            ))}
+            <div className="text-[10px] text-muted-foreground pt-3 border-t border-border/30">
+              <p>User ID: {selected.user_id}</p>
+              <p>Created: {selected.created_at ? new Date(selected.created_at).toLocaleDateString() : '—'}</p>
+            </div>
+          </div>
+        )}
+      </SidePanel>
     </div>
   );
 }
 
-/* ─── 4. Module Adoption ─── */
+/* ════════════════════════════════════════════════════════════════
+   MODULES
+   ════════════════════════════════════════════════════════════════ */
 function ModulesSection() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [expanded, setExpanded] = useState(null);
 
   useEffect(() => {
     ceoAPI.getModules().then(r => setData(r.data)).catch(() => toast.error('Failed')).finally(() => setLoading(false));
   }, []);
 
   if (loading) return <Skeleton />;
-
   const modules = data?.modules || [];
-  const moduleColors = { pulse: 'bg-pink-500', tap: 'bg-blue-500', table: 'bg-emerald-500', kds: 'bg-orange-500' };
-  const moduleTextColors = { pulse: 'text-pink-500', tap: 'text-blue-500', table: 'text-emerald-500', kds: 'text-orange-500' };
+  const colors = { pulse: { bar: 'bg-pink-500', text: 'text-pink-600', bg: 'bg-pink-50 dark:bg-pink-900/20' }, tap: { bar: 'bg-blue-500', text: 'text-blue-600', bg: 'bg-blue-50 dark:bg-blue-900/20' }, table: { bar: 'bg-emerald-500', text: 'text-emerald-600', bg: 'bg-emerald-50 dark:bg-emerald-900/20' }, kds: { bar: 'bg-orange-500', text: 'text-orange-600', bg: 'bg-orange-50 dark:bg-orange-900/20' } };
 
   return (
     <div data-testid="ceo-modules-section">
-      <h2 className="text-xl font-bold mb-5">Module Adoption</h2>
+      <h2 className="text-lg font-bold tracking-tight mb-5">Module Adoption</h2>
       <div className="grid grid-cols-2 gap-4">
-        {modules.map(m => (
-          <div key={m.key} className="bg-card border border-border rounded-xl p-5 hover:shadow-md transition-all cursor-pointer" data-testid={`module-${m.key}`}>
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-3">
-                <div className={`w-10 h-10 rounded-xl ${moduleColors[m.key] || 'bg-primary'} bg-opacity-10 flex items-center justify-center`}>
-                  <Layers className={`h-5 w-5 ${moduleTextColors[m.key] || 'text-primary'}`} />
+        {modules.map(m => {
+          const c = colors[m.key] || { bar: 'bg-blue-500', text: 'text-blue-600', bg: 'bg-blue-50' };
+          return (
+            <div key={m.key} className="bg-white dark:bg-card border border-border/40 rounded-2xl p-5 cursor-pointer hover:shadow-md transition-all duration-200"
+              onClick={() => setExpanded(expanded === m.key ? null : m.key)} data-testid={`module-${m.key}`}>
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-3">
+                  <div className={`w-10 h-10 rounded-xl ${c.bg} flex items-center justify-center`}>
+                    <Layers className={`h-5 w-5 ${c.text}`} />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-sm">{m.name}</h3>
+                    <p className="text-[10px] text-muted-foreground">{m.active} companies</p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="font-bold">{m.name}</h3>
-                  <p className="text-xs text-muted-foreground">{m.active} active companies</p>
-                </div>
+                <span className={`text-2xl font-bold ${c.text}`}>{m.adoption_pct}%</span>
               </div>
-              <span className={`text-2xl font-bold ${moduleTextColors[m.key] || 'text-primary'}`}>{m.adoption_pct}%</span>
+              <div className="w-full h-2 bg-slate-100 dark:bg-muted rounded-full">
+                <div className={`h-2 rounded-full ${c.bar} transition-all duration-500`} style={{ width: `${m.adoption_pct}%` }} />
+              </div>
+              {expanded === m.key && (
+                <div className="mt-3 pt-3 border-t border-border/30 text-xs text-muted-foreground">
+                  <p>Revenue from module: ${m.revenue?.toLocaleString() || '0'}</p>
+                  <p>Total venues: {data?.total_venues || 0}</p>
+                </div>
+              )}
             </div>
-            <div className="w-full h-2 bg-muted rounded-full">
-              <div className={`h-2 rounded-full ${moduleColors[m.key] || 'bg-primary'}`} style={{ width: `${m.adoption_pct}%` }} />
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
-      <p className="text-xs text-muted-foreground mt-3">Total venues: {data?.total_venues || 0}</p>
     </div>
   );
 }
 
-/* ─── 5. User Management ─── */
+/* ════════════════════════════════════════════════════════════════
+   USERS
+   ════════════════════════════════════════════════════════════════ */
 function UsersSection() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
-  const [editingUser, setEditingUser] = useState(null);
+  const [selectedUser, setSelectedUser] = useState(null);
   const [form, setForm] = useState({ email: '', password: '', role: 'server', venue_id: '', status: 'active' });
 
   const loadUsers = useCallback(() => {
-    ceoAPI.getUsers().then(r => setUsers(r.data.users || [])).catch(() => toast.error('Failed to load users')).finally(() => setLoading(false));
+    ceoAPI.getUsers().then(r => setUsers(r.data.users || [])).catch(() => toast.error('Failed')).finally(() => setLoading(false));
   }, []);
   useEffect(() => { loadUsers(); }, [loadUsers]);
 
   const handleCreate = async () => {
     if (!form.email || !form.password) { toast.error('Email and password required'); return; }
+    const fd = new FormData();
+    fd.append('email', form.email); fd.append('password', form.password); fd.append('role', form.role);
+    if (form.venue_id) fd.append('venue_id', form.venue_id);
+    fd.append('permissions', JSON.stringify({ pulse: true, tap: true, table: true, kds: true }));
     try {
-      const fd = new FormData();
-      fd.append('email', form.email); fd.append('password', form.password); fd.append('role', form.role);
-      if (form.venue_id) fd.append('venue_id', form.venue_id);
-      const perms = {};
-      if (['server', 'host', 'bartender', 'cashier', 'kitchen'].includes(form.role)) {
-        perms.pulse = true; perms.tap = true; perms.table = true; perms.kds = true;
-      }
-      fd.append('permissions', JSON.stringify(perms));
       await ceoAPI.createUser(fd);
       toast.success('User created'); setShowCreate(false);
       setForm({ email: '', password: '', role: 'server', venue_id: '', status: 'active' }); loadUsers();
@@ -892,141 +961,124 @@ function UsersSection() {
   };
 
   const handleUpdate = async () => {
-    if (!editingUser) return;
+    if (!selectedUser) return;
+    const fd = new FormData();
+    if (form.role) fd.append('role', form.role);
+    if (form.status) fd.append('status', form.status);
+    if (form.venue_id) fd.append('venue_id', form.venue_id);
+    if (form.email) fd.append('email', form.email);
+    fd.append('permissions', JSON.stringify({ pulse: true, tap: true, table: true, kds: true }));
     try {
-      const fd = new FormData();
-      if (form.role) fd.append('role', form.role);
-      if (form.status) fd.append('status', form.status);
-      if (form.venue_id) fd.append('venue_id', form.venue_id);
-      if (form.email) fd.append('email', form.email);
-      const perms = {};
-      if (['server', 'host', 'bartender', 'cashier', 'kitchen'].includes(form.role)) {
-        perms.pulse = true; perms.tap = true; perms.table = true; perms.kds = true;
-      }
-      fd.append('permissions', JSON.stringify(perms));
-      await ceoAPI.updateUser(editingUser, fd);
-      toast.success('User updated'); setEditingUser(null); loadUsers();
+      await ceoAPI.updateUser(selectedUser.id, fd);
+      toast.success('Updated'); setSelectedUser(null); loadUsers();
     } catch (e) { toast.error(e.response?.data?.detail || 'Failed'); }
   };
 
   const handleDelete = async (userId) => {
-    if (!window.confirm('Are you sure you want to delete this user?')) return;
-    try {
-      await ceoAPI.deleteUser(userId);
-      toast.success('User deleted'); loadUsers();
-    } catch (e) { toast.error(e.response?.data?.detail || 'Failed'); }
-  };
-
-  const startEdit = (u) => {
-    setEditingUser(u.id);
-    setForm({
-      email: u.email,
-      password: '',
-      role: u.roles?.[0]?.role || 'server',
-      venue_id: u.roles?.[0]?.venue_id || '',
-      status: u.status,
-    });
+    if (!window.confirm('Delete this user?')) return;
+    try { await ceoAPI.deleteUser(userId); toast.success('Deleted'); loadUsers(); setSelectedUser(null); }
+    catch (e) { toast.error(e.response?.data?.detail || 'Failed'); }
   };
 
   const ROLES = ['ceo', 'owner', 'manager', 'host', 'tap', 'bartender', 'server', 'kitchen', 'cashier'];
-  const venueId = localStorage.getItem('active_venue_id') || '';
+  const modColors = { pulse: 'bg-pink-100 text-pink-600', tap: 'bg-blue-100 text-blue-600', table: 'bg-emerald-100 text-emerald-600', kds: 'bg-orange-100 text-orange-600' };
 
   if (loading) return <Skeleton />;
 
   return (
     <div data-testid="ceo-users-section">
       <div className="flex items-center justify-between mb-5">
-        <h2 className="text-xl font-bold">User Management</h2>
-        <Button size="sm" onClick={() => { setShowCreate(true); setEditingUser(null); setForm({ email: '', password: '', role: 'server', venue_id: venueId, status: 'active' }); }} data-testid="create-user-btn">
-          <UserPlus className="h-4 w-4 mr-1" /> New User
+        <h2 className="text-lg font-bold tracking-tight">Users</h2>
+        <Button size="sm" className="h-8 text-xs" onClick={() => { setShowCreate(true); setSelectedUser(null); setForm({ email: '', password: '', role: 'server', venue_id: localStorage.getItem('active_venue_id') || '', status: 'active' }); }} data-testid="create-user-btn">
+          <UserPlus className="h-3.5 w-3.5 mr-1" />New User
         </Button>
       </div>
 
-      {/* Create / Edit Form */}
-      {(showCreate || editingUser) && (
-        <div className="bg-card border border-border rounded-xl p-4 mb-4 space-y-3" data-testid="user-form">
-          <h3 className="font-semibold text-sm">{editingUser ? 'Edit User' : 'Create New User'}</h3>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-xs text-muted-foreground">Email</label>
-              <Input value={form.email} onChange={e => setForm(p => ({ ...p, email: e.target.value }))} placeholder="user@email.com" className="h-8 text-sm" data-testid="user-email-input" />
-            </div>
-            {!editingUser && (
-              <div>
-                <label className="text-xs text-muted-foreground">Password</label>
-                <Input type="password" value={form.password} onChange={e => setForm(p => ({ ...p, password: e.target.value }))} placeholder="Password" className="h-8 text-sm" data-testid="user-password-input" />
-              </div>
-            )}
-            <div>
-              <label className="text-xs text-muted-foreground">Role</label>
-              <select value={form.role} onChange={e => setForm(p => ({ ...p, role: e.target.value }))}
-                className="w-full h-8 text-sm bg-background border border-border rounded-md px-2" data-testid="user-role-select">
-                {ROLES.map(r => <option key={r} value={r}>{r.charAt(0).toUpperCase() + r.slice(1)}</option>)}
-              </select>
-            </div>
-            {editingUser && (
-              <div>
-                <label className="text-xs text-muted-foreground">Status</label>
-                <select value={form.status} onChange={e => setForm(p => ({ ...p, status: e.target.value }))}
-                  className="w-full h-8 text-sm bg-background border border-border rounded-md px-2" data-testid="user-status-select">
-                  {['active', 'suspended', 'pending'].map(s => <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>)}
-                </select>
-              </div>
-            )}
+      {/* Create Form */}
+      {showCreate && (
+        <div className="bg-white dark:bg-card border border-border/40 rounded-xl p-4 mb-4 space-y-3" data-testid="user-form">
+          <h3 className="font-semibold text-sm">Create User</h3>
+          <div className="grid grid-cols-3 gap-3">
+            <div><label className="text-[10px] text-muted-foreground">Email</label><Input value={form.email} onChange={e => setForm(p => ({ ...p, email: e.target.value }))} className="h-8 text-xs" data-testid="user-email-input" /></div>
+            <div><label className="text-[10px] text-muted-foreground">Password</label><Input type="password" value={form.password} onChange={e => setForm(p => ({ ...p, password: e.target.value }))} className="h-8 text-xs" data-testid="user-password-input" /></div>
+            <div><label className="text-[10px] text-muted-foreground">Role</label><select value={form.role} onChange={e => setForm(p => ({ ...p, role: e.target.value }))} className="w-full h-8 text-xs bg-white dark:bg-background border border-border rounded-md px-2" data-testid="user-role-select">{ROLES.map(r => <option key={r} value={r}>{r}</option>)}</select></div>
           </div>
           <div className="flex gap-2">
-            <Button size="sm" onClick={editingUser ? handleUpdate : handleCreate} data-testid="user-save-btn">
-              <Check className="h-3 w-3 mr-1" /> {editingUser ? 'Update' : 'Create'}
-            </Button>
-            <Button size="sm" variant="outline" onClick={() => { setShowCreate(false); setEditingUser(null); }} data-testid="user-cancel-btn">
-              Cancel
-            </Button>
+            <Button size="sm" className="h-7 text-xs" onClick={handleCreate} data-testid="user-save-btn"><Check className="h-3 w-3 mr-1" />Create</Button>
+            <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setShowCreate(false)} data-testid="user-cancel-btn">Cancel</Button>
           </div>
         </div>
       )}
 
-      {/* Users List */}
+      {/* User List */}
       <div className="space-y-2" data-testid="users-list">
-        {users.length === 0 ? (
-          <p className="text-sm text-muted-foreground text-center py-8">No users found</p>
-        ) : users.map(u => (
-          <div key={u.id} className="bg-card border border-border rounded-xl p-4 flex items-center justify-between" data-testid={`user-row-${u.id}`}>
-            <div className="flex-1">
+        {users.map(u => (
+          <div key={u.id} onClick={() => { setSelectedUser(u); setForm({ email: u.email, password: '', role: u.roles?.[0]?.role || 'server', venue_id: u.roles?.[0]?.venue_id || '', status: u.status }); }}
+            className={`bg-white dark:bg-card border border-border/40 rounded-xl p-4 flex items-center cursor-pointer hover:shadow-md hover:border-blue-200 dark:hover:border-blue-700 transition-all duration-200 ${selectedUser?.id === u.id ? 'border-blue-300 shadow-md' : ''}`}
+            data-testid={`user-row-${u.id}`}>
+            <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-1">
-                <span className="font-medium text-sm">{u.email}</span>
-                <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${
-                  u.status === 'active' ? 'bg-green-500/10 text-green-600' :
-                  u.status === 'suspended' ? 'bg-red-500/10 text-red-600' :
-                  'bg-yellow-500/10 text-yellow-600'
-                }`}>{u.status}</span>
+                <span className="font-semibold text-sm">{u.name || u.email}</span>
+                <Badge className={u.status === 'active' ? 'bg-green-50 dark:bg-green-900/20 text-green-600' : u.status === 'suspended' ? 'bg-red-50 dark:bg-red-900/20 text-red-600' : 'bg-amber-50 dark:bg-amber-900/20 text-amber-600'}>{u.status}</Badge>
               </div>
-              <div className="flex gap-2 flex-wrap">
-                {(u.roles || []).map((r, i) => (
-                  <span key={i} className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium">
-                    {r.role}{r.venue_id ? ` (Venue)` : ''}
-                  </span>
-                ))}
+              <p className="text-[10px] text-muted-foreground mb-1">{u.email}</p>
+              <div className="flex gap-1 flex-wrap">
+                {(u.roles || []).map((r, i) => <Badge key={i} className="bg-blue-50 dark:bg-blue-900/20 text-blue-600">{r.role}</Badge>)}
+                {u.warning && <Badge className="bg-red-50 dark:bg-red-900/20 text-red-500"><AlertTriangle className="h-2.5 w-2.5 mr-0.5" />Issue</Badge>}
               </div>
-              <p className="text-[10px] text-muted-foreground mt-1">
-                Last login: {u.last_login_at ? new Date(u.last_login_at).toLocaleDateString() : 'Never'}
-              </p>
             </div>
-            <div className="flex items-center gap-1">
-              <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => startEdit(u)} data-testid={`edit-user-${u.id}`}>
-                <Pencil className="h-3.5 w-3.5" />
-              </Button>
-              <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => handleDelete(u.id)} data-testid={`delete-user-${u.id}`}>
-                <Trash2 className="h-3.5 w-3.5" />
-              </Button>
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <span className="text-[10px] text-muted-foreground">
+                {u.last_login_at ? new Date(u.last_login_at).toLocaleDateString() : 'Never'}
+              </span>
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
             </div>
           </div>
         ))}
       </div>
+
+      {/* User Detail Side Panel */}
+      <SidePanel open={!!selectedUser} onClose={() => setSelectedUser(null)} title="User Details">
+        {selectedUser && (
+          <div className="space-y-5">
+            <div>
+              <p className="text-lg font-bold">{selectedUser.name || selectedUser.email}</p>
+              <p className="text-xs text-muted-foreground">{selectedUser.email}</p>
+            </div>
+            <div>
+              <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">Role</p>
+              <select value={form.role} onChange={e => setForm(p => ({ ...p, role: e.target.value }))} className="w-full h-9 text-sm bg-white dark:bg-background border border-border/40 rounded-lg px-3" data-testid="user-role-select">
+                {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
+              </select>
+            </div>
+            <div>
+              <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">Status</p>
+              <div className="flex gap-2">
+                {['active', 'suspended', 'pending'].map(st => (
+                  <button key={st} onClick={() => setForm(p => ({ ...p, status: st }))}
+                    className={`flex-1 py-1.5 text-[11px] font-medium rounded-lg border transition-all ${form.status === st ? 'border-blue-300 bg-blue-50 dark:bg-blue-900/20 text-blue-700' : 'border-border/60 text-muted-foreground'}`}
+                    data-testid={`user-status-select`}>{st.charAt(0).toUpperCase() + st.slice(1)}</button>
+                ))}
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <Button className="flex-1 h-9 text-xs" onClick={handleUpdate} data-testid="user-save-btn"><Check className="h-3 w-3 mr-1" />Save Changes</Button>
+              <Button variant="destructive" size="icon" className="h-9 w-9" onClick={() => handleDelete(selectedUser.id)} data-testid={`delete-user-${selectedUser.id}`}><Trash2 className="h-3.5 w-3.5" /></Button>
+            </div>
+            <div className="text-[10px] text-muted-foreground pt-3 border-t border-border/30 space-y-0.5">
+              <p>ID: {selectedUser.id}</p>
+              <p>Last login: {selectedUser.last_login_at ? new Date(selectedUser.last_login_at).toLocaleString() : 'Never'}</p>
+            </div>
+          </div>
+        )}
+      </SidePanel>
     </div>
   );
 }
 
-/* ─── 6. Risk & Alerts ─── */
+/* ════════════════════════════════════════════════════════════════
+   RISK & ALERTS
+   ════════════════════════════════════════════════════════════════ */
 function AlertsSection() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -1036,32 +1088,35 @@ function AlertsSection() {
   }, []);
 
   if (loading) return <Skeleton />;
-
   const alerts = data?.alerts || [];
 
   return (
     <div data-testid="ceo-alerts-section">
-      <h2 className="text-xl font-bold mb-5">Risk & Alerts</h2>
+      <h2 className="text-lg font-bold tracking-tight mb-5">Risk & Alerts</h2>
       {alerts.length === 0 ? (
-        <div className="bg-card border-2 border-green-500/30 rounded-xl p-8 text-center" data-testid="no-alerts">
-          <ShieldAlert className="h-10 w-10 mx-auto mb-3 text-green-500" />
-          <p className="text-sm font-medium text-green-600">All clear! No risk alerts.</p>
+        <div className="bg-white dark:bg-card border border-emerald-200 dark:border-emerald-800 rounded-2xl p-12 text-center">
+          <div className="w-14 h-14 rounded-2xl bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center mx-auto mb-3">
+            <Shield className="h-7 w-7 text-emerald-600" />
+          </div>
+          <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-400">All clear</p>
+          <p className="text-xs text-muted-foreground mt-1">No risk alerts at this time</p>
         </div>
       ) : (
         <div className="space-y-2">
           {alerts.map((a, i) => (
-            <div key={i} className={`flex items-center gap-4 p-4 rounded-xl border cursor-pointer hover:shadow-sm transition-all ${
-              a.severity === 'critical' ? 'border-red-500/30 bg-red-500/5' : 'border-yellow-500/30 bg-yellow-500/5'
+            <div key={i} className={`bg-white dark:bg-card border rounded-xl p-4 flex items-center gap-4 cursor-pointer hover:shadow-md transition-all duration-200 ${
+              a.severity === 'critical' ? 'border-red-200 dark:border-red-800' : 'border-amber-200 dark:border-amber-800'
             }`} data-testid={`alert-${i}`}>
-              <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                a.severity === 'critical' ? 'bg-red-500/10' : 'bg-yellow-500/10'}`}>
-                <AlertTriangle className={`h-5 w-5 ${a.severity === 'critical' ? 'text-red-500' : 'text-yellow-500'}`} />
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${
+                a.severity === 'critical' ? 'bg-red-50 dark:bg-red-900/20' : 'bg-amber-50 dark:bg-amber-900/20'
+              }`}>
+                <AlertTriangle className={`h-5 w-5 ${a.severity === 'critical' ? 'text-red-500' : 'text-amber-500'}`} />
               </div>
               <div className="flex-1">
                 <p className="text-sm font-medium">{a.message}</p>
-                <p className="text-xs text-muted-foreground capitalize">{a.type.replace('_', ' ')} — {a.venue_name}</p>
+                <p className="text-xs text-muted-foreground">{a.type?.replace('_', ' ')} — {a.venue_name}</p>
               </div>
-              <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+              <Badge className={a.severity === 'critical' ? 'bg-red-50 dark:bg-red-900/20 text-red-500' : 'bg-amber-50 dark:bg-amber-900/20 text-amber-500'}>{a.severity}</Badge>
             </div>
           ))}
         </div>
@@ -1070,7 +1125,9 @@ function AlertsSection() {
   );
 }
 
-/* ─── 6. Growth Pipeline ─── */
+/* ════════════════════════════════════════════════════════════════
+   GROWTH PIPELINE
+   ════════════════════════════════════════════════════════════════ */
 function PipelineSection() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -1083,31 +1140,30 @@ function PipelineSection() {
   if (!data) return null;
 
   const stages = [
-    { key: 'leads', label: 'Leads', color: 'bg-gray-400', text: 'text-gray-500' },
-    { key: 'paid', label: 'Paid', color: 'bg-blue-500', text: 'text-blue-500' },
-    { key: 'activated', label: 'Activated', color: 'bg-emerald-500', text: 'text-emerald-500' },
-    { key: 'active', label: 'Active', color: 'bg-green-500', text: 'text-green-500' },
-    { key: 'at_risk', label: 'At Risk', color: 'bg-yellow-500', text: 'text-yellow-500' },
-    { key: 'cancelled', label: 'Cancelled', color: 'bg-red-500', text: 'text-red-500' },
+    { key: 'leads', label: 'Leads', color: 'bg-slate-400' },
+    { key: 'paid', label: 'Paid', color: 'bg-blue-500' },
+    { key: 'activated', label: 'Activated', color: 'bg-emerald-500' },
+    { key: 'active', label: 'Active', color: 'bg-green-500' },
+    { key: 'at_risk', label: 'At Risk', color: 'bg-amber-500' },
+    { key: 'cancelled', label: 'Cancelled', color: 'bg-red-400' },
   ];
-
   const maxVal = Math.max(...stages.map(s => data[s.key] || 0), 1);
 
   return (
     <div data-testid="ceo-pipeline-section">
-      <h2 className="text-xl font-bold mb-5">Growth Pipeline</h2>
+      <h2 className="text-lg font-bold tracking-tight mb-5">Growth Pipeline</h2>
 
-      {/* Funnel visualization */}
-      <div className="bg-card border border-border rounded-xl p-6 mb-6" data-testid="pipeline-funnel">
+      <div className="bg-white dark:bg-card border border-border/40 rounded-2xl p-6 mb-5" data-testid="pipeline-funnel">
         <div className="space-y-3">
           {stages.map((s, i) => {
             const val = data[s.key] || 0;
             const width = Math.max((val / maxVal) * 100, 8);
             return (
-              <div key={s.key} className="flex items-center gap-4 cursor-pointer hover:bg-muted/20 rounded-lg p-2 transition-all" data-testid={`pipeline-${s.key}`}>
-                <span className="text-sm font-medium w-24 text-right text-muted-foreground">{s.label}</span>
+              <div key={s.key} className="flex items-center gap-4 group cursor-pointer" data-testid={`pipeline-${s.key}`}>
+                <span className="text-xs font-medium w-24 text-right text-muted-foreground">{s.label}</span>
                 <div className="flex-1 relative">
-                  <div className={`h-8 ${s.color} rounded-lg flex items-center justify-end px-3 transition-all`} style={{ width: `${width}%` }}>
+                  <div className={`h-9 ${s.color} rounded-lg flex items-center justify-end px-4 transition-all duration-500 group-hover:opacity-90`}
+                    style={{ width: `${width}%` }}>
                     <span className="text-white text-sm font-bold">{val}</span>
                   </div>
                 </div>
@@ -1117,37 +1173,11 @@ function PipelineSection() {
         </div>
       </div>
 
-      {/* Summary Cards */}
       <div className="grid grid-cols-3 gap-4">
-        <div className="bg-green-500/5 border border-green-500/20 rounded-xl p-4 text-center">
-          <p className="text-3xl font-bold text-green-500">{data.active || 0}</p>
-          <p className="text-xs text-muted-foreground">Active Customers</p>
-        </div>
-        <div className="bg-yellow-500/5 border border-yellow-500/20 rounded-xl p-4 text-center">
-          <p className="text-3xl font-bold text-yellow-500">{data.at_risk || 0}</p>
-          <p className="text-xs text-muted-foreground">At Risk</p>
-        </div>
-        <div className="bg-blue-500/5 border border-blue-500/20 rounded-xl p-4 text-center">
-          <p className="text-3xl font-bold text-blue-500">{data.leads - data.paid}</p>
-          <p className="text-xs text-muted-foreground">Unconverted Leads</p>
-        </div>
+        <MetricCard label="Active Customers" value={data.active || 0} icon={UserCheck} accent="text-green-600" />
+        <MetricCard label="At Risk" value={data.at_risk || 0} icon={AlertTriangle} accent="text-amber-500" />
+        <MetricCard label="Unconverted Leads" value={(data.leads || 0) - (data.paid || 0)} icon={Users} accent="text-blue-600" />
       </div>
-    </div>
-  );
-}
-
-/* ─── Helpers ─── */
-function Skeleton() {
-  return (
-    <div className="space-y-4 animate-pulse">
-      <div className="h-8 w-48 bg-muted rounded" />
-      <div className="grid grid-cols-4 gap-4">
-        <div className="h-28 bg-muted rounded-xl" />
-        <div className="h-28 bg-muted rounded-xl" />
-        <div className="h-28 bg-muted rounded-xl" />
-        <div className="h-28 bg-muted rounded-xl" />
-      </div>
-      <div className="h-40 bg-muted rounded-xl" />
     </div>
   );
 }
