@@ -27,13 +27,27 @@ from ws_manager import ws_manager
 app = FastAPI(title="SPETAP API", version="1.0.0")
 settings = get_settings()
 
-# CORS
+# CORS — flexible for Lovable + localhost
+cors_origins = [o.strip() for o in settings.cors_origins.split(",") if o.strip()]
+cors_origins.extend([
+    "http://localhost:3000",
+    "http://localhost:5173",
+    "http://localhost:8080",
+])
+
+# Response standardization middleware (inner — wraps JSON responses)
+from middleware.response_middleware import StandardResponseMiddleware
+app.add_middleware(StandardResponseMiddleware)
+
+# CORS middleware (outer — handles preflight + sets headers)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.cors_origins.split(','),
+    allow_origins=cors_origins,
+    allow_origin_regex=r"https://.*\.lovable\.(app|dev)",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
 
 # Configure logging
@@ -146,7 +160,9 @@ async def run_column_migrations(pool):
         await conn.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS onboarding_completed BOOLEAN DEFAULT FALSE")
         await conn.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS onboarding_step INTEGER DEFAULT 0")
         await conn.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS plan_id VARCHAR(50)")
-        await conn.execute("UPDATE users SET onboarding_completed = TRUE WHERE is_system_account = TRUE")
+        # Set onboarding=TRUE for system accounts EXCEPT demo onboarding user
+        await conn.execute("UPDATE users SET onboarding_completed = TRUE WHERE is_system_account = TRUE AND email != 'teste1@teste.com'")
+        await conn.execute("UPDATE users SET onboarding_completed = FALSE, onboarding_step = 0 WHERE email = 'teste1@teste.com'")
     logger.info("Phase 1 column migrations completed")
 
 # Startup event

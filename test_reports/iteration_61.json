@@ -1,0 +1,109 @@
+{
+  "summary": "Iteration 61: Lovable API Backend Testing Complete. All 27 tests pass. Tested standardized {success, data, error} response format, signup/login/logout flows, demo user paywall bypass, onboarding steps, CORS support for lovable domains.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iteration61_lovable_api.py",
+    "/app/test_reports/pytest/iteration61_lovable_api.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [],
+  "updated_files": [
+    "/app/backend/protected_users.py"
+  ],
+  "success_rate": {
+    "backend": "100% (27/27 tests passed)",
+    "frontend": "N/A - Backend only testing"
+  },
+  "test_credentials": {
+    "ceo_admin": {"email": "garcia.rapha2@gmail.com", "password": "12345"},
+    "demo_full": {"email": "teste@teste.com", "password": "12345"},
+    "demo_onboarding": {"email": "teste1@teste.com", "password": "12345"}
+  },
+  "seed_data_creation": "No new seed data created - teste1@teste.com now resets password on server restart",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "All API responses wrapped in {success, data, error} format via StandardResponseMiddleware. Demo users in DEMO_EMAILS bypass paywall (is_active=true regardless of status). Stripe checkout URLs are real (test key) but payments cannot be completed in test. teste1@teste.com is demo onboarding user that resets to onboarding_completed=false and password=12345 on server restart.",
+  "features_tested": {
+    "1. Standardized Response Format": {
+      "All /api/* JSON responses wrapped in {success, data, error}": "PASS",
+      "Success responses have success=true, error=null": "PASS",
+      "Error responses have success=false, data=null, error={code, message}": "PASS"
+    },
+    "2. POST /api/auth/signup": {
+      "Returns standardized response": "PASS",
+      "Creates user with status=pending_payment": "PASS",
+      "Returns checkout_url for Stripe": "PASS",
+      "Returns next.route=/payment/pending": "PASS"
+    },
+    "3. POST /api/auth/login (success)": {
+      "Returns standardized response with token": "PASS",
+      "User object contains status, onboarding_completed": "PASS"
+    },
+    "4. POST /api/auth/login (wrong credentials)": {
+      "Returns {success: false, error: {code: UNAUTHORIZED}}": "PASS"
+    },
+    "5. GET /api/auth/me": {
+      "Returns user profile with status, onboarding_completed, roles, venues": "PASS"
+    },
+    "6. GET /api/auth/permissions": {
+      "Returns role, modules, flags (is_active, requires_payment, requires_onboarding)": "PASS"
+    },
+    "7. GET /api/auth/payment-status": {
+      "Returns payment status with is_active, requires_payment flags": "PASS"
+    },
+    "8. GET /api/auth/me without token": {
+      "Returns {success: false, error: {code: UNAUTHORIZED}}": "PASS"
+    },
+    "9. Demo user garcia.rapha2@gmail.com": {
+      "is_demo=true, is_active=true, onboarding_completed=true": "PASS"
+    },
+    "10. Demo user teste@teste.com": {
+      "is_demo=true, onboarding_completed=true": "PASS"
+    },
+    "11. Demo user teste1@teste.com": {
+      "is_demo=true, resets to onboarding_completed=false on restart": "PASS"
+    },
+    "12. GET /api/onboarding/plans": {
+      "Returns 3 plans (starter, growth, enterprise)": "PASS"
+    },
+    "13. POST /api/onboarding/create-checkout": {
+      "Requires auth": "PASS",
+      "Returns Stripe checkout URL": "PASS"
+    },
+    "14. Onboarding flow steps": {
+      "account-setup returns standardized response": "PASS",
+      "password-reset returns standardized response": "PASS",
+      "modules-setup returns standardized response": "PASS",
+      "team-setup returns standardized response": "PASS",
+      "complete returns standardized response": "PASS"
+    },
+    "15. After completing onboarding": {
+      "GET /api/auth/permissions shows requires_onboarding=false": "PASS"
+    },
+    "16. POST /api/auth/logout": {
+      "Returns success, token blacklisted in DB": "PASS"
+    },
+    "17. CORS for lovable domains": {
+      "Accepts requests from *.lovable.app origins": "PASS",
+      "Accepts requests from *.lovable.dev origins": "PASS"
+    },
+    "18. Validation errors": {
+      "Returns {success: false, error: {code: VALIDATION_ERROR}}": "PASS"
+    }
+  },
+  "bugs_fixed": [
+    {
+      "file": "/app/backend/protected_users.py",
+      "issue": "Demo onboarding user (teste1@teste.com) password not resetting on server restart after being changed during onboarding tests",
+      "fix": "Added logic to reset password and onboarding_step for teste1@teste.com specifically on every server startup"
+    }
+  ]
+}

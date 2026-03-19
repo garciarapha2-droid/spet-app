@@ -23,12 +23,21 @@ PROTECTED_USERS = [
         "name": "Raphael Garcia",
         "role": "CEO",
         "password": "12345",
+        "onboarding_completed": True,
     },
     {
         "email": "teste@teste.com",
         "name": "Test User",
         "role": "USER",
         "password": "12345",
+        "onboarding_completed": True,
+    },
+    {
+        "email": "teste1@teste.com",
+        "name": "Demo Onboarding",
+        "role": "USER",
+        "password": "12345",
+        "onboarding_completed": False,  # resets on every startup
     },
 ]
 
@@ -68,20 +77,32 @@ async def ensure_protected_users(pool):
             existing = await conn.fetchrow("SELECT id, role FROM users WHERE email = $1", email)
 
             if existing:
-                # User exists — only ensure system flags are correct, NEVER overwrite password or delete
+                # User exists — ensure system flags are correct
                 user_id = existing["id"]
-                await conn.execute(
-                    "UPDATE users SET is_system_account = TRUE, status = 'active', onboarding_completed = TRUE WHERE id = $1",
-                    user_id,
-                )
-                logger.info(f"[PROTECTED] User exists: {email} (id={user_id}) — verified as system account")
+                onboarding_flag = user_def.get("onboarding_completed", True)
+                
+                # For demo onboarding user (teste1), also reset password on startup
+                # This ensures consistent test behavior
+                if email == "teste1@teste.com":
+                    hashed = hash_password(user_def["password"])
+                    await conn.execute(
+                        "UPDATE users SET is_system_account = TRUE, status = 'active', onboarding_completed = $1, onboarding_step = 0, password_hash = $2 WHERE id = $3",
+                        onboarding_flag, hashed, user_id,
+                    )
+                    logger.info(f"[PROTECTED] Demo onboarding user reset: {email} (id={user_id}) — password and onboarding reset")
+                else:
+                    await conn.execute(
+                        "UPDATE users SET is_system_account = TRUE, status = 'active', onboarding_completed = $1 WHERE id = $2",
+                        onboarding_flag, user_id,
+                    )
+                    logger.info(f"[PROTECTED] User exists: {email} (id={user_id}) — verified as system account")
             else:
                 # User missing — recreate
                 hashed = hash_password(user_def["password"])
                 row = await conn.fetchrow(
                     """INSERT INTO users (name, email, password_hash, role, is_system_account, status, onboarding_completed, created_at, updated_at)
-                       VALUES ($1, $2, $3, $4, TRUE, 'active', TRUE, $5, $5) RETURNING id""",
-                    user_def["name"], email, hashed, user_def["role"], now,
+                       VALUES ($1, $2, $3, $4, TRUE, 'active', $5, $6, $6) RETURNING id""",
+                    user_def["name"], email, hashed, user_def["role"], user_def.get("onboarding_completed", True), now,
                 )
                 user_id = row["id"]
                 logger.warning(f"[PROTECTED] RECREATED missing user: {email} (role={user_def['role']}, id={user_id})")

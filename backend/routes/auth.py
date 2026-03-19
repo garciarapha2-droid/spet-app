@@ -394,3 +394,125 @@ async def exchange_handoff(request: Request):
             "status": doc["user_status"],
         },
     }
+
+
+# ─── Additional endpoints for Lovable integration ───────────────────
+
+from utils.constants import DEMO_EMAILS
+
+
+@router.get("/permissions")
+async def get_permissions(user: dict = Depends(require_auth)):
+    """Return user's role, modules, venue access, and permission flags.
+
+    This is the primary endpoint Lovable uses to decide:
+    - which dashboard to show
+    - which modules are accessible
+    - whether to show paywall / onboarding
+    """
+    pool = get_postgres_pool()
+    db = get_mongo_db()
+
+    async with pool.acquire() as conn:
+        user_row = await conn.fetchrow(
+            "SELECT id, email, role, status, onboarding_completed, onboarding_step, plan_id FROM users WHERE id = $1::uuid",
+            user["sub"],
+        )
+        if not user_row:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        access_rows = await conn.fetch(
+            "SELECT company_id, venue_id, role, permissions FROM user_access WHERE user_id = $1::uuid",
+            user["sub"],
+        )
+
+    is_demo = user_row["email"] in DEMO_EMAILS
+    access = []
+
+    for r in access_rows:
+        venue_data = None
+        if r["venue_id"]:
+            venue_doc = await db.venues.find_one({"id": str(r["venue_id"])}, {"_id": 0})
+            venue_config = await db.venue_configs.find_one({"venue_id": str(r["venue_id"])}, {"_id": 0})
+            if venue_doc:
+                venue_data = {
+                    "venue_id": str(r["venue_id"]),
+                    "venue_name": venue_doc.get("name"),
+                    "venue_type": venue_doc.get("venue_type"),
+                    "modules": venue_config.get("modules", []) if venue_config else [],
+                }
+
+        perm = r["permissions"]
+        if isinstance(perm, str):
+            try:
+                perm = json.loads(perm)
+            except Exception:
+                perm = {}
+
+        access.append({
+            "company_id": str(r["company_id"]) if r["company_id"] else None,
+            "venue_id": str(r["venue_id"]) if r["venue_id"] else None,
+            "role": r["role"],
+            "permissions": perm,
+            "venue": venue_data,
+        })
+
+    return {
+        "user_id": str(user_row["id"]),
+        "email": user_row["email"],
+        "global_role": user_row.get("role", "USER"),
+        "status": user_row["status"],
+        "plan_id": user_row.get("plan_id"),
+        "onboarding_completed": user_row.get("onboarding_completed", False),
+        "onboarding_step": user_row.get("onboarding_step", 0),
+        "is_demo": is_demo,
+        "access": access,
+        "flags": {
+            "is_active": user_row["status"] == "active" or is_demo,
+            "requires_payment": user_row["status"] == "pending_payment" and not is_demo,
+            "requires_onboarding": not user_row.get("onboarding_completed", False),
+        },
+    }
+
+
+@router.get("/payment-status")
+async def get_payment_status(user: dict = Depends(require_auth)):
+    """Return user's payment/subscription status.
+
+    Lovable uses this to decide whether to show the paywall screen.
+    """
+    pool = get_postgres_pool()
+    db = get_mongo_db()
+
+    async with pool.acquire() as conn:
+        user_row = await conn.fetchrow(
+            "SELECT id, email, status, plan_id, onboarding_completed FROM users WHERE id = $1::uuid",
+            user["sub"],
+        )
+        if not user_row:
+            raise HTTPException(status_code=404, detail="User not found")
+
+    is_demo = user_row["email"] in DEMO_EMAILS
+
+    latest_tx = await db.payment_transactions.find_one(
+        {"user_id": str(user_row["id"])},
+        {"_id": 0},
+        sort=[("created_at", -1)],
+    )
+
+    return {
+        "user_id": str(user_row["id"]),
+        "status": user_row["status"],
+        "plan_id": user_row.get("plan_id"),
+        "is_active": user_row["status"] == "active" or is_demo,
+        "is_demo": is_demo,
+        "requires_payment": user_row["status"] == "pending_payment" and not is_demo,
+        "requires_onboarding": not user_row.get("onboarding_completed", False),
+        "last_payment": {
+            "stripe_session_id": latest_tx.get("stripe_session_id"),
+            "payment_status": latest_tx.get("payment_status"),
+            "amount": latest_tx.get("amount"),
+            "currency": latest_tx.get("currency"),
+            "created_at": latest_tx.get("created_at"),
+        } if latest_tx else None,
+    }
