@@ -4,6 +4,7 @@ from database import get_postgres_pool, get_mongo_db
 from config import get_settings
 from emergentintegrations.payments.stripe.checkout import StripeCheckout, CheckoutSessionRequest
 from utils.auth import hash_password
+from utils.constants import PLANS, PROMO_ACTIVE, resolve_plan_id, get_plan, get_checkout_price
 from datetime import datetime, timezone
 import json
 import uuid
@@ -13,28 +14,25 @@ router = APIRouter()
 logger = logging.getLogger("onboarding")
 settings = get_settings()
 
-PLANS = {
-    "starter": {
-        "name": "Starter", "price": 79.00, "currency": "usd", "interval": "month",
-        "features": ["1 Venue", "Pulse + Tap", "Basic KDS", "Up to 5 staff", "Email support"],
-    },
-    "growth": {
-        "name": "Growth", "price": 149.00, "currency": "usd", "interval": "month",
-        "features": ["3 Venues", "All Modules", "Advanced KDS + Bar", "Up to 20 staff", "Priority support", "Manager dashboard"],
-    },
-    "enterprise": {
-        "name": "Enterprise", "price": 299.00, "currency": "usd", "interval": "month",
-        "features": ["Unlimited Venues", "All Modules", "Custom integrations", "Unlimited staff", "Dedicated support", "CEO dashboard", "API access"],
-    },
-}
-
 
 @router.get("/plans")
 async def get_plans():
-    return {"plans": [
-        {"id": k, **{key: v[key] for key in ["name", "price", "currency", "interval", "features"]}}
-        for k, v in PLANS.items()
-    ]}
+    """Return available plans with official and promo pricing."""
+    plans_out = []
+    for pid, p in PLANS.items():
+        plans_out.append({
+            "id": pid,
+            "name": p["name"],
+            "price": p["price"],
+            "promo_price": p.get("promo_price"),
+            "promo_active": PROMO_ACTIVE,
+            "currency": p["currency"],
+            "interval": p["interval"],
+            "modules": p["modules"],
+            "limits": p["limits"],
+            "features": p["features"],
+        })
+    return {"plans": plans_out}
 
 
 @router.post("/create-checkout")
@@ -59,9 +57,10 @@ async def create_checkout(request: Request, user: dict = Depends(require_auth)):
             raise HTTPException(status_code=404, detail="User not found")
 
         if not plan_id:
-            plan_id = user_row.get("plan_id", "starter") or "starter"
+            plan_id = resolve_plan_id(user_row.get("plan_id", "core") or "core")
 
-        if plan_id not in PLANS:
+        plan = get_plan(plan_id)
+        if not plan:
             raise HTTPException(status_code=400, detail="Invalid plan")
 
         access = await conn.fetchrow(
@@ -70,9 +69,9 @@ async def create_checkout(request: Request, user: dict = Depends(require_auth)):
         )
         company_id = str(access["company_id"]) if access and access["company_id"] else ""
 
-    plan = PLANS[plan_id]
+    checkout_price = get_checkout_price(plan_id)
     success_url = f"{origin_url}/payment/success?session_id={{CHECKOUT_SESSION_ID}}"
-    cancel_url = f"{origin_url}/payment/pending"
+    cancel_url = f"{origin_url}/payment"
 
     stripe_checkout = StripeCheckout(
         api_key=settings.stripe_api_key,
@@ -80,7 +79,7 @@ async def create_checkout(request: Request, user: dict = Depends(require_auth)):
     )
 
     checkout_req = CheckoutSessionRequest(
-        amount=plan["price"],
+        amount=checkout_price,
         currency=plan["currency"],
         success_url=success_url,
         cancel_url=cancel_url,
@@ -88,6 +87,7 @@ async def create_checkout(request: Request, user: dict = Depends(require_auth)):
             "user_id": user["sub"],
             "company_id": company_id,
             "plan_id": plan_id,
+            "plan_name": plan["name"],
             "email": user_row["email"],
         },
     )
@@ -100,7 +100,9 @@ async def create_checkout(request: Request, user: dict = Depends(require_auth)):
         "company_id": company_id,
         "stripe_session_id": session.session_id,
         "plan_id": plan_id,
-        "amount": plan["price"],
+        "plan_name": plan["name"],
+        "amount": checkout_price,
+        "official_price": plan["price"],
         "currency": plan["currency"],
         "payment_status": "pending",
         "created_at": datetime.now(timezone.utc).isoformat(),

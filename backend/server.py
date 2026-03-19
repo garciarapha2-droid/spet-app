@@ -185,6 +185,18 @@ async def startup_event():
     await ensure_demo_tables()
     # STEP 3: Ensure complete demo ecosystem (guests, items, KDS, bar sessions)
     await ensure_demo_ecosystem()
+    # STEP 4: Create indexes for refresh tokens
+    db = get_mongo_db()
+    await db.refresh_tokens.create_index("token", unique=True)
+    await db.refresh_tokens.create_index("user_id")
+    await db.refresh_tokens.create_index("expires_at")
+    # Cleanup expired/revoked refresh tokens older than 7 days
+    from datetime import timedelta
+    cutoff = (datetime.now(timezone.utc) - timedelta(days=7)).isoformat()
+    await db.refresh_tokens.delete_many({"$or": [
+        {"revoked": True, "created_at": {"$lt": cutoff}},
+        {"expires_at": {"$lt": cutoff}},
+    ]})
     logger.info("SPETAP API started successfully")
 
 

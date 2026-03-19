@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException, Request, Depends
 from models.requests import LoginRequest, SignupRequest
-from utils.auth import hash_password, verify_password, create_access_token
+from utils.auth import hash_password, verify_password, create_access_token, create_refresh_token, REFRESH_TOKEN_DAYS
+from utils.constants import PLANS, DEMO_EMAILS, resolve_plan_id, get_plan, get_checkout_price
 from middleware.auth_middleware import require_auth
 from database import get_postgres_pool, get_mongo_db
 from config import get_settings
@@ -15,19 +16,13 @@ router = APIRouter()
 logger = logging.getLogger("auth")
 settings = get_settings()
 
-PROTECTED_SYSTEM_ACCOUNTS = {"teste@teste.com", "garcia.rapha2@gmail.com"}
-
-PLANS = {
-    "starter": {"name": "Starter", "price": 79.00, "currency": "usd"},
-    "growth": {"name": "Growth", "price": 149.00, "currency": "usd"},
-    "enterprise": {"name": "Enterprise", "price": 299.00, "currency": "usd"},
-}
+PROTECTED_SYSTEM_ACCOUNTS = {"teste@teste.com", "garcia.rapha2@gmail.com", "teste1@teste.com"}
 
 HANDOFF_TTL_SECONDS = 60
 
 
-def _build_token_and_response(user_row, access_roles, checkout_url=None):
-    """Build JWT + response for login/signup."""
+async def _build_token_and_response(user_row, access_roles, checkout_url=None):
+    """Build JWT + refresh token + response for login/signup."""
     user_role = user_row.get("role", "USER") if hasattr(user_row, "get") else "USER"
     status = user_row.get("status", "active") if hasattr(user_row, "get") else "active"
     onboarding = user_row.get("onboarding_completed", False) if hasattr(user_row, "get") else False
@@ -40,6 +35,18 @@ def _build_token_and_response(user_row, access_roles, checkout_url=None):
         "status": status,
     }
     access_token = create_access_token(token_data)
+
+    # Generate and store refresh token
+    refresh_token = create_refresh_token()
+    db = get_mongo_db()
+    now = datetime.now(timezone.utc)
+    await db.refresh_tokens.insert_one({
+        "token": refresh_token,
+        "user_id": str(user_row["id"]),
+        "created_at": now.isoformat(),
+        "expires_at": (now + timedelta(days=REFRESH_TOKEN_DAYS)).isoformat(),
+        "revoked": False,
+    })
 
     if status == "pending_payment":
         next_route = "/payment"
@@ -54,6 +61,7 @@ def _build_token_and_response(user_row, access_roles, checkout_url=None):
 
     response = {
         "access_token": access_token,
+        "refresh_token": refresh_token,
         "token_type": "bearer",
         "user": {
             "id": str(user_row["id"]),
@@ -87,7 +95,11 @@ async def signup(request: SignupRequest):
             raise HTTPException(status_code=400, detail="Email already registered")
 
         hashed_password = hash_password(request.password)
-        plan_id = request.plan_id or "starter"
+        plan_id = resolve_plan_id(request.plan_id or "core")
+        plan = get_plan(plan_id)
+        if not plan:
+            plan_id = "core"
+            plan = PLANS["core"]
 
         user_row = await conn.fetchrow(
             """INSERT INTO users (name, email, password_hash, status, plan_id, onboarding_completed, onboarding_step, created_at, updated_at)
@@ -115,9 +127,9 @@ async def signup(request: SignupRequest):
         )
 
     checkout_url = None
-    if plan_id in PLANS and request.origin_url:
+    if plan and request.origin_url:
         try:
-            plan = PLANS[plan_id]
+            checkout_price = get_checkout_price(plan_id)
             success_url = f"{request.origin_url}/payment/success?session_id={{CHECKOUT_SESSION_ID}}"
             cancel_url = f"{request.origin_url}/signup"
 
@@ -127,7 +139,7 @@ async def signup(request: SignupRequest):
             )
 
             checkout_req = CheckoutSessionRequest(
-                amount=plan["price"],
+                amount=checkout_price,
                 currency=plan["currency"],
                 success_url=success_url,
                 cancel_url=cancel_url,
@@ -148,7 +160,9 @@ async def signup(request: SignupRequest):
                 "company_id": str(company_id),
                 "stripe_session_id": session.session_id,
                 "plan_id": plan_id,
-                "amount": plan["price"],
+                "plan_name": plan["name"],
+                "amount": checkout_price,
+                "official_price": plan["price"],
                 "currency": plan["currency"],
                 "payment_status": "pending",
                 "created_at": now.isoformat(),
@@ -176,7 +190,7 @@ async def signup(request: SignupRequest):
     except Exception as e:
         logger.error(f"[SIGNUP] Lead capture failed: {e}")
 
-    return _build_token_and_response(user_row, access_roles, checkout_url)
+    return await _build_token_and_response(user_row, access_roles, checkout_url)
 
 
 @router.post("/login")
@@ -218,11 +232,11 @@ async def login(request: LoginRequest):
         for r in rows
     ]
 
-    return _build_token_and_response(user, access_roles)
+    return await _build_token_and_response(user, access_roles)
 
 
 @router.post("/logout")
-async def logout(user: dict = Depends(require_auth)):
+async def logout(request: Request, user: dict = Depends(require_auth)):
     db = get_mongo_db()
     token_exp = user.get("exp")
     await db.token_blacklist.insert_one({
@@ -230,7 +244,79 @@ async def logout(user: dict = Depends(require_auth)):
         "exp": token_exp,
         "invalidated_at": datetime.now(timezone.utc).isoformat(),
     })
+    # Revoke refresh token if provided in body
+    try:
+        body = await request.json()
+        rt = body.get("refresh_token")
+        if rt:
+            await db.refresh_tokens.update_one(
+                {"token": rt, "user_id": user["sub"]},
+                {"$set": {"revoked": True}},
+            )
+    except Exception:
+        pass
     return {"message": "Logged out successfully"}
+
+
+@router.post("/refresh-token")
+async def refresh_token(request: Request):
+    """Exchange a valid refresh token for a new access_token + refresh_token pair.
+
+    Body: { "refresh_token": "..." }
+    The old refresh token is revoked (single-use rotation).
+    """
+    body = await request.json()
+    rt = body.get("refresh_token")
+    if not rt:
+        raise HTTPException(status_code=400, detail="refresh_token is required")
+
+    db = get_mongo_db()
+    now = datetime.now(timezone.utc)
+
+    doc = await db.refresh_tokens.find_one({"token": rt, "revoked": False})
+    if not doc:
+        raise HTTPException(status_code=401, detail="Invalid or revoked refresh token")
+
+    expires_at = datetime.fromisoformat(doc["expires_at"])
+    if now > expires_at:
+        await db.refresh_tokens.update_one({"_id": doc["_id"]}, {"$set": {"revoked": True}})
+        raise HTTPException(status_code=401, detail="Refresh token expired")
+
+    user_id = doc["user_id"]
+
+    # Revoke old refresh token (rotation)
+    await db.refresh_tokens.update_one({"_id": doc["_id"]}, {"$set": {"revoked": True}})
+
+    # Fetch fresh user data
+    pool = get_postgres_pool()
+    async with pool.acquire() as conn:
+        user_row = await conn.fetchrow(
+            "SELECT id, name, email, role, status, onboarding_completed, created_at FROM users WHERE id = $1::uuid",
+            user_id,
+        )
+        if not user_row:
+            raise HTTPException(status_code=401, detail="User not found")
+
+        if user_row["status"] not in ("active", "pending_payment"):
+            raise HTTPException(status_code=403, detail="Account suspended")
+
+        rows = await conn.fetch(
+            "SELECT user_id, company_id, venue_id, role, permissions FROM user_access WHERE user_id = $1",
+            user_row["id"],
+        )
+
+    access_roles = [
+        {
+            "user_id": str(r["user_id"]),
+            "company_id": str(r["company_id"]) if r["company_id"] else None,
+            "venue_id": str(r["venue_id"]) if r["venue_id"] else None,
+            "role": r["role"],
+            "permissions": json.loads(r["permissions"]) if isinstance(r["permissions"], str) else r["permissions"],
+        }
+        for r in rows
+    ]
+
+    return await _build_token_and_response(user_row, access_roles)
 
 
 @router.get("/me")
@@ -398,8 +484,6 @@ async def exchange_handoff(request: Request):
 
 # ─── Additional endpoints for Lovable integration ───────────────────
 
-from utils.constants import DEMO_EMAILS
-
 
 @router.get("/permissions")
 async def get_permissions(user: dict = Depends(require_auth)):
@@ -427,6 +511,9 @@ async def get_permissions(user: dict = Depends(require_auth)):
         )
 
     is_demo = user_row["email"] in DEMO_EMAILS
+    raw_plan_id = user_row.get("plan_id")
+    plan_id = resolve_plan_id(raw_plan_id) if raw_plan_id else None
+    plan = get_plan(plan_id) if plan_id else None
     access = []
 
     for r in access_rows:
@@ -462,7 +549,8 @@ async def get_permissions(user: dict = Depends(require_auth)):
         "email": user_row["email"],
         "global_role": user_row.get("role", "USER"),
         "status": user_row["status"],
-        "plan_id": user_row.get("plan_id"),
+        "plan_id": plan_id,
+        "plan": plan["name"] if plan else None,
         "onboarding_completed": user_row.get("onboarding_completed", False),
         "onboarding_step": user_row.get("onboarding_step", 0),
         "is_demo": is_demo,
@@ -477,10 +565,7 @@ async def get_permissions(user: dict = Depends(require_auth)):
 
 @router.get("/payment-status")
 async def get_payment_status(user: dict = Depends(require_auth)):
-    """Return user's payment/subscription status.
-
-    Lovable uses this to decide whether to show the paywall screen.
-    """
+    """Return user's payment/subscription status."""
     pool = get_postgres_pool()
     db = get_mongo_db()
 
@@ -493,6 +578,9 @@ async def get_payment_status(user: dict = Depends(require_auth)):
             raise HTTPException(status_code=404, detail="User not found")
 
     is_demo = user_row["email"] in DEMO_EMAILS
+    raw_plan_id = user_row.get("plan_id")
+    plan_id = resolve_plan_id(raw_plan_id) if raw_plan_id else None
+    plan = get_plan(plan_id) if plan_id else None
 
     latest_tx = await db.payment_transactions.find_one(
         {"user_id": str(user_row["id"])},
@@ -503,7 +591,8 @@ async def get_payment_status(user: dict = Depends(require_auth)):
     return {
         "user_id": str(user_row["id"]),
         "status": user_row["status"],
-        "plan_id": user_row.get("plan_id"),
+        "plan_id": plan_id,
+        "plan": plan["name"] if plan else None,
         "is_active": user_row["status"] == "active" or is_demo,
         "is_demo": is_demo,
         "requires_payment": user_row["status"] == "pending_payment" and not is_demo,
