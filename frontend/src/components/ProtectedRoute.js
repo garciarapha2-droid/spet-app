@@ -2,6 +2,20 @@ import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
+/*
+ * PRODUCTION: Set REACT_APP_LOVABLE_LOGIN_URL to redirect to Lovable.
+ * PREVIEW/DEV: Leave it unset — falls back to internal /login page.
+ */
+const LOVABLE_LOGIN = process.env.REACT_APP_LOVABLE_LOGIN_URL;
+
+const RedirectToLogin = () => {
+  if (LOVABLE_LOGIN) {
+    window.location.href = LOVABLE_LOGIN;
+    return null;
+  }
+  return <Navigate to="/login" replace />;
+};
+
 export const ProtectedRoute = ({ children }) => {
   const { isAuthenticated, loading } = useAuth();
 
@@ -14,7 +28,7 @@ export const ProtectedRoute = ({ children }) => {
   }
 
   if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
+    return <RedirectToLogin />;
   }
 
   return children;
@@ -32,7 +46,7 @@ export const CEORoute = ({ children }) => {
   }
 
   if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
+    return <RedirectToLogin />;
   }
 
   if (!isCEO) {
