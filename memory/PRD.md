@@ -18,6 +18,20 @@ All `/api/*` endpoints return:
 { "success": true|false, "data": {...}|null, "error": null|{"code":"...", "message":"..."} }
 ```
 
+## Product Plans (Approved)
+| ID | Name | Official Price | Early Price | Modules | Limits |
+|---|---|---|---|---|---|
+| `core` | Spet Core | $79/mo | $39/mo | Pulse | 1 venue, 5 staff |
+| `flow` | Spet Flow | $149/mo | $59/mo | Pulse, Tap, Table | 3 venues, 20 staff |
+| `sync` | Spet Sync | $299/mo | $99/mo | Pulse, Tap, Table, KDS | 10 venues, 50 staff |
+| `os` | Spet OS | $499/mo | $149/mo | All modules | Unlimited |
+
+## Token Configuration
+| Token | Lifetime |
+|---|---|
+| `access_token` | 1 hour |
+| `refresh_token` | 30 days (single-use rotation) |
+
 ## Demo Accounts
 | Email | Password | Role | Behavior |
 |---|---|---|---|
@@ -26,17 +40,17 @@ All `/api/*` endpoints return:
 | teste1@teste.com | 12345 | USER | Demo onboarding (resets on restart) |
 
 ## Key Endpoints
-- Auth: signup, login, logout, /me, /permissions, /payment-status, handoff
+- Auth: signup, login, logout, refresh-token, /me, /permissions, /payment-status, handoff
 - Onboarding: plans, create-checkout, checkout/status, account-setup, password-reset, modules-setup, team-setup, complete
 - Webhook: /api/webhook/stripe (user activation)
 - Venue ops: pulse, tap, table, kds, manager, owner, ceo
 
 ## Tech Stack
 - FastAPI, PostgreSQL (AWS RDS), MongoDB, Stripe, emergentintegrations
-- JWT auth, RBAC middleware, paywall enforcement
+- JWT auth (access + refresh tokens), RBAC middleware, paywall enforcement
 - CORS: *.lovable.app, *.lovable.dev, localhost
 
-## Completed (Phase 1)
+## Completed
 - [x] Signup → pending_payment → Stripe checkout
 - [x] Stripe webhook → user activation
 - [x] Multi-step onboarding (5 steps)
@@ -47,11 +61,18 @@ All `/api/*` endpoints return:
 - [x] /permissions endpoint with flags for frontend routing
 - [x] /payment-status endpoint
 - [x] API documentation (/app/API_DOCS.md)
-- [x] 27/27 tests passed (iteration 61)
+- [x] Plan naming & pricing: Spet Core/Flow/Sync/OS (approved)
+- [x] Refresh token system (single-use rotation, 30-day lifetime)
+- [x] 15/15 refresh token tests passed (iteration 62)
+- [x] 27/27 API tests passed (iteration 61)
+
+## Current Phase: Integration & Stability
+Focus: supporting Lovable integration, endpoint stability, real usage
 
 ## Backlog
-- [ ] Phase 2: Premium Design System (from Lovable)
-- [ ] Phase 3: Full role-specific dashboards
-- [ ] Team invite system (currently placeholder)
 - [ ] Subscription management (upgrade/downgrade)
+- [ ] Team invite system (currently placeholder)
+- [ ] Role-specific dashboard APIs
 - [ ] Push notifications / PWA
+- [ ] Frontend directory cleanup (deprecated)
+- [ ] DB consolidation (MongoDB → PostgreSQL)
