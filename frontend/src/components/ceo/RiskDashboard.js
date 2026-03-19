@@ -86,9 +86,9 @@ export default function RiskDashboard() {
                   <div key={s.name} className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <div className="w-3 h-3 rounded-full" style={{ backgroundColor: s.color }} />
-                      <span className="text-[11px] font-semibold text-slate-600">{s.name}</span>
+                      <span className="text-[11px] font-semibold text-foreground/80">{s.name}</span>
                     </div>
-                    <span className="text-[12px] font-bold text-slate-800">{s.value}</span>
+                    <span className="text-[12px] font-bold text-foreground">{s.value}</span>
                   </div>
                 ))}
               </div>
@@ -109,13 +109,13 @@ export default function RiskDashboard() {
                 const types = {};
                 alerts.forEach(a => { types[a.type] = (types[a.type] || 0) + 1; });
                 return Object.entries(types).map(([type, count]) => (
-                  <div key={type} className="flex items-center justify-between py-2.5 border-b border-slate-50 last:border-0">
-                    <span className="text-[11px] text-slate-600 capitalize">{type.replace(/_/g, ' ')}</span>
+                  <div key={type} className="flex items-center justify-between py-2.5 border-b border-border/50 last:border-0">
+                    <span className="text-[11px] text-foreground/70 capitalize">{type.replace(/_/g, ' ')}</span>
                     <div className="flex items-center gap-2">
-                      <div className="w-16 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                      <div className="w-16 h-1.5 bg-muted rounded-full overflow-hidden">
                         <div className="h-full rounded-full bg-amber-400 transition-all" style={{ width: `${(count / alerts.length) * 100}%` }} />
                       </div>
-                      <span className="text-[11px] font-bold text-slate-800 w-6 text-right">{count}</span>
+                      <span className="text-[11px] font-bold text-foreground w-6 text-right">{count}</span>
                     </div>
                   </div>
                 ));
@@ -143,8 +143,8 @@ export default function RiskDashboard() {
                     <AlertTriangle className={`h-4 w-4 ${isCritical ? 'text-red-500' : 'text-amber-500'}`} />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-[12px] font-semibold text-slate-800">{a.message}</p>
-                    <p className="text-[10px] text-slate-400">{a.type?.replace(/_/g, ' ')} &middot; {a.venue_name}</p>
+                    <p className="text-[12px] font-semibold text-foreground">{a.message}</p>
+                    <p className="text-[10px] text-muted-foreground">{a.type?.replace(/_/g, ' ')} &middot; {a.venue_name}</p>
                   </div>
                   <span className={`text-[9px] font-bold px-2 py-1 rounded-full flex-shrink-0 ${isCritical ? 'bg-red-100 text-red-600' : 'bg-amber-100 text-amber-600'}`}>{a.severity}</span>
                 </div>

@@ -2,12 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { ceoAPI } from '../../services/api';
 import { toast } from 'sonner';
 import {
-  AreaChart, Area, BarChart, Bar, LineChart, Line,
-  XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip, Cell, Legend
+  AreaChart, Area, BarChart, Bar,
+  XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip
 } from 'recharts';
 import {
   DollarSign, TrendingUp, Users, Activity, Target, Zap,
-  ArrowUpRight, ArrowDownRight, BarChart3, Percent
+  ArrowUpRight, ArrowDownRight, BarChart3
 } from 'lucide-react';
 import { MetricCard, ChartCard, PageHeader, DashboardSkeleton, ChartTooltip, MiniStat, EmptyChart } from './shared';
 
@@ -41,39 +41,36 @@ export default function OverviewDashboard() {
       </div>
 
       {/* Growth Banner */}
-      <div className="bg-white border border-slate-200/70 rounded-xl p-5 mb-4">
+      <div className="bg-card border border-border rounded-xl p-5 mb-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-5">
-            <div className={`w-16 h-16 rounded-2xl flex items-center justify-center ${m.growth_pct >= 0 ? 'bg-emerald-50' : 'bg-red-50'}`}>
+            <div className={`w-16 h-16 rounded-2xl flex items-center justify-center ${m.growth_pct >= 0 ? 'bg-emerald-500/10' : 'bg-red-500/10'}`}>
               {m.growth_pct >= 0 ? <ArrowUpRight className="h-8 w-8 text-emerald-600" /> : <ArrowDownRight className="h-8 w-8 text-red-500" />}
             </div>
             <div>
-              <p className="text-[11px] text-slate-400 font-medium uppercase tracking-wider">Month-over-Month Growth</p>
+              <p className="text-[11px] font-medium uppercase tracking-wider" style={{ color: 'hsl(var(--text-tertiary))' }}>Month-over-Month Growth</p>
               <p className={`text-4xl font-black tracking-tight ${m.growth_pct >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
                 {m.growth_pct > 0 ? '+' : ''}{m.growth_pct || 0}%
               </p>
             </div>
           </div>
           <div className="flex gap-8">
-            <div className="text-right">
-              <p className="text-[10px] text-slate-400 uppercase tracking-wider font-medium">ARR</p>
-              <p className="text-xl font-bold text-slate-800">${(m.arr || 0).toLocaleString()}</p>
-            </div>
-            <div className="text-right">
-              <p className="text-[10px] text-slate-400 uppercase tracking-wider font-medium">Revenue YTD</p>
-              <p className="text-xl font-bold text-slate-800">${(m.revenue_ytd || 0).toLocaleString()}</p>
-            </div>
-            <div className="text-right">
-              <p className="text-[10px] text-slate-400 uppercase tracking-wider font-medium">Today</p>
-              <p className="text-xl font-bold text-emerald-600">${(m.revenue_today || 0).toLocaleString()}</p>
-            </div>
+            {[
+              { label: 'ARR', value: `$${(m.arr || 0).toLocaleString()}` },
+              { label: 'Revenue YTD', value: `$${(m.revenue_ytd || 0).toLocaleString()}` },
+              { label: 'Today', value: `$${(m.revenue_today || 0).toLocaleString()}`, color: '#059669' },
+            ].map(item => (
+              <div key={item.label} className="text-right">
+                <p className="text-[10px] uppercase tracking-wider font-medium" style={{ color: 'hsl(var(--text-tertiary))' }}>{item.label}</p>
+                <p className="text-xl font-bold" style={{ color: item.color || 'hsl(var(--foreground))' }}>{item.value}</p>
+              </div>
+            ))}
           </div>
         </div>
       </div>
 
       {/* Charts Row */}
       <div className="grid grid-cols-2 gap-4 mb-4">
-        {/* MRR Growth Line */}
         <ChartCard title="MRR Growth" subtitle="Monthly recurring revenue trend">
           {charts.mrr_trend?.length > 0 ? (
             <ResponsiveContainer width="100%" height={240}>
@@ -84,9 +81,9 @@ export default function OverviewDashboard() {
                     <stop offset="100%" stopColor="#10b981" stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                <XAxis dataKey="month" tick={{ fontSize: 10, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fontSize: 10, fill: '#94a3b8' }} axisLine={false} tickLine={false} tickFormatter={v => `$${v}`} />
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis dataKey="month" tick={{ fontSize: 10, fill: 'hsl(var(--text-tertiary))' }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 10, fill: 'hsl(var(--text-tertiary))' }} axisLine={false} tickLine={false} tickFormatter={v => `$${v}`} />
                 <Tooltip content={<ChartTooltip />} />
                 <Area type="monotone" dataKey="value" name="MRR" stroke="#10b981" strokeWidth={2.5} fill="url(#mrrGrad)" dot={{ r: 3, fill: '#10b981', strokeWidth: 0 }} />
               </AreaChart>
@@ -94,7 +91,6 @@ export default function OverviewDashboard() {
           ) : <EmptyChart icon={BarChart3} message="MRR data will appear as revenue flows in" />}
         </ChartCard>
 
-        {/* Customers Growth */}
         <ChartCard title="Customer Growth" subtitle="New signups over time">
           {charts.customer_trend?.length > 0 ? (
             <ResponsiveContainer width="100%" height={240}>
@@ -105,9 +101,9 @@ export default function OverviewDashboard() {
                     <stop offset="100%" stopColor="#3b82f6" stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                <XAxis dataKey="month" tick={{ fontSize: 10, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fontSize: 10, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis dataKey="month" tick={{ fontSize: 10, fill: 'hsl(var(--text-tertiary))' }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 10, fill: 'hsl(var(--text-tertiary))' }} axisLine={false} tickLine={false} />
                 <Tooltip content={<ChartTooltip formatValue={v => v} />} />
                 <Area type="monotone" dataKey="value" name="Customers" stroke="#3b82f6" strokeWidth={2.5} fill="url(#custGrad)" dot={{ r: 3, fill: '#3b82f6', strokeWidth: 0 }} />
               </AreaChart>
@@ -122,9 +118,9 @@ export default function OverviewDashboard() {
           {charts.revenue_breakdown?.length > 0 ? (
             <ResponsiveContainer width="100%" height={220}>
               <BarChart data={charts.revenue_breakdown} barGap={2}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                <XAxis dataKey="month" tick={{ fontSize: 10, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fontSize: 10, fill: '#94a3b8' }} axisLine={false} tickLine={false} tickFormatter={v => `$${v}`} />
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis dataKey="month" tick={{ fontSize: 10, fill: 'hsl(var(--text-tertiary))' }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 10, fill: 'hsl(var(--text-tertiary))' }} axisLine={false} tickLine={false} tickFormatter={v => `$${v}`} />
                 <Tooltip content={<ChartTooltip />} />
                 <Bar dataKey="new_mrr" name="New MRR" fill="#3b82f6" radius={[3, 3, 0, 0]} stackId="stack" />
                 <Bar dataKey="expansion" name="Expansion" fill="#10b981" radius={[3, 3, 0, 0]} stackId="stack" />
@@ -132,14 +128,15 @@ export default function OverviewDashboard() {
               </BarChart>
             </ResponsiveContainer>
           ) : <EmptyChart icon={BarChart3} />}
-          <div className="flex items-center justify-center gap-6 mt-2 pt-2 border-t border-slate-100">
-            <span className="flex items-center gap-1.5 text-[10px] text-slate-500 font-medium"><span className="w-2.5 h-2.5 rounded-sm bg-blue-500" />New</span>
-            <span className="flex items-center gap-1.5 text-[10px] text-slate-500 font-medium"><span className="w-2.5 h-2.5 rounded-sm bg-emerald-500" />Expansion</span>
-            <span className="flex items-center gap-1.5 text-[10px] text-slate-500 font-medium"><span className="w-2.5 h-2.5 rounded-sm bg-red-500" />Churn</span>
+          <div className="flex items-center justify-center gap-6 mt-2 pt-2 border-t border-border/50">
+            {[['New', '#3b82f6'], ['Expansion', '#10b981'], ['Churn', '#ef4444']].map(([n, c]) => (
+              <span key={n} className="flex items-center gap-1.5 text-[10px] text-muted-foreground font-medium">
+                <span className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: c }} />{n}
+              </span>
+            ))}
           </div>
         </ChartCard>
 
-        {/* Quick Stats */}
         <ChartCard title="Quick Stats" subtitle="Key indicators">
           <div className="space-y-0">
             <MiniStat label="Total Leads" value={m.total_leads || 0} />

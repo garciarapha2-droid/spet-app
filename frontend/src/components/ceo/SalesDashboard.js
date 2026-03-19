@@ -133,24 +133,24 @@ export default function SalesDashboard() {
                 const cards = filtered.filter(l => l.status === status);
                 return (
                   <div key={status}
-                    className="flex-shrink-0 w-[210px] min-h-[400px] rounded-xl border border-slate-200/60 bg-slate-50/40"
+                    className="flex-shrink-0 w-[210px] min-h-[400px] rounded-xl border border-border bg-muted/30"
                     onDragOver={e => handleDragOver(e, status)} onDrop={() => handleDrop(status)} data-testid={`kanban-col-${status}`}>
-                    <div className="px-3 py-2.5 border-b border-slate-200/40 flex items-center justify-between">
+                    <div className="px-3 py-2.5 border-b border-border/40 flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <div className="w-2 h-2 rounded-full" style={{ backgroundColor: cfg.dot }} />
-                        <span className="text-[11px] font-bold text-slate-700">{cfg.label}</span>
+                        <span className="text-[11px] font-bold text-foreground/80">{cfg.label}</span>
                       </div>
-                      <span className="text-[10px] font-bold text-slate-400 bg-white px-1.5 py-0.5 rounded-md border border-slate-100">{cards.length}</span>
+                      <span className="text-[10px] font-bold text-muted-foreground bg-card px-1.5 py-0.5 rounded-md border border-border">{cards.length}</span>
                     </div>
                     <div className="p-1.5 space-y-1.5">
                       {cards.map(lead => (
                         <div key={lead.id} draggable onDragStart={() => handleDragStart(lead)}
                           onClick={() => { setSelectedLead(lead); setNoteText(lead.notes || ''); }}
-                          className="bg-white border border-slate-200/50 rounded-lg p-3 cursor-pointer hover:shadow-md hover:border-slate-300 transition-all duration-150 group"
+                          className="bg-card border border-border/50 rounded-lg p-3 cursor-pointer hover:shadow-md hover:border-border transition-all duration-150 group"
                           data-testid={`kanban-card-${lead.id}`}>
                           <div className="flex items-start justify-between mb-1">
-                            <p className="text-[11px] font-semibold text-slate-800 leading-tight truncate max-w-[145px]">{lead.full_name}</p>
-                            <Grip className="h-3 w-3 text-slate-200 group-hover:text-slate-400 transition-colors flex-shrink-0" />
+                            <p className="text-[11px] font-semibold text-foreground leading-tight truncate max-w-[145px]">{lead.full_name}</p>
+                            <Grip className="h-3 w-3 text-muted-foreground/30 group-hover:text-muted-foreground transition-colors flex-shrink-0" />
                           </div>
                           {lead.company_name !== 'N/A' && (
                             <p className="text-[9px] text-slate-400 mb-2 flex items-center gap-1"><Building2 className="h-2.5 w-2.5" />{lead.company_name}</p>
@@ -159,11 +159,11 @@ export default function SalesDashboard() {
                             <span className="text-[8px] font-bold px-1.5 py-0.5 rounded-full" style={{ backgroundColor: SOURCE_CFG[lead.source]?.bg, color: SOURCE_CFG[lead.source]?.text }}>{lead.source}</span>
                             {lead.product_interest && <span className="text-[8px] font-medium px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-500">{lead.product_interest}</span>}
                           </div>
-                          <div className="flex items-center justify-between pt-2 border-t border-slate-100/80">
-                            <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded-md ${lead.payment_status === 'paid' ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-50 text-slate-400'}`}>
+                          <div className="flex items-center justify-between pt-2 border-t border-border/40">
+                            <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded-md ${lead.payment_status === 'paid' ? 'bg-emerald-500/10 text-emerald-600' : 'bg-muted text-muted-foreground'}`}>
                               {lead.payment_status === 'paid' ? 'Paid' : lead.payment_status}
                             </span>
-                            <span className="text-[8px] text-slate-400 flex items-center gap-1"><Clock className="h-2.5 w-2.5" />{lead.created_at ? new Date(lead.created_at).toLocaleDateString('en', { month: 'short', day: 'numeric' }) : ''}</span>
+                            <span className="text-[8px] flex items-center gap-1" style={{ color: 'hsl(var(--text-tertiary))' }}><Clock className="h-2.5 w-2.5" />{lead.created_at ? new Date(lead.created_at).toLocaleDateString('en', { month: 'short', day: 'numeric' }) : ''}</span>
                           </div>
                         </div>
                       ))}
@@ -174,20 +174,20 @@ export default function SalesDashboard() {
               })}
             </div>
           ) : (
-            <div className="bg-white border border-slate-200/70 rounded-xl overflow-hidden" data-testid="leads-table">
+            <div className="bg-card border border-border rounded-xl overflow-hidden" data-testid="leads-table">
               <table className="w-full">
                 <thead>
-                  <tr className="border-b border-slate-100 bg-slate-50/70">
+                  <tr className="border-b border-border bg-muted/50">
                     {['Name', 'Source', 'Interest', 'Status', 'Payment', 'Company', 'Date'].map(h => (
-                      <th key={h} className="text-left px-4 py-2.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider">{h}</th>
+                      <th key={h} className="text-left px-4 py-2.5 text-[10px] font-bold uppercase tracking-wider" style={{ color: 'hsl(var(--text-tertiary))' }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
                   {filtered.map(l => (
                     <tr key={l.id} onClick={() => { setSelectedLead(l); setNoteText(l.notes || ''); }}
-                      className="border-b border-slate-50 hover:bg-slate-50/80 cursor-pointer transition-colors" data-testid={`lead-row-${l.id}`}>
-                      <td className="px-4 py-3"><p className="text-[11px] font-semibold text-slate-800">{l.full_name}</p><p className="text-[10px] text-slate-400">{l.email}</p></td>
+                      className="border-b border-border/50 hover:bg-muted/50 cursor-pointer transition-colors" data-testid={`lead-row-${l.id}`}>
+                      <td className="px-4 py-3"><p className="text-[11px] font-semibold text-foreground">{l.full_name}</p><p className="text-[10px] text-muted-foreground">{l.email}</p></td>
                       <td className="px-4 py-3"><span className="text-[9px] font-bold px-2 py-0.5 rounded-full" style={{ backgroundColor: SOURCE_CFG[l.source]?.bg, color: SOURCE_CFG[l.source]?.text }}>{l.source}</span></td>
                       <td className="px-4 py-3 text-[11px] text-slate-500">{l.product_interest || '-'}</td>
                       <td className="px-4 py-3"><span className="text-[9px] font-bold px-2 py-0.5 rounded-full" style={{ backgroundColor: STATUS_CFG[l.status]?.bg, color: STATUS_CFG[l.status]?.text }}>{l.status}</span></td>
@@ -253,43 +253,43 @@ function LeadPanel({ lead, noteText, setNoteText, saving, onClose, onUpdateField
   return (
     <>
       <div className={`fixed inset-0 bg-black/15 z-40 transition-opacity duration-250 ${animate ? 'opacity-100' : 'opacity-0'}`} onClick={close} />
-      <div className={`fixed right-0 top-0 bottom-0 w-[420px] bg-white border-l border-slate-200 z-50 shadow-xl overflow-y-auto transition-transform duration-250 ease-out ${animate ? 'translate-x-0' : 'translate-x-full'}`} data-testid="lead-panel">
-        <div className="sticky top-0 bg-white border-b border-slate-100 px-5 py-3.5 flex items-center justify-between z-10">
-          <h3 className="font-semibold text-[15px] text-slate-900">Lead Details</h3>
-          <button onClick={close} className="p-1.5 rounded-md hover:bg-slate-100 transition-colors" data-testid="close-panel"><X className="h-4 w-4 text-slate-400" /></button>
+      <div className={`fixed right-0 top-0 bottom-0 w-[420px] bg-card border-l border-border z-50 shadow-xl overflow-y-auto transition-transform duration-250 ease-out ${animate ? 'translate-x-0' : 'translate-x-full'}`} data-testid="lead-panel">
+        <div className="sticky top-0 bg-card border-b border-border px-5 py-3.5 flex items-center justify-between z-10">
+          <h3 className="font-semibold text-[15px] text-foreground">Lead Details</h3>
+          <button onClick={close} className="p-1.5 rounded-md hover:bg-muted transition-colors" data-testid="close-panel"><X className="h-4 w-4 text-muted-foreground" /></button>
         </div>
         <div className="p-5 space-y-5">
           <div>
-            <p className="text-lg font-bold text-slate-900">{lead.full_name}</p>
+            <p className="text-lg font-bold text-foreground">{lead.full_name}</p>
             <div className="mt-2 space-y-1.5">
-              <div className="flex items-center gap-2 text-[12px] text-slate-500"><Mail className="h-3.5 w-3.5 text-slate-400" />{lead.email}</div>
-              {lead.phone && <div className="flex items-center gap-2 text-[12px] text-slate-500"><Phone className="h-3.5 w-3.5 text-slate-400" />{lead.phone}</div>}
+              <div className="flex items-center gap-2 text-[12px] text-muted-foreground"><Mail className="h-3.5 w-3.5" />{lead.email}</div>
+              {lead.phone && <div className="flex items-center gap-2 text-[12px] text-muted-foreground"><Phone className="h-3.5 w-3.5" />{lead.phone}</div>}
             </div>
           </div>
           <div className="grid grid-cols-2 gap-2">
             {[{ l: 'Source', v: lead.source }, { l: 'Interest', v: lead.product_interest || '-' }, { l: 'Company', v: lead.company_name }, { l: 'Account', v: lead.has_account ? 'Created' : 'None' }].map(i => (
-              <div key={i.l} className="bg-slate-50 rounded-xl p-3">
-                <p className="text-[9px] text-slate-400 uppercase tracking-[0.1em] font-bold mb-1">{i.l}</p>
-                <p className="text-[12px] font-semibold text-slate-700">{i.v}</p>
+              <div key={i.l} className="bg-muted rounded-xl p-3">
+                <p className="text-[9px] uppercase tracking-[0.1em] font-bold mb-1" style={{ color: 'hsl(var(--text-tertiary))' }}>{i.l}</p>
+                <p className="text-[12px] font-semibold text-foreground/80">{i.v}</p>
               </div>
             ))}
           </div>
           <div>
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Status</p>
+            <p className="text-[10px] font-bold uppercase tracking-wider mb-2" style={{ color: 'hsl(var(--text-tertiary))' }}>Status</p>
             <div className="flex flex-wrap gap-1.5">
               {LEAD_STATUSES.map(s => (
                 <button key={s} disabled={saving} onClick={() => onUpdateField(lead.id, 'status', s)}
-                  className={`px-2.5 py-1 text-[10px] font-semibold rounded-lg border transition-all ${lead.status === s ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-200 text-slate-500 hover:border-slate-300'}`}
+                  className={`px-2.5 py-1 text-[10px] font-semibold rounded-lg border transition-all ${lead.status === s ? 'bg-primary text-primary-foreground border-primary' : 'border-border text-muted-foreground hover:border-border/80'}`}
                   data-testid={`status-${s}`}>{STATUS_CFG[s].label}</button>
               ))}
             </div>
           </div>
           <div>
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Payment</p>
+            <p className="text-[10px] font-bold uppercase tracking-wider mb-2" style={{ color: 'hsl(var(--text-tertiary))' }}>Payment</p>
             <div className="flex gap-2">
               {['N/A', 'pending', 'paid'].map(ps => (
                 <button key={ps} disabled={saving} onClick={() => onUpdateField(lead.id, 'payment_status', ps)}
-                  className={`flex-1 py-2 text-[10px] font-semibold rounded-lg border transition-all ${lead.payment_status === ps ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-200 text-slate-500'}`}
+                  className={`flex-1 py-2 text-[10px] font-semibold rounded-lg border transition-all ${lead.payment_status === ps ? 'bg-primary text-primary-foreground border-primary' : 'border-border text-muted-foreground'}`}
                   data-testid={`payment-${ps}`}>{ps.charAt(0).toUpperCase() + ps.slice(1)}</button>
               ))}
             </div>
@@ -300,15 +300,15 @@ function LeadPanel({ lead, noteText, setNoteText, saving, onClose, onUpdateField
             <Button size="sm" variant="outline" disabled={saving} className="text-[10px] h-8" onClick={() => onUpdateField(lead.id, 'status', 'active')} data-testid="mark-active"><UserCheck className="h-3 w-3 mr-1" />Active</Button>
           </div>
           <div>
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Internal Notes</p>
+            <p className="text-[10px] font-bold uppercase tracking-wider mb-2" style={{ color: 'hsl(var(--text-tertiary))' }}>Internal Notes</p>
             <textarea value={noteText} onChange={e => setNoteText(e.target.value)}
-              className="w-full h-20 text-[12px] bg-slate-50 border border-slate-200 rounded-lg p-3 resize-none focus:ring-1 focus:ring-slate-300 text-slate-700" placeholder="Add notes..." data-testid="notes-input" />
+              className="w-full h-20 text-[12px] bg-muted border border-border rounded-lg p-3 resize-none focus:ring-1 focus:ring-ring text-foreground" placeholder="Add notes..." data-testid="notes-input" />
             <Button size="sm" className="w-full text-[11px] h-8 mt-2 bg-slate-900 hover:bg-slate-800" disabled={saving} onClick={() => onSaveNote(lead.id)} data-testid="save-note">
               <Check className="h-3 w-3 mr-1" />Save Note
             </Button>
           </div>
-          <div className="text-[10px] text-slate-400 pt-3 border-t border-slate-100 space-y-0.5">
-            <p>ID: <span className="font-mono text-slate-500">{lead.id?.slice(0, 8)}</span></p>
+          <div className="text-[10px] pt-3 border-t border-border space-y-0.5" style={{ color: 'hsl(var(--text-tertiary))' }}>
+            <p>ID: <span className="font-mono" style={{ color: 'hsl(var(--text-secondary))' }}>{lead.id?.slice(0, 8)}</span></p>
             <p>Created: {lead.created_at ? new Date(lead.created_at).toLocaleString() : '-'}</p>
           </div>
         </div>

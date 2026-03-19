@@ -49,18 +49,18 @@ export default function GrowthDashboard() {
           {charts.ltv_vs_cac?.length > 0 ? (
             <ResponsiveContainer width="100%" height={250}>
               <LineChart data={charts.ltv_vs_cac}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                <XAxis dataKey="month" tick={{ fontSize: 10, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fontSize: 10, fill: '#94a3b8' }} axisLine={false} tickLine={false} tickFormatter={v => `$${v}`} />
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis dataKey="month" tick={{ fontSize: 10, fill: 'hsl(var(--text-tertiary))' }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 10, fill: 'hsl(var(--text-tertiary))' }} axisLine={false} tickLine={false} tickFormatter={v => `$${v}`} />
                 <Tooltip content={<ChartTooltip />} />
                 <Line type="monotone" dataKey="ltv" name="LTV" stroke="#8b5cf6" strokeWidth={2.5} dot={{ r: 3, fill: '#8b5cf6', strokeWidth: 0 }} />
                 <Line type="monotone" dataKey="cac" name="CAC" stroke="#f59e0b" strokeWidth={2.5} dot={{ r: 3, fill: '#f59e0b', strokeWidth: 0 }} strokeDasharray="6 3" />
               </LineChart>
             </ResponsiveContainer>
           ) : <EmptyChart icon={BarChart3} />}
-          <div className="flex items-center justify-center gap-6 mt-2 pt-2 border-t border-slate-100">
-            <span className="flex items-center gap-1.5 text-[10px] text-slate-500 font-medium"><span className="w-2.5 h-1 rounded-full bg-purple-500" />LTV</span>
-            <span className="flex items-center gap-1.5 text-[10px] text-slate-500 font-medium"><span className="w-2.5 h-1 rounded-full bg-amber-500 border border-dashed border-amber-300" />CAC</span>
+          <div className="flex items-center justify-center gap-6 mt-2 pt-2 border-t border-border/50">
+            <span className="flex items-center gap-1.5 text-[10px] text-muted-foreground font-medium"><span className="w-2.5 h-1 rounded-full bg-purple-500" />LTV</span>
+            <span className="flex items-center gap-1.5 text-[10px] text-muted-foreground font-medium"><span className="w-2.5 h-1 rounded-full bg-amber-500" />CAC</span>
           </div>
         </ChartCard>
 
@@ -69,9 +69,9 @@ export default function GrowthDashboard() {
           {charts.new_customers?.length > 0 ? (
             <ResponsiveContainer width="100%" height={250}>
               <BarChart data={charts.new_customers}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                <XAxis dataKey="month" tick={{ fontSize: 10, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fontSize: 10, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis dataKey="month" tick={{ fontSize: 10, fill: 'hsl(var(--text-tertiary))' }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 10, fill: 'hsl(var(--text-tertiary))' }} axisLine={false} tickLine={false} />
                 <Tooltip content={<ChartTooltip formatValue={v => v} />} />
                 <Bar dataKey="new_customers" name="New Customers" fill="#3b82f6" radius={[4, 4, 0, 0]}>
                   {(charts.new_customers || []).map((e, i) => (
@@ -95,9 +95,9 @@ export default function GrowthDashboard() {
                   <stop offset="100%" stopColor="#ef4444" stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-              <XAxis dataKey="month" tick={{ fontSize: 10, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fontSize: 10, fill: '#94a3b8' }} axisLine={false} tickLine={false} tickFormatter={v => `${v}%`} />
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+              <XAxis dataKey="month" tick={{ fontSize: 10, fill: 'hsl(var(--text-tertiary))' }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fontSize: 10, fill: 'hsl(var(--text-tertiary))' }} axisLine={false} tickLine={false} tickFormatter={v => `${v}%`} />
               <Tooltip content={<ChartTooltip formatValue={v => `${v}%`} />} />
               <Area type="monotone" dataKey="churn_rate" name="Churn Rate" stroke="#ef4444" strokeWidth={2} fill="url(#churnGrad)" dot={{ r: 3, fill: '#ef4444', strokeWidth: 0 }} />
             </AreaChart>

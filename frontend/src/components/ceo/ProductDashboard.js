@@ -42,15 +42,15 @@ export default function ProductDashboard() {
         {modules.map(m => {
           const c = MOD_COLORS[m.key] || '#6366f1';
           return (
-            <div key={m.key} className="bg-white border border-slate-200/70 rounded-xl p-5 hover:shadow-sm transition-all" data-testid={`module-${m.key}`}>
+            <div key={m.key} className="bg-card border border-border rounded-xl p-5 hover:shadow-sm transition-all" data-testid={`module-${m.key}`}>
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-3">
                   <div className="w-11 h-11 rounded-xl flex items-center justify-center" style={{ backgroundColor: c + '12' }}>
                     <Layers className="h-5 w-5" style={{ color: c }} />
                   </div>
                   <div>
-                    <h3 className="font-bold text-[14px] text-slate-800">{m.name}</h3>
-                    <p className="text-[10px] text-slate-400">{m.active} of {totalVenues} venues</p>
+                    <h3 className="font-bold text-[14px] text-foreground">{m.name}</h3>
+                    <p className="text-[10px]" style={{ color: 'hsl(var(--text-tertiary))' }}>{m.active} of {totalVenues} venues</p>
                   </div>
                 </div>
                 <div className="text-right">
@@ -58,7 +58,7 @@ export default function ProductDashboard() {
                   <p className="text-[9px] text-slate-400">Adoption</p>
                 </div>
               </div>
-              <div className="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden">
+              <div className="w-full h-2.5 bg-muted rounded-full overflow-hidden">
                 <div className="h-full rounded-full transition-all duration-700" style={{ width: `${m.adoption_pct}%`, backgroundColor: c }} />
               </div>
             </div>
@@ -72,9 +72,9 @@ export default function ProductDashboard() {
           {barData.length > 0 ? (
             <ResponsiveContainer width="100%" height={220}>
               <BarChart data={barData} layout="vertical" barSize={28}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" horizontal={false} />
-                <XAxis type="number" tick={{ fontSize: 10, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
-                <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: '#475569', fontWeight: 600 }} axisLine={false} tickLine={false} width={65} />
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
+                <XAxis type="number" tick={{ fontSize: 10, fill: 'hsl(var(--text-tertiary))' }} axisLine={false} tickLine={false} />
+                <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: 'hsl(var(--foreground))', fontWeight: 600 }} axisLine={false} tickLine={false} width={65} />
                 <Tooltip content={<ChartTooltip formatValue={v => `${v} venues`} />} />
                 <Bar dataKey="active" name="Venues" radius={[0, 6, 6, 0]}>
                   {barData.map((e, i) => <Cell key={i} fill={e.color} />)}
@@ -103,9 +103,9 @@ export default function ProductDashboard() {
                   <div key={m.name} className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <div className="w-3 h-3 rounded-full" style={{ backgroundColor: m.color }} />
-                      <span className="text-[11px] font-semibold text-slate-600">{m.name}</span>
+                      <span className="text-[11px] font-semibold text-foreground/80">{m.name}</span>
                     </div>
-                    <span className="text-[12px] font-bold text-slate-800">{m.value}</span>
+                    <span className="text-[12px] font-bold text-foreground">{m.value}</span>
                   </div>
                 ))}
               </div>
