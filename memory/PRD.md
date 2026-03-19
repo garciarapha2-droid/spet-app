@@ -63,6 +63,8 @@ All `/api/*` endpoints return:
 - [x] API documentation (/app/API_DOCS.md)
 - [x] Plan naming & pricing: Spet Core/Flow/Sync/OS (approved)
 - [x] Refresh token system (single-use rotation, 30-day lifetime)
+- [x] POST /api/auth/verify-payment — official post-payment activation
+- [x] 15/15 verify-payment tests passed (iteration 63)
 - [x] 15/15 refresh token tests passed (iteration 62)
 - [x] 27/27 API tests passed (iteration 61)
 
