@@ -373,7 +373,9 @@ Uses single-use rotation: the old refresh token is revoked after use.
 ---
 
 ### POST `/api/auth/handoff/create`
-Create a one-time auth handoff code. **Requires: Bearer token**
+Create a one-time handoff code for cross-domain auth. **Requires: Bearer token**
+
+Used by Lovable (spetapp.com) to redirect users into the product app after onboarding.
 
 **Response:**
 ```json
@@ -385,9 +387,68 @@ Create a one-time auth handoff code. **Requires: Bearer token**
 ```
 
 ### POST `/api/auth/handoff/exchange`
-Exchange handoff code for a JWT token. **No auth required.**
+Exchange a one-time handoff code for `access_token` + `refresh_token`. **No auth required.**
 
-**Body:** `{ "code": "abc123..." }`
+The code is **single-use** — a second call with the same code returns 401.
+
+**Body:**
+```json
+{ "code": "abc123..." }
+```
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "data": {
+    "access_token": "eyJ...",
+    "refresh_token": "xyz...",
+    "token_type": "bearer",
+    "user": {
+      "id": "uuid",
+      "email": "user@email.com",
+      "name": "User Name",
+      "role": "USER|CEO",
+      "status": "active|pending_payment",
+      "onboarding_completed": true|false
+    }
+  },
+  "error": null
+}
+```
+
+**Error Cases:**
+- `400`: Missing code
+- `401`: Invalid code, expired (>60s), or already used
+
+### Cross-Domain Handoff Flow (Lovable → Product App)
+
+```
+                   spetapp.com (Lovable)                          app.spetapp.com (Product App)
+                   ─────────────────────                          ─────────────────────────────
+
+1. User completes onboarding
+2. Lovable calls:
+   POST /api/auth/handoff/create
+   → receives { code: "abc123", expires_in: 60 }
+
+3. Lovable redirects browser to:
+   https://app.spetapp.com/auth/handoff?code=abc123
+                                                        4. Product app reads ?code from URL
+                                                        5. Calls POST /api/auth/handoff/exchange
+                                                           { code: "abc123" }
+                                                           → receives access_token + refresh_token
+
+                                                        6. Stores tokens in localStorage
+                                                        7. User is authenticated — no login screen
+                                                        8. Redirects to /dashboard or /app
+```
+
+**Security:**
+- Code expires in 60 seconds
+- Code is single-use (cannot be replayed)
+- Code is cryptographically random (48 bytes, URL-safe)
+- The exchange returns a full refresh_token for long-term session
 
 ---
 

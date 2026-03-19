@@ -392,6 +392,11 @@ async def delete_user(user_id: str, user: dict = Depends(require_auth)):
 
 @router.post("/handoff/create")
 async def create_handoff(user: dict = Depends(require_auth)):
+    """Create a one-time handoff code for cross-domain auth.
+
+    Used by Lovable (spetapp.com) to redirect users into the product app
+    after onboarding, without requiring a second login.
+    """
     db = get_mongo_db()
     pool = get_postgres_pool()
 
@@ -400,7 +405,7 @@ async def create_handoff(user: dict = Depends(require_auth)):
 
     async with pool.acquire() as conn:
         user_row = await conn.fetchrow(
-            "SELECT id, name, email, password_hash, role, status, onboarding_completed, created_at FROM users WHERE id = $1::uuid",
+            "SELECT id, name, email, role, status, onboarding_completed, created_at FROM users WHERE id = $1::uuid",
             user["sub"],
         )
         if not user_row:
@@ -429,15 +434,28 @@ async def create_handoff(user: dict = Depends(require_auth)):
         "roles": access_roles,
         "status": user_row["status"],
     }
-    fresh_token = create_access_token(token_data)
+    fresh_access_token = create_access_token(token_data)
+
+    # Generate refresh token for the destination app
+    refresh_token = create_refresh_token()
+    await db.refresh_tokens.insert_one({
+        "token": refresh_token,
+        "user_id": str(user_row["id"]),
+        "created_at": now.isoformat(),
+        "expires_at": (now + timedelta(days=REFRESH_TOKEN_DAYS)).isoformat(),
+        "revoked": False,
+    })
 
     await db.auth_handoff_codes.insert_one({
         "code": code,
-        "token": fresh_token,
-        "user_id": user["sub"],
+        "access_token": fresh_access_token,
+        "refresh_token": refresh_token,
+        "user_id": str(user_row["id"]),
         "user_email": user_row["email"],
         "user_name": user_row["name"],
+        "user_role": user_row.get("role", "USER"),
         "user_status": user_row["status"],
+        "onboarding_completed": user_row.get("onboarding_completed", False),
         "created_at": now.isoformat(),
         "expires_at": (now + timedelta(seconds=HANDOFF_TTL_SECONDS)).isoformat(),
         "used": False,
@@ -448,6 +466,11 @@ async def create_handoff(user: dict = Depends(require_auth)):
 
 @router.post("/handoff/exchange")
 async def exchange_handoff(request: Request):
+    """Exchange a one-time handoff code for access_token + refresh_token.
+
+    Called by the destination app (product app) to authenticate the user
+    after cross-domain redirect from Lovable. The code is single-use.
+    """
     body = await request.json()
     code = body.get("code")
     if not code:
@@ -460,24 +483,32 @@ async def exchange_handoff(request: Request):
     if not doc:
         raise HTTPException(status_code=401, detail="Invalid or expired code")
 
+    # Check expiration
     expires_at = datetime.fromisoformat(doc["expires_at"])
     if now > expires_at:
         await db.auth_handoff_codes.delete_one({"_id": doc["_id"]})
         raise HTTPException(status_code=401, detail="Code expired")
 
-    if not doc.get("used"):
-        await db.auth_handoff_codes.update_one(
-            {"_id": doc["_id"]}, {"$set": {"used": True}}
-        )
+    # Single-use: reject if already used
+    if doc.get("used"):
+        raise HTTPException(status_code=401, detail="Code already used")
+
+    # Mark as used
+    await db.auth_handoff_codes.update_one(
+        {"_id": doc["_id"]}, {"$set": {"used": True}}
+    )
 
     return {
-        "access_token": doc["token"],
+        "access_token": doc["access_token"],
+        "refresh_token": doc["refresh_token"],
         "token_type": "bearer",
         "user": {
             "id": doc["user_id"],
             "email": doc["user_email"],
             "name": doc.get("user_name"),
+            "role": doc.get("user_role", "USER"),
             "status": doc["user_status"],
+            "onboarding_completed": doc.get("onboarding_completed", False),
         },
     }
 
