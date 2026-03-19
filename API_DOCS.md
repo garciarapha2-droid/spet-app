@@ -585,23 +585,93 @@ Receives Stripe events. Activates user on payment. **No auth required.**
 
 ---
 
-## Frontend Integration
+## Frontend Integration (Same-Domain Architecture)
 
-### Routing
+### URL Structure
 ```
-/            → Landing page
-/payment     → Payment / Stripe flow
-/onboarding  → Multi-step onboarding
-/app         → Authenticated app (all active+onboarded users)
+spetapp.com           → Landing page
+spetapp.com/login     → Login
+spetapp.com/signup    → Signup + Stripe checkout
+spetapp.com/payment   → Payment required / retry
+spetapp.com/onboarding → Multi-step onboarding (5 steps)
+spetapp.com/app       → Real product (all active + onboarded users)
 ```
 
-### Route Decision
+### Complete User Journey
+```
+signup → pending_payment → Stripe payment → active → onboarding → /app
+```
+
+All within the same domain. JWT stays in localStorage throughout.
+
+### Route Decision (after any page load)
 ```javascript
-const { flags } = await fetch('/api/auth/permissions');
-if (flags.requires_payment)     → /payment
-if (flags.requires_onboarding)  → /onboarding
-else                            → /app
+// Call on every protected page load
+const res = await fetch('/api/auth/permissions', {
+  headers: { Authorization: `Bearer ${localStorage.getItem('access_token')}` }
+});
+const { flags } = res.data;
+
+if (flags.requires_payment)     → redirect to /payment
+if (flags.requires_onboarding)  → redirect to /onboarding
+else                            → allow /app
 ```
+
+### Token Management
+```javascript
+// On login/signup response:
+localStorage.setItem('access_token', data.access_token);
+localStorage.setItem('refresh_token', data.refresh_token);
+
+// Before access_token expires (1 hour), refresh silently:
+const res = await fetch('/api/auth/refresh-token', {
+  method: 'POST',
+  body: JSON.stringify({ refresh_token: localStorage.getItem('refresh_token') })
+});
+// Replace both tokens:
+localStorage.setItem('access_token', res.data.access_token);
+localStorage.setItem('refresh_token', res.data.refresh_token);
+
+// If refresh fails (401) → redirect to /login
+```
+
+### After Onboarding Complete
+```javascript
+// Step 6: call complete
+await fetch('/api/onboarding/complete', {
+  method: 'POST',
+  headers: { Authorization: `Bearer ${token}` }
+});
+// Simply redirect — session is already authenticated
+window.location.href = '/app';
+```
+
+### After Payment Success
+```javascript
+// Stripe redirects to /payment/success?session_id=cs_xxx
+const sessionId = new URLSearchParams(window.location.search).get('session_id');
+const res = await fetch('/api/auth/verify-payment', {
+  method: 'POST',
+  headers: {
+    Authorization: `Bearer ${token}`,
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({ session_id: sessionId })
+});
+if (res.data.activated) → redirect to /onboarding
+```
+
+### Token Lifetimes
+| Token | Lifetime |
+|---|---|
+| `access_token` | 1 hour |
+| `refresh_token` | 30 days |
 
 ### CORS
 Accepts: `*.lovable.app`, `*.lovable.dev`, `localhost:3000/5173/8080`, `CORS_ORIGINS` env var.
+
+---
+
+## Cross-Domain Handoff (Future Fallback Only)
+
+The handoff system (`/api/auth/handoff/create` + `/api/auth/handoff/exchange`) is available but **not used in the main flow**. It exists as a fallback if the architecture ever moves to separate domains.

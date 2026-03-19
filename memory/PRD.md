@@ -2,8 +2,10 @@
 
 ## Architecture
 - **Emergent** = API backend (FastAPI + PostgreSQL + MongoDB + Stripe)
-- **Lovable** = Frontend (all UI, screens, dashboards)
+- **Lovable** = Frontend (all UI at spetapp.com)
 - **Integration**: Lovable consumes Emergent APIs via REST + JWT
+- **Same-domain**: spetapp.com/ (landing) → /signup → /payment → /onboarding → /app
+- **No cross-domain handoff needed** — JWT persists in localStorage across all routes
 
 ## Core User Journey
 1. User signs up → `POST /api/auth/signup` → status: `pending_payment`
