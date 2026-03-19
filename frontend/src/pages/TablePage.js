@@ -427,8 +427,8 @@ export const TablePage = () => {
             <span className="text-sm text-foreground/80 font-medium" onClick={() => navigate('/tap')}>DISCO MODE</span>
           </label>
           <div className="h-5 w-px bg-border" />
-          {/* Server Selector — proper layering */}
-          <div className="relative" style={{ zIndex: 100 }}>
+          {/* Server Selector */}
+          <div className="relative">
             <button onClick={() => setShowServerMenu(!showServerMenu)}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium ${
                 selectedServer ? 'bg-blue-500/10 text-blue-600 hover:bg-blue-500/20' : 'bg-muted text-muted-foreground hover:bg-muted/80'
@@ -438,7 +438,7 @@ export const TablePage = () => {
               <ChevronDown className="h-3 w-3" />
             </button>
             {showServerMenu && (
-              <div className="absolute top-full left-0 mt-1 bg-card border border-border rounded-lg shadow-2xl min-w-[200px] py-1" style={{ zIndex: 9999 }} data-testid="server-dropdown">
+              <div className="absolute top-full left-0 mt-1 bg-card border border-border rounded-lg shadow-2xl min-w-[200px] py-1 z-50" data-testid="server-dropdown">
                 {barmen.map(b => (
                   <button key={b.id} onClick={() => { setSelectedServer(b.name); setShowServerMenu(false); }}
                     className={`w-full text-left px-4 py-2 text-sm hover:bg-muted ${selectedServer === b.name ? 'text-primary font-medium' : ''}`}>

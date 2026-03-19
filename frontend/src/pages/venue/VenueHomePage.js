@@ -775,7 +775,7 @@ export const VenueSelectPage = () => {
   return (
     <div className="min-h-screen bg-background" data-testid="venue-select-page">
       {/* Header */}
-      <header className="h-16 border-b border-border/60 bg-card/80 backdrop-blur-md px-8 flex items-center justify-between">
+      <header className="h-16 border-b border-border/60 bg-card/80 backdrop-blur-md px-8 flex items-center justify-between relative z-50">
         <div className="flex items-center gap-4">
           <SpetLogo size="default" />
           {selectedVenue && (
@@ -787,7 +787,7 @@ export const VenueSelectPage = () => {
         </div>
         <div className="flex items-center gap-4">
           {data?.modules && (
-            <div className="relative" style={{ zIndex: 100 }}>
+            <div className="relative">
               <button onClick={() => setShowModulesMenu(!showModulesMenu)}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-muted transition-colors border border-border"
                 data-testid="modules-dropdown">
@@ -796,7 +796,7 @@ export const VenueSelectPage = () => {
                 <ChevronDown className="h-3 w-3" />
               </button>
               {showModulesMenu && (
-                <div className="absolute top-full right-0 mt-1 bg-card border border-border rounded-lg shadow-lg min-w-[200px] py-1" style={{ zIndex: 9999 }} data-testid="modules-menu">
+                <div className="absolute top-full right-0 mt-1 bg-card border border-border rounded-lg shadow-lg min-w-[200px] py-1 z-50" data-testid="modules-menu">
                   {data.modules
                     .filter(m => m.enabled)
                     .filter(m => m.key !== 'ceo' || isCEO)

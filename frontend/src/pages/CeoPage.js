@@ -53,7 +53,7 @@ export default function CeoPage() {
   return (
     <div className="min-h-screen bg-background" data-testid="ceo-dashboard">
       {/* Header */}
-      <header className="h-14 border-b border-border bg-card px-6 flex items-center justify-between">
+      <header className="h-14 border-b border-border bg-card px-6 flex items-center justify-between relative z-50">
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon" onClick={() => navigate('/venue/home')} data-testid="ceo-back-btn">
             <ArrowLeft className="h-4 w-4" />

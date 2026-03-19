@@ -362,7 +362,7 @@ export const KitchenPage = () => {
       )}
 
       {/* Header — minimal, operational */}
-      <header className="h-12 border-b border-border px-5 flex items-center justify-between bg-card">
+      <header className="h-12 border-b border-border px-5 flex items-center justify-between bg-card relative z-50">
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigate(-1)}>
             <ArrowLeft className="h-4 w-4" />

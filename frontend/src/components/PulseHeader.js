@@ -64,7 +64,7 @@ export const PulseHeader = () => {
   const currentModule = MODULES.find(m => location.pathname.startsWith(m.path.split('/')[1] === 'pulse' ? '/pulse' : m.path));
 
   return (
-    <header className="h-14 border-b border-border/60 bg-card/80 backdrop-blur-md px-6 flex items-center justify-between" data-testid="pulse-header">
+    <header className="h-14 border-b border-border/60 bg-card/80 backdrop-blur-md px-6 flex items-center justify-between relative z-50" data-testid="pulse-header">
       <div className="flex items-center gap-0">
         {/* Logo + Venue + Module dropdown */}
         <button onClick={() => navigate('/venue/home')} className="flex items-center gap-2 px-3 py-1.5 hover:bg-muted rounded-lg transition-colors mr-1" data-testid="logo-btn">

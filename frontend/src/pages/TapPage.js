@@ -447,8 +447,8 @@ export const TapPage = () => {
           </button>
           <div className="h-4 w-px bg-border" />
 
-          {/* Barman Selector — proper layering with portal-style dropdown */}
-          <div className="relative" style={{ zIndex: 100 }}>
+          {/* Barman Selector */}
+          <div className="relative">
             <button onClick={() => setShowBarmanMenu(!showBarmanMenu)}
               className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
                 selectedBarman ? 'bg-emerald-500/10 text-emerald-600' : 'bg-muted text-muted-foreground'
@@ -459,7 +459,7 @@ export const TapPage = () => {
               <ChevronDown className="h-3 w-3" />
             </button>
             {showBarmanMenu && (
-              <div className="absolute top-full left-0 mt-1 bg-card border border-border rounded-lg shadow-2xl min-w-[220px] py-1" style={{ zIndex: 9999 }} data-testid="barman-dropdown">
+              <div className="absolute top-full left-0 mt-1 bg-card border border-border rounded-lg shadow-2xl min-w-[220px] py-1 z-50" data-testid="barman-dropdown">
                 {barmen.map(b => (
                   <div key={b.id} className="flex items-center group">
                     {editingBarman === b.id ? (
