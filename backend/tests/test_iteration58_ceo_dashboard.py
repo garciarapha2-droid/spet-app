@@ -6,7 +6,7 @@ import pytest
 import requests
 import os
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://saas-health-hub.preview.emergentagent.com')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://rbac-foundation-1.preview.emergentagent.com')
 
 # Test credentials
 CEO_EMAIL = "garcia.rapha2@gmail.com"

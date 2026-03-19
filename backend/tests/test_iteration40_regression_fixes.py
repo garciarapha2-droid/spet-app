@@ -8,7 +8,7 @@ import pytest
 import requests
 import os
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://saas-health-hub.preview.emergentagent.com')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://rbac-foundation-1.preview.emergentagent.com')
 VENUE_ID = "40a24e04-75b6-435d-bfff-ab0d469ce543"
 CARLOS_SILVA_ID = "b5f31a05-6a8c-406e-84ec-26454411aca4"
 
