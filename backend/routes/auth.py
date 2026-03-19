@@ -1,48 +1,190 @@
 from fastapi import APIRouter, HTTPException, Request, Depends
 from models.requests import LoginRequest, SignupRequest
-from models.responses import LoginResponse, UserResponse
 from utils.auth import hash_password, verify_password, create_access_token
 from middleware.auth_middleware import require_auth
 from database import get_postgres_pool, get_mongo_db
-from datetime import datetime, timezone
+from config import get_settings
+from emergentintegrations.payments.stripe.checkout import StripeCheckout, CheckoutSessionRequest
+from datetime import datetime, timedelta, timezone
 import json
 import uuid
+import secrets
+import logging
 
 router = APIRouter()
+logger = logging.getLogger("auth")
+settings = get_settings()
 
 PROTECTED_SYSTEM_ACCOUNTS = {"teste@teste.com", "garcia.rapha2@gmail.com"}
 
+PLANS = {
+    "starter": {"name": "Starter", "price": 79.00, "currency": "usd"},
+    "growth": {"name": "Growth", "price": 149.00, "currency": "usd"},
+    "enterprise": {"name": "Enterprise", "price": 299.00, "currency": "usd"},
+}
 
-def _build_token_and_response(user_row, access_roles):
-    """Shared helper to build JWT + LoginResponse for both login and signup."""
-    user_role = user_row.get("role", "USER") if hasattr(user_row, 'get') else "USER"
+HANDOFF_TTL_SECONDS = 60
+
+
+def _build_token_and_response(user_row, access_roles, checkout_url=None):
+    """Build JWT + response for login/signup."""
+    user_role = user_row.get("role", "USER") if hasattr(user_row, "get") else "USER"
+    status = user_row.get("status", "active") if hasattr(user_row, "get") else "active"
+    onboarding = user_row.get("onboarding_completed", False) if hasattr(user_row, "get") else False
+
     token_data = {
         "sub": str(user_row["id"]),
         "email": user_row["email"],
         "role": user_role,
         "roles": access_roles,
+        "status": status,
     }
     access_token = create_access_token(token_data)
-    return LoginResponse(
-        access_token=access_token,
-        user=UserResponse(
-            id=str(user_row["id"]),
-            email=user_row["email"],
-            name=user_row.get("name"),
-            role=user_role,
-            status=user_row["status"],
-            created_at=user_row["created_at"],
-        ),
-        next={"type": "route", "route": "/venue/home"},
-    )
+
+    if status == "pending_payment":
+        next_route = "/payment/pending"
+    elif not onboarding:
+        next_route = "/onboarding"
+    else:
+        next_route = "/venue/home"
+
+    created_at = user_row["created_at"]
+    if hasattr(created_at, "isoformat"):
+        created_at = created_at.isoformat()
+
+    response = {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "user": {
+            "id": str(user_row["id"]),
+            "email": user_row["email"],
+            "name": user_row.get("name") if hasattr(user_row, "get") else user_row["name"],
+            "role": user_role,
+            "status": status,
+            "onboarding_completed": onboarding,
+            "created_at": created_at,
+        },
+        "next": {"type": "route", "route": next_route},
+    }
+
+    if checkout_url:
+        response["checkout_url"] = checkout_url
+
+    return response
 
 
-@router.post("/login", response_model=LoginResponse)
+@router.post("/signup")
+async def signup(request: SignupRequest):
+    pool = get_postgres_pool()
+    db = get_mongo_db()
+    now = datetime.now(timezone.utc)
+
+    async with pool.acquire() as conn:
+        existing = await conn.fetchrow(
+            "SELECT id FROM users WHERE email = $1", request.email.lower()
+        )
+        if existing:
+            raise HTTPException(status_code=400, detail="Email already registered")
+
+        hashed_password = hash_password(request.password)
+        plan_id = request.plan_id or "starter"
+
+        user_row = await conn.fetchrow(
+            """INSERT INTO users (name, email, password_hash, status, plan_id, onboarding_completed, onboarding_step, created_at, updated_at)
+               VALUES ($1, $2, $3, 'pending_payment', $4, FALSE, 0, $5, $5)
+               RETURNING id, name, email, role, status, plan_id, onboarding_completed, created_at""",
+            request.name,
+            request.email.lower(),
+            hashed_password,
+            plan_id,
+            now,
+        )
+        user_id = user_row["id"]
+
+        company_name = request.company_name or f"{request.name or request.email.split('@')[0]}'s Venue"
+        company_row = await conn.fetchrow(
+            "INSERT INTO companies (name, status, created_at, updated_at) VALUES ($1, 'active', $2, $2) RETURNING id",
+            company_name, now,
+        )
+        company_id = company_row["id"]
+
+        await conn.execute(
+            """INSERT INTO user_access (user_id, company_id, role, permissions, created_at)
+               VALUES ($1, $2, 'owner', '{}'::jsonb, $3)""",
+            user_id, company_id, now,
+        )
+
+    checkout_url = None
+    if plan_id in PLANS and request.origin_url:
+        try:
+            plan = PLANS[plan_id]
+            success_url = f"{request.origin_url}/payment/success?session_id={{CHECKOUT_SESSION_ID}}"
+            cancel_url = f"{request.origin_url}/signup"
+
+            stripe_checkout = StripeCheckout(
+                api_key=settings.stripe_api_key,
+                webhook_url=f"{request.origin_url}/api/webhook/stripe",
+            )
+
+            checkout_req = CheckoutSessionRequest(
+                amount=plan["price"],
+                currency=plan["currency"],
+                success_url=success_url,
+                cancel_url=cancel_url,
+                metadata={
+                    "user_id": str(user_id),
+                    "company_id": str(company_id),
+                    "plan_id": plan_id,
+                    "email": request.email.lower(),
+                },
+            )
+
+            session = await stripe_checkout.create_checkout_session(checkout_req)
+            checkout_url = session.url
+
+            tx_doc = {
+                "id": str(uuid.uuid4()),
+                "user_id": str(user_id),
+                "company_id": str(company_id),
+                "stripe_session_id": session.session_id,
+                "plan_id": plan_id,
+                "amount": plan["price"],
+                "currency": plan["currency"],
+                "payment_status": "pending",
+                "created_at": now.isoformat(),
+            }
+            await db.payment_transactions.insert_one(tx_doc)
+        except Exception as e:
+            logger.error(f"[SIGNUP] Stripe checkout creation failed: {e}")
+
+    access_roles = [{
+        "user_id": str(user_id),
+        "company_id": str(company_id),
+        "venue_id": None,
+        "role": "owner",
+        "permissions": {},
+    }]
+
+    try:
+        from routes.leads import capture_lead_internal
+        await capture_lead_internal(
+            full_name=request.name or request.email.split("@")[0],
+            email=request.email.lower(),
+            product_interest=plan_id,
+            source="signup",
+        )
+    except Exception as e:
+        logger.error(f"[SIGNUP] Lead capture failed: {e}")
+
+    return _build_token_and_response(user_row, access_roles, checkout_url)
+
+
+@router.post("/login")
 async def login(request: LoginRequest):
     pool = get_postgres_pool()
     async with pool.acquire() as conn:
         user = await conn.fetchrow(
-            "SELECT id, name, email, password_hash, role, status, created_at FROM users WHERE email = $1",
+            "SELECT id, name, email, password_hash, role, status, onboarding_completed, created_at FROM users WHERE email = $1",
             request.email.lower(),
         )
 
@@ -52,13 +194,12 @@ async def login(request: LoginRequest):
         if not verify_password(request.password, user["password_hash"]):
             raise HTTPException(status_code=401, detail="Invalid credentials")
 
-        if user["status"] != "active":
-            raise HTTPException(status_code=403, detail="Account inactive")
+        if user["status"] not in ("active", "pending_payment"):
+            raise HTTPException(status_code=403, detail="Account suspended")
 
         await conn.execute(
             "UPDATE users SET last_login_at = $1 WHERE id = $2",
-            datetime.now(timezone.utc),
-            user["id"],
+            datetime.now(timezone.utc), user["id"],
         )
 
         rows = await conn.fetch(
@@ -80,101 +221,8 @@ async def login(request: LoginRequest):
     return _build_token_and_response(user, access_roles)
 
 
-from routes.leads import capture_lead_internal
-import logging as _auth_logging
-_auth_logger = _auth_logging.getLogger("auth")
-
-
-@router.post("/signup", response_model=LoginResponse)
-async def signup(request: SignupRequest):
-    pool = get_postgres_pool()
-    db = get_mongo_db()
-    now = datetime.now(timezone.utc)
-
-    async with pool.acquire() as conn:
-        existing = await conn.fetchrow(
-            "SELECT id FROM users WHERE email = $1", request.email.lower()
-        )
-        if existing:
-            raise HTTPException(status_code=400, detail="Email already registered")
-
-        hashed_password = hash_password(request.password)
-
-        user_row = await conn.fetchrow(
-            """INSERT INTO users (name, email, password_hash, status, created_at, updated_at)
-               VALUES ($1, $2, $3, 'active', $4, $4) RETURNING id, name, email, status, created_at""",
-            request.name,
-            request.email.lower(),
-            hashed_password,
-            now,
-        )
-        user_id = user_row["id"]
-
-        company_name = request.company_name or (f"{request.name or request.email.split('@')[0]}'s Venue")
-        company_row = await conn.fetchrow(
-            """INSERT INTO companies (name, status, created_at, updated_at)
-               VALUES ($1, 'active', $2, $2) RETURNING id""",
-            company_name,
-            now,
-        )
-        company_id = company_row["id"]
-
-        venue_id = str(uuid.uuid4())
-        venue_type = request.venue_type or "bar"
-
-        await db.venues.insert_one({
-            "id": venue_id,
-            "company_id": str(company_id),
-            "name": company_name,
-            "venue_type": venue_type,
-            "status": "active",
-            "created_at": now.isoformat(),
-        })
-
-        await db.venue_configs.insert_one({
-            "venue_id": venue_id,
-            "modules": ["pulse", "tap", "table", "kds"],
-            "host_collect_dob": True,
-            "host_collect_photo": True,
-            "bar_mode": "bar",
-            "entry_types": ["vip", "cover", "cover_consumption", "consumption_only"],
-        })
-
-        permissions = json.dumps({
-            "pulse": True, "tap": True, "table": True, "kds": True,
-            "HOST_COLLECT_DOB": True,
-        })
-        await conn.execute(
-            """INSERT INTO user_access (user_id, company_id, venue_id, role, permissions, created_at)
-               VALUES ($1, $2, $3::uuid, 'owner', $4, $5)""",
-            user_id, company_id, uuid.UUID(venue_id), permissions, now,
-        )
-
-        access_roles = [{
-            "user_id": str(user_id),
-            "company_id": str(company_id),
-            "venue_id": venue_id,
-            "role": "owner",
-            "permissions": json.loads(permissions),
-        }]
-
-    # Fire-and-forget lead capture (non-blocking — never fails the signup)
-    try:
-        await capture_lead_internal(
-            full_name=request.name or request.email.split("@")[0],
-            email=request.email.lower(),
-            product_interest=venue_type,
-            source="signup",
-        )
-    except Exception as e:
-        _auth_logger.error(f"[SIGNUP] Lead capture failed (non-blocking): {e}")
-
-    return _build_token_and_response(user_row, access_roles)
-
-
 @router.post("/logout")
 async def logout(user: dict = Depends(require_auth)):
-    """Logout: invalidate current token via blacklist."""
     db = get_mongo_db()
     token_exp = user.get("exp")
     await db.token_blacklist.insert_one({
@@ -187,13 +235,12 @@ async def logout(user: dict = Depends(require_auth)):
 
 @router.get("/me")
 async def get_current_user_info(user: dict = Depends(require_auth)):
-    """Return full user profile + venues for the authenticated user."""
     pool = get_postgres_pool()
     db = get_mongo_db()
 
     async with pool.acquire() as conn:
         user_row = await conn.fetchrow(
-            "SELECT id, name, email, role, status, created_at FROM users WHERE id = $1::uuid",
+            "SELECT id, name, email, role, status, onboarding_completed, onboarding_step, plan_id, created_at FROM users WHERE id = $1::uuid",
             user["sub"],
         )
         if not user_row:
@@ -233,6 +280,9 @@ async def get_current_user_info(user: dict = Depends(require_auth)):
         "email": user_row["email"],
         "role": user_row.get("role", "USER"),
         "status": user_row["status"],
+        "onboarding_completed": user_row.get("onboarding_completed", False),
+        "onboarding_step": user_row.get("onboarding_step", 0),
+        "plan_id": user_row.get("plan_id"),
         "created_at": user_row["created_at"].isoformat() if user_row["created_at"] else None,
         "roles": access_roles,
         "venues": venues,
@@ -241,7 +291,6 @@ async def get_current_user_info(user: dict = Depends(require_auth)):
 
 @router.delete("/users/{user_id}")
 async def delete_user(user_id: str, user: dict = Depends(require_auth)):
-    """Delete a user. Protected system accounts cannot be deleted."""
     pool = get_postgres_pool()
     uid = uuid.UUID(user_id)
     async with pool.acquire() as conn:
@@ -255,16 +304,8 @@ async def delete_user(user_id: str, user: dict = Depends(require_auth)):
     return {"deleted": True, "user_id": user_id}
 
 
-import secrets
-
-HANDOFF_TTL_SECONDS = 60
-
-
 @router.post("/handoff/create")
 async def create_handoff(user: dict = Depends(require_auth)):
-    """Create a one-time handoff code for cross-domain auth.
-    Called by Lovable after login/signup. Returns a short-lived code
-    that the Emergent frontend exchanges for the actual JWT."""
     db = get_mongo_db()
     pool = get_postgres_pool()
 
@@ -273,7 +314,7 @@ async def create_handoff(user: dict = Depends(require_auth)):
 
     async with pool.acquire() as conn:
         user_row = await conn.fetchrow(
-            "SELECT id, name, email, password_hash, role, status, created_at FROM users WHERE id = $1::uuid",
+            "SELECT id, name, email, password_hash, role, status, onboarding_completed, created_at FROM users WHERE id = $1::uuid",
             user["sub"],
         )
         if not user_row:
@@ -298,7 +339,9 @@ async def create_handoff(user: dict = Depends(require_auth)):
     token_data = {
         "sub": str(user_row["id"]),
         "email": user_row["email"],
+        "role": user_row.get("role", "USER"),
         "roles": access_roles,
+        "status": user_row["status"],
     }
     fresh_token = create_access_token(token_data)
 
@@ -310,7 +353,7 @@ async def create_handoff(user: dict = Depends(require_auth)):
         "user_name": user_row["name"],
         "user_status": user_row["status"],
         "created_at": now.isoformat(),
-        "expires_at": (now + __import__("datetime").timedelta(seconds=HANDOFF_TTL_SECONDS)).isoformat(),
+        "expires_at": (now + timedelta(seconds=HANDOFF_TTL_SECONDS)).isoformat(),
         "used": False,
     })
 
@@ -319,9 +362,6 @@ async def create_handoff(user: dict = Depends(require_auth)):
 
 @router.post("/handoff/exchange")
 async def exchange_handoff(request: Request):
-    """Exchange a one-time handoff code for a JWT.
-    Called by the Emergent frontend. No auth required — the code IS the auth.
-    Idempotent: returns cached result if code was recently used (handles StrictMode double-calls)."""
     body = await request.json()
     code = body.get("code")
     if not code:

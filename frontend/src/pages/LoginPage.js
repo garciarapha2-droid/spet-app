@@ -96,7 +96,8 @@ export const LoginPage = () => {
             </div>
           </form>
           <div className="mt-6 pt-4 border-t border-border/50 text-center text-xs text-muted-foreground">
-            Secure platform access
+            <span>Don't have an account? </span>
+            <a href="/signup" className="text-primary hover:underline font-medium" data-testid="signup-link">Sign up</a>
           </div>
         </CardContent>
       </Card>

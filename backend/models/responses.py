@@ -9,6 +9,7 @@ class UserResponse(BaseModel):
     name: Optional[str] = None
     role: str = "USER"
     status: str
+    onboarding_completed: bool = False
     created_at: datetime
 
 class LoginResponse(BaseModel):
@@ -16,6 +17,7 @@ class LoginResponse(BaseModel):
     token_type: str = "bearer"
     user: UserResponse
     next: Dict
+    checkout_url: Optional[str] = None
 
 class GuestResponse(BaseModel):
     id: str

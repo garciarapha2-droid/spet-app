@@ -71,7 +71,7 @@ async def ensure_protected_users(pool):
                 # User exists — only ensure system flags are correct, NEVER overwrite password or delete
                 user_id = existing["id"]
                 await conn.execute(
-                    "UPDATE users SET is_system_account = TRUE, status = 'active' WHERE id = $1",
+                    "UPDATE users SET is_system_account = TRUE, status = 'active', onboarding_completed = TRUE WHERE id = $1",
                     user_id,
                 )
                 logger.info(f"[PROTECTED] User exists: {email} (id={user_id}) — verified as system account")
@@ -79,8 +79,8 @@ async def ensure_protected_users(pool):
                 # User missing — recreate
                 hashed = hash_password(user_def["password"])
                 row = await conn.fetchrow(
-                    """INSERT INTO users (name, email, password_hash, role, is_system_account, status, created_at, updated_at)
-                       VALUES ($1, $2, $3, $4, TRUE, 'active', $5, $5) RETURNING id""",
+                    """INSERT INTO users (name, email, password_hash, role, is_system_account, status, onboarding_completed, created_at, updated_at)
+                       VALUES ($1, $2, $3, $4, TRUE, 'active', TRUE, $5, $5) RETURNING id""",
                     user_def["name"], email, hashed, user_def["role"], now,
                 )
                 user_id = row["id"]

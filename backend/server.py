@@ -16,7 +16,8 @@ from database import (
     connect_postgres,
     disconnect_mongodb,
     disconnect_postgres,
-    get_mongo_db
+    get_mongo_db,
+    get_postgres_pool
 )
 
 from config import get_settings
@@ -69,6 +70,60 @@ api_router.include_router(leads.router, prefix="/leads", tags=["leads"])
 async def health_check():
     return {"status": "healthy", "service": "SPETAP"}
 
+
+# Stripe webhook handler (no auth required)
+@api_router.post("/webhook/stripe")
+async def stripe_webhook_handler(request: Request):
+    """Handle Stripe webhooks for payment confirmation."""
+    from emergentintegrations.payments.stripe.checkout import StripeCheckout
+    body = await request.body()
+    stripe_signature = request.headers.get("Stripe-Signature")
+
+    stripe_checkout = StripeCheckout(
+        api_key=settings.stripe_api_key,
+        webhook_url="",
+    )
+
+    try:
+        webhook_event = await stripe_checkout.handle_webhook(body, stripe_signature)
+        db = get_mongo_db()
+
+        existing = await db.webhook_events.find_one({"event_id": webhook_event.event_id})
+        if existing:
+            return {"status": "already_processed"}
+
+        await db.webhook_events.insert_one({
+            "event_id": webhook_event.event_id,
+            "event_type": webhook_event.event_type,
+            "session_id": webhook_event.session_id,
+            "payment_status": webhook_event.payment_status,
+            "metadata": webhook_event.metadata,
+            "received_at": datetime.now(timezone.utc).isoformat(),
+        })
+
+        if webhook_event.payment_status == "paid" and webhook_event.metadata:
+            user_id = webhook_event.metadata.get("user_id")
+            if user_id:
+                pool = get_postgres_pool()
+                async with pool.acquire() as conn:
+                    await conn.execute(
+                        "UPDATE users SET status = 'active', updated_at = $1 WHERE id = $2::uuid AND status = 'pending_payment'",
+                        datetime.now(timezone.utc), user_id,
+                    )
+
+                if webhook_event.session_id:
+                    await db.payment_transactions.update_one(
+                        {"stripe_session_id": webhook_event.session_id},
+                        {"$set": {"payment_status": "paid", "updated_at": datetime.now(timezone.utc).isoformat()}},
+                    )
+
+                logger.info(f"[WEBHOOK] User {user_id} activated via webhook")
+
+        return {"status": "success"}
+    except Exception as e:
+        logger.error(f"[WEBHOOK] Error: {e}")
+        return {"status": "error", "message": str(e)}
+
 # WebSocket endpoint for real-time Manager updates
 @app.websocket("/api/ws/manager/{venue_id}")
 async def ws_manager_endpoint(websocket: WebSocket, venue_id: str):
@@ -84,6 +139,16 @@ async def ws_manager_endpoint(websocket: WebSocket, venue_id: str):
 # Include router
 app.include_router(api_router)
 
+
+async def run_column_migrations(pool):
+    """Add new columns needed for Phase 1. Safe to run repeatedly."""
+    async with pool.acquire() as conn:
+        await conn.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS onboarding_completed BOOLEAN DEFAULT FALSE")
+        await conn.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS onboarding_step INTEGER DEFAULT 0")
+        await conn.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS plan_id VARCHAR(50)")
+        await conn.execute("UPDATE users SET onboarding_completed = TRUE WHERE is_system_account = TRUE")
+    logger.info("Phase 1 column migrations completed")
+
 # Startup event
 @app.on_event("startup")
 async def startup_event():
@@ -96,6 +161,9 @@ async def startup_event():
     from database import get_postgres_pool
     pool = get_postgres_pool()
     await startup_protection(pool)
+
+    # STEP 1.5: Run column migrations for Phase 1
+    await run_column_migrations(pool)
 
     # STEP 2: Ensure demo tables exist for product demos
     await ensure_demo_tables()
@@ -181,7 +249,7 @@ async def ensure_demo_tables():
             return
         # If ecosystem is degraded, ensure_demo_ecosystem will rebuild tables
         if existing > 0 and open_sessions < 5:
-            logger.info(f"Demo tables present but ecosystem degraded. Deferring to ensure_demo_ecosystem.")
+            logger.info("Demo tables present but ecosystem degraded. Deferring to ensure_demo_ecosystem.")
             return
         # First run: create basic tables
         now = datetime.now(timezone.utc)

@@ -55,13 +55,30 @@ export const AuthProvider = ({ children }) => {
     setLoading(false);
   }, []);
 
+  const refreshUser = useCallback(async () => {
+    const currentToken = localStorage.getItem('spetap_token');
+    if (!currentToken) return;
+    try {
+      const response = await authAPI.getMe();
+      setUser(response.data);
+    } catch {
+      // silent fail
+    }
+  }, []);
+
   const isCEO = user?.role === 'CEO';
+  const isPendingPayment = user?.status === 'pending_payment';
+  const isActive = user?.status === 'active';
+  const isOnboarded = user?.onboarding_completed === true;
 
   return (
     <AuthContext.Provider value={{
-      user, loading, login, signup, logout, setTokenDirect,
+      user, loading, login, signup, logout, setTokenDirect, refreshUser,
       isAuthenticated: !!token,
       isCEO,
+      isPendingPayment,
+      isActive,
+      isOnboarded,
     }}>
       {children}
     </AuthContext.Provider>

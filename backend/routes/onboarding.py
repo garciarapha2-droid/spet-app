@@ -1,87 +1,82 @@
-from fastapi import APIRouter, HTTPException, Request
-from emergentintegrations.payments.stripe.checkout import StripeCheckout, CheckoutSessionRequest
-from database import get_mongo_db
+from fastapi import APIRouter, HTTPException, Request, Depends
+from middleware.auth_middleware import require_auth
+from database import get_postgres_pool, get_mongo_db
 from config import get_settings
-import uuid
+from emergentintegrations.payments.stripe.checkout import StripeCheckout, CheckoutSessionRequest
+from utils.auth import hash_password
 from datetime import datetime, timezone
+import json
+import uuid
+import logging
 
 router = APIRouter()
+logger = logging.getLogger("onboarding")
 settings = get_settings()
 
-# Fixed pricing plans — never accept amounts from frontend
 PLANS = {
-    "starter": {"name": "Starter", "price": 79.00, "currency": "usd", "interval": "month", "features": ["1 Venue", "Pulse + Tap", "Basic KDS", "Up to 5 staff", "Email support"]},
-    "growth":  {"name": "Growth",  "price": 149.00, "currency": "usd", "interval": "month", "features": ["3 Venues", "All Modules", "Advanced KDS + Bar", "Up to 20 staff", "Priority support", "Manager dashboard"]},
-    "enterprise": {"name": "Enterprise", "price": 299.00, "currency": "usd", "interval": "month", "features": ["Unlimited Venues", "All Modules", "Custom integrations", "Unlimited staff", "Dedicated support", "CEO dashboard", "API access"]},
+    "starter": {
+        "name": "Starter", "price": 79.00, "currency": "usd", "interval": "month",
+        "features": ["1 Venue", "Pulse + Tap", "Basic KDS", "Up to 5 staff", "Email support"],
+    },
+    "growth": {
+        "name": "Growth", "price": 149.00, "currency": "usd", "interval": "month",
+        "features": ["3 Venues", "All Modules", "Advanced KDS + Bar", "Up to 20 staff", "Priority support", "Manager dashboard"],
+    },
+    "enterprise": {
+        "name": "Enterprise", "price": 299.00, "currency": "usd", "interval": "month",
+        "features": ["Unlimited Venues", "All Modules", "Custom integrations", "Unlimited staff", "Dedicated support", "CEO dashboard", "API access"],
+    },
 }
 
 
 @router.get("/plans")
 async def get_plans():
-    """Return available pricing plans"""
     return {"plans": [
         {"id": k, **{key: v[key] for key in ["name", "price", "currency", "interval", "features"]}}
         for k, v in PLANS.items()
     ]}
 
 
-@router.post("/lead")
-async def capture_lead(request: Request):
-    """Step 1: Capture lead info before payment"""
+@router.post("/create-checkout")
+async def create_checkout(request: Request, user: dict = Depends(require_auth)):
+    """Create a Stripe checkout session for payment retry."""
     body = await request.json()
-    name = body.get("name", "").strip()
-    email = body.get("email", "").strip()
-    phone = body.get("phone", "").strip()
-    plan_id = body.get("plan_id", "").strip()
-
-    if not name or not email or not plan_id:
-        raise HTTPException(status_code=400, detail="Name, email, and plan are required")
-
-    if plan_id not in PLANS:
-        raise HTTPException(status_code=400, detail="Invalid plan")
-
-    db = get_mongo_db()
-
-    lead_id = str(uuid.uuid4())
-    lead_doc = {
-        "id": lead_id,
-        "name": name,
-        "email": email,
-        "phone": phone,
-        "plan_id": plan_id,
-        "plan_name": PLANS[plan_id]["name"],
-        "status": "captured",
-        "created_at": datetime.now(timezone.utc).isoformat(),
-    }
-    await db.leads.insert_one(lead_doc)
-
-    return {"lead_id": lead_id, "status": "captured"}
-
-
-@router.post("/checkout")
-async def create_checkout(request: Request):
-    """Step 2: Create Stripe checkout session for a plan"""
-    body = await request.json()
-    plan_id = body.get("plan_id", "").strip()
-    lead_id = body.get("lead_id", "").strip()
     origin_url = body.get("origin_url", "").strip()
+    plan_id = body.get("plan_id", "").strip()
 
-    if not plan_id or plan_id not in PLANS:
-        raise HTTPException(status_code=400, detail="Invalid plan")
     if not origin_url:
         raise HTTPException(status_code=400, detail="Origin URL required")
 
-    plan = PLANS[plan_id]
+    pool = get_postgres_pool()
     db = get_mongo_db()
 
-    # Build URLs from origin
-    success_url = f"{origin_url}/checkout/success?session_id={{CHECKOUT_SESSION_ID}}"
-    cancel_url = f"{origin_url}/pricing"
+    async with pool.acquire() as conn:
+        user_row = await conn.fetchrow(
+            "SELECT id, email, plan_id, status FROM users WHERE id = $1::uuid",
+            user["sub"],
+        )
+        if not user_row:
+            raise HTTPException(status_code=404, detail="User not found")
 
-    # Create Stripe checkout
+        if not plan_id:
+            plan_id = user_row.get("plan_id", "starter") or "starter"
+
+        if plan_id not in PLANS:
+            raise HTTPException(status_code=400, detail="Invalid plan")
+
+        access = await conn.fetchrow(
+            "SELECT company_id FROM user_access WHERE user_id = $1::uuid LIMIT 1",
+            user["sub"],
+        )
+        company_id = str(access["company_id"]) if access and access["company_id"] else ""
+
+    plan = PLANS[plan_id]
+    success_url = f"{origin_url}/payment/success?session_id={{CHECKOUT_SESSION_ID}}"
+    cancel_url = f"{origin_url}/payment/pending"
+
     stripe_checkout = StripeCheckout(
         api_key=settings.stripe_api_key,
-        webhook_url=f"{origin_url}/api/webhook/stripe"
+        webhook_url=f"{origin_url}/api/webhook/stripe",
     )
 
     checkout_req = CheckoutSessionRequest(
@@ -90,22 +85,21 @@ async def create_checkout(request: Request):
         success_url=success_url,
         cancel_url=cancel_url,
         metadata={
+            "user_id": user["sub"],
+            "company_id": company_id,
             "plan_id": plan_id,
-            "plan_name": plan["name"],
-            "lead_id": lead_id or "",
-            "source": "pricing_page",
-        }
+            "email": user_row["email"],
+        },
     )
 
     session = await stripe_checkout.create_checkout_session(checkout_req)
 
-    # Store transaction
     tx_doc = {
         "id": str(uuid.uuid4()),
+        "user_id": user["sub"],
+        "company_id": company_id,
         "stripe_session_id": session.session_id,
-        "lead_id": lead_id,
         "plan_id": plan_id,
-        "plan_name": plan["name"],
         "amount": plan["price"],
         "currency": plan["currency"],
         "payment_status": "pending",
@@ -113,25 +107,31 @@ async def create_checkout(request: Request):
     }
     await db.payment_transactions.insert_one(tx_doc)
 
+    if plan_id != user_row.get("plan_id"):
+        async with pool.acquire() as conn:
+            await conn.execute(
+                "UPDATE users SET plan_id = $1 WHERE id = $2::uuid",
+                plan_id, user["sub"],
+            )
+
     return {"url": session.url, "session_id": session.session_id}
 
 
 @router.get("/checkout/status/{session_id}")
-async def get_checkout_status(session_id: str):
-    """Poll checkout status after redirect"""
+async def check_checkout_status(session_id: str, user: dict = Depends(require_auth)):
+    """Poll checkout status. Activates user on successful payment."""
     db = get_mongo_db()
+    pool = get_postgres_pool()
 
     stripe_checkout = StripeCheckout(
         api_key=settings.stripe_api_key,
-        webhook_url=""
+        webhook_url="",
     )
 
     status = await stripe_checkout.get_checkout_status(session_id)
 
-    # Idempotent update — only update if not already completed
     existing = await db.payment_transactions.find_one(
-        {"stripe_session_id": session_id},
-        {"_id": 0}
+        {"stripe_session_id": session_id}, {"_id": 0}
     )
 
     if existing and existing.get("payment_status") != "paid":
@@ -140,18 +140,17 @@ async def get_checkout_status(session_id: str):
             {"$set": {
                 "payment_status": status.payment_status,
                 "updated_at": datetime.now(timezone.utc).isoformat(),
-            }}
+            }},
         )
 
-        # If paid, update lead status
-        if status.payment_status == "paid" and existing.get("lead_id"):
-            await db.leads.update_one(
-                {"id": existing["lead_id"]},
-                {"$set": {
-                    "status": "converted",
-                    "converted_at": datetime.now(timezone.utc).isoformat(),
-                }}
-            )
+        if status.payment_status == "paid":
+            user_id = existing.get("user_id") or user["sub"]
+            async with pool.acquire() as conn:
+                await conn.execute(
+                    "UPDATE users SET status = 'active', updated_at = $1 WHERE id = $2::uuid AND status = 'pending_payment'",
+                    datetime.now(timezone.utc), user_id,
+                )
+            logger.info(f"[ONBOARDING] User {user_id} activated after payment")
 
     return {
         "status": status.status,
@@ -159,3 +158,207 @@ async def get_checkout_status(session_id: str):
         "amount_total": status.amount_total,
         "currency": status.currency,
     }
+
+
+@router.get("/status")
+async def get_onboarding_status(user: dict = Depends(require_auth)):
+    """Get current onboarding state."""
+    pool = get_postgres_pool()
+    db = get_mongo_db()
+
+    async with pool.acquire() as conn:
+        user_row = await conn.fetchrow(
+            "SELECT id, name, email, status, onboarding_completed, onboarding_step, plan_id FROM users WHERE id = $1::uuid",
+            user["sub"],
+        )
+        if not user_row:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        access = await conn.fetchrow(
+            "SELECT company_id, venue_id FROM user_access WHERE user_id = $1::uuid LIMIT 1",
+            user["sub"],
+        )
+
+    venue = None
+    if access and access["venue_id"]:
+        venue = await db.venues.find_one({"id": str(access["venue_id"])}, {"_id": 0})
+
+    return {
+        "status": user_row["status"],
+        "onboarding_completed": user_row.get("onboarding_completed", False),
+        "onboarding_step": user_row.get("onboarding_step", 0),
+        "plan_id": user_row.get("plan_id"),
+        "has_venue": venue is not None,
+        "venue": venue,
+        "company_id": str(access["company_id"]) if access and access["company_id"] else None,
+    }
+
+
+@router.post("/account-setup")
+async def onboarding_account_setup(request: Request, user: dict = Depends(require_auth)):
+    """Step 2: Set up venue name and type."""
+    body = await request.json()
+    venue_name = body.get("venue_name", "").strip()
+    venue_type = body.get("venue_type", "bar").strip()
+    user_name = body.get("user_name", "").strip()
+
+    if not venue_name:
+        raise HTTPException(status_code=400, detail="Venue name is required")
+
+    pool = get_postgres_pool()
+    db = get_mongo_db()
+    now = datetime.now(timezone.utc)
+
+    async with pool.acquire() as conn:
+        if user_name:
+            await conn.execute(
+                "UPDATE users SET name = $1, updated_at = $2 WHERE id = $3::uuid",
+                user_name, now, user["sub"],
+            )
+
+        access = await conn.fetchrow(
+            "SELECT id, company_id, venue_id FROM user_access WHERE user_id = $1::uuid LIMIT 1",
+            user["sub"],
+        )
+        if not access:
+            raise HTTPException(status_code=400, detail="No company access found")
+
+        company_id = str(access["company_id"])
+
+        if access["venue_id"]:
+            await db.venues.update_one(
+                {"id": str(access["venue_id"])},
+                {"$set": {"name": venue_name, "venue_type": venue_type, "updated_at": now.isoformat()}},
+            )
+            venue_id = str(access["venue_id"])
+        else:
+            venue_id = str(uuid.uuid4())
+            await db.venues.insert_one({
+                "id": venue_id,
+                "company_id": company_id,
+                "name": venue_name,
+                "venue_type": venue_type,
+                "status": "active",
+                "created_at": now.isoformat(),
+            })
+
+            await db.venue_configs.insert_one({
+                "venue_id": venue_id,
+                "modules": ["pulse", "tap", "table", "kds"],
+                "host_collect_dob": True,
+                "host_collect_photo": True,
+                "bar_mode": "bar",
+                "entry_types": ["vip", "cover", "cover_consumption", "consumption_only"],
+            })
+
+            await conn.execute(
+                "UPDATE user_access SET venue_id = $1::uuid WHERE id = $2",
+                uuid.UUID(venue_id), access["id"],
+            )
+
+        await conn.execute(
+            "UPDATE users SET onboarding_step = GREATEST(onboarding_step, 2), updated_at = $1 WHERE id = $2::uuid",
+            now, user["sub"],
+        )
+
+    return {"venue_id": venue_id, "step": 2}
+
+
+@router.post("/password-reset")
+async def onboarding_password_reset(request: Request, user: dict = Depends(require_auth)):
+    """Step 3: Force password reset during onboarding."""
+    body = await request.json()
+    new_password = body.get("new_password", "").strip()
+
+    if not new_password or len(new_password) < 6:
+        raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
+
+    pool = get_postgres_pool()
+    now = datetime.now(timezone.utc)
+
+    hashed = hash_password(new_password)
+    async with pool.acquire() as conn:
+        await conn.execute(
+            "UPDATE users SET password_hash = $1, onboarding_step = GREATEST(onboarding_step, 3), updated_at = $2 WHERE id = $3::uuid",
+            hashed, now, user["sub"],
+        )
+
+    return {"step": 3}
+
+
+@router.post("/modules-setup")
+async def onboarding_modules_setup(request: Request, user: dict = Depends(require_auth)):
+    """Step 4: Configure which modules are enabled."""
+    body = await request.json()
+    modules = body.get("modules", [])
+
+    valid_modules = {"pulse", "tap", "table", "kds"}
+    enabled_modules = [m for m in modules if m in valid_modules]
+
+    if not enabled_modules:
+        enabled_modules = ["pulse", "tap"]
+
+    pool = get_postgres_pool()
+    db = get_mongo_db()
+    now = datetime.now(timezone.utc)
+
+    async with pool.acquire() as conn:
+        access = await conn.fetchrow(
+            "SELECT id, venue_id FROM user_access WHERE user_id = $1::uuid LIMIT 1",
+            user["sub"],
+        )
+        if not access or not access["venue_id"]:
+            raise HTTPException(status_code=400, detail="Complete account setup first")
+
+        venue_id = str(access["venue_id"])
+
+        permissions = {m: True for m in enabled_modules}
+        permissions["HOST_COLLECT_DOB"] = True
+
+        await conn.execute(
+            "UPDATE user_access SET permissions = $1::jsonb WHERE id = $2",
+            json.dumps(permissions), access["id"],
+        )
+
+        await db.venue_configs.update_one(
+            {"venue_id": venue_id},
+            {"$set": {"modules": enabled_modules}},
+            upsert=True,
+        )
+
+        await conn.execute(
+            "UPDATE users SET onboarding_step = GREATEST(onboarding_step, 4), updated_at = $1 WHERE id = $2::uuid",
+            now, user["sub"],
+        )
+
+    return {"modules": enabled_modules, "step": 4}
+
+
+@router.post("/team-setup")
+async def onboarding_team_setup(request: Request, user: dict = Depends(require_auth)):
+    """Step 5: Team setup placeholder."""
+    pool = get_postgres_pool()
+    now = datetime.now(timezone.utc)
+
+    async with pool.acquire() as conn:
+        await conn.execute(
+            "UPDATE users SET onboarding_step = GREATEST(onboarding_step, 5), updated_at = $1 WHERE id = $2::uuid",
+            now, user["sub"],
+        )
+
+    return {"step": 5}
+
+
+@router.post("/complete")
+async def onboarding_complete(user: dict = Depends(require_auth)):
+    """Mark onboarding as completed."""
+    pool = get_postgres_pool()
+    now = datetime.now(timezone.utc)
+
+    async with pool.acquire() as conn:
+        await conn.execute(
+            "UPDATE users SET onboarding_completed = TRUE, onboarding_step = 6, updated_at = $1 WHERE id = $2::uuid",
+            now, user["sub"],
+        )
+
+    return {"completed": True, "step": 6}

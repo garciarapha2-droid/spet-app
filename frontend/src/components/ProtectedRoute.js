@@ -2,56 +2,69 @@ import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
-/*
- * PRODUCTION: Set REACT_APP_LOVABLE_LOGIN_URL to redirect to Lovable.
- * PREVIEW/DEV: Leave it unset — falls back to internal /login page.
- */
-const LOVABLE_LOGIN = process.env.REACT_APP_LOVABLE_LOGIN_URL;
+const Spinner = () => (
+  <div className="flex items-center justify-center min-h-screen bg-[#0a0a0a]">
+    <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-500" />
+  </div>
+);
 
-const RedirectToLogin = () => {
-  if (LOVABLE_LOGIN) {
-    window.location.href = LOVABLE_LOGIN;
-    return null;
-  }
-  return <Navigate to="/login" replace />;
-};
+/** Only accessible when NOT authenticated (login, signup) */
+export const PublicOnly = ({ children }) => {
+  const { isAuthenticated, loading, user } = useAuth();
 
-export const ProtectedRoute = ({ children }) => {
-  const { isAuthenticated, loading } = useAuth();
+  if (loading) return <Spinner />;
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-background">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-foreground/30"></div>
-      </div>
-    );
-  }
-
-  if (!isAuthenticated) {
-    return <RedirectToLogin />;
+  if (isAuthenticated) {
+    if (user?.status === 'pending_payment') return <Navigate to="/payment/pending" replace />;
+    if (!user?.onboarding_completed) return <Navigate to="/onboarding" replace />;
+    return <Navigate to="/venue/home" replace />;
   }
 
   return children;
 };
 
+/** Requires authentication only (any status) — for payment pages */
+export const AuthOnly = ({ children }) => {
+  const { isAuthenticated, loading } = useAuth();
+
+  if (loading) return <Spinner />;
+  if (!isAuthenticated) return <Navigate to="/login" replace />;
+
+  return children;
+};
+
+/** Requires auth + active status — for onboarding */
+export const ActiveOnly = ({ children }) => {
+  const { isAuthenticated, loading, user } = useAuth();
+
+  if (loading) return <Spinner />;
+  if (!isAuthenticated) return <Navigate to="/login" replace />;
+  if (user?.status === 'pending_payment') return <Navigate to="/payment/pending" replace />;
+
+  return children;
+};
+
+/** Full protection: auth + active + onboarded — for all app routes */
+export const ProtectedRoute = ({ children }) => {
+  const { isAuthenticated, loading, user } = useAuth();
+
+  if (loading) return <Spinner />;
+  if (!isAuthenticated) return <Navigate to="/login" replace />;
+  if (user?.status === 'pending_payment') return <Navigate to="/payment/pending" replace />;
+  if (!user?.onboarding_completed) return <Navigate to="/onboarding" replace />;
+
+  return children;
+};
+
+/** CEO-only route: auth + active + onboarded + CEO role */
 export const CEORoute = ({ children }) => {
-  const { isAuthenticated, loading, isCEO } = useAuth();
+  const { isAuthenticated, loading, user, isCEO } = useAuth();
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-background">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-foreground/30"></div>
-      </div>
-    );
-  }
-
-  if (!isAuthenticated) {
-    return <RedirectToLogin />;
-  }
-
-  if (!isCEO) {
-    return <Navigate to="/venue/home" replace />;
-  }
+  if (loading) return <Spinner />;
+  if (!isAuthenticated) return <Navigate to="/login" replace />;
+  if (user?.status === 'pending_payment') return <Navigate to="/payment/pending" replace />;
+  if (!user?.onboarding_completed) return <Navigate to="/onboarding" replace />;
+  if (!isCEO) return <Navigate to="/venue/home" replace />;
 
   return children;
 };

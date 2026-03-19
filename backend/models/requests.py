@@ -14,6 +14,8 @@ class SignupRequest(BaseModel):
     name: Optional[str] = None
     company_name: Optional[str] = None
     venue_type: Optional[str] = None  # bar, nightclub, restaurant, lounge, etc.
+    plan_id: Optional[str] = None  # starter, growth, enterprise
+    origin_url: Optional[str] = None  # for Stripe redirect URLs
 
 # Guest/Pulse requests
 class GuestIntakeRequest(BaseModel):

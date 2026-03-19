@@ -19,8 +19,7 @@ api.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       localStorage.removeItem('spetap_token');
-      const lovableLogin = process.env.REACT_APP_LOVABLE_LOGIN_URL || 'https://spet.lovable.app/login';
-      window.location.href = lovableLogin;
+      window.location.href = '/login';
     }
     return Promise.reject(error);
   }
@@ -230,4 +229,17 @@ export const ceoAPI = {
   getSalesPerformance: () => api.get('/ceo/sales-performance'),
   getCustomerLifecycle: () => api.get('/ceo/customer-lifecycle'),
   getRiskDashboard: () => api.get('/ceo/risk-dashboard'),
+};
+
+// Onboarding
+export const onboardingAPI = {
+  getPlans: () => api.get('/onboarding/plans'),
+  createCheckout: (origin_url, plan_id) => api.post('/onboarding/create-checkout', { origin_url, plan_id }),
+  getCheckoutStatus: (sessionId) => api.get(`/onboarding/checkout/status/${sessionId}`),
+  getStatus: () => api.get('/onboarding/status'),
+  accountSetup: (data) => api.post('/onboarding/account-setup', data),
+  passwordReset: (new_password) => api.post('/onboarding/password-reset', { new_password }),
+  modulesSetup: (modules) => api.post('/onboarding/modules-setup', { modules }),
+  teamSetup: (data) => api.post('/onboarding/team-setup', data || {}),
+  complete: () => api.post('/onboarding/complete'),
 };
