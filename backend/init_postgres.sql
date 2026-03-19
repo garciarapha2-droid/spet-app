@@ -333,3 +333,20 @@ CREATE TABLE IF NOT EXISTS kds_ticket_items (
 );
 
 CREATE INDEX idx_kds_ticket_items_ticket ON kds_ticket_items(ticket_id);
+
+-- Leads (capture from all sources)
+CREATE TABLE IF NOT EXISTS leads (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    full_name VARCHAR(255) NOT NULL,
+    email VARCHAR(255) NOT NULL,
+    phone VARCHAR(50),
+    product_interest VARCHAR(100),
+    source VARCHAR(20) NOT NULL,
+    email_sent BOOLEAN DEFAULT FALSE,
+    email_id VARCHAR(255),
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX idx_leads_source ON leads(source);
+CREATE INDEX idx_leads_email ON leads(email);
+CREATE INDEX idx_leads_created ON leads(created_at DESC);

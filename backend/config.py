@@ -24,6 +24,13 @@ class Settings(BaseSettings):
 
     # LLM
     emergent_llm_key: str = os.getenv('EMERGENT_LLM_KEY', '')
+
+    # Resend (email)
+    resend_api_key: str = os.getenv('RESEND_API_KEY', '')
+    resend_from_leads: str = os.getenv('RESEND_FROM_LEADS', 'leads@spetapp.com')
+    resend_from_contact: str = os.getenv('RESEND_FROM_CONTACT', 'contact@spetapp.com')
+    resend_from_support: str = os.getenv('RESEND_FROM_SUPPORT', 'support@spetapp.com')
+    lead_notification_to: str = os.getenv('LEAD_NOTIFICATION_TO', 'r.collasos@spetapp.com')
     
     class Config:
         env_file = '.env'

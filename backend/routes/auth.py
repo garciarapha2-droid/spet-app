@@ -80,6 +80,11 @@ async def login(request: LoginRequest):
     return _build_token_and_response(user, access_roles)
 
 
+from routes.leads import capture_lead_internal
+import logging as _auth_logging
+_auth_logger = _auth_logging.getLogger("auth")
+
+
 @router.post("/signup", response_model=LoginResponse)
 async def signup(request: SignupRequest):
     pool = get_postgres_pool()
@@ -152,6 +157,17 @@ async def signup(request: SignupRequest):
             "role": "owner",
             "permissions": json.loads(permissions),
         }]
+
+    # Fire-and-forget lead capture (non-blocking — never fails the signup)
+    try:
+        await capture_lead_internal(
+            full_name=request.name or request.email.split("@")[0],
+            email=request.email.lower(),
+            product_interest=venue_type,
+            source="signup",
+        )
+    except Exception as e:
+        _auth_logger.error(f"[SIGNUP] Lead capture failed (non-blocking): {e}")
 
     return _build_token_and_response(user_row, access_roles)
 
