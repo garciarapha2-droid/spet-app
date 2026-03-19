@@ -42,7 +42,7 @@ Create a new account. Returns JWT + Stripe checkout URL.
       "onboarding_completed": false,
       "created_at": "2026-01-01T00:00:00"
     },
-    "next": { "type": "route", "route": "/payment/pending" },
+    "next": { "type": "route", "route": "/payment" },
     "checkout_url": "https://checkout.stripe.com/..."
   },
   "error": null
@@ -85,18 +85,18 @@ Authenticate and get JWT token.
     },
     "next": {
       "type": "route",
-      "route": "/venue/home|/payment/pending|/onboarding"
+      "route": "/app|/payment|/onboarding"
     }
   },
   "error": null
 }
 ```
 
-**Frontend Decision Tree:**
+**Frontend Routing Decision:**
 ```
-if (user.status === "pending_payment") → show payment screen
-else if (!user.onboarding_completed)   → show onboarding
-else                                    → show dashboard by role
+if (user.status === "pending_payment") → /payment
+else if (!user.onboarding_completed)   → /onboarding
+else                                    → /app
 ```
 
 ---
@@ -183,6 +183,15 @@ Primary endpoint for frontend routing decisions.
 }
 ```
 
+**Frontend Usage:**
+```javascript
+const { flags } = await fetch('/api/auth/permissions');
+
+if (flags.requires_payment)     → /payment
+if (flags.requires_onboarding)  → /onboarding
+else                            → /app
+```
+
 ---
 
 ### GET `/api/auth/payment-status`
@@ -220,7 +229,7 @@ Invalidate current token. **Requires: Bearer token**
 ---
 
 ### POST `/api/auth/handoff/create`
-Create a one-time auth handoff code (for Lovable ↔ Emergent token exchange). **Requires: Bearer token**
+Create a one-time auth handoff code (for cross-domain token exchange). **Requires: Bearer token**
 
 **Response:**
 ```json
@@ -236,7 +245,7 @@ Exchange handoff code for a JWT token. **No auth required.**
 
 **Body:** `{ "code": "abc123..." }`
 
-**Response:** Same as login.
+**Response:** Same structure as login.
 
 ---
 
@@ -270,7 +279,7 @@ Get available subscription plans. **No auth required.**
 ---
 
 ### POST `/api/onboarding/create-checkout`
-Create a Stripe checkout session (for payment retry). **Requires: Bearer token**
+Create a Stripe checkout session (for payment or retry). **Requires: Bearer token**
 
 **Body:**
 ```json
@@ -308,7 +317,7 @@ Poll payment status. Activates user when paid. **Requires: Bearer token**
 }
 ```
 
-**Frontend:** Poll every 2s until `payment_status === "paid"`, then redirect to onboarding.
+**Frontend:** Poll every 2s until `payment_status === "paid"`, then redirect to `/onboarding`.
 
 ---
 
@@ -424,31 +433,33 @@ Demo accounts bypass the paywall — they are always treated as `active` regardl
 
 ---
 
-## Integration Guide (Lovable)
+## Frontend Integration Guide
 
-### Setup
-1. Store the backend URL as an environment variable
-2. All requests to `/api/*` endpoints
-3. Include `Authorization: Bearer {token}` header on protected routes
-4. Handle the standard `{success, data, error}` response format
+### Routing Standard
+```
+/                → Landing page (speedapp.com)
+/payment         → Payment required / Stripe flow
+/onboarding      → Multi-step onboarding
+/app             → Authenticated app entry (all active+onboarded users)
+```
 
 ### Authentication Flow
 ```
-1. User signs up → POST /api/auth/signup → store token, redirect to checkout_url
+1. User signs up  → POST /api/auth/signup → store token, redirect to checkout_url
 2. Stripe payment → redirect to /payment/success?session_id=xxx
 3. Poll GET /api/onboarding/checkout/status/{session_id} until paid
 4. Onboarding steps (2-6) → POST each step endpoint
 5. POST /api/onboarding/complete
-6. GET /api/auth/permissions → route to correct dashboard
+6. GET /api/auth/permissions → flags determine route → /app
 ```
 
-### Route Decision
+### Route Decision (from `GET /api/auth/permissions`)
 ```javascript
-const { flags, access } = await fetch('/api/auth/permissions');
+const { flags } = await fetch('/api/auth/permissions');
 
 if (flags.requires_payment)     → /payment
 if (flags.requires_onboarding)  → /onboarding
-else                            → route by access[0].role
+else                            → /app
 ```
 
 ### CORS

@@ -42,11 +42,11 @@ def _build_token_and_response(user_row, access_roles, checkout_url=None):
     access_token = create_access_token(token_data)
 
     if status == "pending_payment":
-        next_route = "/payment/pending"
+        next_route = "/payment"
     elif not onboarding:
         next_route = "/onboarding"
     else:
-        next_route = "/venue/home"
+        next_route = "/app"
 
     created_at = user_row["created_at"]
     if hasattr(created_at, "isoformat"):
