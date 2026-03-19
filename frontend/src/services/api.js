@@ -220,4 +220,6 @@ export const ceoAPI = {
   createUser: (fd) => api.post('/ceo/users', fd),
   updateUser: (userId, fd) => api.put(`/ceo/users/${userId}`, fd),
   deleteUser: (userId) => api.delete(`/ceo/users/${userId}`),
+  getLeads: () => api.get('/ceo/leads'),
+  updateLeadStatus: (leadId, formData) => api.put(`/ceo/leads/${leadId}/status`, formData),
 };

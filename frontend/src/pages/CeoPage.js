@@ -7,10 +7,12 @@ import { Button } from '../components/ui/button';
 import {
   ArrowLeft, DollarSign, TrendingUp, Users, Building2, Activity,
   Target, AlertTriangle, ChevronRight, BarChart3, ShieldAlert,
-  Zap, ArrowUpRight, ArrowDownRight, X, Check, Layers, UserPlus, Pencil, Trash2, Power
+  Zap, ArrowUpRight, ArrowDownRight, X, Check, Layers, UserPlus, Pencil, Trash2, Power,
+  ContactRound, Eye, StickyNote, CreditCard, UserCheck, Rocket
 } from 'lucide-react';
 
 const TABS = [
+  { key: 'crm', label: 'CRM / Leads', icon: ContactRound },
   { key: 'health', label: 'Company Health', icon: Activity },
   { key: 'revenue', label: 'Revenue & Profit', icon: DollarSign },
   { key: 'companies', label: 'Companies', icon: Building2 },
@@ -22,7 +24,7 @@ const TABS = [
 
 export default function CeoPage() {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('health');
+  const [activeTab, setActiveTab] = useState('crm');
   const [targets, setTargets] = useState(null);
   const [targetsLoading, setTargetsLoading] = useState(true);
   const [editingTargets, setEditingTargets] = useState(false);
@@ -124,6 +126,7 @@ export default function CeoPage() {
 
         {/* Main Content */}
         <main className="flex-1 p-6 overflow-y-auto max-h-[calc(100vh-3.5rem)]">
+          {activeTab === 'crm' && <CRMSection />}
           {activeTab === 'health' && <HealthSection />}
           {activeTab === 'revenue' && <RevenueSection />}
           {activeTab === 'companies' && <CompaniesSection />}
@@ -172,6 +175,307 @@ function TargetCard({ label, data, color }) {
           <span className={`font-bold ${textMap[color]}`}>${(data.pace_needed || 0).toLocaleString()}/day</span>
         </div>
       </div>
+    </div>
+  );
+}
+
+/* ─── CRM: Leads Management ─── */
+function CRMSection() {
+  const [leads, setLeads] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedLead, setSelectedLead] = useState(null);
+  const [noteText, setNoteText] = useState('');
+  const [filterSource, setFilterSource] = useState('all');
+  const [filterStatus, setFilterStatus] = useState('all');
+  const [saving, setSaving] = useState(false);
+
+  const loadLeads = useCallback(() => {
+    setLoading(true);
+    ceoAPI.getLeads()
+      .then(r => setLeads(r.data.leads || []))
+      .catch(() => toast.error('Failed to load leads'))
+      .finally(() => setLoading(false));
+  }, []);
+
+  useEffect(() => { loadLeads(); }, [loadLeads]);
+
+  const updateStatus = async (leadId, status) => {
+    setSaving(true);
+    const fd = new FormData();
+    fd.append('status', status);
+    try {
+      await ceoAPI.updateLeadStatus(leadId, fd);
+      toast.success(`Status → ${status}`);
+      setLeads(prev => prev.map(l => l.id === leadId ? { ...l, status } : l));
+      if (selectedLead?.id === leadId) setSelectedLead(prev => ({ ...prev, status }));
+    } catch { toast.error('Failed'); }
+    setSaving(false);
+  };
+
+  const updatePaymentStatus = async (leadId, paymentStatus) => {
+    setSaving(true);
+    const fd = new FormData();
+    fd.append('payment_status', paymentStatus);
+    try {
+      await ceoAPI.updateLeadStatus(leadId, fd);
+      toast.success(`Payment → ${paymentStatus}`);
+      setLeads(prev => prev.map(l => l.id === leadId ? { ...l, payment_status: paymentStatus } : l));
+      if (selectedLead?.id === leadId) setSelectedLead(prev => ({ ...prev, payment_status: paymentStatus }));
+    } catch { toast.error('Failed'); }
+    setSaving(false);
+  };
+
+  const saveNote = async (leadId) => {
+    if (!noteText.trim()) return;
+    setSaving(true);
+    const fd = new FormData();
+    fd.append('notes', noteText);
+    try {
+      await ceoAPI.updateLeadStatus(leadId, fd);
+      toast.success('Note saved');
+      setLeads(prev => prev.map(l => l.id === leadId ? { ...l, notes: noteText } : l));
+      if (selectedLead?.id === leadId) setSelectedLead(prev => ({ ...prev, notes: noteText }));
+    } catch { toast.error('Failed'); }
+    setSaving(false);
+  };
+
+  const STATUSES = ['new', 'contacted', 'qualified', 'paid', 'onboarding', 'active', 'lost'];
+  const statusColors = {
+    new: 'bg-gray-500/10 text-gray-500', contacted: 'bg-blue-500/10 text-blue-500',
+    qualified: 'bg-purple-500/10 text-purple-500', paid: 'bg-emerald-500/10 text-emerald-500',
+    onboarding: 'bg-amber-500/10 text-amber-500', active: 'bg-green-500/10 text-green-600',
+    lost: 'bg-red-500/10 text-red-500',
+  };
+  const sourceColors = {
+    signup: 'bg-indigo-500/10 text-indigo-500', contact: 'bg-sky-500/10 text-sky-500',
+    support: 'bg-orange-500/10 text-orange-500',
+  };
+
+  const filtered = leads.filter(l =>
+    (filterSource === 'all' || l.source === filterSource) &&
+    (filterStatus === 'all' || l.status === filterStatus)
+  );
+
+  if (loading) return <Skeleton />;
+
+  return (
+    <div className="flex gap-6" data-testid="ceo-crm-section">
+      {/* Leads Table */}
+      <div className={`${selectedLead ? 'flex-1 min-w-0' : 'w-full'}`}>
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h2 className="text-xl font-bold">CRM / Leads</h2>
+            <p className="text-xs text-muted-foreground">{filtered.length} of {leads.length} leads</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <select value={filterSource} onChange={e => setFilterSource(e.target.value)}
+              className="h-8 text-xs bg-background border border-border rounded-md px-2" data-testid="crm-filter-source">
+              <option value="all">All Sources</option>
+              <option value="signup">Signup</option>
+              <option value="contact">Contact</option>
+              <option value="support">Support</option>
+            </select>
+            <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)}
+              className="h-8 text-xs bg-background border border-border rounded-md px-2" data-testid="crm-filter-status">
+              <option value="all">All Status</option>
+              {STATUSES.map(s => <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>)}
+            </select>
+          </div>
+        </div>
+
+        {/* Stats row */}
+        <div className="grid grid-cols-4 gap-3 mb-4">
+          {[
+            { label: 'Total', value: leads.length, color: 'text-foreground' },
+            { label: 'New', value: leads.filter(l => l.status === 'new').length, color: 'text-gray-500' },
+            { label: 'Paid', value: leads.filter(l => l.status === 'paid' || l.payment_status === 'paid').length, color: 'text-emerald-500' },
+            { label: 'Active', value: leads.filter(l => l.status === 'active').length, color: 'text-green-500' },
+          ].map(s => (
+            <div key={s.label} className="bg-card border border-border rounded-lg p-3 text-center">
+              <p className={`text-xl font-bold ${s.color}`}>{s.value}</p>
+              <p className="text-[10px] text-muted-foreground">{s.label}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* Table */}
+        <div className="bg-card border border-border rounded-xl overflow-hidden">
+          <table className="w-full text-sm" data-testid="crm-leads-table">
+            <thead>
+              <tr className="border-b border-border bg-muted/30">
+                <th className="text-left px-4 py-2.5 text-xs font-semibold text-muted-foreground">Name</th>
+                <th className="text-left px-3 py-2.5 text-xs font-semibold text-muted-foreground">Source</th>
+                <th className="text-left px-3 py-2.5 text-xs font-semibold text-muted-foreground">Interest</th>
+                <th className="text-left px-3 py-2.5 text-xs font-semibold text-muted-foreground">Status</th>
+                <th className="text-left px-3 py-2.5 text-xs font-semibold text-muted-foreground">Payment</th>
+                <th className="text-left px-3 py-2.5 text-xs font-semibold text-muted-foreground">Date</th>
+                <th className="text-center px-3 py-2.5 text-xs font-semibold text-muted-foreground">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.length === 0 ? (
+                <tr><td colSpan={7} className="text-center py-8 text-muted-foreground text-sm">No leads found</td></tr>
+              ) : filtered.map(l => (
+                <tr key={l.id} className={`border-b border-border/50 hover:bg-muted/20 transition-colors cursor-pointer ${selectedLead?.id === l.id ? 'bg-primary/5' : ''}`}
+                  onClick={() => { setSelectedLead(l); setNoteText(l.notes || ''); }}
+                  data-testid={`crm-lead-row-${l.id}`}>
+                  <td className="px-4 py-3">
+                    <p className="font-medium text-sm truncate max-w-[160px]">{l.full_name}</p>
+                    <p className="text-[10px] text-muted-foreground truncate max-w-[160px]">{l.email}</p>
+                  </td>
+                  <td className="px-3 py-3">
+                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${sourceColors[l.source] || 'bg-muted text-muted-foreground'}`}>
+                      {l.source}
+                    </span>
+                  </td>
+                  <td className="px-3 py-3 text-xs text-muted-foreground">{l.product_interest || '—'}</td>
+                  <td className="px-3 py-3">
+                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${statusColors[l.status] || 'bg-muted'}`}>
+                      {l.status}
+                    </span>
+                  </td>
+                  <td className="px-3 py-3">
+                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${l.payment_status === 'paid' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-muted text-muted-foreground'}`}>
+                      {l.payment_status}
+                    </span>
+                  </td>
+                  <td className="px-3 py-3 text-xs text-muted-foreground">{l.created_at ? new Date(l.created_at).toLocaleDateString() : '—'}</td>
+                  <td className="px-3 py-3 text-center">
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); setSelectedLead(l); setNoteText(l.notes || ''); }}
+                      data-testid={`crm-view-${l.id}`}>
+                      <Eye className="h-3.5 w-3.5" />
+                    </Button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Detail Panel */}
+      {selectedLead && (
+        <div className="w-96 flex-shrink-0 bg-card border border-border rounded-xl p-5 h-fit sticky top-0" data-testid="crm-lead-detail">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-bold text-base">Lead Details</h3>
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setSelectedLead(null)}
+              data-testid="crm-close-detail"><X className="h-4 w-4" /></Button>
+          </div>
+
+          <div className="space-y-4">
+            {/* Contact Info */}
+            <div className="space-y-2">
+              <p className="text-xs font-semibold text-muted-foreground uppercase">Contact</p>
+              <div className="bg-muted/30 rounded-lg p-3 space-y-1.5">
+                <p className="text-sm font-medium">{selectedLead.full_name}</p>
+                <p className="text-xs text-muted-foreground">{selectedLead.email}</p>
+                <p className="text-xs text-muted-foreground">{selectedLead.phone || 'No phone'}</p>
+              </div>
+            </div>
+
+            {/* Details */}
+            <div className="space-y-2">
+              <p className="text-xs font-semibold text-muted-foreground uppercase">Details</p>
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <div className="bg-muted/30 rounded-lg p-2.5">
+                  <p className="text-muted-foreground mb-0.5">Source</p>
+                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${sourceColors[selectedLead.source] || ''}`}>{selectedLead.source}</span>
+                </div>
+                <div className="bg-muted/30 rounded-lg p-2.5">
+                  <p className="text-muted-foreground mb-0.5">Interest</p>
+                  <p className="font-medium">{selectedLead.product_interest || '—'}</p>
+                </div>
+                <div className="bg-muted/30 rounded-lg p-2.5">
+                  <p className="text-muted-foreground mb-0.5">Company</p>
+                  <p className="font-medium">{selectedLead.company_name}</p>
+                </div>
+                <div className="bg-muted/30 rounded-lg p-2.5">
+                  <p className="text-muted-foreground mb-0.5">Account</p>
+                  <p className="font-medium">{selectedLead.has_account ? 'Yes' : 'No'}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Status Actions */}
+            <div className="space-y-2">
+              <p className="text-xs font-semibold text-muted-foreground uppercase">Lead Status</p>
+              <div className="flex flex-wrap gap-1.5">
+                {STATUSES.map(s => (
+                  <button key={s} disabled={saving} onClick={() => updateStatus(selectedLead.id, s)}
+                    className={`px-2.5 py-1 text-[10px] font-medium rounded-md border transition-all ${
+                      selectedLead.status === s
+                        ? 'border-primary bg-primary/10 text-primary'
+                        : 'border-border text-muted-foreground hover:border-primary/30'
+                    }`} data-testid={`crm-status-${s}`}>
+                    {s.charAt(0).toUpperCase() + s.slice(1)}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Payment Quick Actions */}
+            <div className="space-y-2">
+              <p className="text-xs font-semibold text-muted-foreground uppercase">Payment</p>
+              <div className="flex gap-2">
+                {['N/A', 'pending', 'paid'].map(ps => (
+                  <button key={ps} disabled={saving} onClick={() => updatePaymentStatus(selectedLead.id, ps)}
+                    className={`flex-1 px-2 py-1.5 text-[10px] font-medium rounded-md border transition-all ${
+                      selectedLead.payment_status === ps
+                        ? 'border-primary bg-primary/10 text-primary'
+                        : 'border-border text-muted-foreground hover:border-primary/30'
+                    }`} data-testid={`crm-payment-${ps}`}>
+                    {ps === 'paid' && <CreditCard className="h-3 w-3 inline mr-1" />}
+                    {ps.charAt(0).toUpperCase() + ps.slice(1)}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Lifecycle Actions */}
+            <div className="space-y-2">
+              <p className="text-xs font-semibold text-muted-foreground uppercase">Quick Actions</p>
+              <div className="grid grid-cols-2 gap-2">
+                <Button size="sm" variant="outline" disabled={saving} className="text-xs h-8"
+                  onClick={() => { updatePaymentStatus(selectedLead.id, 'paid'); updateStatus(selectedLead.id, 'paid'); }}
+                  data-testid="crm-mark-paid">
+                  <CreditCard className="h-3 w-3 mr-1" /> Mark Paid
+                </Button>
+                <Button size="sm" variant="outline" disabled={saving} className="text-xs h-8"
+                  onClick={() => updateStatus(selectedLead.id, 'onboarding')}
+                  data-testid="crm-mark-onboarding">
+                  <Rocket className="h-3 w-3 mr-1" /> Onboarding
+                </Button>
+                <Button size="sm" variant="outline" disabled={saving} className="text-xs h-8 col-span-2"
+                  onClick={() => updateStatus(selectedLead.id, 'active')}
+                  data-testid="crm-mark-active">
+                  <UserCheck className="h-3 w-3 mr-1" /> Mark Active
+                </Button>
+              </div>
+            </div>
+
+            {/* Notes */}
+            <div className="space-y-2">
+              <p className="text-xs font-semibold text-muted-foreground uppercase flex items-center gap-1">
+                <StickyNote className="h-3 w-3" /> Internal Notes
+              </p>
+              <textarea value={noteText} onChange={e => setNoteText(e.target.value)}
+                className="w-full h-20 text-xs bg-background border border-border rounded-lg p-2.5 resize-none focus:ring-1 focus:ring-primary"
+                placeholder="Add internal notes..." data-testid="crm-notes-input" />
+              <Button size="sm" className="w-full text-xs h-8" disabled={saving}
+                onClick={() => saveNote(selectedLead.id)} data-testid="crm-save-notes">
+                <Check className="h-3 w-3 mr-1" /> Save Note
+              </Button>
+            </div>
+
+            {/* Metadata */}
+            <div className="pt-2 border-t border-border/50 text-[10px] text-muted-foreground space-y-0.5">
+              <p>Lead ID: {selectedLead.id}</p>
+              <p>Created: {selectedLead.created_at ? new Date(selectedLead.created_at).toLocaleString() : '—'}</p>
+              <p>Email notified: {selectedLead.email_sent ? 'Yes' : 'No'}</p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

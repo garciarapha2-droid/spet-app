@@ -342,6 +342,9 @@ CREATE TABLE IF NOT EXISTS leads (
     phone VARCHAR(50),
     product_interest VARCHAR(100),
     source VARCHAR(20) NOT NULL,
+    status VARCHAR(20) DEFAULT 'new',
+    payment_status VARCHAR(20) DEFAULT 'N/A',
+    notes TEXT,
     email_sent BOOLEAN DEFAULT FALSE,
     email_id VARCHAR(255),
     created_at TIMESTAMPTZ DEFAULT NOW()

@@ -658,3 +658,92 @@ async def delete_ceo_user(user_id: str, user: dict = Depends(require_ceo)):
         await conn.execute("DELETE FROM user_access WHERE user_id = $1", uid)
         await conn.execute("DELETE FROM users WHERE id = $1", uid)
     return {"deleted": True, "user_id": user_id}
+
+
+
+# ─── CRM: Leads Management ────────────────────────────────────────────────
+
+LEAD_STATUSES = {"new", "contacted", "qualified", "paid", "onboarding", "active", "lost"}
+
+
+@router.get("/leads")
+async def get_leads(user: dict = Depends(require_ceo)):
+    """Fetch all leads with optional company/venue info."""
+    pool = get_postgres_pool()
+    async with pool.acquire() as conn:
+        rows = await conn.fetch("""
+            SELECT l.id, l.full_name, l.email, l.phone, l.product_interest,
+                   l.source, l.email_sent, l.email_id, l.created_at,
+                   COALESCE(l.status, 'new') AS status,
+                   COALESCE(l.payment_status, 'N/A') AS payment_status,
+                   l.notes,
+                   u.id AS user_id,
+                   c.name AS company_name
+            FROM leads l
+            LEFT JOIN users u ON u.email = l.email
+            LEFT JOIN user_access ua ON ua.user_id = u.id
+            LEFT JOIN companies c ON c.id = ua.company_id
+            ORDER BY l.created_at DESC
+        """)
+        leads = []
+        for r in rows:
+            leads.append({
+                "id": str(r["id"]),
+                "full_name": r["full_name"],
+                "email": r["email"],
+                "phone": r["phone"] or "",
+                "product_interest": r["product_interest"] or "",
+                "source": r["source"],
+                "status": r["status"],
+                "payment_status": r["payment_status"],
+                "company_name": r["company_name"] or "N/A",
+                "notes": r["notes"] or "",
+                "email_sent": r["email_sent"],
+                "created_at": r["created_at"].isoformat() if r["created_at"] else None,
+                "has_account": r["user_id"] is not None,
+            })
+    return {"leads": leads, "total": len(leads)}
+
+
+@router.put("/leads/{lead_id}/status")
+async def update_lead_status(
+    lead_id: str,
+    status: str = Form(None),
+    payment_status: str = Form(None),
+    notes: str = Form(None),
+    user: dict = Depends(require_ceo),
+):
+    """Update lead status, payment_status, and/or notes."""
+    pool = get_postgres_pool()
+    lid = uuid.UUID(lead_id)
+    async with pool.acquire() as conn:
+        existing = await conn.fetchrow("SELECT id FROM leads WHERE id = $1", lid)
+        if not existing:
+            raise HTTPException(404, "Lead not found")
+
+        updates = []
+        params = []
+        idx = 1
+        if status:
+            if status not in LEAD_STATUSES:
+                raise HTTPException(400, f"Invalid status. Must be one of: {', '.join(sorted(LEAD_STATUSES))}")
+            updates.append(f"status = ${idx}")
+            params.append(status)
+            idx += 1
+        if payment_status:
+            updates.append(f"payment_status = ${idx}")
+            params.append(payment_status)
+            idx += 1
+        if notes is not None and notes != "":
+            updates.append(f"notes = ${idx}")
+            params.append(notes)
+            idx += 1
+
+        if not updates:
+            raise HTTPException(400, "No fields to update")
+
+        params.append(lid)
+        query = f"UPDATE leads SET {', '.join(updates)} WHERE id = ${idx}"
+        await conn.execute(query, *params)
+
+    return {"updated": True, "lead_id": lead_id}

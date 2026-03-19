@@ -31,6 +31,7 @@ class Settings(BaseSettings):
     resend_from_contact: str = os.getenv('RESEND_FROM_CONTACT', 'contact@spetapp.com')
     resend_from_support: str = os.getenv('RESEND_FROM_SUPPORT', 'support@spetapp.com')
     lead_notification_to: str = os.getenv('LEAD_NOTIFICATION_TO', 'r.collasos@spetapp.com')
+    resend_from_access: str = os.getenv('RESEND_FROM_ACCESS', 'access@spetapp.com')
     
     class Config:
         env_file = '.env'
