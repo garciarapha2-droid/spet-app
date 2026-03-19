@@ -222,4 +222,12 @@ export const ceoAPI = {
   deleteUser: (userId) => api.delete(`/ceo/users/${userId}`),
   getLeads: () => api.get('/ceo/leads'),
   updateLeadStatus: (leadId, formData) => api.put(`/ceo/leads/${leadId}/status`, formData),
+  // New CEO Operating System endpoints
+  getOverviewMetrics: () => api.get('/ceo/overview-metrics'),
+  getRevenueDetailed: () => api.get('/ceo/revenue-detailed'),
+  getGrowthMetrics: () => api.get('/ceo/growth-metrics'),
+  getMarketingFunnel: () => api.get('/ceo/marketing-funnel'),
+  getSalesPerformance: () => api.get('/ceo/sales-performance'),
+  getCustomerLifecycle: () => api.get('/ceo/customer-lifecycle'),
+  getRiskDashboard: () => api.get('/ceo/risk-dashboard'),
 };

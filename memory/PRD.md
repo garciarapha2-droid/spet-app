@@ -13,30 +13,39 @@ Build a high-performance POS platform (SPET) inspired by Toast, with role-based 
 
 ## Completed Features
 
+### CEO Dashboard Premium UX Refinement (March 2026)
+- **Deep UX refinement** of the entire CEO Dashboard — from "working template" to "investor-ready product"
+- **CRM Section**: Kanban + Table + Reports views with search, source filters, and side panel detail views
+  - Kanban: 7 status columns with drag-and-drop, rich cards (company, tags, dates, payment status)
+  - Table: Sortable lead table with inline badges
+  - Reports: Sales funnel (trapezoid), donut chart (status distribution), bar chart (leads over time), source performance
+- **Business Health**: 8 SaaS KPI cards (MRR, Customers, Churn Rate, Activation Rate, ARPC, Revenue Today/YTD)
+  - Growth banner with MoM comparison
+  - KPI drill-down side panel with venue-level breakdown
+- **Revenue & Profit**: Area chart with gradient fill, period selector (Week/Month/Year), 4 financial KPI cards
+- **Companies**: Company list with MRR, status badges, module indicators. Side panel for status/module management
+- **Module Adoption**: 4 module cards with adoption %, horizontal bar chart (recharts)
+- **Users**: User list with avatar, status/role badges, last login. Create user form. Side panel for edit/delete
+- **Risk & Alerts**: Alert cards with severity indicators (critical/warning)
+- **Pipeline**: Funnel visualization (trapezoid shape) + 3 KPI summary cards
+- **Side Panel**: Animated slide-in/out (250ms), consistent across all sections
+- **Sidebar**: Revenue targets with progress bars, dark-active nav tabs
+- **Charts**: Powered by recharts (AreaChart, BarChart, PieChart, LineChart)
+- **Tested**: iteration_58 — 100% backend (18/18), 100% frontend
+
 ### P1: CEO CRM / Leads Management (March 2026)
 - **`GET /api/ceo/leads`** — fetches all leads with company/venue join
 - **`PUT /api/ceo/leads/{id}/status`** — update status, payment_status, notes
-- CRM tab (first tab) in CEO Dashboard with:
-  - Stats row (Total, New, Paid, Active)
-  - Filterable table (source, status)
-  - Detail panel with contact info, source, interest, company, account status
-  - Status management (new/contacted/qualified/paid/onboarding/active/lost)
-  - Payment status (N/A/pending/paid)
-  - Quick actions (Mark Paid, Onboarding, Mark Active)
-  - Internal notes with save
 - CEO-only access (403 for non-CEO users)
 - Tested iteration_57: 100% backend (13/13), 100% frontend
 
 ### P2: Account Activation Email (March 2026)
 - `services/activation_email.py` — sends from `access@spetapp.com`
 - HTML template with welcome, email, company, plan, CTA button
-- Env var: `RESEND_FROM_ACCESS=access@spetapp.com`
-- Tested manually: email_id returned successfully
 
 ### Lead Capture & Email Routing
 - `POST /api/leads/capture` — unified endpoint
 - Email routing: signup→leads@, contact→contact@, support→support@spetapp.com
-- Signup auto-captures lead (source="signup", non-blocking)
 - PostgreSQL `leads` table with 12 columns
 
 ### AWS RDS Migration
@@ -54,6 +63,7 @@ Build a high-performance POS platform (SPET) inspired by Toast, with role-based 
 - Table Mode Server Consistency
 - Manager Panel
 - Protected Users System
+- Z-index Dropdown Bug Fix
 
 ## In Progress / Next
 - **P3**: Paid access enforcement (block unpaid users, bypass for protected accounts)
