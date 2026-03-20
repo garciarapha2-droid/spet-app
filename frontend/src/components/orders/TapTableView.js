@@ -38,6 +38,7 @@ export function TapTableView({ defaultMode = "tap" }) {
   const [showAgeCheck, setShowAgeCheck] = useState(null);
   const [server, setServer] = useState(null);
   const [verifiedTables, setVerifiedTables] = useState(new Set());
+  const [showIdentityCheck, setShowIdentityCheck] = useState(false);
 
   // ── Mode change with URL sync ──
   const handleModeChange = (newMode) => {
@@ -169,6 +170,18 @@ export function TapTableView({ defaultMode = "tap" }) {
 
   const handleConfirmOrder = () => {
     if (order.length === 0) return;
+    // TAP mode: verify identity before proceeding to payment
+    if (mode === "tap" && selectedTab) {
+      setShowIdentityCheck(true);
+      return;
+    }
+    setShowPayment(true);
+    setPaymentStep("tip");
+    setSelectedTip(null);
+  };
+
+  const handleIdentityConfirmed = () => {
+    setShowIdentityCheck(false);
     setShowPayment(true);
     setPaymentStep("tip");
     setSelectedTip(null);
@@ -970,6 +983,119 @@ export function TapTableView({ defaultMode = "tap" }) {
               </>
             );
           })()}
+      </AnimatePresence>
+
+      {/* Identity Verification Modal (TAP anti-fraud) */}
+      <AnimatePresence>
+        {showIdentityCheck && selectedGuest && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[100] bg-background/80 backdrop-blur-sm"
+              onClick={() => setShowIdentityCheck(false)}
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ type: "spring", bounce: 0.2 }}
+              className="fixed inset-0 z-[101] flex items-center justify-center p-4"
+            >
+              <div
+                className="w-full max-w-sm bg-card border border-border/30 rounded-3xl p-8 shadow-2xl text-center"
+                data-testid="identity-verify-modal"
+              >
+                {/* Photo */}
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ type: "spring", bounce: 0.3, delay: 0.1 }}
+                  className="mx-auto mb-5"
+                >
+                  {selectedGuest.photo ? (
+                    <img
+                      src={selectedGuest.photo}
+                      alt={selectedGuest.name}
+                      className="h-28 w-28 rounded-full object-cover mx-auto border-4 border-primary/30 shadow-xl shadow-primary/10"
+                      data-testid="identity-photo"
+                    />
+                  ) : (
+                    <div className="h-28 w-28 rounded-full bg-gradient-to-br from-primary/20 to-accent/20 border-4 border-primary/30 flex items-center justify-center mx-auto">
+                      <span className="text-3xl font-extrabold text-primary">
+                        {selectedGuest.name.split(" ").map((n) => n[0]).join("")}
+                      </span>
+                    </div>
+                  )}
+                </motion.div>
+
+                {/* Name */}
+                <h3
+                  className="text-2xl font-extrabold text-foreground tracking-normal mb-1"
+                  data-testid="identity-name"
+                >
+                  {selectedGuest.name}
+                </h3>
+
+                {/* Tab badge */}
+                <span className="inline-block text-xs font-mono font-bold bg-primary/10 text-primary px-3 py-1 rounded-full mb-2">
+                  Tab #{selectedGuest.tabNumber}
+                </span>
+
+                {/* Tier + check-in time */}
+                <div className="flex items-center justify-center gap-3 text-xs text-muted-foreground mb-5">
+                  {selectedGuest.tier && (
+                    <span className="flex items-center gap-1">
+                      <Shield className="h-3 w-3" />
+                      {selectedGuest.tier}
+                    </span>
+                  )}
+                  <span className="flex items-center gap-1">
+                    <Clock className="h-3 w-3" />
+                    In since {new Date(selectedGuest.checkedInAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                  </span>
+                </div>
+
+                {/* Order summary */}
+                <div className="bg-muted/20 rounded-xl p-3 mb-5">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Order total</span>
+                    <span className="font-extrabold text-primary tabular-nums">
+                      ${orderTotal.toFixed(2)}
+                    </span>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground/60 mt-1">
+                    {order.length} {order.length === 1 ? "item" : "items"}
+                  </p>
+                </div>
+
+                {/* Warning */}
+                <p className="text-sm text-muted-foreground mb-6">
+                  Confirm this is <span className="font-bold text-foreground">{selectedGuest.name}</span> before charging.
+                </p>
+
+                {/* Actions */}
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    onClick={() => setShowIdentityCheck(false)}
+                    className="py-3 rounded-xl border border-border/30 font-semibold text-foreground hover:bg-muted/50 transition-colors"
+                    data-testid="identity-cancel"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleIdentityConfirmed}
+                    className="py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-bold shadow-lg shadow-emerald-500/20 hover:shadow-xl transition-all"
+                    data-testid="identity-confirm"
+                  >
+                    Confirm Identity
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
       </AnimatePresence>
 
       {/* Age Verification Modal */}

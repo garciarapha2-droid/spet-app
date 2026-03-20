@@ -4,28 +4,33 @@ export const mockGuests = [
     id: "g1", name: "Sofia Cardoso", tabNumber: 106, nfcId: "NFC-0042",
     phone: "+55 11 99999-1234", status: "inside", tier: "Gold", points: 2450,
     totalSpent: 78.00, checkedInAt: "2026-03-20T21:15:00",
+    photo: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&h=200&fit=crop&crop=face",
   },
   {
     id: "g2", name: "Lucas Oliveira", tabNumber: 107, nfcId: "NFC-0088",
     status: "inside", tier: "Silver", points: 680,
     totalSpent: 34.00, checkedInAt: "2026-03-20T22:00:00",
+    photo: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&h=200&fit=crop&crop=face",
   },
   {
     id: "g3", name: "John Smith", tabNumber: 104,
     status: "inside", tier: "Bronze", points: 120,
     totalSpent: 27.00, checkedInAt: "2026-03-20T22:30:00",
+    photo: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&h=200&fit=crop&crop=face",
   },
   {
     id: "g4", name: "Maria Santos", tabNumber: 101, nfcId: "NFC-0015",
     status: "exited", tier: "Platinum", points: 5200,
     totalSpent: 156.00, checkedInAt: "2026-03-20T19:00:00",
     checkedOutAt: "2026-03-20T23:00:00",
+    photo: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=200&h=200&fit=crop&crop=face",
   },
   {
     id: "g5", name: "Pedro Almeida", tabNumber: 102,
     status: "exited", tier: "Bronze", points: 80,
     totalSpent: 42.00, checkedInAt: "2026-03-20T20:00:00",
     checkedOutAt: "2026-03-20T22:30:00",
+    photo: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200&h=200&fit=crop&crop=face",
   },
 ];
 
