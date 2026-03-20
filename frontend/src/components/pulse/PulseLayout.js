@@ -47,7 +47,7 @@ export function PulseLayout({ children }) {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="pulse-scope min-h-screen bg-background text-foreground">
       {/* Ambient glow — 800x400 blurred ellipse */}
       <div className="pointer-events-none fixed inset-x-0 top-0 h-[400px] w-[800px] mx-auto rounded-full bg-primary/5 blur-[120px]" />
 

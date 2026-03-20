@@ -185,7 +185,7 @@ export default function PulseGuest() {
         data-testid="guest-list-section"
       >
         <div className="mb-5 flex items-center justify-between">
-          <h2 className="text-lg font-bold text-foreground">Today's Guests</h2>
+          <h2 className="text-lg font-bold tracking-normal text-foreground">Today's Guests</h2>
           <span className="rounded-full bg-muted/50 px-3 py-1 text-xs font-medium text-muted-foreground" data-testid="active-guests-badge">
             {insideGuests.length} active
           </span>

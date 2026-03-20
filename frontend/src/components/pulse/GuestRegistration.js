@@ -91,7 +91,7 @@ export function GuestRegistration({ onRegister, onCancel, prefillNfc }) {
         >
           <ArrowLeft className="h-5 w-5" />
         </button>
-        <h2 className="text-lg font-bold">Guest Registration</h2>
+        <h2 className="text-lg font-bold tracking-normal">Guest Registration</h2>
       </div>
 
       {/* Body */}
