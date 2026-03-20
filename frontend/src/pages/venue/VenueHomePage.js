@@ -1,17 +1,17 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { useTheme } from '../../contexts/ThemeContext';
 import { venueAPI, pulseAPI, staffAPI } from '../../services/api';
-import SpetLogo from '../../components/SpetLogo';
-import { ThemeToggle } from '../../components/ThemeToggle';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { toast } from 'sonner';
 import {
   ChevronLeft, ChevronRight, Plus, Calendar as CalendarIcon,
   MapPin, LogOut, Sparkles, Users, CreditCard, LayoutGrid,
-  UtensilsCrossed, BarChart3, Building2, Crown, ChevronDown, Menu,
-  X, Search, Trash2, UserPlus, Briefcase, DollarSign, Clock, Power
+  UtensilsCrossed, BarChart3, Building2, Crown, ChevronDown,
+  X, Search, Trash2, UserPlus, Briefcase, DollarSign, Clock, Power,
+  Activity, Fingerprint, UserCog, Sun, Moon, Loader2, RefreshCw
 } from 'lucide-react';
 
 const VENUE_ID = () => localStorage.getItem('active_venue_id') || '';
@@ -599,42 +599,60 @@ function InsideNowPanel({ venueId }) {
   useEffect(() => { const iv = setInterval(loadInsideGuests, 15000); return () => clearInterval(iv); }, [loadInsideGuests]);
 
   return (
-    <div className="bg-card border border-border rounded-2xl overflow-hidden" data-testid="inside-now-panel">
-      <div className="px-5 py-3 border-b border-border flex items-center justify-between bg-muted/30">
+    <div className="border border-border rounded-2xl p-5 bg-background" data-testid="inside-now-panel">
+      {/* Header row */}
+      <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Users className="h-4 w-4 text-green-500" />
-          <h3 className="font-bold text-sm">Inside Now</h3>
-          <span className="text-[10px] bg-green-500/10 text-green-500 font-bold px-2 py-0.5 rounded-full" data-testid="inside-now-count">
+          <Users className="h-[18px] w-[18px] text-primary" strokeWidth={1.5} />
+          <span className="text-[15px] font-semibold text-foreground">Inside Now</span>
+          <span
+            className="min-w-[22px] h-[22px] rounded-full bg-green-500 text-white text-[12px] font-semibold inline-flex items-center justify-center px-1"
+            data-testid="inside-now-count"
+          >
             {guests.length}
           </span>
         </div>
-        <button onClick={loadInsideGuests} className="text-xs text-muted-foreground hover:text-foreground transition-colors">Refresh</button>
+        <button
+          onClick={loadInsideGuests}
+          className="text-[14px] font-medium cursor-pointer transition-colors duration-150 hover:text-primary"
+          style={{ color: 'hsl(var(--text-tertiary, var(--muted-foreground)))' }}
+        >
+          Refresh
+        </button>
       </div>
-      <div className="max-h-[320px] overflow-y-auto">
+
+      {/* Divider */}
+      <div className="border-t border-border mt-3 pt-3">
         {loading ? (
-          <div className="py-8 text-center text-sm text-muted-foreground animate-pulse">Loading...</div>
+          <div className="py-6 text-center text-sm text-muted-foreground animate-pulse">Loading...</div>
         ) : guests.length === 0 ? (
-          <div className="py-8 text-center">
-            <Users className="h-8 w-8 text-muted-foreground/30 mx-auto mb-2" />
-            <p className="text-sm text-muted-foreground">No guests inside</p>
+          <div className="flex flex-col items-center py-6">
+            <Users className="h-8 w-8 opacity-30" style={{ color: 'hsl(var(--muted-foreground))' }} strokeWidth={1.5} />
+            <p className="text-[14px] mt-2" style={{ color: 'hsl(var(--muted-foreground))' }}>No guests inside</p>
           </div>
         ) : (
-          <div className="divide-y divide-border/50">
+          <div className="max-h-[280px] overflow-y-auto">
             {guests.map(g => (
-              <div key={g.guest_id} className="flex items-center gap-3 px-5 py-2.5 hover:bg-muted/30 transition-colors" data-testid={`inside-guest-${g.guest_id}`}>
-                {g.guest_photo ? (
-                  <img src={g.guest_photo} alt="" className="w-8 h-8 rounded-full object-cover" />
-                ) : (
-                  <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                    <Users className="h-4 w-4 text-primary" />
-                  </div>
-                )}
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate" data-testid={`inside-guest-name-${g.guest_id}`}>{g.guest_name}</p>
-                  <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
-                    <Clock className="h-3 w-3" />
-                    <span>{g.entered_at ? new Date(g.entered_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'}</span>
-                    {g.entry_type && <span className="capitalize">{g.entry_type.replace('_', ' ')}</span>}
+              <div
+                key={g.guest_id}
+                className="flex items-center justify-between py-2.5 border-b border-border last:border-0"
+                data-testid={`inside-guest-${g.guest_id}`}
+              >
+                <div className="flex items-center gap-3">
+                  {g.guest_photo ? (
+                    <img src={g.guest_photo} alt="" className="w-8 h-8 rounded-full object-cover" />
+                  ) : (
+                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                      <span className="text-[12px] font-bold text-primary">
+                        {(g.guest_name || '?').charAt(0).toUpperCase()}
+                      </span>
+                    </div>
+                  )}
+                  <div>
+                    <p className="text-[14px] font-medium text-foreground" data-testid={`inside-guest-name-${g.guest_id}`}>{g.guest_name}</p>
+                    <p className="text-[13px]" style={{ color: 'hsl(var(--text-tertiary, var(--muted-foreground)))' }}>
+                      {g.entered_at ? new Date(g.entered_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'}
+                    </p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
@@ -643,7 +661,7 @@ function InsideNowPanel({ venueId }) {
                     g.tab_total > 0 ? 'bg-blue-500/10 text-blue-500' :
                     'bg-green-500/10 text-green-500'
                   }`} data-testid={`inside-guest-status-${g.guest_id}`}>
-                    {g.guest_status === 'Blocked' ? 'Blocked' : g.tab_total > 0 ? `$${g.tab_total.toFixed(2)}` : 'No consumption'}
+                    {g.guest_status === 'Blocked' ? 'Blocked' : g.tab_total > 0 ? `$${g.tab_total.toFixed(2)}` : 'No tab'}
                   </span>
                   {g.tab_number && (
                     <span className="text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full" data-testid={`inside-guest-tab-${g.guest_id}`}>
@@ -664,6 +682,7 @@ function InsideNowPanel({ venueId }) {
 export const VenueSelectPage = () => {
   const navigate = useNavigate();
   const { logout, user, isCEO } = useAuth();
+  const { theme, toggleTheme } = useTheme();
 
   const handleLogout = async () => {
     const { handleFullLogout } = await import('../../utils/logout');
@@ -748,8 +767,8 @@ export const VenueSelectPage = () => {
   };
 
   const MODULE_ICONS = {
-    pulse: Users, tap: CreditCard, table: LayoutGrid, kds: UtensilsCrossed,
-    manager: BarChart3, owner: Building2, ceo: Crown,
+    pulse: Activity, tap: Fingerprint, table: LayoutGrid, kds: UtensilsCrossed,
+    manager: UserCog, owner: Crown, ceo: Crown,
   };
   const MODULE_ROUTES = {
     pulse: '/pulse/entry', tap: '/tap', table: '/table', kds: '/kitchen',
@@ -795,64 +814,98 @@ export const VenueSelectPage = () => {
 
   return (
     <div className="min-h-screen bg-background" data-testid="venue-select-page">
-      {/* Header */}
-      <header className="h-16 border-b border-border/60 bg-card/80 backdrop-blur-md px-8 flex items-center justify-between relative z-50">
-        <div className="flex items-center gap-4">
-          <SpetLogo size="default" />
+      {/* ─── NAVBAR ─── */}
+      <header className="h-16 border-b border-border bg-background px-6 lg:px-10 flex items-center justify-between relative z-50" data-testid="dashboard-navbar">
+        {/* Left group */}
+        <div className="flex items-center gap-3">
+          <Link to="/" className="flex items-center gap-1.5">
+            <span className="text-[22px] font-bold tracking-tight text-foreground" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+              spet<span className="gradient-text">.</span>
+            </span>
+          </Link>
           {selectedVenue && (
             <>
-              <div className="h-5 w-px bg-border" />
-              <span className="text-sm text-muted-foreground">{selectedVenue.name}</span>
+              <div className="h-5 w-px bg-border mx-2" />
+              <span className="text-[14px] font-medium truncate max-w-[140px] sm:max-w-none" style={{ color: 'hsl(var(--muted-foreground))' }}>{selectedVenue.name}</span>
             </>
           )}
         </div>
-        <div className="flex items-center gap-4">
+
+        {/* Right group */}
+        <div className="flex items-center gap-3">
+          {/* Modules dropdown */}
           {data?.modules && (
             <div className="relative">
-              <button onClick={() => setShowModulesMenu(!showModulesMenu)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-muted transition-colors border border-border"
-                data-testid="modules-dropdown">
-                <Menu className="h-4 w-4" />
-                <span>Modules</span>
-                <ChevronDown className="h-3 w-3" />
+              <button
+                onClick={() => setShowModulesMenu(!showModulesMenu)}
+                className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-[14px] font-medium transition-colors duration-150 ${
+                  showModulesMenu ? 'border-primary/20 bg-muted' : 'border-border hover:bg-muted'
+                }`}
+                data-testid="modules-dropdown"
+              >
+                <LayoutGrid className="h-4 w-4" strokeWidth={1.5} />
+                <span className="hidden sm:inline">Modules</span>
+                <ChevronDown className="h-3.5 w-3.5" strokeWidth={2} />
               </button>
+
               {showModulesMenu && (
-                <div className="absolute top-full right-0 mt-1 bg-card border border-border rounded-lg shadow-lg min-w-[200px] py-1 z-50" data-testid="modules-menu">
-                  {data.modules
-                    .filter(m => m.enabled)
-                    .filter(m => m.key !== 'ceo' || isCEO)
-                    .map(mod => {
-                      const Icon = MODULE_ICONS[mod.key] || Sparkles;
-                      return (
-                        <button key={mod.key}
-                          onClick={() => { handleModuleClick(mod); setShowModulesMenu(false); }}
-                          className="w-full text-left px-4 py-2.5 text-sm hover:bg-muted flex items-center gap-3 transition-colors"
-                          data-testid={`module-item-${mod.key}`}>
-                          <Icon className="h-4 w-4 text-muted-foreground" />
-                          <div>
-                            <p className="font-medium">{mod.name}</p>
-                            <p className="text-xs text-muted-foreground">{mod.description}</p>
-                          </div>
-                        </button>
-                      );
-                    })}
-                </div>
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setShowModulesMenu(false)} />
+                  <div
+                    className="absolute top-full right-0 mt-2 bg-background border border-border rounded-xl p-4 z-50"
+                    style={{ boxShadow: theme === 'dark' ? '0 4px 24px rgba(0,0,0,0.4)' : '0 4px 24px rgba(0,0,0,0.08)' }}
+                    data-testid="modules-menu"
+                  >
+                    <div className="flex gap-2">
+                      {data.modules
+                        .filter(m => m.enabled)
+                        .filter(m => m.key !== 'ceo' || isCEO)
+                        .map(mod => {
+                          const Icon = MODULE_ICONS[mod.key] || Sparkles;
+                          return (
+                            <button
+                              key={mod.key}
+                              onClick={() => { handleModuleClick(mod); setShowModulesMenu(false); }}
+                              className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-muted transition-colors duration-150 min-w-[56px]"
+                              data-testid={`module-item-${mod.key}`}
+                            >
+                              <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ background: 'hsl(var(--primary) / 0.08)' }}>
+                                <Icon className="h-[18px] w-[18px] text-primary" strokeWidth={1.5} />
+                              </div>
+                              <span className="text-[12px] font-medium text-foreground">{mod.name}</span>
+                            </button>
+                          );
+                        })}
+                    </div>
+                  </div>
+                </>
               )}
             </div>
           )}
-          <div className="h-5 w-px bg-border" />
-          <span className="text-sm text-muted-foreground">{data?.user_email}</span>
-          <div className="h-5 w-px bg-border" />
-          <ThemeToggle />
-          <div className="h-5 w-px bg-border" />
-          <Button variant="ghost" size="icon" onClick={handleLogout} data-testid="logout-btn">
-            <LogOut className="h-4 w-4" />
-          </Button>
+
+          <div className="h-5 w-px bg-border mx-1" />
+          <span className="text-[14px] hidden md:inline" style={{ color: 'hsl(var(--muted-foreground))' }}>{data?.user_email}</span>
+          <button
+            onClick={toggleTheme}
+            className="p-2 rounded-full transition-colors duration-150 hover:bg-muted"
+            style={{ color: 'hsl(var(--muted-foreground))' }}
+            data-testid="theme-toggle"
+          >
+            {theme === 'dark' ? <Sun className="h-[18px] w-[18px]" strokeWidth={1.5} /> : <Moon className="h-[18px] w-[18px]" strokeWidth={1.5} />}
+          </button>
+          <button
+            onClick={handleLogout}
+            className="p-2 rounded-full transition-colors duration-150 hover:bg-muted"
+            style={{ color: 'hsl(var(--muted-foreground))' }}
+            data-testid="logout-btn"
+          >
+            <LogOut className="h-[18px] w-[18px]" strokeWidth={1.5} />
+          </button>
         </div>
       </header>
 
-      <main className="w-full max-w-[1200px] mx-auto px-8 py-12">
-        {/* Venue Selector */}
+      <main className="w-full max-w-[1200px] mx-auto px-6 lg:px-10 pt-8 md:pt-10 pb-16">
+        {/* Venue Selector (multi-venue only) */}
         {venues.length > 1 && (
           <div className="mb-10">
             <p className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-3">Select Venue</p>
@@ -876,72 +929,103 @@ export const VenueSelectPage = () => {
 
         {selectedVenue && (
           <>
+            {/* Header */}
             <div className="mb-8">
-              <h2 className="text-4xl font-bold tracking-tight mb-1" data-testid="venue-title">{selectedVenue.name}</h2>
-              <p className="text-lg text-muted-foreground">Select a date and event to start operations</p>
+              <h1 className="text-[32px] font-extrabold tracking-[-0.03em] leading-[1.1] text-foreground" data-testid="venue-title">
+                {selectedVenue.name}
+              </h1>
+              <p className="text-[16px] mt-1 leading-[1.5]" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                Select a date and event to start operations
+              </p>
             </div>
 
-            <div className="grid grid-cols-12 gap-10">
-              {/* Calendar */}
-              <div className="col-span-7">
-                <div className="bg-card border border-border rounded-2xl p-6">
-                  <div className="flex items-center justify-between mb-6">
-                    <button onClick={prevMonth} className="p-2 rounded-lg hover:bg-muted transition-colors">
-                      <ChevronLeft className="h-5 w-5" />
-                    </button>
-                    <h3 className="text-lg font-semibold">
-                      {new Date(calendarYear, calendarMonth).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
-                    </h3>
-                    <button onClick={nextMonth} className="p-2 rounded-lg hover:bg-muted transition-colors">
-                      <ChevronRight className="h-5 w-5" />
-                    </button>
-                  </div>
-                  <div className="grid grid-cols-7 gap-1 mb-2">
-                    {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map((d) => (
-                      <div key={d} className="text-center text-xs font-medium text-muted-foreground py-2">{d}</div>
-                    ))}
-                  </div>
-                  <div className="grid grid-cols-7 gap-1">
-                    {calendarDays.map((day, idx) => {
-                      if (!day) return <div key={idx} />;
-                      const dateStr = `${calendarYear}-${String(calendarMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-                      const isSelected = dateStr === selectedDateStr;
-                      const isToday = dateStr === todayStr;
-                      const hasEvent = eventDates.includes(dateStr);
-                      return (
-                        <button key={idx}
+            {/* Two-column grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-6 lg:gap-8">
+              {/* ─── LEFT: CALENDAR ─── */}
+              <div className="bg-background border border-border rounded-2xl p-6" data-testid="dashboard-calendar">
+                <div className="flex items-center justify-between mb-4">
+                  <button
+                    onClick={prevMonth}
+                    className="w-8 h-8 rounded-full flex items-center justify-center transition-colors duration-150 hover:bg-muted"
+                    style={{ color: 'hsl(var(--muted-foreground))' }}
+                    data-testid="calendar-prev"
+                  >
+                    <ChevronLeft className="h-5 w-5" strokeWidth={1.5} />
+                  </button>
+                  <h3 className="text-[16px] font-semibold text-foreground leading-[1.4]">
+                    {new Date(calendarYear, calendarMonth).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                  </h3>
+                  <button
+                    onClick={nextMonth}
+                    className="w-8 h-8 rounded-full flex items-center justify-center transition-colors duration-150 hover:bg-muted"
+                    style={{ color: 'hsl(var(--muted-foreground))' }}
+                    data-testid="calendar-next"
+                  >
+                    <ChevronRight className="h-5 w-5" strokeWidth={1.5} />
+                  </button>
+                </div>
+
+                {/* Day headers */}
+                <div className="grid grid-cols-7 mb-1">
+                  {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map((d) => (
+                    <div key={d} className="h-9 flex items-center justify-center text-[14px] font-medium" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                      {d}
+                    </div>
+                  ))}
+                </div>
+
+                {/* Day cells */}
+                <div className="grid grid-cols-7">
+                  {calendarDays.map((day, idx) => {
+                    if (!day) return <div key={idx} className="h-10" />;
+                    const dateStr = `${calendarYear}-${String(calendarMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                    const isSelected = dateStr === selectedDateStr;
+                    const isToday = dateStr === todayStr;
+                    const hasEvent = eventDates.includes(dateStr);
+                    return (
+                      <div key={idx} className="flex items-center justify-center py-0.5">
+                        <button
                           onClick={() => { setSelectedDate(new Date(calendarYear, calendarMonth, day)); setSelectedEvent(null); }}
                           onDoubleClick={() => {
                             setSelectedDate(new Date(calendarYear, calendarMonth, day));
                             if (hasEvent) handleEnter();
                           }}
-                          className={`relative h-12 rounded-xl flex items-center justify-center text-sm font-medium transition-all ${
-                            isSelected ? 'bg-primary text-primary-foreground' :
-                            isToday ? 'bg-primary/10 text-primary font-bold' :
-                            'hover:bg-muted'
+                          className={`relative w-10 h-10 rounded-full flex items-center justify-center text-[14px] transition-colors duration-150 cursor-pointer ${
+                            isToday ? 'bg-primary text-primary-foreground font-semibold' :
+                            isSelected ? 'bg-primary/10 text-primary font-medium' :
+                            'text-foreground hover:bg-muted'
                           }`}
-                          data-testid={`cal-day-${day}`}>
+                          data-testid={`cal-day-${day}`}
+                        >
                           {day}
-                          {hasEvent && !isSelected && (
-                            <span className="absolute bottom-1.5 w-1.5 h-1.5 rounded-full bg-primary" />
+                          {hasEvent && !isToday && (
+                            <span className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-primary" />
                           )}
                         </button>
-                      );
-                    })}
-                  </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
 
-              {/* Events for selected date */}
-              <div className="col-span-5">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold flex items-center gap-2">
-                    <CalendarIcon className="h-5 w-5 text-primary" />
-                    {selectedDate.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
-                  </h3>
-                  <Button size="sm" variant="outline" onClick={() => { setShowCreate(!showCreate); setSelectedEvent(null); }} data-testid="create-event-btn">
-                    <Plus className="h-4 w-4 mr-1" /> New Event
-                  </Button>
+              {/* ─── RIGHT: EVENT PANEL ─── */}
+              <div className="flex flex-col gap-4">
+                {/* Date Header + New Event */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <CalendarIcon className="h-[18px] w-[18px] text-foreground" strokeWidth={1.5} />
+                    <span className="text-[16px] font-semibold text-foreground leading-[1.4]" data-testid="selected-date-label">
+                      {selectedDate.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => { setShowCreate(!showCreate); setSelectedEvent(null); }}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border text-[14px] font-medium text-foreground bg-transparent transition-colors duration-150 hover:bg-muted hover:border-primary/20 active:scale-[0.98]"
+                    data-testid="create-event-btn"
+                  >
+                    <Plus className="h-3.5 w-3.5" strokeWidth={2} />
+                    New Event
+                  </button>
                 </div>
 
                 {/* Create Event Wizard */}
@@ -955,12 +1039,16 @@ export const VenueSelectPage = () => {
                   />
                 )}
 
-                {/* Event list — only active events */}
+                {/* Event list or empty state */}
                 {events.filter(e => e.is_active !== false).length === 0 && !showCreate ? (
-                  <div className="bg-card border border-dashed border-border rounded-xl p-10 text-center">
-                    <Sparkles className="h-10 w-10 text-muted-foreground/30 mx-auto mb-3" />
-                    <p className="text-muted-foreground mb-1">No active events for this date</p>
-                    <p className="text-sm text-muted-foreground/60">Create one or select a different date</p>
+                  <div className="border border-dashed border-border rounded-xl p-8 flex flex-col items-center text-center" data-testid="empty-events">
+                    <Sparkles className="h-8 w-8 opacity-40" style={{ color: 'hsl(var(--muted-foreground))' }} strokeWidth={1.5} />
+                    <p className="text-[15px] font-medium mt-3" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                      No active events for this date
+                    </p>
+                    <p className="text-[14px] mt-1" style={{ color: 'hsl(var(--text-tertiary, var(--muted-foreground)))' }}>
+                      Create one or select a different date
+                    </p>
                   </div>
                 ) : (
                   <div className="space-y-3">
@@ -969,22 +1057,24 @@ export const VenueSelectPage = () => {
                         <div
                           onClick={() => setSelectedEvent(selectedEvent?.id === evt.id ? null : evt)}
                           onDoubleClick={() => handleEnter()}
-                          className={`bg-card border rounded-xl p-5 transition-colors cursor-pointer ${
-                            selectedEvent?.id === evt.id ? 'border-primary' : 'border-border hover:border-primary/30'
+                          className={`border rounded-xl p-4 transition-all duration-200 cursor-pointer ${
+                            selectedEvent?.id === evt.id ? 'border-primary/40 bg-primary/[0.02]' : 'border-border hover:border-primary/20'
                           }`}
-                          data-testid={`event-card-${evt.id}`}>
+                          data-testid={`event-card-${evt.id}`}
+                        >
                           <div className="flex items-center justify-between">
-                            <h4 className="font-semibold">{evt.name}</h4>
-                            <span className="text-[10px] px-2 py-0.5 rounded-full font-medium bg-green-500/10 text-green-500">Active</span>
+                            <h4 className="text-[15px] font-semibold text-foreground">{evt.name}</h4>
+                            <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-green-500/10 text-green-500 border border-green-500/20">
+                              Active
+                            </span>
                           </div>
-                          <div className="flex gap-4 text-sm text-muted-foreground mt-1">
+                          <div className="flex gap-4 text-[13px] mt-1" style={{ color: 'hsl(var(--text-secondary, var(--muted-foreground)))' }}>
                             {evt.cover_price > 0 && <span>Cover: ${evt.cover_price}</span>}
                             {evt.cover_consumption_price > 0 && <span>Cover+Cons: ${evt.cover_consumption_price}</span>}
                           </div>
-                          <p className="text-xs text-muted-foreground/60 mt-2">Click to preview — Double-click to enter</p>
                         </div>
 
-                        {/* Event Preview (1 click) — shows guest count + staff list */}
+                        {/* Event Preview (1 click) */}
                         {selectedEvent?.id === evt.id && (
                           <EventPreviewPanel event={evt} venueId={selectedVenue.id} onClose={() => setSelectedEvent(null)} onEventEnded={() => { setSelectedEvent(null); loadEvents(); }} />
                         )}
@@ -993,15 +1083,21 @@ export const VenueSelectPage = () => {
                   </div>
                 )}
 
-                {/* Enter button */}
-                <Button className="w-full mt-6 h-14 text-lg font-semibold rounded-xl" onClick={handleEnter} data-testid="enter-venue-btn">
+                {/* Enter Venue Button — premium gradient */}
+                <button
+                  onClick={handleEnter}
+                  className="btn-premium w-full h-[52px] rounded-xl text-[16px] font-bold text-white flex items-center justify-center gap-2 transition-all duration-200 hover:-translate-y-px hover:scale-[1.01] active:translate-y-0 active:scale-100"
+                  style={{
+                    background: 'linear-gradient(135deg, hsl(258 75% 58%), hsl(263 80% 66%))',
+                    boxShadow: '0 4px 20px hsl(258 75% 58% / 0.25)',
+                  }}
+                  data-testid="enter-venue-btn"
+                >
                   Enter {selectedVenue.name}
-                </Button>
+                </button>
 
                 {/* Inside Now Panel */}
-                <div className="mt-6">
-                  <InsideNowPanel venueId={selectedVenue.id} />
-                </div>
+                <InsideNowPanel venueId={selectedVenue.id} />
               </div>
             </div>
           </>

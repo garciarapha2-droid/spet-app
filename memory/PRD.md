@@ -100,6 +100,13 @@ All `/api/*` endpoints return:
 - [x] ACCESS FIX (2026-03-21): Updated teste1@teste.com from plan "flow" to "sync" with full module permissions
 - [x] GLOBAL: All logout buttons use centralized handleFullLogout (clear tokens → redirect /login)
 - [x] BUG FIX (2026-03-21): Added auto-unwrap interceptor in api.js for standard {success, data, error} envelope — fixed Manager/Owner crash
+- [x] DASHBOARD REBUILD (2026-03-21): Pixel-perfect Dashboard/Venue Home Screen rebuilt from spec
+  - Navbar: spet. logo + venue name + modules icon grid dropdown + email + theme toggle + logout
+  - Calendar: Rounded-full day cells, event dots, month navigation
+  - Event Panel: Date header, empty state, event cards with status badges
+  - Enter Button: Premium gradient, hover animations
+  - Inside Now: Guest count badge, refresh, guest list with avatars
+  - Responsive: grid-cols-1 on mobile, grid-cols-[1fr_400px] on desktop
 
 ## Current Phase: Integration & Stability
 Focus: Emergent as standalone full-stack app, endpoint stability
