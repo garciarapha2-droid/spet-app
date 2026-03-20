@@ -44,9 +44,9 @@ PROTECTED_USERS = [
         "role": "USER",
         "password": "12345",
         "onboarding_completed": False,
-        "plan_id": "flow",
+        "plan_id": "sync",
         "access_role": "owner",
-        "permissions": {"pulse": True, "tap": True, "table": True},
+        "permissions": {"pulse": True, "tap": True, "table": True, "kds": True, "manager": True, "owner": True},
     },
 ]
 

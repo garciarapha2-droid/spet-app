@@ -95,6 +95,10 @@ All `/api/*` endpoints return:
 - [x] 15/15 landing + auth scenarios passed (iteration 71)
 - [x] UI FIX (2026-03-21): Added centered section divider lines between Problem/SolutionCore, HowItWorks/AI, Benefits/Modules, FinalCTA/Contact
 - [x] UI FIX (2026-03-21): Increased pricing section spacing (mt-10 → mt-16) between heading and cards
+- [x] AUTH FIX (2026-03-21): Added logout button to AuthHeader (auto-detected via isAuthenticated)
+- [x] AUTH FIX (2026-03-21): OnboardingPage now shows logout in header (uses AuthHeader with auto-detection)
+- [x] ACCESS FIX (2026-03-21): Updated teste1@teste.com from plan "flow" to "sync" with full module permissions
+- [x] GLOBAL: All logout buttons use centralized handleFullLogout (clear tokens → redirect /login)
 
 ## Current Phase: Integration & Stability
 Focus: Emergent as standalone full-stack app, endpoint stability
