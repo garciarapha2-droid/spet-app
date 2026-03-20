@@ -950,9 +950,25 @@ export function TapTableView({ defaultMode = "tap" }) {
                     className="w-full max-w-sm bg-card border border-border/30 rounded-3xl p-8 shadow-2xl text-center"
                     data-testid="guest-confirm-modal"
                   >
-                    <div className="mx-auto h-20 w-20 rounded-full bg-muted/30 border-2 border-border/30 flex items-center justify-center mb-4">
-                      <User className="h-10 w-10 text-muted-foreground/40" />
-                    </div>
+                    {guest.photo ? (
+                      <motion.div
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        transition={{ type: "spring", bounce: 0.3, delay: 0.1 }}
+                        className="mb-4"
+                      >
+                        <img
+                          src={guest.photo}
+                          alt={guest.name}
+                          className="h-24 w-24 rounded-full object-cover mx-auto border-4 border-primary/30 shadow-xl shadow-primary/10"
+                          data-testid="guest-confirm-photo"
+                        />
+                      </motion.div>
+                    ) : (
+                      <div className="mx-auto h-20 w-20 rounded-full bg-muted/30 border-2 border-border/30 flex items-center justify-center mb-4">
+                        <User className="h-10 w-10 text-muted-foreground/40" />
+                      </div>
+                    )}
                     <h3 className="text-xl font-extrabold text-foreground tracking-normal">
                       {guest.name}
                     </h3>
