@@ -196,7 +196,7 @@ export default function PulseGuest() {
             No guests registered yet
           </div>
         ) : (
-          <div className="space-y-2">
+          <div className="rounded-2xl border border-border/30 overflow-hidden" data-testid="guest-list-container">
             {insideGuests.map((guest, i) => (
               <motion.div
                 key={guest.id}
@@ -204,15 +204,17 @@ export default function PulseGuest() {
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.35 + i * 0.06 }}
                 whileHover={{ x: 4 }}
-                className="group flex items-center justify-between rounded-2xl border border-border/30 bg-card/60 p-4 backdrop-blur transition-colors hover:border-primary/20 hover:bg-card/80 cursor-pointer"
+                className={`group flex items-center justify-between px-5 py-4 bg-card/60 backdrop-blur transition-colors hover:bg-card/80 cursor-pointer ${
+                  i < insideGuests.length - 1 ? "border-b border-border/40" : ""
+                }`}
                 data-testid={`guest-row-${guest.id}`}
               >
                 <div className="flex items-center gap-3">
-                  <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-primary/20 to-accent/10 overflow-hidden">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-violet-500/15 overflow-hidden flex-shrink-0">
                     {guest.avatar ? (
                       <img src={guest.avatar} alt={guest.name} className="h-full w-full object-cover" />
                     ) : (
-                      <span className="text-sm font-bold text-primary">
+                      <span className="text-sm font-bold text-violet-400">
                         {guest.name.split(" ").map((n) => n[0]).join("")}
                       </span>
                     )}
@@ -221,20 +223,20 @@ export default function PulseGuest() {
                     <p className="text-sm font-semibold text-foreground transition-colors group-hover:text-primary">
                       {guest.name}
                     </p>
-                    <div className="flex items-center gap-1.5 text-xs">
-                      <span className="font-mono text-primary/70">#{guest.tabNumber}</span>
-                      <span className="h-1 w-1 rounded-full bg-border" />
+                    <div className="flex items-center gap-1.5 text-sm">
+                      <span className="text-violet-400">#{guest.tabNumber}</span>
+                      <span className="text-muted-foreground">·</span>
                       <span className="text-muted-foreground">{guest.tier}</span>
-                      <span className="h-1 w-1 rounded-full bg-border" />
+                      <span className="text-muted-foreground">·</span>
                       <span className="text-muted-foreground">{guest.points} pts</span>
                     </div>
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="text-sm font-bold tabular-nums text-foreground">
+                  <p className="text-lg font-bold tabular-nums text-foreground">
                     ${guest.totalSpent.toFixed(2)}
                   </p>
-                  <p className="text-[10px] text-muted-foreground">
+                  <p className="text-xs text-muted-foreground">
                     {new Date(guest.checkedInAt).toLocaleTimeString([], {
                       hour: "2-digit",
                       minute: "2-digit",

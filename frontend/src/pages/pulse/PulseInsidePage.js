@@ -163,36 +163,45 @@ export default function PulseInsidePage() {
               transition={{ delay: 0.25 + i * 0.06, duration: 0.4 }}
               whileHover={{ y: -2 }}
               onClick={() => setSelectedGuest(g.id)}
-              className="p-5 rounded-2xl border border-border/30 bg-card/60 backdrop-blur hover:border-primary/20 hover:shadow-lg hover:shadow-primary/5 transition-all cursor-pointer"
+              className="bg-gradient-to-br from-violet-400/25 to-transparent p-px rounded-2xl cursor-pointer"
               data-testid={`inside-guest-${g.id}`}
             >
-              <div className="flex items-center gap-3 mb-4">
-                {g.photo ? (
-                  <img src={g.photo} alt={g.name} className="h-11 w-11 rounded-xl object-cover" />
-                ) : (
-                  <div className="h-11 w-11 rounded-xl bg-gradient-to-br from-primary/20 to-accent/10 flex items-center justify-center flex-shrink-0">
-                    <span className="text-sm font-bold text-primary">
-                      {g.name.split(" ").map((n) => n[0]).join("")}
-                    </span>
+              {/* Inner card */}
+              <div className="relative bg-card rounded-[15px] p-5 overflow-hidden hover:shadow-lg hover:shadow-primary/5 transition-all">
+                {/* Decorative blob */}
+                <div className="absolute top-0 right-0 w-24 h-24 rounded-full bg-violet-400/10 blur-xl pointer-events-none" />
+
+                {/* Avatar + Name */}
+                <div className="relative z-10 flex items-center gap-3 mb-4">
+                  {g.photo ? (
+                    <img src={g.photo} alt={g.name} className="h-10 w-10 rounded-full object-cover flex-shrink-0" />
+                  ) : (
+                    <div className="h-10 w-10 rounded-full bg-violet-500/20 flex items-center justify-center flex-shrink-0">
+                      <span className="text-sm font-bold text-violet-400">
+                        {g.name.split(" ").map((n) => n[0]).join("")}
+                      </span>
+                    </div>
+                  )}
+                  <div>
+                    <p className="text-base font-semibold text-foreground">{g.name}</p>
+                    <p className="text-sm text-muted-foreground">#{g.tabNumber}</p>
                   </div>
-                )}
-                <div>
-                  <p className="text-sm font-semibold text-foreground">{g.name}</p>
-                  <p className="text-xs font-mono text-primary/70">#{g.tabNumber}</p>
                 </div>
-              </div>
-              <div className="grid grid-cols-3 gap-3">
-                <div>
-                  <div className="text-[9px] font-bold uppercase tracking-[0.15em] text-muted-foreground mb-0.5">Tier</div>
-                  <p className="text-xs font-semibold text-foreground">{g.tier}</p>
-                </div>
-                <div>
-                  <div className="text-[9px] font-bold uppercase tracking-[0.15em] text-muted-foreground mb-0.5">Spent</div>
-                  <p className="text-xs font-semibold text-foreground tabular-nums">${g.totalSpent.toFixed(0)}</p>
-                </div>
-                <div>
-                  <div className="text-[9px] font-bold uppercase tracking-[0.15em] text-muted-foreground mb-0.5">Time</div>
-                  <p className="text-xs font-semibold text-foreground tabular-nums">{getStayDuration(g.checkedInAt)}</p>
+
+                {/* Stats row — mini-cards */}
+                <div className="relative z-10 grid grid-cols-3 gap-2">
+                  <div className="flex flex-col items-center px-3 py-2 rounded-lg bg-violet-500/5 border border-violet-500/10">
+                    <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Tier</span>
+                    <span className="text-sm font-bold text-foreground">{g.tier}</span>
+                  </div>
+                  <div className="flex flex-col items-center px-3 py-2 rounded-lg bg-violet-500/5 border border-violet-500/10">
+                    <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Spent</span>
+                    <span className="text-sm font-bold text-foreground tabular-nums">${g.totalSpent.toFixed(0)}</span>
+                  </div>
+                  <div className="flex flex-col items-center px-3 py-2 rounded-lg bg-violet-500/5 border border-violet-500/10">
+                    <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Time</span>
+                    <span className="text-sm font-bold text-foreground tabular-nums">{getStayDuration(g.checkedInAt)}</span>
+                  </div>
                 </div>
               </div>
             </motion.div>
