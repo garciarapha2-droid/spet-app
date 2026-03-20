@@ -51,7 +51,7 @@ function StepIndicator({ current, total }) {
         <div
           key={i}
           className={`h-2 rounded-full transition-all ${
-            i < current ? 'w-8 bg-blue-500' : i === current ? 'w-8 bg-blue-400' : 'w-2 bg-zinc-700'
+            i < current ? 'w-8 bg-blue-500' : i === current ? 'w-8 bg-blue-400' : 'w-2 bg-muted'
           }`}
         />
       ))}
@@ -67,8 +67,8 @@ function WelcomeStep({ onNext }) {
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
         </svg>
       </div>
-      <h2 className="text-2xl font-bold text-white mb-3">Welcome to SPET</h2>
-      <p className="text-zinc-400 mb-8 max-w-sm mx-auto">
+      <h2 className="text-2xl font-bold text-foreground mb-3">Welcome to SPET</h2>
+      <p className="text-muted-foreground mb-8 max-w-sm mx-auto">
         Let's set up your venue in just a few steps. This will take about 2 minutes.
       </p>
       <button
@@ -106,34 +106,34 @@ function AccountSetupStep({ onNext, onError }) {
 
   return (
     <div data-testid="onboarding-account-setup">
-      <h2 className="text-xl font-bold text-white mb-1">Account Setup</h2>
-      <p className="text-zinc-400 text-sm mb-6">Tell us about your venue</p>
+      <h2 className="text-xl font-bold text-foreground mb-1">Account Setup</h2>
+      <p className="text-muted-foreground text-sm mb-6">Tell us about your venue</p>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-zinc-300 mb-1.5">Your Name</label>
+          <label className="block text-sm font-medium text-foreground/80 mb-1.5">Your Name</label>
           <input
             data-testid="onboarding-user-name"
             type="text"
             value={form.user_name}
             onChange={(e) => setForm({ ...form, user_name: e.target.value })}
-            className="w-full px-3 py-2.5 bg-zinc-900 border border-zinc-700 rounded-lg text-white outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2.5 bg-input border border-border rounded-lg text-foreground outline-none focus:ring-2 focus:ring-blue-500"
             required
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-zinc-300 mb-1.5">Venue Name</label>
+          <label className="block text-sm font-medium text-foreground/80 mb-1.5">Venue Name</label>
           <input
             data-testid="onboarding-venue-name"
             type="text"
             value={form.venue_name}
             onChange={(e) => setForm({ ...form, venue_name: e.target.value })}
-            className="w-full px-3 py-2.5 bg-zinc-900 border border-zinc-700 rounded-lg text-white outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2.5 bg-input border border-border rounded-lg text-foreground outline-none focus:ring-2 focus:ring-blue-500"
             placeholder="My Bar & Grill"
             required
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-zinc-300 mb-2">Venue Type</label>
+          <label className="block text-sm font-medium text-foreground/80 mb-2">Venue Type</label>
           <div className="grid grid-cols-3 gap-2">
             {VENUE_TYPES.map((vt) => (
               <button
@@ -144,7 +144,7 @@ function AccountSetupStep({ onNext, onError }) {
                 className={`px-3 py-2 rounded-lg text-sm font-medium border transition-all ${
                   form.venue_type === vt.id
                     ? 'border-blue-500 bg-blue-500/10 text-blue-400'
-                    : 'border-zinc-700 bg-zinc-900 text-zinc-400 hover:border-zinc-600'
+                    : 'border-border bg-card text-muted-foreground hover:border-primary/30'
                 }`}
               >
                 {vt.label}
@@ -188,30 +188,30 @@ function PasswordResetStep({ onNext, onError }) {
 
   return (
     <div data-testid="onboarding-password-reset">
-      <h2 className="text-xl font-bold text-white mb-1">Set Your Password</h2>
-      <p className="text-zinc-400 text-sm mb-6">Choose a secure password for your account</p>
+      <h2 className="text-xl font-bold text-foreground mb-1">Set Your Password</h2>
+      <p className="text-muted-foreground text-sm mb-6">Choose a secure password for your account</p>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-zinc-300 mb-1.5">New Password</label>
+          <label className="block text-sm font-medium text-foreground/80 mb-1.5">New Password</label>
           <input
             data-testid="onboarding-new-password"
             type="password"
             value={form.new_password}
             onChange={(e) => setForm({ ...form, new_password: e.target.value })}
-            className="w-full px-3 py-2.5 bg-zinc-900 border border-zinc-700 rounded-lg text-white outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2.5 bg-input border border-border rounded-lg text-foreground outline-none focus:ring-2 focus:ring-blue-500"
             placeholder="Min 6 characters"
             required
             minLength={6}
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-zinc-300 mb-1.5">Confirm Password</label>
+          <label className="block text-sm font-medium text-foreground/80 mb-1.5">Confirm Password</label>
           <input
             data-testid="onboarding-confirm-password"
             type="password"
             value={form.confirm}
             onChange={(e) => setForm({ ...form, confirm: e.target.value })}
-            className="w-full px-3 py-2.5 bg-zinc-900 border border-zinc-700 rounded-lg text-white outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2.5 bg-input border border-border rounded-lg text-foreground outline-none focus:ring-2 focus:ring-blue-500"
             required
             minLength={6}
           />
@@ -257,8 +257,8 @@ function ModulesSetupStep({ onNext, onError }) {
 
   return (
     <div data-testid="onboarding-modules-setup">
-      <h2 className="text-xl font-bold text-white mb-1">Enable Modules</h2>
-      <p className="text-zinc-400 text-sm mb-6">Choose which features you want to use</p>
+      <h2 className="text-xl font-bold text-foreground mb-1">Enable Modules</h2>
+      <p className="text-muted-foreground text-sm mb-6">Choose which features you want to use</p>
       <div className="space-y-3 mb-6">
         {MODULES.map((mod) => (
           <label
@@ -267,7 +267,7 @@ function ModulesSetupStep({ onNext, onError }) {
             className={`flex items-center gap-3 p-4 border rounded-lg cursor-pointer transition-all ${
               selected.includes(mod.id)
                 ? 'border-blue-500 bg-blue-500/10'
-                : 'border-zinc-700 bg-zinc-900 hover:border-zinc-600'
+                : 'border-border bg-card hover:border-primary/30'
             }`}
           >
             <input
@@ -277,8 +277,8 @@ function ModulesSetupStep({ onNext, onError }) {
               className="accent-blue-500 w-4 h-4"
             />
             <div>
-              <div className="font-medium text-white text-sm">{mod.label}</div>
-              <div className="text-xs text-zinc-500">{mod.desc}</div>
+              <div className="font-medium text-foreground text-sm">{mod.label}</div>
+              <div className="text-xs text-muted-foreground">{mod.desc}</div>
             </div>
           </label>
         ))}
@@ -303,8 +303,8 @@ function CompleteStep({ onComplete, loading }) {
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
         </svg>
       </div>
-      <h2 className="text-2xl font-bold text-white mb-3">All Set!</h2>
-      <p className="text-zinc-400 mb-8 max-w-sm mx-auto">
+      <h2 className="text-2xl font-bold text-foreground mb-3">All Set!</h2>
+      <p className="text-muted-foreground mb-8 max-w-sm mx-auto">
         Your venue is ready. Let's start managing your operations.
       </p>
       <button
