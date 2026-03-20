@@ -108,6 +108,13 @@ All `/api/*` endpoints return:
   - Inside Now: Guest count badge, refresh, guest list with avatars
   - Responsive: grid-cols-1 on mobile, grid-cols-[1fr_400px] on desktop
 
+- [x] CEO OS v2.0 REBUILD (2026-03-21): New sidebar with DASHBOARDS (12 items) + CRM (2 items) groups
+  - Preserved: header, sidebar, revenue targets, footer, dark/light, spacing, typography
+  - Removed: Growth, Marketing, Sales, Customers, Product dashboards
+  - Added: Customer Lifecycle, MRR Retention, CAC & Metrics, Lead Breakdown, Sales KPIs, Cash Flow & MRR, Conversion Rate, Executive, Startup KPIs, CRM Pipeline, CRM Reports
+  - CRM Pipeline: Kanban board with 6 stages, deal cards, search, tags
+  - All 14 sections navigable with consistent mock/placeholder content
+
 ## Current Phase: Integration & Stability
 Focus: Emergent as standalone full-stack app, endpoint stability
 
