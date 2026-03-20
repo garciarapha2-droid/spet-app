@@ -24,6 +24,7 @@ PROTECTED_USERS = [
         "role": "CEO",
         "password": "12345",
         "onboarding_completed": True,
+        "plan_id": "os",
     },
     {
         "email": "teste@teste.com",
@@ -31,6 +32,7 @@ PROTECTED_USERS = [
         "role": "USER",
         "password": "12345",
         "onboarding_completed": True,
+        "plan_id": "sync",
     },
     {
         "email": "teste1@teste.com",
@@ -38,6 +40,83 @@ PROTECTED_USERS = [
         "role": "USER",
         "password": "12345",
         "onboarding_completed": False,  # resets on every startup
+        "plan_id": "core",
+    },
+]
+
+# ─── MOCK TEST USERS — Recreated on every startup for frontend testing ──
+MOCK_TEST_USERS = [
+    {
+        "email": "mock-owner-active@spetapp.com",
+        "name": "Maria Owner",
+        "role": "USER",
+        "password": "test123",
+        "status": "active",
+        "onboarding_completed": True,
+        "plan_id": "sync",
+        "access_role": "owner",
+        "permissions": {"pulse": True, "tap": True, "table": True, "kds": True},
+        "description": "Owner with active plan and all modules",
+    },
+    {
+        "email": "mock-trial@spetapp.com",
+        "name": "Carlos Trial",
+        "role": "USER",
+        "password": "test123",
+        "status": "trial",
+        "onboarding_completed": True,
+        "plan_id": "core",
+        "access_role": "owner",
+        "permissions": {"pulse": True},
+        "description": "User in trial period",
+    },
+    {
+        "email": "mock-pending@spetapp.com",
+        "name": "Ana Pending",
+        "role": "USER",
+        "password": "test123",
+        "status": "pending_payment",
+        "onboarding_completed": False,
+        "plan_id": "flow",
+        "access_role": "owner",
+        "permissions": {},
+        "description": "User with pending payment",
+    },
+    {
+        "email": "mock-cancelled@spetapp.com",
+        "name": "Pedro Cancelled",
+        "role": "USER",
+        "password": "test123",
+        "status": "cancelled",
+        "onboarding_completed": True,
+        "plan_id": "flow",
+        "access_role": "owner",
+        "permissions": {"pulse": True, "tap": True, "table": True},
+        "description": "User with cancelled plan",
+    },
+    {
+        "email": "mock-no-onboarding@spetapp.com",
+        "name": "Julia NoOnboard",
+        "role": "USER",
+        "password": "test123",
+        "status": "active",
+        "onboarding_completed": False,
+        "plan_id": "sync",
+        "access_role": "owner",
+        "permissions": {"pulse": True, "tap": True, "table": True, "kds": True},
+        "description": "Active user who has not completed onboarding",
+    },
+    {
+        "email": "mock-limited@spetapp.com",
+        "name": "Roberto Staff",
+        "role": "USER",
+        "password": "test123",
+        "status": "active",
+        "onboarding_completed": True,
+        "plan_id": "core",
+        "access_role": "bartender",
+        "permissions": {"pulse": True},
+        "description": "Staff with limited permissions (bartender only)",
     },
 ]
 
@@ -80,29 +159,30 @@ async def ensure_protected_users(pool):
                 # User exists — ensure system flags are correct
                 user_id = existing["id"]
                 onboarding_flag = user_def.get("onboarding_completed", True)
+                plan_id = user_def.get("plan_id")
                 
                 # For demo onboarding user (teste1), also reset password on startup
-                # This ensures consistent test behavior
                 if email == "teste1@teste.com":
                     hashed = hash_password(user_def["password"])
                     await conn.execute(
-                        "UPDATE users SET is_system_account = TRUE, status = 'active', onboarding_completed = $1, onboarding_step = 0, password_hash = $2 WHERE id = $3",
-                        onboarding_flag, hashed, user_id,
+                        "UPDATE users SET is_system_account = TRUE, status = 'active', onboarding_completed = $1, onboarding_step = 0, password_hash = $2, plan_id = $3 WHERE id = $4",
+                        onboarding_flag, hashed, plan_id, user_id,
                     )
                     logger.info(f"[PROTECTED] Demo onboarding user reset: {email} (id={user_id}) — password and onboarding reset")
                 else:
                     await conn.execute(
-                        "UPDATE users SET is_system_account = TRUE, status = 'active', onboarding_completed = $1 WHERE id = $2",
-                        onboarding_flag, user_id,
+                        "UPDATE users SET is_system_account = TRUE, status = 'active', onboarding_completed = $1, plan_id = COALESCE(plan_id, $2) WHERE id = $3",
+                        onboarding_flag, plan_id, user_id,
                     )
                     logger.info(f"[PROTECTED] User exists: {email} (id={user_id}) — verified as system account")
             else:
                 # User missing — recreate
                 hashed = hash_password(user_def["password"])
+                plan_id = user_def.get("plan_id")
                 row = await conn.fetchrow(
-                    """INSERT INTO users (name, email, password_hash, role, is_system_account, status, onboarding_completed, created_at, updated_at)
-                       VALUES ($1, $2, $3, $4, TRUE, 'active', $5, $6, $6) RETURNING id""",
-                    user_def["name"], email, hashed, user_def["role"], user_def.get("onboarding_completed", True), now,
+                    """INSERT INTO users (name, email, password_hash, role, is_system_account, status, onboarding_completed, plan_id, created_at, updated_at)
+                       VALUES ($1, $2, $3, $4, TRUE, 'active', $5, $6, $7, $7) RETURNING id""",
+                    user_def["name"], email, hashed, user_def["role"], user_def.get("onboarding_completed", True), plan_id, now,
                 )
                 user_id = row["id"]
                 logger.warning(f"[PROTECTED] RECREATED missing user: {email} (role={user_def['role']}, id={user_id})")
@@ -164,8 +244,65 @@ async def startup_protection(pool):
     try:
         await ensure_schema(pool)
         await ensure_protected_users(pool)
+        await ensure_mock_test_users(pool)
         logger.info("[PROTECTED] Startup protection complete — all accounts safe")
     except Exception as e:
         logger.error(f"[PROTECTED] Startup protection failed: {e}")
-        # Don't crash the server — log the error and continue
-        # Users may need to manually re-seed if PostgreSQL is completely gone
+
+
+async def ensure_mock_test_users(pool):
+    """Reset mock test users on every startup for consistent frontend testing."""
+    from utils.auth import hash_password
+    import uuid
+
+    now = datetime.now(timezone.utc)
+
+    async with pool.acquire() as conn:
+        for mock in MOCK_TEST_USERS:
+            email = mock["email"]
+            hashed = hash_password(mock["password"])
+
+            existing = await conn.fetchrow("SELECT id FROM users WHERE email = $1", email)
+            if existing:
+                user_id = existing["id"]
+                await conn.execute(
+                    """UPDATE users SET name=$1, password_hash=$2, role=$3, status=$4,
+                       onboarding_completed=$5, onboarding_step=$6, plan_id=$7,
+                       is_system_account=TRUE, updated_at=$8 WHERE id=$9""",
+                    mock["name"], hashed, mock["role"], mock["status"],
+                    mock["onboarding_completed"],
+                    6 if mock["onboarding_completed"] else 0,
+                    mock["plan_id"], now, user_id,
+                )
+            else:
+                row = await conn.fetchrow(
+                    """INSERT INTO users (name, email, password_hash, role, is_system_account, status,
+                       onboarding_completed, onboarding_step, plan_id, created_at, updated_at)
+                       VALUES ($1, $2, $3, $4, TRUE, $5, $6, $7, $8, $9, $9) RETURNING id""",
+                    mock["name"], email, hashed, mock["role"], mock["status"],
+                    mock["onboarding_completed"],
+                    6 if mock["onboarding_completed"] else 0,
+                    mock["plan_id"], now,
+                )
+                user_id = row["id"]
+
+            # Ensure company access
+            access = await conn.fetchrow(
+                "SELECT id FROM user_access WHERE user_id = $1 AND company_id = $2::uuid",
+                user_id, uuid.UUID(COMPANY_ID),
+            )
+            if not access:
+                await conn.execute(
+                    """INSERT INTO user_access (user_id, company_id, venue_id, role, permissions, created_at)
+                       VALUES ($1, $2::uuid, $3::uuid, $4, $5::jsonb, $6)""",
+                    user_id, uuid.UUID(COMPANY_ID), uuid.UUID(VENUE_ID),
+                    mock["access_role"], json.dumps(mock["permissions"]), now,
+                )
+            else:
+                await conn.execute(
+                    "UPDATE user_access SET role=$1, permissions=$2::jsonb WHERE user_id=$3 AND company_id=$4::uuid",
+                    mock["access_role"], json.dumps(mock["permissions"]),
+                    user_id, uuid.UUID(COMPANY_ID),
+                )
+
+    logger.info(f"[PROTECTED] {len(MOCK_TEST_USERS)} mock test users seeded/reset")

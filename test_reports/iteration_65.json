@@ -1,0 +1,100 @@
+{
+  "summary": "Iteration 65: /api/auth/me Mock Users Tests Complete. All 32 tests pass. Tested the enhanced /api/auth/me endpoint with 6 mock test users covering different scenarios (owner-active, trial, pending, cancelled, no-onboarding, limited). Verified response structure includes user info, company, plan (id/name/status/interval/modules/limits), modules_enabled, and roles with permissions. Login works for trial/cancelled users. Regression tests for /permissions, /refresh-token, and /onboarding/plans all pass.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iteration65_auth_me_mock_users.py",
+    "/app/test_reports/pytest/iteration65_auth_me.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [],
+  "updated_files": [
+    "/app/backend/tests/test_iteration65_auth_me_mock_users.py"
+  ],
+  "success_rate": {
+    "backend": "100% (32/32 tests passed)",
+    "frontend": "N/A - Backend only testing"
+  },
+  "test_credentials": {
+    "mock_owner_active": {"email": "mock-owner-active@spetapp.com", "password": "test123"},
+    "mock_trial": {"email": "mock-trial@spetapp.com", "password": "test123"},
+    "mock_pending": {"email": "mock-pending@spetapp.com", "password": "test123"},
+    "mock_cancelled": {"email": "mock-cancelled@spetapp.com", "password": "test123"},
+    "mock_no_onboarding": {"email": "mock-no-onboarding@spetapp.com", "password": "test123"},
+    "mock_limited": {"email": "mock-limited@spetapp.com", "password": "test123"},
+    "demo": {"email": "teste@teste.com", "password": "12345"}
+  },
+  "seed_data_creation": "Mock users are seeded on backend startup via ensure_mock_test_users() in protected_users.py",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "The /api/auth/me endpoint now returns a rich profile structure for frontend session hydration. Key fields: company (id, name), plan (id, name, status, interval, modules, limits), modules_enabled (array), roles (array with venue_id, role, permissions). The plan.status mirrors the user's account status (active/trial/pending_payment/cancelled). Mock users cover all scenarios needed for frontend testing.",
+  "features_tested": {
+    "1. GET /api/health (regression)": "PASS - returns healthy",
+    "2. Login for trial user (mock-trial@spetapp.com)": "PASS - returns access_token and refresh_token",
+    "3. Login for cancelled user (mock-cancelled@spetapp.com)": "PASS - returns access_token and refresh_token",
+    "4. All mock users login return tokens": "PASS - 6 users all return both tokens",
+    "5. GET /api/auth/me for mock-owner-active": {
+      "status=active": "PASS",
+      "plan.id=sync": "PASS",
+      "plan.name=Spet Sync": "PASS",
+      "modules_enabled includes pulse/tap/table/kds": "PASS",
+      "company.name exists": "PASS (Demo Club Inc.)",
+      "roles[0].role=owner": "PASS"
+    },
+    "6. GET /api/auth/me for mock-trial": {
+      "status=trial": "PASS",
+      "plan.id=core": "PASS",
+      "plan.status=trial": "PASS",
+      "onboarding_completed=true": "PASS"
+    },
+    "7. GET /api/auth/me for mock-pending": {
+      "status=pending_payment": "PASS",
+      "onboarding_completed=false": "PASS",
+      "plan.id=flow": "PASS"
+    },
+    "8. GET /api/auth/me for mock-cancelled": {
+      "status=cancelled": "PASS",
+      "plan.id=flow": "PASS",
+      "onboarding_completed=true": "PASS"
+    },
+    "9. GET /api/auth/me for mock-no-onboarding": {
+      "status=active": "PASS",
+      "onboarding_completed=false": "PASS",
+      "plan.id=sync": "PASS"
+    },
+    "10. GET /api/auth/me for mock-limited": {
+      "status=active": "PASS",
+      "roles[0].role=bartender": "PASS",
+      "plan.id=core": "PASS",
+      "roles[0].permissions.pulse=true": "PASS"
+    },
+    "11. GET /api/auth/permissions (regression)": "PASS - works for mock-owner-active",
+    "12. POST /api/auth/refresh-token (regression)": "PASS - returns new token pair",
+    "13. GET /api/onboarding/plans (regression)": {
+      "returns 4 plans": "PASS",
+      "correct pricing (core=$79, flow=$149, sync=$299, os=$499)": "PASS"
+    },
+    "14. /me response structure validation": "PASS - all required fields present"
+  },
+  "me_endpoint_structure": {
+    "user_fields": ["id", "email", "name", "role", "status", "onboarding_completed", "onboarding_step"],
+    "company": {"id": "string", "name": "string"},
+    "plan": {
+      "id": "core|flow|sync|os",
+      "name": "Spet Core|Flow|Sync|OS",
+      "status": "active|trial|pending_payment|cancelled",
+      "interval": "month",
+      "modules": ["pulse", "tap", "table", "kds"],
+      "limits": {"venues": "number", "staff": "number"}
+    },
+    "modules_enabled": ["sorted array of module names"],
+    "roles": [{"venue_id": "string|null", "role": "owner|bartender|etc", "permissions": {"pulse": true}}]
+  }
+}

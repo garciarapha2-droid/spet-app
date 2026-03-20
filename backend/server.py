@@ -160,8 +160,8 @@ async def run_column_migrations(pool):
         await conn.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS onboarding_completed BOOLEAN DEFAULT FALSE")
         await conn.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS onboarding_step INTEGER DEFAULT 0")
         await conn.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS plan_id VARCHAR(50)")
-        # Set onboarding=TRUE for system accounts EXCEPT demo onboarding user
-        await conn.execute("UPDATE users SET onboarding_completed = TRUE WHERE is_system_account = TRUE AND email != 'teste1@teste.com'")
+        # Set onboarding=TRUE for system accounts EXCEPT demo onboarding user and mock test users
+        await conn.execute("UPDATE users SET onboarding_completed = TRUE WHERE is_system_account = TRUE AND email NOT LIKE 'teste1@%' AND email NOT LIKE 'mock-%'")
         await conn.execute("UPDATE users SET onboarding_completed = FALSE, onboarding_step = 0 WHERE email = 'teste1@teste.com'")
     logger.info("Phase 1 column migrations completed")
 

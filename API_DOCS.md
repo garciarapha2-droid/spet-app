@@ -119,7 +119,9 @@ else                                    → /app
 ---
 
 ### GET `/api/auth/me`
-Get current user profile. **Requires: Bearer token**
+Get current user profile with full session data. **Requires: Bearer token**
+
+This is the **primary endpoint for frontend session hydration**. Returns everything needed to determine: routing, feature access, and UI state.
 
 **Response:**
 ```json
@@ -127,33 +129,58 @@ Get current user profile. **Requires: Bearer token**
   "success": true,
   "data": {
     "id": "uuid",
-    "name": "User Name",
     "email": "user@email.com",
+    "name": "User Name",
     "role": "CEO|USER",
-    "status": "active|pending_payment",
+    "status": "active|pending_payment|trial|cancelled",
     "onboarding_completed": true|false,
     "onboarding_step": 0-6,
-    "plan_id": "core|flow|sync|os",
-    "created_at": "...",
+    "company": {
+      "id": "uuid",
+      "name": "Meu Restaurante",
+      "venue_type": "restaurant|bar|club|hotel"
+    },
+    "plan": {
+      "id": "core|flow|sync|os",
+      "name": "Spet Core|Flow|Sync|OS",
+      "status": "active|pending_payment|trial|cancelled",
+      "interval": "month",
+      "modules": ["pulse", "tap", "table", "kds"],
+      "limits": { "venues": 10, "staff": 50 }
+    },
+    "modules_enabled": ["pulse", "tap", "table", "kds"],
     "roles": [
       {
-        "company_id": "uuid",
-        "venue_id": "uuid|null",
+        "venue_id": "uuid",
         "role": "owner|manager|host|server|bartender",
-        "permissions": { "pulse": true, "tap": true }
-      }
-    ],
-    "venues": [
-      {
-        "id": "venue-uuid",
-        "name": "My Bar",
-        "venue_type": "bar",
-        "status": "active"
+        "permissions": { "pulse": true, "tap": true, "table": true, "kds": true },
+        "venue_name": "My Bar",
+        "venue_type": "bar"
       }
     ]
   },
   "error": null
 }
+```
+
+**Frontend Decision Tree:**
+```javascript
+const me = await fetch('/api/auth/me', { headers: { Authorization: `Bearer ${token}` } });
+const { status, onboarding_completed, plan, modules_enabled, roles } = me.data;
+
+// 1. Route decision
+if (status === 'pending_payment')           → redirect /payment
+if (status === 'cancelled')                 → redirect /payment-required
+if (!onboarding_completed)                  → redirect /onboarding
+else                                        → allow /app
+
+// 2. Feature gating
+modules_enabled.includes('tap')             → show Tap module
+modules_enabled.includes('kds')             → show KDS module
+
+// 3. Permission check
+roles[0].permissions.kds                    → allow KDS access
+roles[0].role === 'owner'                   → show admin settings
 ```
 
 ---
@@ -675,3 +702,41 @@ Accepts: `*.lovable.app`, `*.lovable.dev`, `localhost:3000/5173/8080`, `CORS_ORI
 ## Cross-Domain Handoff (Future Fallback Only)
 
 The handoff system (`/api/auth/handoff/create` + `/api/auth/handoff/exchange`) is available but **not used in the main flow**. It exists as a fallback if the architecture ever moves to separate domains.
+
+
+---
+
+## Mock Test Users
+
+These users are **reset on every backend restart** for consistent frontend testing.
+All use password: `test123`
+
+| Email | Name | Status | Onboarding | Plan | Role | Scenario |
+|---|---|---|---|---|---|---|
+| `mock-owner-active@spetapp.com` | Maria Owner | `active` | `true` | Spet Sync | owner | Owner with active plan, all modules |
+| `mock-trial@spetapp.com` | Carlos Trial | `trial` | `true` | Spet Core | owner | User in trial period |
+| `mock-pending@spetapp.com` | Ana Pending | `pending_payment` | `false` | Spet Flow | owner | User with pending payment |
+| `mock-cancelled@spetapp.com` | Pedro Cancelled | `cancelled` | `true` | Spet Flow | owner | User with cancelled plan |
+| `mock-no-onboarding@spetapp.com` | Julia NoOnboard | `active` | `false` | Spet Sync | owner | Active user, onboarding not done |
+| `mock-limited@spetapp.com` | Roberto Staff | `active` | `true` | Spet Core | bartender | Staff with limited permissions |
+
+### Quick Test
+
+```bash
+# Login as any mock user
+curl -X POST /api/auth/login -d '{"email":"mock-owner-active@spetapp.com","password":"test123"}'
+
+# Use token to check /auth/me
+curl -H "Authorization: Bearer {token}" /api/auth/me
+```
+
+### Payment Confirmation
+
+Two mechanisms exist for activating users after Stripe payment:
+
+| Method | Endpoint | When |
+|---|---|---|
+| **Webhook** (preferred) | `POST /api/webhook/stripe` | Stripe sends automatically after payment |
+| **Frontend verify** | `POST /api/auth/verify-payment` | Frontend calls with `{ session_id }` after Stripe redirect |
+
+Both verify directly with Stripe before activating. The backend is the **source of truth** — frontend should never set `active` locally.

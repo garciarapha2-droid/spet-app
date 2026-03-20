@@ -208,7 +208,7 @@ async def login(request: LoginRequest):
         if not verify_password(request.password, user["password_hash"]):
             raise HTTPException(status_code=401, detail="Invalid credentials")
 
-        if user["status"] not in ("active", "pending_payment"):
+        if user["status"] not in ("active", "pending_payment", "trial", "cancelled"):
             raise HTTPException(status_code=403, detail="Account suspended")
 
         await conn.execute(
@@ -321,6 +321,11 @@ async def refresh_token(request: Request):
 
 @router.get("/me")
 async def get_current_user_info(user: dict = Depends(require_auth)):
+    """Return the complete user profile for frontend session hydration.
+
+    Includes: user info, company/workspace, plan, modules, roles/permissions.
+    The frontend uses this to determine routing, feature access, and UI state.
+    """
     pool = get_postgres_pool()
     db = get_mongo_db()
 
@@ -332,46 +337,93 @@ async def get_current_user_info(user: dict = Depends(require_auth)):
         if not user_row:
             raise HTTPException(status_code=404, detail="User not found")
 
-        roles = await conn.fetch(
+        access_rows = await conn.fetch(
             "SELECT company_id, venue_id, role, permissions FROM user_access WHERE user_id = $1::uuid",
             user["sub"],
         )
 
-    access_roles = []
-    venue_ids = []
-    for r in roles:
+        # Fetch primary company
+        company_data = None
+        if access_rows:
+            company_id = access_rows[0]["company_id"]
+            if company_id:
+                company_row = await conn.fetchrow(
+                    "SELECT id, name, status FROM companies WHERE id = $1",
+                    company_id,
+                )
+                if company_row:
+                    company_data = {
+                        "id": str(company_row["id"]),
+                        "name": company_row["name"],
+                    }
+
+    # Resolve plan and modules
+    raw_plan_id = user_row.get("plan_id")
+    plan_id = resolve_plan_id(raw_plan_id) if raw_plan_id else None
+    plan_def = get_plan(plan_id) if plan_id else None
+
+    plan_data = None
+    modules_enabled = []
+    if plan_def:
+        plan_status = "active" if user_row["status"] == "active" else user_row["status"]
+        plan_data = {
+            "id": plan_id,
+            "name": plan_def["name"],
+            "status": plan_status,
+            "interval": plan_def["interval"],
+            "modules": plan_def["modules"],
+            "limits": plan_def["limits"],
+        }
+        modules_enabled = plan_def["modules"]
+
+    # Build roles with venue info
+    roles = []
+    for r in access_rows:
         perm = r["permissions"]
         if isinstance(perm, str):
             try:
                 perm = json.loads(perm)
             except Exception:
                 perm = {}
-        access_roles.append({
-            "company_id": str(r["company_id"]) if r["company_id"] else None,
+
+        role_entry = {
             "venue_id": str(r["venue_id"]) if r["venue_id"] else None,
             "role": r["role"],
             "permissions": perm,
-        })
-        if r["venue_id"]:
-            venue_ids.append(str(r["venue_id"]))
+        }
 
-    venues = []
-    if venue_ids:
-        cursor = db.venues.find({"id": {"$in": venue_ids}}, {"_id": 0})
-        venues = await cursor.to_list(length=100)
+        # If venue has a config, use its modules (overrides plan-level)
+        if r["venue_id"]:
+            venue_doc = await db.venues.find_one({"id": str(r["venue_id"])}, {"_id": 0})
+            if venue_doc:
+                if company_data and not company_data.get("venue_type"):
+                    company_data["venue_type"] = venue_doc.get("venue_type")
+                role_entry["venue_name"] = venue_doc.get("name")
+                role_entry["venue_type"] = venue_doc.get("venue_type")
+
+            venue_config = await db.venue_configs.find_one({"venue_id": str(r["venue_id"])}, {"_id": 0})
+            if venue_config and venue_config.get("modules"):
+                modules_enabled = list(set(modules_enabled) | set(venue_config["modules"]))
+
+        roles.append(role_entry)
+
+    # Demo accounts always get all modules
+    is_demo = user_row["email"] in DEMO_EMAILS
+    if is_demo and not modules_enabled:
+        modules_enabled = ["pulse", "tap", "table", "kds"]
 
     return {
         "id": str(user_row["id"]),
-        "name": user_row["name"],
         "email": user_row["email"],
+        "name": user_row["name"],
         "role": user_row.get("role", "USER"),
         "status": user_row["status"],
         "onboarding_completed": user_row.get("onboarding_completed", False),
         "onboarding_step": user_row.get("onboarding_step", 0),
-        "plan_id": user_row.get("plan_id"),
-        "created_at": user_row["created_at"].isoformat() if user_row["created_at"] else None,
-        "roles": access_roles,
-        "venues": venues,
+        "company": company_data,
+        "plan": plan_data,
+        "modules_enabled": sorted(modules_enabled),
+        "roles": roles,
     }
 
 
