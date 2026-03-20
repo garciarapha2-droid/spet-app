@@ -87,6 +87,12 @@ All `/api/*` endpoints return:
 - [x] 15/15 verify-payment tests passed (iteration 63)
 - [x] 15/15 refresh token tests passed (iteration 62)
 - [x] 27/27 API tests passed (iteration 61)
+- [x] FIX (2026-03-20): Logout consistency — all 8+ logout buttons now use centralized handleFullLogout(logout) with AuthContext cleanup
+- [x] FIX (2026-03-20): CeoPage.js had NO logout button — added LogOut icon to CEO header
+- [x] FIX (2026-03-20): TAP/Table "Module Not Available" — response envelope {success, data} not unwrapped in checkModuleAccess
+- [x] FIX (2026-03-20): logout.js and ProtectedRoute.js used wrong env var (REACT_APP_LOVABLE_URL → REACT_APP_LOVABLE_LOGIN_URL)
+- [x] FIX (2026-03-20): All 5 pages (Tap, Table, Kitchen, Owner, Manager) now import useAuth and pass logout fn
+- [x] 9/9 frontend scenarios passed (iteration 68) — full module navigation + logout + user switching
 
 ## Current Phase: Integration & Stability
 Focus: supporting Lovable integration, endpoint stability, real usage
