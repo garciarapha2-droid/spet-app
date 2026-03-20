@@ -17,7 +17,7 @@ import {
 } from "../../data/pulseData";
 import spetIcon from "../../assets/spet-icon.png";
 
-export function TapTableView({ defaultMode = "tap" }) {
+export function TapTableView({ defaultMode = "tap", embedded = false, showModeSwitcher = true }) {
   const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
   const { logout } = useAuth();
@@ -216,154 +216,89 @@ export function TapTableView({ defaultMode = "tap" }) {
       ? `#${selectedGuest?.tabNumber}`
       : `#${selectedTableObj?.number}`;
 
-  return (
-    <div className="pulse-scope min-h-screen bg-background text-foreground">
-      {/* Ambient glow */}
-      <div className="pointer-events-none fixed inset-x-0 top-0 h-[400px] w-[800px] mx-auto rounded-full bg-primary/5 blur-[120px]" />
+  // ── Content blocks (shared between standalone and embedded) ──
+  const topBar = (
+    <div className="flex items-center justify-between mb-6" data-testid="top-bar">
+      {/* Mode Switcher (only in standalone) */}
+      {showModeSwitcher && (
+        <div
+          className="flex items-center gap-2 bg-card/60 backdrop-blur border border-border/30 rounded-2xl p-1.5"
+          data-testid="mode-switcher"
+        >
+          {[
+            { key: "tap", label: "TAP", icon: Zap },
+            { key: "table", label: "TABLE", icon: LayoutGrid },
+          ].map((m) => {
+            const isActive = mode === m.key;
+            const Icon = m.icon;
+            return (
+              <button
+                key={m.key}
+                onClick={() => handleModeChange(m.key)}
+                className={cn(
+                  "relative flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all duration-300",
+                  isActive
+                    ? "text-primary-foreground"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+                data-testid={`mode-${m.key}`}
+              >
+                {isActive && (
+                  <motion.div
+                    layoutId="bar-mode"
+                    className="absolute inset-0 rounded-xl bg-gradient-to-r from-primary to-accent shadow-lg shadow-primary/25"
+                    transition={{ type: "spring", bounce: 0.2, duration: 0.5 }}
+                  />
+                )}
+                <span className="relative z-10 flex items-center gap-2">
+                  <Icon className="h-3.5 w-3.5" />
+                  {m.label}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      )}
 
-      {/* ═══ Navbar ═══ */}
-      <nav
-        className="sticky top-0 z-50 flex h-16 items-center gap-2 border-b border-border/50 bg-card/70 px-6 backdrop-blur-xl"
-        data-testid="orders-navbar"
-      >
-        {/* Brand */}
-        <div className="flex items-center gap-2.5">
-          <img src={spetIcon} alt="spet" className="h-6 w-6 rounded-md" />
-          <span
-            className="text-foreground text-base leading-none"
-            style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700 }}
+      {/* Right: Server Selector + Tab Count */}
+      <div className={cn("flex items-center gap-3", !showModeSwitcher && "ml-auto")}>
+        {/* Server Selector */}
+        <div className="relative group" data-testid="server-selector">
+          <User className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+          <select
+            value={server || ""}
+            onChange={(e) => setServer(e.target.value || null)}
+            className="appearance-none pl-9 pr-8 py-2.5 rounded-xl border border-border/30 bg-card/60 backdrop-blur text-sm font-medium text-foreground hover:border-primary/30 focus:border-primary/40 focus:outline-none transition-colors"
+            data-testid="server-select"
           >
-            spet.
-          </span>
+            <option value="">Select server...</option>
+            {servers.map((s) => (
+              <option key={s} value={s}>
+                {s}
+              </option>
+            ))}
+          </select>
+          <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground pointer-events-none" />
         </div>
 
-        <div className="mx-4 h-7 w-px bg-border/50" />
-
-        {/* Venue selector */}
-        <button
-          className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm font-medium text-foreground hover:bg-muted/50 transition-colors"
-          data-testid="venue-selector"
-        >
-          <span className="flex h-6 w-6 items-center justify-center rounded-md bg-gradient-to-br from-primary to-accent text-[10px] font-bold text-primary-foreground">
-            DC
-          </span>
-          Demo Club
-          <ChevronDown className="h-3 w-3 text-muted-foreground" />
-        </button>
-
-        {/* Right actions */}
-        <div className="ml-auto flex items-center gap-2">
-          <button
-            onClick={toggleTheme}
-            className="rounded-lg p-2 text-muted-foreground hover:bg-muted/50 hover:text-foreground transition-colors"
-            data-testid="theme-toggle"
+        {/* Tab Counter (TAP only) */}
+        {mode === "tap" && (
+          <div
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-primary/10 border border-primary/20"
+            data-testid="tab-counter"
           >
-            {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-          </button>
-          <div className="h-7 w-px bg-border/50" />
-          <button
-            onClick={() => navigate("/venue/home")}
-            className="rounded-lg p-2 text-muted-foreground hover:bg-muted/50 hover:text-foreground transition-colors"
-            data-testid="home-btn"
-          >
-            <Home className="h-4 w-4" />
-          </button>
-          <button
-            onClick={handleLogout}
-            className="rounded-lg p-2 text-muted-foreground hover:bg-muted/50 hover:text-foreground transition-colors"
-            data-testid="logout-btn"
-          >
-            <LogOut className="h-4 w-4" />
-          </button>
-        </div>
-      </nav>
-
-      {/* ═══ Content ═══ */}
-      <main className="relative">
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-          className="mx-auto max-w-7xl px-6 py-8"
-        >
-          {/* ═══ Top Bar ═══ */}
-          <div className="flex items-center justify-between mb-6" data-testid="top-bar">
-            {/* Mode Switcher */}
-            <div
-              className="flex items-center gap-2 bg-card/60 backdrop-blur border border-border/30 rounded-2xl p-1.5"
-              data-testid="mode-switcher"
-            >
-              {[
-                { key: "tap", label: "TAP", icon: Zap },
-                { key: "table", label: "TABLE", icon: LayoutGrid },
-              ].map((m) => {
-                const isActive = mode === m.key;
-                const Icon = m.icon;
-                return (
-                  <button
-                    key={m.key}
-                    onClick={() => handleModeChange(m.key)}
-                    className={cn(
-                      "relative flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all duration-300",
-                      isActive
-                        ? "text-primary-foreground"
-                        : "text-muted-foreground hover:text-foreground"
-                    )}
-                    data-testid={`mode-${m.key}`}
-                  >
-                    {isActive && (
-                      <motion.div
-                        layoutId="bar-mode"
-                        className="absolute inset-0 rounded-xl bg-gradient-to-r from-primary to-accent shadow-lg shadow-primary/25"
-                        transition={{ type: "spring", bounce: 0.2, duration: 0.5 }}
-                      />
-                    )}
-                    <span className="relative z-10 flex items-center gap-2">
-                      <Icon className="h-3.5 w-3.5" />
-                      {m.label}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Right: Server Selector + Tab Count */}
-            <div className="flex items-center gap-3">
-              {/* Server Selector */}
-              <div className="relative group" data-testid="server-selector">
-                <User className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
-                <select
-                  value={server || ""}
-                  onChange={(e) => setServer(e.target.value || null)}
-                  className="appearance-none pl-9 pr-8 py-2.5 rounded-xl border border-border/30 bg-card/60 backdrop-blur text-sm font-medium text-foreground hover:border-primary/30 focus:border-primary/40 focus:outline-none transition-colors"
-                  data-testid="server-select"
-                >
-                  <option value="">Select server...</option>
-                  {servers.map((s) => (
-                    <option key={s} value={s}>
-                      {s}
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground pointer-events-none" />
-              </div>
-
-              {/* Tab Counter (TAP only) */}
-              {mode === "tap" && (
-                <div
-                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-primary/10 border border-primary/20"
-                  data-testid="tab-counter"
-                >
-                  <Zap className="h-3.5 w-3.5 text-primary" />
-                  <span className="text-xs font-bold text-primary tabular-nums">
-                    Tabs: {insideGuests.length}
-                  </span>
-                </div>
-              )}
-            </div>
+            <Zap className="h-3.5 w-3.5 text-primary" />
+            <span className="text-xs font-bold text-primary tabular-nums">
+              Tabs: {insideGuests.length}
+            </span>
           </div>
+        )}
+      </div>
+    </div>
+  );
 
-          {/* ═══ 4-Column Grid ═══ */}
+  // ── Shared grid content ──
+  const gridContent = (
           <div
             className="grid grid-cols-1 lg:grid-cols-[200px_72px_1fr_300px] gap-4 min-h-[calc(100vh-12rem)]"
             data-testid="main-grid"
@@ -919,10 +854,11 @@ export function TapTableView({ defaultMode = "tap" }) {
               )}
             </div>
           </div>
-        </motion.div>
-      </main>
+  );
 
-      {/* ═══ MODALS ═══ */}
+  // ── Shared modals ──
+  const allModals = (
+      <>
 
       {/* Guest Confirmation Modal */}
       <AnimatePresence>
@@ -1331,6 +1267,91 @@ export function TapTableView({ defaultMode = "tap" }) {
           </>
         )}
       </AnimatePresence>
+      </>
+  );
+
+  // ── Embedded mode (inside PulseLayout) ──
+  if (embedded) {
+    return (
+      <>
+        {topBar}
+        {gridContent}
+        {allModals}
+      </>
+    );
+  }
+
+  // ── Standalone mode (own navbar) ──
+  return (
+    <div className="pulse-scope min-h-screen bg-background text-foreground">
+      {/* Ambient glow */}
+      <div className="pointer-events-none fixed inset-x-0 top-0 h-[400px] w-[800px] mx-auto rounded-full bg-primary/5 blur-[120px]" />
+
+      {/* Navbar */}
+      <nav
+        className="sticky top-0 z-50 flex h-16 items-center gap-2 border-b border-border/50 bg-card/70 px-6 backdrop-blur-xl"
+        data-testid="orders-navbar"
+      >
+        <div className="flex items-center gap-2.5">
+          <img src={spetIcon} alt="spet" className="h-6 w-6 rounded-md" />
+          <span
+            className="text-foreground text-base leading-none"
+            style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700 }}
+          >
+            spet.
+          </span>
+        </div>
+        <div className="mx-4 h-7 w-px bg-border/50" />
+        <button
+          className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm font-medium text-foreground hover:bg-muted/50 transition-colors"
+          data-testid="venue-selector"
+        >
+          <span className="flex h-6 w-6 items-center justify-center rounded-md bg-gradient-to-br from-primary to-accent text-[10px] font-bold text-primary-foreground">
+            DC
+          </span>
+          Demo Club
+          <ChevronDown className="h-3 w-3 text-muted-foreground" />
+        </button>
+        <div className="ml-auto flex items-center gap-2">
+          <button
+            onClick={toggleTheme}
+            className="rounded-lg p-2 text-muted-foreground hover:bg-muted/50 hover:text-foreground transition-colors"
+            data-testid="theme-toggle"
+          >
+            {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+          </button>
+          <div className="h-7 w-px bg-border/50" />
+          <button
+            onClick={() => navigate("/venue/home")}
+            className="rounded-lg p-2 text-muted-foreground hover:bg-muted/50 hover:text-foreground transition-colors"
+            data-testid="home-btn"
+          >
+            <Home className="h-4 w-4" />
+          </button>
+          <button
+            onClick={handleLogout}
+            className="rounded-lg p-2 text-muted-foreground hover:bg-muted/50 hover:text-foreground transition-colors"
+            data-testid="logout-btn"
+          >
+            <LogOut className="h-4 w-4" />
+          </button>
+        </div>
+      </nav>
+
+      {/* Content */}
+      <main className="relative">
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+          className="mx-auto max-w-7xl px-6 py-8"
+        >
+          {topBar}
+          {gridContent}
+        </motion.div>
+      </main>
+
+      {allModals}
     </div>
   );
 }
