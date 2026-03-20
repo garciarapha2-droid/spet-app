@@ -23,7 +23,7 @@ import { PulseEntryPage } from './pages/pulse/PulseEntryPage';
 import PulseGuest from './pages/pulse/PulseGuest';
 import { PulseInsidePage } from './pages/pulse/PulseInsidePage';
 import { PulseExitPage } from './pages/pulse/PulseExitPage';
-import { PulseBarPage } from './pages/pulse/PulseBarPage';
+// PulseBarPage removed — TAP/TABLE are now independent modules at /tap and /table
 import { PulseRewardsPage } from './pages/pulse/PulseRewardsPage';
 import { GuestProfilePage } from './pages/pulse/GuestProfilePage';
 import { TapPage } from './pages/TapPage';
@@ -69,7 +69,7 @@ function App() {
               <Route path="/pulse/guest" element={<ProtectedRoute><PulseGuest /></ProtectedRoute>} />
               <Route path="/pulse/entry" element={<ProtectedRoute><PulseEntryPage /></ProtectedRoute>} />
               <Route path="/pulse/inside" element={<ProtectedRoute><PulseInsidePage /></ProtectedRoute>} />
-              <Route path="/pulse/bar" element={<ProtectedRoute><PulseBarPage /></ProtectedRoute>} />
+              <Route path="/pulse/bar" element={<ProtectedRoute><Navigate to="/tap" replace /></ProtectedRoute>} />
               <Route path="/pulse/exit" element={<ProtectedRoute><PulseExitPage /></ProtectedRoute>} />
               <Route path="/pulse/rewards" element={<ProtectedRoute><PulseRewardsPage /></ProtectedRoute>} />
               <Route path="/pulse/guest/:guestId" element={<ProtectedRoute><GuestProfilePage /></ProtectedRoute>} />

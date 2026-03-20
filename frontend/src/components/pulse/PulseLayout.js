@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Moon, Sun, LogOut, ChevronDown, Scan, Users, UtensilsCrossed, DoorOpen, Crown } from "lucide-react";
+import { Moon, Sun, LogOut, ChevronDown, Scan, Users, DoorOpen, Crown } from "lucide-react";
 import { motion } from "framer-motion";
 import { useTheme } from "../../contexts/ThemeContext";
 import { useAuth } from "../../contexts/AuthContext";
@@ -28,7 +28,6 @@ function cn(...classes) {
 const tabs = [
   { label: "Check-in", path: "/pulse/guest", icon: Scan },
   { label: "Inside", path: "/pulse/inside", icon: Users },
-  { label: "Orders", path: "/pulse/bar", icon: UtensilsCrossed },
   { label: "Exit", path: "/pulse/exit", icon: DoorOpen },
   { label: "Membership", path: "/pulse/rewards", icon: Crown },
 ];
