@@ -1,592 +1,856 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { PulseHeader } from '../../components/PulseHeader';
-import { pulseAPI, tapAPI, staffAPI } from '../../services/api';
-import { toast } from 'sonner';
+import { useState } from "react";
+import { PulseLayout } from "../../components/pulse/PulseLayout";
+import { cn } from "../../lib/utils";
+import { motion, AnimatePresence } from "framer-motion";
+import { toast } from "sonner";
 import {
-  ShoppingCart, User, ScanLine, Plus, X, Check, Beer, Trash2, Pencil,
-  CreditCard, Banknote, Camera, Upload, ShieldCheck, ChevronDown, Video
-} from 'lucide-react';
-import { Input } from '../../components/ui/input';
-import { Button } from '../../components/ui/button';
+  ShoppingCart, Plus, Minus, Trash2, Search, ChevronDown,
+  CreditCard, Banknote, X, Check, Pencil, MessageSquare,
+  Users, User, LayoutGrid, Zap, Shield, Clock,
+} from "lucide-react";
+import {
+  mockGuests, mockTables, menuItems, servers,
+  categories, categoryEmojis, categoryColors, categoryAccents, alcoholicCategories,
+} from "../../data/pulseData";
 
-const VENUE_ID = () => localStorage.getItem('active_venue_id') || '40a24e04-75b6-435d-bfff-ab0d469ce543';
-const BAR_CATEGORIES = ['Cocktails', 'Beers', 'Spirits', 'Non-alcoholic', 'Snacks', 'Starters'];
-
-/* ─── Camera Capture Modal (getUserMedia) ────────────────────────── */
-function CameraModal({ onCapture, onClose }) {
-  const videoRef = useRef(null);
-  const canvasRef = useRef(null);
-  const [stream, setStream] = useState(null);
-
-  useEffect(() => {
-    let mediaStream = null;
-    const startCamera = async () => {
-      try {
-        mediaStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
-        setStream(mediaStream);
-        if (videoRef.current) videoRef.current.srcObject = mediaStream;
-      } catch (err) {
-        toast.error('Camera access denied or unavailable');
-        onClose();
-      }
-    };
-    startCamera();
-    return () => { if (mediaStream) mediaStream.getTracks().forEach(t => t.stop()); };
-  }, [onClose]);
-
-  const handleCapture = () => {
-    if (!videoRef.current || !canvasRef.current) return;
-    const video = videoRef.current;
-    const canvas = canvasRef.current;
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    canvas.getContext('2d').drawImage(video, 0, 0);
-    canvas.toBlob(blob => {
-      if (blob) {
-        const file = new File([blob], 'camera-capture.jpg', { type: 'image/jpeg' });
-        onCapture(file);
-      }
-    }, 'image/jpeg', 0.8);
-    if (stream) stream.getTracks().forEach(t => t.stop());
-    onClose();
-  };
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80" data-testid="camera-modal">
-      <div className="bg-card rounded-2xl p-4 max-w-lg w-full mx-4 shadow-2xl">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="font-bold flex items-center gap-2"><Video className="h-4 w-4" /> Take Photo</h3>
-          <Button variant="ghost" size="icon" onClick={() => { if (stream) stream.getTracks().forEach(t => t.stop()); onClose(); }}>
-            <X className="h-4 w-4" />
-          </Button>
-        </div>
-        <div className="relative rounded-xl overflow-hidden bg-black mb-3">
-          <video ref={videoRef} autoPlay playsInline muted className="w-full h-64 object-cover" />
-          <canvas ref={canvasRef} className="hidden" />
-        </div>
-        <Button className="w-full h-12" onClick={handleCapture} data-testid="camera-capture-btn">
-          <Camera className="h-5 w-5 mr-2" /> Capture
-        </Button>
-      </div>
-    </div>
-  );
-}
-
-/* ─── Guest Confirmation Modal ───────────────────────────────────── */
-function BarGuestConfirmModal({ result, onConfirm, onCancel }) {
-  if (!result) return null;
-  return (
-    <div className="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm" style={{ zIndex: 9999 }} data-testid="bar-guest-confirm-modal">
-      <div className="bg-card border border-border rounded-2xl shadow-2xl w-full max-w-md p-6 text-center">
-        {result.guest_photo ? (
-          <img src={result.guest_photo} alt="" className="w-24 h-24 rounded-full object-cover mx-auto mb-4 border-4 border-primary/20" />
-        ) : (
-          <div className="w-24 h-24 rounded-full bg-muted flex items-center justify-center mx-auto mb-4 border-4 border-primary/20">
-            <User className="h-10 w-10 text-muted-foreground" />
-          </div>
-        )}
-        <h2 className="text-xl font-bold mb-1" data-testid="bar-confirm-guest-name">{result.guest_name}</h2>
-        {result.tab_number && (
-          <span className="inline-block bg-primary/10 text-primary font-bold px-3 py-1 rounded-full text-sm mb-4" data-testid="bar-confirm-tab-number">Tab #{result.tab_number}</span>
-        )}
-        <p className="text-sm text-muted-foreground mb-6">Confirm this is the correct guest before proceeding.</p>
-        <div className="flex gap-3">
-          <Button variant="outline" className="flex-1 h-11" onClick={onCancel} data-testid="bar-confirm-cancel-btn">Cancel</Button>
-          <Button className="flex-1 h-11" onClick={onConfirm} data-testid="bar-confirm-guest-btn">
-            <ShieldCheck className="h-4 w-4 mr-2" /> Confirm
-          </Button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-export const PulseBarPage = () => {
-  const navigate = useNavigate();
-  const [catalog, setCatalog] = useState([]);
-  const [selectedCategory, setSelectedCategory] = useState('Cocktails');
-  const [cart, setCart] = useState([]);
-  const [scanInput, setScanInput] = useState('');
-  const [pendingConfirm, setPendingConfirm] = useState(null);
-  const [confirmedGuest, setConfirmedGuest] = useState(null);
-  const [activeSessions, setActiveSessions] = useState([]);
-  const [showCustom, setShowCustom] = useState(false);
-  const [customItem, setCustomItem] = useState({ name: '', price: '', category: 'Cocktails' });
-  const [customPhoto, setCustomPhoto] = useState(null);
+export function PulseBarPage() {
+  // ── State (Section 10) ──
+  const [mode, setMode] = useState("tap");
+  const [activeCategory, setActiveCategory] = useState("Cocktails");
+  const [order, setOrder] = useState([]);
+  const [tabSearch, setTabSearch] = useState("");
+  const [showPayment, setShowPayment] = useState(false);
+  const [paymentStep, setPaymentStep] = useState("tip");
+  const [selectedTip, setSelectedTip] = useState(null);
   const [editingItem, setEditingItem] = useState(null);
-  const [editForm, setEditForm] = useState({ name: '', price: '', category: '' });
-  const fileInputRef = useRef(null);
-  const [showCamera, setShowCamera] = useState(false);
+  const [selectedTab, setSelectedTab] = useState(null);
+  const [selectedTable, setSelectedTable] = useState(null);
+  const [showConfirm, setShowConfirm] = useState(null);
+  const [showAgeCheck, setShowAgeCheck] = useState(null);
+  const [server, setServer] = useState(null);
 
-  // Bartender selector state (Item 6)
-  const [barmen, setBarmen] = useState([]);
-  const [selectedBarman, setSelectedBarman] = useState('');
+  // ── Derived data ──
+  const insideGuests = mockGuests.filter((g) => g.status === "inside");
+  const filteredGuests = insideGuests.filter(
+    (g) =>
+      !tabSearch ||
+      g.name.toLowerCase().includes(tabSearch.toLowerCase()) ||
+      g.tabNumber.toString().includes(tabSearch)
+  );
+  const filteredTables = mockTables.filter(
+    (t) =>
+      !tabSearch ||
+      t.number.toString().includes(tabSearch) ||
+      t.guestName?.toLowerCase().includes(tabSearch.toLowerCase())
+  );
+  const categoryItems = menuItems.filter((m) => m.category === activeCategory);
+  const selectedGuest = insideGuests.find((g) => g.id === selectedTab);
+  const selectedTableObj = mockTables.find((t) => t.id === selectedTable);
+  const hasTarget = !!(selectedTab || selectedTable);
 
-  // Tip flow state (Item 7)
-  const [checkoutStep, setCheckoutStep] = useState(null); // 'tip' | 'done'
-  const [tipType, setTipType] = useState('percent');
-  const [tipInput, setTipInput] = useState('');
-  const [tipResult, setTipResult] = useState(null);
-  const [orderTotal, setOrderTotal] = useState(0);
+  const orderTotal = order.reduce((sum, item) => {
+    const extrasTotal = item.selectedExtras.reduce((s, e) => s + e.price, 0);
+    return sum + (item.menuItem.price + extrasTotal) * item.quantity;
+  }, 0);
+  const tipAmount = selectedTip ? orderTotal * selectedTip / 100 : 0;
+  const totalWithTip = orderTotal + tipAmount;
 
-  const loadCatalog = useCallback(async () => {
-    try {
-      const res = await tapAPI.getCatalog(VENUE_ID());
-      setCatalog((res.data.items || []).filter(i => BAR_CATEGORIES.includes(i.category)));
-    } catch { }
-  }, []);
-
-  const loadSessions = useCallback(async () => {
-    try {
-      const [sessRes, insideRes] = await Promise.all([
-        tapAPI.getSessions(VENUE_ID()),
-        pulseAPI.getInsideGuests(VENUE_ID()).catch(() => ({ data: { guests: [] } })),
-      ]);
-      const sessions = sessRes.data.sessions || [];
-      const insideGuests = insideRes.data?.guests || insideRes.data || [];
-
-      // Build a lookup: guest name → open session
-      const sessionByName = {};
-      for (const s of sessions) {
-        const key = s.guest_name?.toLowerCase();
-        if (key) sessionByName[key] = s;
+  // ── Handlers ──
+  const addItemToOrder = (item) => {
+    setOrder((prev) => {
+      const existing = prev.find((o) => o.menuItem.id === item.id);
+      if (existing) {
+        return prev.map((o) =>
+          o.menuItem.id === item.id ? { ...o, quantity: o.quantity + 1 } : o
+        );
       }
-
-      // Guest-centric list: every inside guest appears, with session data if available
-      const guestTabs = insideGuests.map(g => {
-        const gName = g.guest_name || g.name || 'Guest';
-        const s = sessionByName[gName.toLowerCase()];
-        return {
-          id: s?.id || g.guest_id || g.id,
-          session_id: s?.session_id || null,
-          guest_name: gName,
-          guest_id: g.guest_id || g.id,
-          tab_number: s?.tab_number || g.tab_number || null,
-          total: s?.total || g.tab_total || 0,
-          has_session: !!s,
-          nfc_tag: g.nfc_tag,
-          guest_photo: g.guest_photo || g.photo || s?.guest_photo || null,
-        };
-      });
-
-      setActiveSessions(guestTabs.length > 0 ? guestTabs : sessions);
-    } catch { }
-  }, []);
-
-  const loadBarmen = useCallback(async () => {
-    try {
-      const res = await staffAPI.getBarmen(VENUE_ID());
-      setBarmen(res.data.barmen || []);
-    } catch { }
-  }, []);
-
-  useEffect(() => { loadCatalog(); loadSessions(); loadBarmen(); }, [loadCatalog, loadSessions, loadBarmen]);
-
-  const addToCart = (item) => {
-    if (!selectedBarman) { toast.error('Select a bartender/server first'); return; }
-    setCart(prev => {
-      const existing = prev.find(c => c.id === item.id);
-      if (existing) return prev.map(c => c.id === item.id ? { ...c, qty: c.qty + 1 } : c);
-      return [...prev, { ...item, qty: 1 }];
+      const defaultExtras = (item.extras || [])
+        .filter((e) => e.defaultSelected)
+        .map((e) => ({ extraId: e.id, name: e.name, price: e.price }));
+      return [...prev, { menuItem: item, quantity: 1, selectedExtras: defaultExtras, note: "" }];
     });
-    toast.success(`${item.name} added`);
   };
 
-  const updateQty = (itemId, delta) => {
-    setCart(prev => prev.map(c => c.id !== itemId ? c : { ...c, qty: Math.max(1, c.qty + delta) }));
-  };
-
-  const removeFromCart = (itemId) => { setCart(prev => prev.filter(c => c.id !== itemId)); toast.success('Removed'); };
-
-  const handleScan = async (e) => {
-    e.preventDefault();
-    if (!scanInput.trim()) return;
-    try {
-      const res = await pulseAPI.barSearch(VENUE_ID(), scanInput.trim());
-      if (res.data.results?.length > 0) {
-        setPendingConfirm(res.data.results[0]);
-      } else { toast.error('No matching tab found'); }
-    } catch { toast.error('Search failed'); }
-    setScanInput('');
-  };
-
-  const handleConfirmGuest = async () => {
-    let guest = { ...pendingConfirm };
-    // If guest has no open session, auto-create one
-    if (!guest.session_id && guest.guest_name) {
-      try {
-        const fd = new FormData();
-        fd.append('venue_id', VENUE_ID());
-        fd.append('guest_name', guest.guest_name);
-        if (guest.guest_id) fd.append('guest_id', guest.guest_id);
-        fd.append('session_type', 'tap');
-        const res = await tapAPI.openSession(fd);
-        guest = { ...guest, session_id: res.data.session_id, tab_number: res.data.tab_number, has_session: true };
-        toast.success(`Tab #${res.data.tab_number} opened for ${guest.guest_name}`);
-        await loadSessions();
-      } catch { toast.error('Failed to open tab'); return; }
+  const handleAddItem = (item) => {
+    if (alcoholicCategories.includes(item.category)) {
+      setShowAgeCheck(item);
+      return;
     }
-    setConfirmedGuest(guest);
-    setPendingConfirm(null);
-  };
-  const handleCancelConfirm = () => { setPendingConfirm(null); };
-
-  const handleAddCustom = async () => {
-    if (!customItem.name || !customItem.price) { toast.error('Name & price required'); return; }
-    try {
-      const fd = new FormData();
-      fd.append('venue_id', VENUE_ID()); fd.append('name', customItem.name); fd.append('price', parseFloat(customItem.price).toString());
-      fd.append('category', customItem.category); fd.append('is_alcohol', customItem.category !== 'Non-alcoholic' ? 'true' : 'false');
-      const res = await tapAPI.addCatalogItem(fd);
-      if (customPhoto && res.data.id) { const pFd = new FormData(); pFd.append('photo', customPhoto); await tapAPI.uploadCatalogPhoto(res.data.id, pFd); }
-      setCustomItem({ name: '', price: '', category: 'Cocktails' }); setCustomPhoto(null); setShowCustom(false);
-      await loadCatalog(); toast.success(`"${customItem.name}" added to menu`);
-    } catch { toast.error('Failed'); }
+    addItemToOrder(item);
   };
 
-  const handleDeleteItem = async (itemId) => {
-    try { await tapAPI.deleteCatalogItem(itemId); await loadCatalog(); toast.success('Deleted'); } catch { toast.error('Failed'); }
-  };
-
-  const handleEditItem = async (itemId) => {
-    if (!editForm.name.trim()) return;
-    try {
-      const fd = new FormData(); fd.append('name', editForm.name); fd.append('price', editForm.price); fd.append('category', editForm.category);
-      await tapAPI.updateCatalogItem(itemId, fd); setEditingItem(null); await loadCatalog(); toast.success('Updated');
-    } catch { toast.error('Failed'); }
-  };
-
-  // Submit cart items to backend — the CORE order function
-  const submitOrder = async () => {
-    if (!confirmedGuest?.session_id) { toast.error('Select a guest first'); return false; }
-    if (cart.length === 0) { toast.error('Cart is empty'); return false; }
-    try {
-      for (const item of cart) {
-        const fd = new FormData();
-        fd.append('item_id', item.id);
-        fd.append('qty', item.qty.toString());
-        if (selectedBarman) fd.append('bartender_id', selectedBarman);
-        await tapAPI.addItem(confirmedGuest.session_id, fd);
-      }
-      toast.success(`${cart.length} item(s) saved to tab`);
-      await loadSessions();
-      return true;
-    } catch (err) {
-      toast.error('Failed to save order to tab');
-      return false;
+  const handleAgeConfirm = () => {
+    if (showAgeCheck) {
+      addItemToOrder(showAgeCheck);
+      setShowAgeCheck(null);
     }
   };
 
-  // Pay Here: submit items → close tab → show tip flow
-  const handlePayHere = async () => {
-    if (!confirmedGuest?.session_id) { toast.error('No active session'); return; }
-    try {
-      // First, submit all cart items to the backend
-      if (cart.length > 0) {
-        const ok = await submitOrder();
-        if (!ok) return;
-      }
-      const fd = new FormData();
-      fd.append('payment_method', 'card'); fd.append('payment_location', 'pay_here');
-      if (selectedBarman) fd.append('bartender_id', selectedBarman);
-      const res = await tapAPI.closeSession(confirmedGuest.session_id, fd);
-      setOrderTotal(res.data?.total || cartTotal);
-      setCheckoutStep('tip');
-    } catch { toast.error('Payment failed'); }
+  const handleConfirmGuest = () => {
+    setSelectedTab(showConfirm);
+    setSelectedTable(null);
+    setShowConfirm(null);
   };
 
-  // Pay at Register: submit items first, then tab stays open
-  const handlePayAtRegister = async () => {
-    if (cart.length > 0) {
-      const ok = await submitOrder();
-      if (!ok) return;
-    }
-    toast.success('Items saved — tab stays open for register payment');
-    handleCleanSlate();
+  const handleSelectTable = (tableId) => {
+    setSelectedTable(tableId);
+    setSelectedTab(null);
   };
 
-  const handleRecordTip = async () => {
-    if (!confirmedGuest?.session_id || !tipInput) return;
-    try {
-      const fd = new FormData();
-      if (tipType === 'amount') fd.append('tip_amount', parseFloat(tipInput).toString());
-      else fd.append('tip_percent', parseFloat(tipInput).toString());
-      const res = await tapAPI.recordTip(confirmedGuest.session_id, fd);
-      setTipResult(res.data);
-      toast.success('Tip recorded');
-    } catch { toast.error('Failed to record tip'); }
+  const updateItemQty = (itemId, delta) => {
+    setOrder((prev) =>
+      prev
+        .map((o) =>
+          o.menuItem.id === itemId ? { ...o, quantity: Math.max(0, o.quantity + delta) } : o
+        )
+        .filter((o) => o.quantity > 0)
+    );
   };
 
-  // Clean slate after order (Item 4 of previous block)
-  const handleCleanSlate = () => {
-    setCart([]); setConfirmedGuest(null); setSelectedBarman('');
-    setCheckoutStep(null); setTipResult(null); setTipInput(''); setOrderTotal(0);
-    loadSessions();
+  const removeItem = (itemId) => {
+    setOrder((prev) => prev.filter((o) => o.menuItem.id !== itemId));
+    if (editingItem === itemId) setEditingItem(null);
   };
 
-  const cartTotal = cart.reduce((sum, c) => sum + c.price * c.qty, 0);
-  const filteredItems = catalog.filter(i => i.category === selectedCategory).sort((a, b) => a.name.localeCompare(b.name));
+  const toggleExtra = (itemId, extra) => {
+    setOrder((prev) =>
+      prev.map((o) => {
+        if (o.menuItem.id !== itemId) return o;
+        const has = o.selectedExtras.find((e) => e.extraId === extra.id);
+        return {
+          ...o,
+          selectedExtras: has
+            ? o.selectedExtras.filter((e) => e.extraId !== extra.id)
+            : [...o.selectedExtras, { extraId: extra.id, name: extra.name, price: extra.price }],
+        };
+      })
+    );
+  };
+
+  const updateNote = (itemId, note) => {
+    setOrder((prev) =>
+      prev.map((o) => (o.menuItem.id === itemId ? { ...o, note } : o))
+    );
+  };
+
+  const handleConfirmOrder = () => {
+    if (order.length === 0) return;
+    setShowPayment(true);
+    setPaymentStep("tip");
+    setSelectedTip(null);
+  };
+
+  const handleCharge = () => {
+    setPaymentStep("done");
+  };
+
+  const handleClosePayment = () => {
+    setShowPayment(false);
+    setOrder([]);
+    setSelectedTab(null);
+    setSelectedTable(null);
+    setPaymentStep("tip");
+    setSelectedTip(null);
+    toast.success("Order completed!");
+  };
+
+  const clearTarget = () => {
+    setSelectedTab(null);
+    setSelectedTable(null);
+  };
+
+  // ── Target info for order panel ──
+  const targetName = mode === "tap"
+    ? selectedGuest?.name
+    : selectedTableObj?.guestName || `Table #${selectedTableObj?.number}`;
+  const targetBadge = mode === "tap"
+    ? `#${selectedGuest?.tabNumber}`
+    : `#${selectedTableObj?.number}`;
 
   return (
-    <div className="min-h-screen bg-background" data-testid="bar-page">
-      <PulseHeader title="BAR" activeTab="bar" />
-      <BarGuestConfirmModal result={pendingConfirm} onConfirm={handleConfirmGuest} onCancel={handleCancelConfirm} />
-      {showCamera && <CameraModal onCapture={file => setCustomPhoto(file)} onClose={() => setShowCamera(false)} />}
+    <PulseLayout>
+      {/* ═══ Top Bar ═══ */}
+      <div className="flex items-center justify-between mb-6" data-testid="top-bar">
+        {/* Mode Switcher */}
+        <div className="flex items-center gap-2 bg-card/60 backdrop-blur border border-border/30 rounded-2xl p-1.5" data-testid="mode-switcher">
+          {[
+            { key: "tap", label: "TAP", icon: Zap },
+            { key: "table", label: "TABLE", icon: LayoutGrid },
+          ].map((m) => {
+            const isActive = mode === m.key;
+            const Icon = m.icon;
+            return (
+              <button
+                key={m.key}
+                onClick={() => setMode(m.key)}
+                className={cn(
+                  "relative flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all duration-300",
+                  isActive ? "text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+                )}
+                data-testid={`mode-${m.key}`}
+              >
+                {isActive && (
+                  <motion.div
+                    layoutId="bar-mode"
+                    className="absolute inset-0 rounded-xl bg-gradient-to-r from-primary to-accent shadow-lg shadow-primary/25"
+                    transition={{ type: "spring", bounce: 0.2, duration: 0.5 }}
+                  />
+                )}
+                <span className="relative z-10 flex items-center gap-2">
+                  <Icon className="h-3.5 w-3.5" />
+                  {m.label}
+                </span>
+              </button>
+            );
+          })}
+        </div>
 
-      <main className="w-full px-6 py-4">
-        <div className="grid grid-cols-12 gap-6">
-          {/* Left: Scan + Bartender + Tabs */}
-          <div className="col-span-2 space-y-4">
-            {/* Bartender Selector (Item 6 — mandatory before serving) */}
-            <div data-testid="barman-selector">
-              <label className="text-[10px] font-semibold uppercase text-muted-foreground mb-1 block">Bartender</label>
-              <div className="relative">
-                <select value={selectedBarman} onChange={e => setSelectedBarman(e.target.value)}
-                  className={`w-full h-9 rounded-md border bg-background px-2 text-sm appearance-none ${!selectedBarman ? 'border-border text-muted-foreground' : 'border-emerald-500/50 text-foreground font-medium'}`}
-                  data-testid="pulse-barman-select">
-                  <option value="">Select...</option>
-                  {barmen.map(b => <option key={b.id} value={b.name}>{b.name}</option>)}
-                </select>
-                <ChevronDown className="h-3.5 w-3.5 absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
-              </div>
-              {!selectedBarman && <p className="text-[9px] text-muted-foreground mt-0.5">Required before serving</p>}
-            </div>
-
-            <form onSubmit={handleScan} className="space-y-2">
-              <div className="flex items-center gap-1.5 text-xs text-muted-foreground"><ScanLine className="h-3.5 w-3.5" /> Scan / Search</div>
-              <Input value={scanInput} onChange={e => setScanInput(e.target.value)} placeholder="Tab # or name..." className="h-9 text-sm" data-testid="bar-scan-input" />
-            </form>
-
-            {confirmedGuest && (
-              <div className="bg-card border-2 border-primary/30 rounded-xl p-3" data-testid="current-guest-card">
-                <div className="flex items-center gap-2 mb-1">
-                  {confirmedGuest.guest_photo ? (
-                    <img src={confirmedGuest.guest_photo} alt="" className="w-8 h-8 rounded-full object-cover flex-shrink-0 border-2 border-primary/20" />
-                  ) : (
-                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                      <User className="h-4 w-4 text-primary" />
-                    </div>
-                  )}
-                  <div className="min-w-0">
-                    <p className="font-bold text-sm leading-tight" data-testid="guest-name">{confirmedGuest.guest_name}</p>
-                    {confirmedGuest.tab_number && <p className="text-primary font-semibold text-xs" data-testid="guest-tab-number">Tab #{confirmedGuest.tab_number}</p>}
-                  </div>
-                </div>
-                <p className="text-xs text-green-600 font-medium flex items-center gap-1 mt-1">
-                  <ShieldCheck className="h-3 w-3" /> Confirmed
-                </p>
-              </div>
-            )}
-
-            <div>
-              <h3 className="text-xs font-semibold uppercase text-muted-foreground mb-2">Inside Tabs ({activeSessions.length})</h3>
-              <div className="space-y-1 max-h-[250px] overflow-y-auto">
-                {activeSessions.map(s => (
-                  <div key={s.id || s.guest_id} className={`px-2 py-1.5 bg-card border rounded-lg text-sm cursor-pointer hover:border-primary/30 ${s.has_session === false ? 'border-dashed border-muted-foreground/30' : 'border-border'}`}
-                    onClick={() => setPendingConfirm(s)}
-                    data-testid={`session-${s.tab_number || s.guest_name}`}>
-                    <div className="flex justify-between items-center">
-                      <div className="truncate">
-                        <span className="font-medium text-xs">{s.guest_name || 'Guest'}</span>
-                        {s.tab_number && <span className="text-primary font-bold text-xs ml-1">#{s.tab_number}</span>}
-                        {s.has_session === false && <span className="text-[9px] text-muted-foreground ml-1">no tab</span>}
-                      </div>
-                      <span className="text-xs font-bold">${(s.total || 0).toFixed(2)}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
+        {/* Right: Server Selector + Tab Count */}
+        <div className="flex items-center gap-3">
+          {/* Server Selector */}
+          <div className="relative group" data-testid="server-selector">
+            <User className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+            <select
+              value={server || ""}
+              onChange={(e) => setServer(e.target.value || null)}
+              className="appearance-none pl-9 pr-8 py-2.5 rounded-xl border border-border/30 bg-card/60 backdrop-blur text-sm font-medium text-foreground hover:border-primary/30 focus:border-primary/40 focus:outline-none transition-colors"
+              data-testid="server-select"
+            >
+              <option value="">Select server...</option>
+              {servers.map((s) => (
+                <option key={s} value={s}>{s}</option>
+              ))}
+            </select>
+            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground pointer-events-none" />
           </div>
 
-          {/* Center: Menu */}
-          <div className="col-span-6">
-            <div className="flex items-center gap-1 mb-4 overflow-x-auto pb-1" data-testid="bar-category-tabs">
-              {BAR_CATEGORIES.map(cat => (
-                <button key={cat} onClick={() => { setSelectedCategory(cat); setEditingItem(null); }}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all ${
-                    selectedCategory === cat
-                      ? 'bg-primary text-primary-foreground shadow-sm'
-                      : 'bg-card border border-border text-muted-foreground hover:text-foreground hover:border-primary/30'
-                  }`} data-testid={`bar-cat-${cat.toLowerCase().replace(/[^a-z]/g, '-')}`}>
-                  {cat}
-                </button>
-              ))}
-              <button onClick={() => setShowCustom(!showCustom)}
-                className="px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap bg-card border border-dashed border-primary/40 text-primary hover:bg-primary/5"
-                data-testid="bar-custom-btn">
-                <Plus className="h-3.5 w-3.5 inline mr-1" /> Custom
-              </button>
+          {/* Tab Counter (TAP only) */}
+          {mode === "tap" && (
+            <div className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-primary/10 border border-primary/20" data-testid="tab-counter">
+              <Zap className="h-3.5 w-3.5 text-primary" />
+              <span className="text-xs font-bold text-primary tabular-nums">Tabs: {insideGuests.length}</span>
             </div>
+          )}
+        </div>
+      </div>
 
-            {showCustom && (
-              <div className="bg-card border border-primary/20 rounded-xl p-4 mb-4 space-y-3" data-testid="bar-custom-form">
-                <div className="grid grid-cols-3 gap-2">
-                  <Input value={customItem.name} onChange={e => setCustomItem(p => ({ ...p, name: e.target.value }))} placeholder="Item name" className="text-sm col-span-2" data-testid="bar-custom-name" />
-                  <Input type="number" step="0.01" value={customItem.price} onChange={e => setCustomItem(p => ({ ...p, price: e.target.value }))} placeholder="$ Price" className="text-sm" data-testid="bar-custom-price" />
+      {/* ═══ 4-Column Grid ═══ */}
+      <div className="grid grid-cols-1 lg:grid-cols-[200px_72px_1fr_300px] gap-4 min-h-[calc(100vh-12rem)]" data-testid="main-grid">
+
+        {/* ── Col 1: Left Panel ── */}
+        <div className="space-y-4" data-testid="left-panel">
+          {mode === "tap" ? (
+            <>
+              {/* Search */}
+              <div>
+                <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground mb-2">
+                  <Search className="h-3 w-3" />
+                  Scan / Search
                 </div>
-                <select value={customItem.category} onChange={e => setCustomItem(p => ({ ...p, category: e.target.value }))}
-                  className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm" data-testid="bar-custom-category">
-                  {BAR_CATEGORIES.map(c => <option key={c}>{c}</option>)}
-                </select>
-                <div className="flex gap-2 items-center">
-                  <Button type="button" size="sm" variant="outline" onClick={() => setShowCamera(true)} data-testid="bar-take-photo-btn">
-                    <Camera className="h-3.5 w-3.5 mr-1" /> Take Photo
-                  </Button>
-                  <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={e => e.target.files[0] && setCustomPhoto(e.target.files[0])} />
-                  <Button type="button" size="sm" variant="outline" onClick={() => fileInputRef.current?.click()} data-testid="bar-upload-photo-btn">
-                    <Upload className="h-3.5 w-3.5 mr-1" /> Upload
-                  </Button>
-                  {customPhoto && <span className="text-xs text-green-600 truncate max-w-[100px]">{customPhoto.name}</span>}
-                </div>
-                <Button size="sm" onClick={handleAddCustom} disabled={!customItem.name || !customItem.price} className="w-full" data-testid="bar-custom-submit">Add to Menu</Button>
+                <input
+                  type="text"
+                  value={tabSearch}
+                  onChange={(e) => setTabSearch(e.target.value)}
+                  placeholder="Name or #tab..."
+                  className="w-full h-9 px-3 rounded-xl border border-border/30 bg-card/40 text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary/40 focus:shadow-[0_0_0_3px_hsl(258_75%_58%/0.1)] transition-all"
+                  data-testid="tab-search"
+                />
               </div>
-            )}
+              {/* Open Tabs */}
+              <div>
+                <div className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground mb-2">
+                  Open Tabs ({insideGuests.length})
+                </div>
+                <div className="space-y-1.5 max-h-[calc(100vh-24rem)] overflow-y-auto">
+                  {filteredGuests.map((guest) => (
+                    <motion.button
+                      key={guest.id}
+                      whileHover={{ x: 2 }}
+                      onClick={() => setShowConfirm(guest.id)}
+                      className={cn(
+                        "w-full text-left px-3 py-3 rounded-xl border transition-all",
+                        selectedTab === guest.id
+                          ? "border-primary/40 bg-primary/5 shadow-lg shadow-primary/10"
+                          : "border-border/30 bg-card/40 hover:border-primary/20"
+                      )}
+                      data-testid={`tab-${guest.id}`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <div className="h-2 w-2 rounded-full bg-emerald-400 shadow-sm shadow-emerald-400/50 flex-shrink-0" />
+                        <span className="text-xs font-semibold text-foreground flex-1 truncate">{guest.name}</span>
+                        <span className="text-[10px] font-mono font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded-md">#{guest.tabNumber}</span>
+                        <ChevronDown className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+                      </div>
+                      <div className="flex items-center justify-between mt-1 pl-4">
+                        <span className="text-[10px] text-muted-foreground">Tab #{guest.tabNumber}</span>
+                        <span className="text-sm font-extrabold text-foreground tabular-nums">${guest.totalSpent.toFixed(2)}</span>
+                      </div>
+                    </motion.button>
+                  ))}
+                </div>
+              </div>
+            </>
+          ) : (
+            <>
+              {/* TABLE mode search */}
+              <div>
+                <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground mb-2">
+                  <Search className="h-3 w-3" />
+                  Tables
+                </div>
+                <input
+                  type="text"
+                  value={tabSearch}
+                  onChange={(e) => setTabSearch(e.target.value)}
+                  placeholder="Search..."
+                  className="w-full h-9 px-3 rounded-xl border border-border/30 bg-card/40 text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary/40 focus:shadow-[0_0_0_3px_hsl(258_75%_58%/0.1)] transition-all"
+                  data-testid="table-search"
+                />
+              </div>
+              {/* Table Grid */}
+              <div>
+                <div className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground mb-2">
+                  Tables ({mockTables.length})
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  {filteredTables.map((table) => {
+                    const isFree = table.status === "free";
+                    const isSelected = selectedTable === table.id;
+                    return (
+                      <motion.button
+                        key={table.id}
+                        whileHover={{ scale: 1.03 }}
+                        whileTap={{ scale: 0.97 }}
+                        onClick={() => handleSelectTable(table.id)}
+                        className={cn(
+                          "flex flex-col items-center p-3 rounded-xl border transition-all",
+                          isSelected
+                            ? "border-primary/40 bg-primary/10 shadow-lg shadow-primary/10 ring-2 ring-primary/20"
+                            : isFree
+                              ? "border-emerald-500/30 bg-emerald-500/5 hover:border-emerald-500/50"
+                              : "border-border/30 bg-card/40 hover:border-muted-foreground/30"
+                        )}
+                        data-testid={`table-${table.id}`}
+                      >
+                        <span className="text-sm font-extrabold text-foreground">#{table.number}</span>
+                        <div className="flex items-center gap-1 mt-1">
+                          <Users className="h-2.5 w-2.5 text-muted-foreground" />
+                          <span className="text-[10px] text-muted-foreground">{table.seats}</span>
+                        </div>
+                        <span className={cn(
+                          "text-[9px] font-bold uppercase px-2 py-0.5 rounded-full mt-1",
+                          isFree
+                            ? "bg-emerald-500/15 text-emerald-400"
+                            : "bg-muted/50 text-muted-foreground"
+                        )}>
+                          {isFree ? "Free" : "Busy"}
+                        </span>
+                      </motion.button>
+                    );
+                  })}
+                </div>
+              </div>
+            </>
+          )}
+        </div>
 
-            <h3 className="text-center font-bold text-lg mb-3" data-testid="bar-category-title">{selectedCategory}</h3>
-            <div className="space-y-1 max-h-[calc(100vh-280px)] overflow-y-auto" data-testid="bar-items-list">
-              {filteredItems.length === 0 ? (
-                <p className="text-sm text-muted-foreground py-8 text-center">No items</p>
-              ) : filteredItems.map(item => (
-                editingItem === item.id ? (
-                  <div key={item.id} className="p-3 rounded-lg border border-primary/30 bg-primary/5 space-y-2">
-                    <div className="grid grid-cols-3 gap-2">
-                      <Input value={editForm.name} onChange={e => setEditForm(p => ({ ...p, name: e.target.value }))} className="text-sm col-span-2" />
-                      <Input type="number" step="0.01" value={editForm.price} onChange={e => setEditForm(p => ({ ...p, price: e.target.value }))} className="text-sm" />
+        {/* ── Col 2: Category Sidebar ── */}
+        <div className="flex flex-col gap-1" data-testid="category-sidebar">
+          {categories.map((cat) => (
+            <motion.button
+              key={cat}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setActiveCategory(cat)}
+              className={cn(
+                "flex flex-col items-center gap-1 py-3 px-1 rounded-2xl border transition-all",
+                activeCategory === cat
+                  ? `bg-gradient-to-b ${categoryColors[cat]} shadow-lg`
+                  : "border-transparent hover:bg-card/40 hover:border-border/20"
+              )}
+              data-testid={`cat-${cat.toLowerCase().replace(/\s+/g, "-")}`}
+            >
+              <span className="text-xl">{categoryEmojis[cat]}</span>
+              <span className={cn(
+                "text-[9px] font-bold",
+                activeCategory === cat ? categoryAccents[cat] : "text-muted-foreground"
+              )}>
+                {cat}
+              </span>
+            </motion.button>
+          ))}
+          {/* Custom button */}
+          <button className="flex flex-col items-center gap-1 py-3 px-1 rounded-2xl border-2 border-dashed border-border/30 hover:border-primary/30 mt-auto transition-colors" data-testid="custom-btn">
+            <Plus className="h-4 w-4 text-muted-foreground" />
+            <span className="text-[9px] font-bold text-muted-foreground">Custom</span>
+          </button>
+        </div>
+
+        {/* ── Col 3: Menu Area ── */}
+        <div className="min-w-0" data-testid="menu-area">
+          {/* Category Header Banner */}
+          <motion.div
+            key={activeCategory}
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            className={`flex items-center gap-3 mb-5 p-4 rounded-2xl bg-gradient-to-r border ${categoryColors[activeCategory]}`}
+            data-testid="category-header"
+          >
+            <span className="text-3xl">{categoryEmojis[activeCategory]}</span>
+            <div>
+              <h3 className="text-lg font-extrabold text-foreground tracking-normal">{activeCategory}</h3>
+              <p className="text-xs text-muted-foreground">{categoryItems.length} items</p>
+            </div>
+          </motion.div>
+
+          {/* Menu Grid */}
+          <div className="grid grid-cols-2 xl:grid-cols-3 gap-3" data-testid="menu-grid">
+            {categoryItems.map((item, i) => (
+              <motion.button
+                key={item.id}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.05 }}
+                whileHover={{ y: -4, scale: 1.02 }}
+                whileTap={{ scale: 0.97 }}
+                onClick={() => handleAddItem(item)}
+                className="text-left p-4 rounded-2xl border border-border/30 bg-card/50 backdrop-blur group hover:border-primary/30 hover:shadow-xl hover:shadow-primary/5 transition-all"
+                data-testid={`menu-${item.id}`}
+              >
+                <div className="flex items-start justify-between">
+                  <h4 className="text-base font-bold text-foreground group-hover:text-primary transition-colors">{item.name}</h4>
+                  <div className="h-7 w-7 rounded-lg bg-primary/10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all">
+                    <Plus className="h-3.5 w-3.5 text-primary" />
+                  </div>
+                </div>
+                <p className={`text-lg font-extrabold tabular-nums ${categoryAccents[activeCategory]}`}>
+                  ${item.price.toFixed(2)}
+                </p>
+                {item.extras?.length > 0 && (
+                  <p className="text-[10px] text-muted-foreground/60 mt-1">{item.extras.length} extras</p>
+                )}
+              </motion.button>
+            ))}
+          </div>
+        </div>
+
+        {/* ── Col 4: Order Panel ── */}
+        <div className="bg-card/60 backdrop-blur-xl border border-border/30 rounded-2xl h-fit sticky top-24 overflow-hidden" data-testid="order-panel">
+          {/* Header */}
+          <div className="flex items-center gap-2 p-4 border-b border-border/20">
+            <ShoppingCart className="h-4 w-4 text-primary" />
+            <span className="font-bold text-foreground tracking-normal">Order</span>
+            {order.length > 0 && (
+              <span className="text-xs bg-primary text-primary-foreground rounded-full px-2 py-0.5 font-bold">{order.length}</span>
+            )}
+          </div>
+
+          {/* Active Target Header */}
+          {hasTarget && (
+            <div className="p-4 border-b border-border/20 bg-gradient-to-r from-primary/5 to-transparent">
+              <div className="flex items-start justify-between">
+                <div>
+                  <span className="text-[10px] font-mono font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-md">{targetBadge}</span>
+                  <p className="text-sm font-bold text-foreground mt-1">{targetName}</p>
+                  <div className="flex items-center gap-2 mt-1 text-[10px] text-muted-foreground">
+                    {mode === "tap" && selectedGuest && (
+                      <span className="flex items-center gap-1"><Clock className="h-2.5 w-2.5" />{new Date(selectedGuest.checkedInAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
+                    )}
+                    {mode === "table" && selectedTableObj?.server && (
+                      <span className="flex items-center gap-1"><User className="h-2.5 w-2.5" />{selectedTableObj.server}</span>
+                    )}
+                  </div>
+                </div>
+                <button onClick={clearTarget} className="h-7 w-7 rounded-lg bg-muted/50 flex items-center justify-center hover:bg-muted transition-colors" data-testid="clear-target">
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Order Content */}
+          {order.length === 0 && !hasTarget ? (
+            /* Empty State */
+            <div className="text-center py-12 px-4" data-testid="order-empty">
+              <div className="mx-auto h-16 w-16 rounded-2xl bg-muted/20 flex items-center justify-center mb-3">
+                <ShoppingCart className="h-7 w-7 text-muted-foreground/20" />
+              </div>
+              <p className="text-sm font-medium text-muted-foreground">No active order</p>
+              <p className="text-xs text-muted-foreground/60 mt-1">
+                {mode === "tap" ? "Select a tab or scan NFC to start" : "Select a table to start"}
+              </p>
+            </div>
+          ) : order.length === 0 ? (
+            <div className="text-center py-8 px-4">
+              <p className="text-xs text-muted-foreground/60">Add items from the menu</p>
+            </div>
+          ) : (
+            <div className="p-4">
+              {/* Order Items */}
+              <AnimatePresence mode="popLayout">
+                {order.map((item) => (
+                  <motion.div
+                    key={item.menuItem.id}
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -20 }}
+                    className="mb-3"
+                  >
+                    {/* Item Row */}
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-start gap-2">
+                        <div className="h-7 w-7 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                          <span className="text-xs font-extrabold text-primary">{item.quantity}</span>
+                        </div>
+                        <div>
+                          <p className="text-sm font-semibold text-foreground">{item.menuItem.name}</p>
+                          {item.selectedExtras.length > 0 && (
+                            <div className="flex flex-wrap gap-1 mt-1">
+                              {item.selectedExtras.map((e) => (
+                                <span key={e.extraId} className="text-[8px] font-medium bg-primary/10 text-primary px-1 py-0.5 rounded">{e.name}</span>
+                              ))}
+                            </div>
+                          )}
+                          {item.note && (
+                            <div className="flex items-center gap-1 mt-1">
+                              <MessageSquare className="h-2 w-2 text-muted-foreground" />
+                              <span className="text-[10px] text-muted-foreground italic">{item.note}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <span className="text-sm font-bold text-foreground tabular-nums">
+                        ${((item.menuItem.price + item.selectedExtras.reduce((s, e) => s + e.price, 0)) * item.quantity).toFixed(2)}
+                      </span>
                     </div>
-                    <div className="flex gap-2">
-                      <Button size="sm" onClick={() => handleEditItem(item.id)}><Check className="h-3.5 w-3.5 mr-1" /> Save</Button>
-                      <Button size="sm" variant="outline" onClick={() => setEditingItem(null)}><X className="h-3.5 w-3.5" /></Button>
+
+                    {/* Action Buttons */}
+                    <div className="flex items-center gap-1.5 mt-1.5 pl-9">
+                      <button
+                        onClick={() => setEditingItem(editingItem === item.menuItem.id ? null : item.menuItem.id)}
+                        className={cn(
+                          "text-[10px] font-medium px-2 py-1 rounded-md border transition-all flex items-center gap-1",
+                          editingItem === item.menuItem.id
+                            ? "border-primary/30 bg-primary/10 text-primary"
+                            : "border-border/20 text-muted-foreground hover:border-primary/20"
+                        )}
+                        data-testid={`edit-${item.menuItem.id}`}
+                      >
+                        <Pencil className="h-2.5 w-2.5" /> Item details
+                      </button>
+                      <button
+                        onClick={() => removeItem(item.menuItem.id)}
+                        className="text-[10px] font-medium px-2 py-1 rounded-md border border-border/20 text-muted-foreground hover:text-destructive hover:border-destructive/30 hover:bg-destructive/5 transition-all flex items-center gap-1"
+                        data-testid={`remove-${item.menuItem.id}`}
+                      >
+                        <Trash2 className="h-2.5 w-2.5" /> Remove
+                      </button>
                     </div>
+
+                    {/* Edit Panel */}
+                    <AnimatePresence>
+                      {editingItem === item.menuItem.id && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: "auto" }}
+                          exit={{ opacity: 0, height: 0 }}
+                          className="overflow-hidden"
+                        >
+                          <div className="ml-9 mt-2 p-3 rounded-xl bg-muted/20 border border-border/20 space-y-3">
+                            {/* Qty */}
+                            <div>
+                              <div className="text-[10px] font-bold uppercase tracking-[0.12em] text-muted-foreground mb-1.5">Qty</div>
+                              <div className="flex items-center gap-2">
+                                <button onClick={() => updateItemQty(item.menuItem.id, -1)} className="h-6 w-6 rounded-md border border-border/30 bg-card/40 flex items-center justify-center hover:border-primary/30 transition-colors">
+                                  <Minus className="h-2.5 w-2.5" />
+                                </button>
+                                <span className="text-sm font-bold tabular-nums w-6 text-center">{item.quantity}</span>
+                                <button onClick={() => updateItemQty(item.menuItem.id, 1)} className="h-6 w-6 rounded-md border border-border/30 bg-card/40 flex items-center justify-center hover:border-primary/30 transition-colors">
+                                  <Plus className="h-2.5 w-2.5" />
+                                </button>
+                              </div>
+                            </div>
+                            {/* Extras */}
+                            {item.menuItem.extras?.length > 0 && (
+                              <div>
+                                <div className="text-[10px] font-bold uppercase tracking-[0.12em] text-muted-foreground mb-1.5">Extras</div>
+                                <div className="space-y-1.5">
+                                  {item.menuItem.extras.map((extra) => {
+                                    const isSelected = item.selectedExtras.some((e) => e.extraId === extra.id);
+                                    return (
+                                      <button
+                                        key={extra.id}
+                                        onClick={() => toggleExtra(item.menuItem.id, extra)}
+                                        className="flex items-center gap-2 w-full text-left"
+                                      >
+                                        <div className={cn(
+                                          "h-3.5 w-3.5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors",
+                                          isSelected ? "border-primary bg-primary" : "border-muted-foreground/30"
+                                        )}>
+                                          {isSelected && <Check className="h-2 w-2 text-primary-foreground" />}
+                                        </div>
+                                        <span className="text-xs text-foreground flex-1">{extra.name}</span>
+                                        <span className="text-[10px] text-muted-foreground">{extra.price > 0 ? `+$${extra.price.toFixed(2)}` : "Free"}</span>
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            )}
+                            {/* Note */}
+                            <div>
+                              <div className="text-[10px] font-bold uppercase tracking-[0.12em] text-muted-foreground mb-1.5">Note</div>
+                              <input
+                                type="text"
+                                value={item.note}
+                                onChange={(e) => updateNote(item.menuItem.id, e.target.value)}
+                                placeholder="e.g. no ice, double shot..."
+                                className="w-full h-7 px-2 rounded-lg border border-border/20 bg-card/40 text-[11px] placeholder:text-muted-foreground/40 focus:outline-none focus:border-primary/30 transition-colors"
+                              />
+                            </div>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+
+              {/* Total + Actions */}
+              <div className="border-t border-border/20 pt-4 mt-4">
+                <div className="flex items-center justify-between mb-4">
+                  <span className="text-sm font-semibold text-foreground">Total</span>
+                  <span className="text-2xl font-extrabold text-primary tabular-nums" data-testid="order-total">${orderTotal.toFixed(2)}</span>
+                </div>
+                {/* Payment Method */}
+                <div className="text-[10px] font-bold uppercase tracking-[0.12em] text-muted-foreground mb-2">Payment Method</div>
+                <div className="grid grid-cols-2 gap-2 mb-3">
+                  <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="flex items-center justify-center gap-2 py-2.5 rounded-xl border border-border/30 bg-card/40 text-sm font-medium hover:border-primary/30 transition-colors" data-testid="pay-here-btn">
+                    <CreditCard className="h-3.5 w-3.5" /> Pay Here
+                  </motion.button>
+                  <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="flex items-center justify-center gap-2 py-2.5 rounded-xl border border-border/30 bg-card/40 text-sm font-medium hover:border-primary/30 transition-colors" data-testid="register-btn">
+                    <Banknote className="h-3.5 w-3.5" /> Register
+                  </motion.button>
+                </div>
+                {/* Confirm */}
+                <button
+                  onClick={handleConfirmOrder}
+                  className="w-full h-12 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-bold shadow-lg shadow-emerald-500/20 hover:from-emerald-600 hover:to-emerald-700 transition-all"
+                  data-testid="confirm-order-btn"
+                >
+                  Confirm Order
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ═══ MODALS ═══ */}
+
+      {/* Guest Confirmation Modal */}
+      <AnimatePresence>
+        {showConfirm && (() => {
+          const guest = insideGuests.find((g) => g.id === showConfirm);
+          if (!guest) return null;
+          return (
+            <>
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 z-[100] bg-background/80 backdrop-blur-sm"
+                onClick={() => setShowConfirm(null)}
+              />
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                transition={{ type: "spring", bounce: 0.2 }}
+                className="fixed inset-0 z-[101] flex items-center justify-center p-4"
+              >
+                <div className="w-full max-w-sm bg-card border border-border/30 rounded-3xl p-8 shadow-2xl text-center" data-testid="guest-confirm-modal">
+                  <div className="mx-auto h-20 w-20 rounded-full bg-muted/30 border-2 border-border/30 flex items-center justify-center mb-4">
+                    <User className="h-10 w-10 text-muted-foreground/40" />
+                  </div>
+                  <h3 className="text-xl font-extrabold text-foreground tracking-normal">{guest.name}</h3>
+                  <span className="inline-block text-xs font-mono font-bold bg-muted/50 px-3 py-1 rounded-full mt-2 mb-3">Tab #{guest.tabNumber}</span>
+                  <p className="text-sm text-muted-foreground mb-6">Confirm this is the correct guest before proceeding.</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button onClick={() => setShowConfirm(null)} className="py-3 rounded-xl border border-border/30 font-semibold text-foreground hover:bg-muted/50 transition-colors" data-testid="confirm-cancel">Cancel</button>
+                    <button onClick={handleConfirmGuest} className="py-3 rounded-xl bg-gradient-to-r from-primary to-accent text-primary-foreground font-bold shadow-lg shadow-primary/20 hover:shadow-xl transition-all" data-testid="confirm-ok">Confirm</button>
+                  </div>
+                </div>
+              </motion.div>
+            </>
+          );
+        })()}
+      </AnimatePresence>
+
+      {/* Age Verification Modal */}
+      <AnimatePresence>
+        {showAgeCheck && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[100] bg-background/80 backdrop-blur-sm"
+              onClick={() => setShowAgeCheck(null)}
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ type: "spring", bounce: 0.2 }}
+              className="fixed inset-0 z-[101] flex items-center justify-center p-4"
+            >
+              <div className="w-full max-w-sm bg-card border border-border/30 rounded-3xl p-8 shadow-2xl text-center" data-testid="age-verify-modal">
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ type: "spring", bounce: 0.4, delay: 0.1 }}
+                  className="mx-auto h-16 w-16 rounded-full bg-warning/10 flex items-center justify-center mb-4"
+                >
+                  <Shield className="h-8 w-8 text-warning" />
+                </motion.div>
+                <h3 className="text-xl font-extrabold text-foreground tracking-normal mb-2">Age Verification Required</h3>
+                <p className="text-sm text-muted-foreground mb-1">
+                  <span className="font-bold text-foreground">{showAgeCheck.name}</span> is an alcoholic beverage.
+                </p>
+                <p className="text-sm text-muted-foreground mb-6">I confirm this guest is 21+ years old.</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <button onClick={() => setShowAgeCheck(null)} className="py-3 rounded-xl border border-border/30 font-semibold text-foreground hover:bg-muted/50 transition-colors" data-testid="age-cancel">Cancel</button>
+                  <button onClick={handleAgeConfirm} className="py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-bold shadow-lg shadow-emerald-500/20 hover:shadow-xl transition-all" data-testid="age-confirm">Confirm 21+</button>
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Payment / Tip Modal */}
+      <AnimatePresence>
+        {showPayment && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[100] bg-background/80 backdrop-blur-sm"
+              onClick={() => setShowPayment(false)}
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ type: "spring", bounce: 0.2 }}
+              className="fixed inset-0 z-[101] flex items-center justify-center p-4"
+            >
+              <div className="w-full max-w-md bg-card border border-border/30 rounded-3xl p-6 shadow-2xl relative overflow-hidden" data-testid="payment-modal">
+                {/* Ambient glow */}
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-24 bg-primary/10 blur-[60px] pointer-events-none" />
+                {/* Close */}
+                <button onClick={() => setShowPayment(false)} className="absolute top-4 right-4 h-8 w-8 rounded-xl bg-muted/50 flex items-center justify-center hover:bg-muted transition-colors z-10" data-testid="payment-close">
+                  <X className="h-4 w-4" />
+                </button>
+
+                {paymentStep === "tip" ? (
+                  <div className="relative z-10">
+                    <h3 className="text-2xl font-extrabold text-foreground tracking-normal mb-4">Add Tip</h3>
+                    {hasTarget && (
+                      <p className="text-sm text-foreground font-medium mb-1">{targetName}</p>
+                    )}
+                    <p className="text-sm text-muted-foreground mb-4">Subtotal: <span className="font-bold text-foreground">${orderTotal.toFixed(2)}</span></p>
+
+                    {/* Tip Options */}
+                    <div className="grid grid-cols-4 gap-2 mb-4">
+                      {[18, 20, 22].map((pct) => (
+                        <button
+                          key={pct}
+                          onClick={() => setSelectedTip(pct)}
+                          className={cn(
+                            "flex flex-col items-center p-3 rounded-2xl border-2 transition-all",
+                            selectedTip === pct
+                              ? "border-primary bg-primary/10 shadow-lg shadow-primary/10"
+                              : "border-border/30 bg-card/40 hover:border-primary/20"
+                          )}
+                          data-testid={`tip-${pct}`}
+                        >
+                          <span className="text-lg font-extrabold">{pct}%</span>
+                          <span className="text-[10px] text-muted-foreground">${(orderTotal * pct / 100).toFixed(2)}</span>
+                        </button>
+                      ))}
+                      <button
+                        onClick={() => setSelectedTip(null)}
+                        className={cn(
+                          "flex flex-col items-center p-3 rounded-2xl border-2 transition-all",
+                          selectedTip === null || ![18, 20, 22].includes(selectedTip)
+                            ? "border-border/30 bg-card/40"
+                            : "border-border/30 bg-card/40 hover:border-primary/20"
+                        )}
+                      >
+                        <span className="text-sm font-bold text-muted-foreground">$</span>
+                      </button>
+                    </div>
+
+                    {/* Summary */}
+                    <div className="bg-muted/20 rounded-xl p-4 mb-4 space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Subtotal</span>
+                        <span className="font-bold text-foreground tabular-nums">${orderTotal.toFixed(2)}</span>
+                      </div>
+                      {selectedTip && (
+                        <div className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">Tip ({selectedTip}%)</span>
+                          <span className="font-bold text-foreground tabular-nums">${tipAmount.toFixed(2)}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between border-t border-border/20 pt-2">
+                        <span className="font-semibold text-foreground">Total</span>
+                        <span className="text-xl font-extrabold text-primary tabular-nums">${totalWithTip.toFixed(2)}</span>
+                      </div>
+                    </div>
+
+                    {/* Charge Button */}
+                    <button
+                      onClick={handleCharge}
+                      className="w-full h-12 rounded-xl bg-gradient-to-r from-primary to-accent text-primary-foreground font-bold shadow-lg shadow-primary/20 flex items-center justify-center gap-2 hover:shadow-xl transition-all"
+                      data-testid="charge-btn"
+                    >
+                      <CreditCard className="h-4 w-4" />
+                      Charge ${totalWithTip.toFixed(2)}
+                    </button>
                   </div>
                 ) : (
-                  <div key={item.id}
-                    className="flex items-center gap-3 px-4 py-2.5 rounded-lg border border-border bg-card hover:border-primary/30 transition-all group"
-                    data-testid={`bar-item-${item.id}`}>
-                    {item.image_url ? (
-                      <img src={item.image_url} alt="" className="w-9 h-9 rounded-lg object-cover flex-shrink-0" />
-                    ) : (
-                      <div className="w-9 h-9 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
-                        <Beer className="h-4 w-4 text-muted-foreground" />
-                      </div>
-                    )}
-                    <button className="flex-1 text-left" onClick={() => addToCart(item)}>
-                      <span className="font-medium text-sm">{item.name}</span>
+                  /* Done Step */
+                  <div className="relative z-10 text-center py-4">
+                    <motion.div
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ type: "spring", bounce: 0.4 }}
+                      className="mx-auto h-16 w-16 rounded-full bg-emerald-500/10 flex items-center justify-center mb-4"
+                    >
+                      <Check className="h-8 w-8 text-emerald-400" />
+                    </motion.div>
+                    <h3 className="text-2xl font-extrabold text-foreground tracking-normal mb-2">Order Sent!</h3>
+                    <p className="text-sm text-muted-foreground mb-6">Payment registered successfully</p>
+                    <button
+                      onClick={handleClosePayment}
+                      className="px-6 py-2.5 rounded-xl bg-muted/50 font-semibold text-foreground hover:bg-muted transition-colors"
+                      data-testid="close-done"
+                    >
+                      Close
                     </button>
-                    <span className="text-primary font-bold text-sm">${item.price.toFixed(2)}</span>
-                    <button onClick={() => { setEditingItem(item.id); setEditForm({ name: item.name, price: item.price, category: item.category }); }}
-                      className="p-1.5 rounded opacity-0 group-hover:opacity-100 hover:bg-muted"><Pencil className="h-3.5 w-3.5 text-muted-foreground" /></button>
-                    <button onClick={() => handleDeleteItem(item.id)}
-                      className="p-1.5 rounded opacity-0 group-hover:opacity-100 hover:bg-destructive/10"><Trash2 className="h-3.5 w-3.5 text-muted-foreground" /></button>
                   </div>
-                )
-              ))}
-            </div>
-          </div>
-
-          {/* Right: Cart + Checkout */}
-          <div className="col-span-4 border-l border-border pl-6 flex flex-col">
-            <div className="flex items-center gap-2 mb-4">
-              <ShoppingCart className="h-5 w-5 text-primary" />
-              <h2 className="text-sm font-semibold">Order</h2>
-              {cart.length > 0 && <span className="text-xs bg-primary text-primary-foreground rounded-full px-2 py-0.5">{cart.length}</span>}
-            </div>
-
-            {checkoutStep === 'tip' && !tipResult ? (
-              /* Tip Recording Flow (Item 7) */
-              <div className="border border-primary/30 rounded-xl p-4 bg-primary/5" data-testid="pulse-tip-recording">
-                <h4 className="font-semibold text-sm mb-1">Record Tip</h4>
-                <p className="text-xs text-muted-foreground mb-3">
-                  {confirmedGuest?.guest_name} — Total: ${orderTotal.toFixed(2)}
-                </p>
-                <div className="flex gap-2 mb-3">
-                  {[18, 20, 22].map(pct => (
-                    <Button key={pct} size="sm" variant={tipType === 'percent' && tipInput === pct.toString() ? 'default' : 'outline'}
-                      onClick={() => { setTipType('percent'); setTipInput(pct.toString()); }}
-                      data-testid={`pulse-tip-${pct}-btn`}>
-                      {pct}%
-                    </Button>
-                  ))}
-                  <Button size="sm" variant="outline" onClick={() => { setTipType('amount'); setTipInput(''); }}
-                    data-testid="pulse-tip-custom-btn">Custom</Button>
-                </div>
-                <div className="flex gap-2">
-                  <div className="flex-1 flex items-center gap-1">
-                    <span className="text-sm font-medium text-muted-foreground">{tipType === 'amount' ? '$' : '%'}</span>
-                    <Input value={tipInput} onChange={e => setTipInput(e.target.value)} type="number" step="0.01"
-                      placeholder={tipType === 'amount' ? '0.00' : '20'} className="h-9" data-testid="pulse-tip-input" />
-                  </div>
-                  <Button onClick={handleRecordTip} disabled={!tipInput} data-testid="pulse-record-tip-btn">Record</Button>
-                </div>
-                <button onClick={handleCleanSlate} className="text-xs text-muted-foreground mt-2 hover:underline" data-testid="pulse-skip-tip-btn">Skip (no tip)</button>
+                )}
               </div>
-            ) : tipResult ? (
-              /* Tip Result */
-              <div className="border border-green-500/30 rounded-xl p-4 bg-green-500/5" data-testid="pulse-tip-result">
-                <h4 className="font-semibold text-sm text-green-600 mb-2">Tip Recorded: ${tipResult.tip_amount?.toFixed(2)} ({tipResult.tip_percent}%)</h4>
-                <Button size="sm" className="mt-3 w-full" onClick={handleCleanSlate} data-testid="pulse-done-tip-btn">Done</Button>
-              </div>
-            ) : cart.length === 0 ? (
-              <p className="text-sm text-muted-foreground py-8 text-center">No items — add from menu</p>
-            ) : checkoutStep === 'payment' ? (
-              <div className="border border-primary/30 rounded-xl p-4" data-testid="payment-method-selector">
-                <h4 className="text-sm font-semibold mb-1">Select payment method</h4>
-                <p className="text-xs text-muted-foreground mb-3">{cart.length} item(s) — ${cartTotal.toFixed(2)}</p>
-                <div className="grid grid-cols-2 gap-2">
-                  <Button className="h-11" onClick={handlePayHere} data-testid="pay-here-btn">
-                    <CreditCard className="h-4 w-4 mr-1" /> Pay Here
-                  </Button>
-                  <Button variant="outline" className="h-11" onClick={handlePayAtRegister} data-testid="pay-register-btn">
-                    <Banknote className="h-4 w-4 mr-1" /> Pay at Register
-                  </Button>
-                </div>
-                <button onClick={() => setCheckoutStep(null)} className="text-xs text-muted-foreground mt-3 hover:underline w-full text-center" data-testid="cancel-payment-btn">
-                  Back to cart
-                </button>
-              </div>
-            ) : (
-              <>
-                <div className="space-y-1 mb-4 max-h-[350px] overflow-y-auto flex-1">
-                  {cart.map(item => (
-                    <div key={item.id} className="flex items-center justify-between py-2 px-3 rounded-lg border border-border bg-card text-sm">
-                      <div className="flex-1 truncate">
-                        <span className="font-medium">{item.name}</span>
-                        <span className="text-primary font-bold ml-2">${(item.price * item.qty).toFixed(2)}</span>
-                      </div>
-                      <div className="flex items-center gap-1 ml-2">
-                        <button onClick={() => updateQty(item.id, -1)} className="w-6 h-6 rounded bg-muted flex items-center justify-center text-xs font-bold">-</button>
-                        <span className="w-5 text-center text-sm font-medium">{item.qty}</span>
-                        <button onClick={() => updateQty(item.id, 1)} className="w-6 h-6 rounded bg-muted flex items-center justify-center text-xs font-bold">+</button>
-                        <button onClick={() => removeFromCart(item.id)}
-                          className="p-1 ml-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive"
-                          data-testid={`cart-remove-${item.id}`}>
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                <div className="border-t border-border pt-3 mt-auto">
-                  <div className="flex justify-between items-center mb-3">
-                    <span className="text-sm font-medium">Total</span>
-                    <span className="text-xl font-bold text-primary" data-testid="cart-total">${cartTotal.toFixed(2)}</span>
-                  </div>
-                  {/* Cancel + Confirm */}
-                  <div className="grid grid-cols-2 gap-2 mb-3" data-testid="pulse-order-action-buttons">
-                    <Button variant="destructive" className="h-10 text-sm font-semibold" onClick={handleCleanSlate} data-testid="pulse-cancel-order-btn">
-                      <X className="h-4 w-4 mr-1" /> Cancel
-                    </Button>
-                    <Button className="h-10 text-sm font-semibold bg-green-600 hover:bg-green-700 text-white" onClick={() => setCheckoutStep('payment')} data-testid="pulse-confirm-order-btn">
-                      <Check className="h-4 w-4 mr-1" /> Confirm
-                    </Button>
-                  </div>
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-      </main>
-    </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+    </PulseLayout>
   );
-};
+}
+
+export default PulseBarPage;

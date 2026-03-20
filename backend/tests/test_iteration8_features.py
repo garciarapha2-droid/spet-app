@@ -11,7 +11,7 @@ import requests
 import os
 import uuid
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://pulse-entry-flow.preview.emergentagent.com').rstrip('/')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://order-management-77.preview.emergentagent.com').rstrip('/')
 VENUE_ID = "40a24e04-75b6-435d-bfff-ab0d469ce543"
 TEST_EMAIL = "teste@teste.com"
 TEST_PASSWORD = "12345"
