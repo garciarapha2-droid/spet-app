@@ -455,10 +455,10 @@ function Modules() {
    ═══════════════════════════════════════════════════════ */
 
 const PRICING = [
-  { id: 'core', name: 'Spet Core', price: 49, tagline: 'The foundation of your guest system', features: ['1 venue included', 'Pulse module (CRM & guests)', 'Guest profiles & visit history', 'Up to 5 staff members', 'Email support'] },
-  { id: 'flow', name: 'Spet Flow', price: 89, tagline: 'Run your venue in real time', features: ['Up to 3 venues', 'Everything in Core', 'Tap (NFC bar management)', 'Table (reservation & tracking)', 'Up to 20 staff', 'Priority support'] },
-  { id: 'sync', name: 'Spet Sync', price: 149, tagline: 'Full operational control with kitchen coordination', badge: 'Most Popular', highlight: true, features: ['Up to 10 venues', 'Everything in Flow', 'KDS (Kitchen Display System)', 'Kitchen order coordination', 'Up to 50 staff', 'Dedicated account manager'] },
-  { id: 'os', name: 'Spet OS', price: 299, tagline: 'The operating system for high-performing venues', badge: 'For serious operators', features: ['Unlimited venues', 'Everything in Sync', 'AI-powered insights', 'CEO analytics dashboard', 'Unlimited staff', 'Custom onboarding & training'] },
+  { id: 'core', name: 'Spet Core', price: 49, tagline: 'The foundation of your guest system', cta: 'Get started', features: ['Guest profiles', 'Visit history', 'Loyalty tracking', 'Engagement tools', 'Email support'] },
+  { id: 'flow', name: 'Spet Flow', price: 89, tagline: 'Run your venue in real time', cta: 'Get started', features: ['Everything in Core', 'NFC entry', 'Table management', 'Real-time consumption', 'Priority support'] },
+  { id: 'sync', name: 'Spet Sync', price: 149, tagline: 'Full operational control with kitchen coordination', badge: 'Most Popular', highlight: true, cta: 'Get started', features: ['Everything in Flow', 'Kitchen (KDS)', 'Order coordination', 'Bar module', 'Manager dashboard'] },
+  { id: 'os', name: 'Spet OS', price: 299, tagline: 'The operating system for high-performing venues', badge: 'For serious operators', cta: 'Upgrade to OS', features: ['All modules included', 'Advanced analytics', 'AI recommendations', 'Unlimited staff', 'Dedicated support', 'API access'] },
 ];
 
 function Pricing() {
@@ -513,18 +513,36 @@ function Pricing() {
                 className={`mt-6 flex items-center justify-center gap-1 w-full py-3 rounded-full text-[13px] font-bold transition-all ${
                   plan.highlight
                     ? 'btn-premium bg-primary text-primary-foreground'
+                    : plan.id === 'flow'
+                    ? 'btn-premium bg-primary text-primary-foreground'
                     : 'bg-muted text-foreground border border-border hover:bg-primary hover:text-primary-foreground'
                 }`}
                 data-testid={`pricing-cta-${plan.id}`}
               >
-                Get started <ArrowRight size={14} />
+                {plan.cta} <ArrowRight size={14} />
               </Link>
             </PremiumCard>
           ))}
         </div>
 
+        {/* Upgrade path */}
+        <div className="flex items-center justify-center gap-2 mt-8">
+          {['Core', 'Flow', 'Sync', 'OS'].map((name, i, arr) => (
+            <React.Fragment key={name}>
+              <span className={`px-2.5 py-1 rounded-full text-[12px] font-medium border ${
+                name === 'OS'
+                  ? 'border-primary/30 bg-primary/5 text-primary'
+                  : 'border-border bg-card text-foreground'
+              }`}>
+                {name}
+              </span>
+              {i < arr.length - 1 && <ArrowRight size={12} style={{ color: 'hsl(var(--text-tertiary))' }} />}
+            </React.Fragment>
+          ))}
+        </div>
+
         {/* Footer */}
-        <p className="text-center mt-8 text-[11px]" style={{ color: 'hsl(var(--text-tertiary))' }}>
+        <p className="text-center mt-6 text-[11px]" style={{ color: 'hsl(var(--text-tertiary))' }}>
           Secure billing powered by Stripe. All plans include 14-day onboarding support.
         </p>
       </div>
