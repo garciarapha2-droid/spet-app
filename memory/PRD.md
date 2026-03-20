@@ -83,6 +83,9 @@ All `/api/*` endpoints return:
 - [x] Removed: handoff route, Lovable redirects, REACT_APP_LOVABLE_LOGIN_URL
 - [x] All 12 auth migration scenarios passed (iteration 69)
 - [x] All 9 module/logout scenarios passed (iteration 68)
+- [x] FEATURE (2026-03-20): Pixel-perfect login page from Lovable design spec — 11/11 passed (iteration 70)
+  - Space Grotesk + Inter fonts, spet-icon-hd.png, .btn-premium, .gradient-text, dark/light mode, error states
+  - Fixed api.js 401 interceptor to skip auth endpoints for proper error display
 
 ## Current Phase: Integration & Stability
 Focus: Emergent as standalone full-stack app, endpoint stability
