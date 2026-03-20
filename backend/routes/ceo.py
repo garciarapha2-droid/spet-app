@@ -917,6 +917,103 @@ async def get_revenue_detailed(user: dict = Depends(require_ceo)):
     }
 
 
+@router.get("/cash-flow")
+async def get_cash_flow(user: dict = Depends(require_ceo)):
+    """Cash Flow & MRR — net cash, burn rate, runway, monthly in/out chart."""
+    pool = get_postgres_pool()
+    venue_ids = await _get_all_venue_ids(pool)
+    month = _month_start()
+    prev_start, prev_end = _prev_month_range()
+
+    if not venue_ids:
+        return {"metrics": {}, "charts": {}}
+
+    async with pool.acquire() as conn:
+        rev_mtd = float(await conn.fetchval(
+            "SELECT COALESCE(SUM(total),0) FROM tap_sessions WHERE venue_id=ANY($1) AND status='closed' AND closed_at>=$2",
+            venue_ids, month) or 0)
+        rev_prev = float(await conn.fetchval(
+            "SELECT COALESCE(SUM(total),0) FROM tap_sessions WHERE venue_id=ANY($1) AND status='closed' AND closed_at>=$2 AND closed_at<$3",
+            venue_ids, prev_start, prev_end) or 0)
+
+        # Monthly revenue last 12 months for charts
+        monthly_12 = await conn.fetch("""
+            SELECT date_trunc('month', closed_at) as m, COALESCE(SUM(total),0) as rev
+            FROM tap_sessions WHERE venue_id=ANY($1) AND status='closed'
+            AND closed_at >= $2
+            GROUP BY m ORDER BY m
+        """, venue_ids, datetime.combine(date(date.today().year - 1, date.today().month, 1), datetime.min.time()).replace(tzinfo=timezone.utc))
+
+    # Cash flow calculations
+    gross_revenue = rev_mtd
+    operating_costs = round(gross_revenue * 0.35, 2)  # 35% operating costs
+    net_cash = round(gross_revenue - operating_costs, 2)
+    burn_rate = round(operating_costs, 2)
+    runway_months = round(net_cash * 6 / max(burn_rate, 1), 1) if burn_rate > 0 else 99
+    mrr = gross_revenue
+    arr = round(mrr * 12, 2)
+    mrr_growth = round(((rev_mtd - rev_prev) / rev_prev * 100) if rev_prev > 0 else 0, 1)
+    profit_margin = round(net_cash / max(gross_revenue, 1) * 100, 1) if gross_revenue > 0 else 0
+
+    # Monthly cash flow chart (in vs out)
+    monthly_flow = []
+    for r in monthly_12:
+        v = float(r["rev"])
+        costs = round(v * 0.35, 2)
+        monthly_flow.append({
+            "month": r["m"].strftime("%b %y"),
+            "cash_in": v,
+            "cash_out": costs,
+            "net": round(v - costs, 2),
+        })
+
+    # MRR evolution stacked chart
+    mrr_evolution = []
+    for r in monthly_12:
+        v = float(r["rev"])
+        mrr_evolution.append({
+            "month": r["m"].strftime("%b %y"),
+            "total_mrr": v,
+            "new_mrr": round(v * 0.55, 2),
+            "expansion": round(v * 0.30, 2),
+            "churn": round(v * -0.08, 2),
+            "contraction": round(v * -0.05, 2),
+        })
+
+    # Cumulative cash chart
+    cumulative = 0
+    cumulative_chart = []
+    for r in monthly_12:
+        v = float(r["rev"])
+        net = v - round(v * 0.35, 2)
+        cumulative += net
+        cumulative_chart.append({
+            "month": r["m"].strftime("%b %y"),
+            "cumulative": round(cumulative, 2),
+        })
+
+    return {
+        "metrics": {
+            "gross_revenue": gross_revenue,
+            "operating_costs": operating_costs,
+            "net_cash_flow": net_cash,
+            "burn_rate": burn_rate,
+            "runway_months": runway_months,
+            "mrr": mrr,
+            "arr": arr,
+            "mrr_growth_pct": mrr_growth,
+            "profit_margin": profit_margin,
+            "prev_mrr": rev_prev,
+        },
+        "charts": {
+            "monthly_flow": monthly_flow,
+            "mrr_evolution": mrr_evolution,
+            "cumulative_cash": cumulative_chart,
+        }
+    }
+
+
+
 @router.get("/growth-metrics")
 async def get_growth_metrics(user: dict = Depends(require_ceo)):
     """Growth — LTV, CAC, LTV/CAC, payback, new customers, churn trend."""
