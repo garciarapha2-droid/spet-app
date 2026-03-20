@@ -96,7 +96,7 @@ export const ModulesPage = () => {
             <SpetLogo size="default" />
             <p className="text-sm text-muted-foreground mt-0.5">{user?.email}</p>
           </div>
-          <Button variant="ghost" onClick={logout} data-testid="logout-button">
+          <Button variant="ghost" onClick={async () => { const { handleFullLogout } = await import('../utils/logout'); await handleFullLogout(logout); }} data-testid="logout-button">
             <LogOut className="h-4 w-4 mr-2" />
             Logout
           </Button>

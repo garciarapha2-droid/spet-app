@@ -66,6 +66,9 @@ All `/api/*` endpoints return:
 - [x] Plan naming & pricing: Spet Core/Flow/Sync/OS (approved)
 - [x] Refresh token system (single-use rotation, 30-day lifetime)
 - [x] POST /api/auth/verify-payment — official post-payment activation
+- [x] Centralized logout: backend invalidation + token cleanup + redirect to Lovable
+- [x] Module filtering by user.modules_enabled with race-condition fix
+- [x] Data envelope unwrapping fixed across all venue/event/barmen loaders
 - [x] Fixed post-login hydration: /auth/me data envelope extraction, modules load correctly
 - [x] Login screen NEVER shows for Lovable handoff users (redirect to Lovable if unauthenticated)
 - [x] Back button protection: ProtectedRoute redirects to Lovable, not Emergent login

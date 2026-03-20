@@ -51,7 +51,7 @@ export const ManagerPage = () => {
           <div className="h-5 w-px bg-border" />
           <Button variant="ghost" size="icon" onClick={() => navigate('/venue/home')} data-testid="home-btn"><Home className="h-4 w-4" /></Button>
           <div className="h-5 w-px bg-border" />
-          <Button variant="ghost" size="icon" onClick={() => { localStorage.removeItem('spetap_token'); window.location.href = process.env.REACT_APP_LOVABLE_LOGIN_URL || 'https://spet.lovable.app/login'; }} data-testid="logout-btn"><LogOut className="h-4 w-4" /></Button>
+          <Button variant="ghost" size="icon" onClick={async () => { const { handleFullLogout } = await import('../utils/logout'); await handleFullLogout(); }} data-testid="logout-btn"><LogOut className="h-4 w-4" /></Button>
         </div>
       </header>
 

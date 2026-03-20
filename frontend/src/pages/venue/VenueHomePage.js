@@ -664,6 +664,11 @@ function InsideNowPanel({ venueId }) {
 export const VenueSelectPage = () => {
   const navigate = useNavigate();
   const { logout, user, isCEO } = useAuth();
+
+  const handleLogout = async () => {
+    const { handleFullLogout } = await import('../../utils/logout');
+    await handleFullLogout(logout);
+  };
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [selectedVenue, setSelectedVenue] = useState(null);
@@ -676,13 +681,15 @@ export const VenueSelectPage = () => {
   const [barmen, setBarmen] = useState([]);
 
   useEffect(() => {
+    // Wait until user data is fully loaded from /auth/me (has modules_enabled)
+    if (!user?.modules_enabled) return;
     const load = async () => {
       try {
         const res = await venueAPI.getHome();
         const raw = res.data;
         const homeData = raw?.data || raw;
-        // Filter modules by user's modules_enabled from /auth/me
-        if (homeData.modules && user?.modules_enabled) {
+        // Filter modules by user's modules_enabled
+        if (homeData.modules) {
           const allowed = new Set(user.modules_enabled);
           homeData.modules = homeData.modules.map(m => ({
             ...m,
@@ -695,7 +702,7 @@ export const VenueSelectPage = () => {
       setLoading(false);
     };
     load();
-  }, [user]);
+  }, [user?.modules_enabled]);
 
   const loadEvents = useCallback(async () => {
     if (!selectedVenue) return;
@@ -838,7 +845,7 @@ export const VenueSelectPage = () => {
           <div className="h-5 w-px bg-border" />
           <ThemeToggle />
           <div className="h-5 w-px bg-border" />
-          <Button variant="ghost" size="icon" onClick={() => { logout(); window.location.href = process.env.REACT_APP_LOVABLE_URL || 'https://spetapp.com'; }} data-testid="logout-btn">
+          <Button variant="ghost" size="icon" onClick={handleLogout} data-testid="logout-btn">
             <LogOut className="h-4 w-4" />
           </Button>
         </div>
