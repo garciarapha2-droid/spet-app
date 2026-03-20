@@ -18,8 +18,12 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem('spetap_token');
-      window.location.href = '/login';
+      const url = error.config?.url || '';
+      // Don't redirect on auth endpoints — let the page handle the error
+      if (!url.includes('/auth/login') && !url.includes('/auth/signup')) {
+        localStorage.removeItem('spetap_token');
+        window.location.href = '/login';
+      }
     }
     return Promise.reject(error);
   }

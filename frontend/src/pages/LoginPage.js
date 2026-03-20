@@ -1,109 +1,180 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import SpetLogo from '../components/SpetLogo';
+import { Link, useNavigate } from 'react-router-dom';
+import { ArrowLeft, Sun, Moon, Loader2 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { ThemeToggle } from '../components/ThemeToggle';
-import { Button } from '../components/ui/button';
-import { Input } from '../components/ui/input';
-import { Label } from '../components/ui/label';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../components/ui/card';
-import { toast } from 'sonner';
+import { useTheme } from '../contexts/ThemeContext';
 
 export const LoginPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError('');
     setLoading(true);
-
     try {
       const nextRoute = await login(email, password);
-      toast.success('Login successful');
       const route = nextRoute?.route || '/venue/home';
       navigate(route, { replace: true });
-    } catch (error) {
-      const raw = error.response?.data;
-      const msg = raw?.error?.message || raw?.detail || 'Invalid credentials';
-      toast.error(msg);
+    } catch (err) {
+      setError(err?.response?.data?.error?.message || err?.message || 'Invalid email or password');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background px-4 relative overflow-hidden">
-      {/* Subtle background gradient */}
-      <div className="absolute inset-0 bg-gradient-to-br from-primary/[0.03] via-transparent to-primary/[0.02]" />
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-primary/[0.04] rounded-full blur-[120px]" />
+    <div className="flex flex-col min-h-screen bg-background" data-testid="login-page">
+      {/* ── Header ── */}
+      <header className="flex items-center justify-between h-[76px] px-8 lg:px-12 max-w-[1200px] mx-auto w-full z-20">
+        <div className="flex items-center gap-2">
+          <Link
+            to="/"
+            className="p-2 -ml-2 rounded-full transition-all duration-200 hover:bg-muted"
+            data-testid="back-button"
+          >
+            <ArrowLeft size={18} style={{ color: 'hsl(var(--text-tertiary))' }} />
+          </Link>
+          <Link to="/" className="flex items-center">
+            <span
+              className="text-[22px] font-bold tracking-tight text-foreground"
+              style={{ fontFamily: "'Space Grotesk', sans-serif" }}
+            >
+              spet<span className="gradient-text">.</span>
+            </span>
+          </Link>
+        </div>
+        <button
+          onClick={toggleTheme}
+          className="p-2.5 rounded-full transition-all duration-200 hover:bg-muted"
+          style={{ color: 'hsl(var(--text-tertiary))' }}
+          data-testid="theme-toggle"
+        >
+          {theme === 'dark' ? <Sun size={17} /> : <Moon size={17} />}
+        </button>
+      </header>
 
-      <div className="absolute top-4 right-4 z-10">
-        <ThemeToggle />
-      </div>
-
-      <Card className="w-full max-w-md relative z-10 border-border/50 shadow-xl shadow-black/5">
-        <CardHeader className="space-y-1 text-center pb-2">
-          <div className="mb-5">
-            <div className="flex items-center justify-center">
-              <SpetLogo size="lg" />
-            </div>
-            <p className="text-xs text-muted-foreground mt-2 tracking-wider uppercase font-medium">Venue Operations Platform</p>
+      {/* ── Form Container ── */}
+      <main className="flex-1 flex items-center justify-center -mt-16 px-6">
+        <div className="w-full max-w-[420px] space-y-4">
+          {/* Identity Block */}
+          <div className="flex flex-col items-center text-center">
+            <img
+              src="/spet-icon-hd.png"
+              alt="Spet"
+              className="w-[200px] h-[200px] rounded-[44px]"
+              data-testid="spet-icon"
+            />
+            <h1
+              className="mt-3 text-[22px] font-semibold tracking-tight text-foreground"
+              style={{ fontFamily: "'Space Grotesk', sans-serif" }}
+            >
+              Welcome back
+            </h1>
+            <p className="mt-1 text-[13px]" style={{ color: 'hsl(var(--text-tertiary))' }}>
+              Sign in to your account
+            </p>
           </div>
-          <CardTitle className="sr-only">Login</CardTitle>
-        </CardHeader>
-        <CardContent>
+
+          {/* Error Alert */}
+          {error && (
+            <div
+              className="px-4 py-2.5 text-[13px] text-center rounded-lg border"
+              style={{
+                color: 'hsl(var(--destructive))',
+                backgroundColor: 'hsl(var(--destructive) / 0.1)',
+                borderColor: 'hsl(var(--destructive) / 0.2)',
+              }}
+              data-testid="login-error"
+            >
+              {error}
+            </div>
+          )}
+
+          {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email" className="text-sm font-medium">Email</Label>
-              <Input
-                id="email"
+            {/* Email */}
+            <div className="space-y-1.5">
+              <label
+                htmlFor="login-email"
+                className="block text-[13px] font-medium"
+                style={{ color: 'hsl(var(--text-secondary))' }}
+              >
+                Email
+              </label>
+              <input
+                id="login-email"
                 type="email"
-                placeholder="email@company.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@example.com"
                 required
-                autoFocus
-                className="h-11"
+                className="flex h-12 w-full rounded-[14px] border border-input bg-card px-4 py-2 text-[14px] text-foreground placeholder:text-muted-foreground ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 transition-colors"
                 data-testid="email-input"
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="password" className="text-sm font-medium">Password</Label>
-              <Input
-                id="password"
+
+            {/* Password */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <label
+                  htmlFor="login-password"
+                  className="block text-[13px] font-medium"
+                  style={{ color: 'hsl(var(--text-secondary))' }}
+                >
+                  Password
+                </label>
+                <button
+                  type="button"
+                  className="text-[12px] font-medium transition-all hover:brightness-125"
+                  style={{ color: 'hsl(var(--primary))' }}
+                  data-testid="forgot-password-link"
+                >
+                  Forgot password?
+                </button>
+              </div>
+              <input
+                id="login-password"
                 type="password"
-                placeholder="Enter your password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
                 required
-                className="h-11"
+                className="flex h-12 w-full rounded-[14px] border border-input bg-card px-4 py-2 text-[14px] text-foreground placeholder:text-muted-foreground ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 transition-colors"
                 data-testid="password-input"
               />
             </div>
-            <Button
+
+            {/* Submit */}
+            <button
               type="submit"
-              className="w-full h-11 font-semibold"
               disabled={loading}
+              className="btn-premium mt-1 flex items-center justify-center w-full h-[48px] rounded-full bg-primary text-primary-foreground text-[15px] font-semibold disabled:opacity-50 disabled:pointer-events-none"
               data-testid="login-button"
             >
-              {loading ? 'Signing in...' : 'Sign in'}
-            </Button>
-            <div className="text-center">
-              <button type="button" className="text-sm text-muted-foreground hover:text-primary transition-colors" data-testid="forgot-password-link"
-                onClick={() => toast.info('Password reset coming soon')}>
-                Forgot password?
-              </button>
-            </div>
+              {loading ? <Loader2 size={18} className="animate-spin" /> : 'Sign in'}
+            </button>
           </form>
-          <div className="mt-6 pt-4 border-t border-border/50 text-center text-xs text-muted-foreground">
-            <span>Don't have an account? </span>
-            <a href="/signup" className="text-primary hover:underline font-medium" data-testid="signup-link">Sign up</a>
-          </div>
-        </CardContent>
-      </Card>
+
+          {/* Footer */}
+          <p className="text-center text-[13px]" style={{ color: 'hsl(var(--text-tertiary))' }}>
+            Don't have an account?{' '}
+            <Link
+              to="/signup"
+              className="font-medium transition-all hover:brightness-125"
+              style={{ color: 'hsl(var(--primary))' }}
+              data-testid="signup-link"
+            >
+              Get started
+            </Link>
+          </p>
+        </div>
+      </main>
     </div>
   );
 };

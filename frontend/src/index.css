@@ -266,3 +266,28 @@ select option {
   background: hsl(var(--card));
   color: hsl(var(--foreground));
 }
+
+
+/* ═══ PREMIUM AUTH COMPONENTS ═══ */
+
+/* Gradient text for branding dot */
+.gradient-text {
+  background: linear-gradient(135deg, hsl(258 75% 58%), hsl(263 80% 66%));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Premium button — pill with glow hover */
+.btn-premium {
+  position: relative;
+  box-shadow: 0 0 0 1px hsl(258 75% 58% / 0.1);
+  transition: transform 250ms ease, box-shadow 250ms ease;
+}
+.btn-premium:hover:not(:disabled) {
+  transform: translateY(-1px) scale(1.03);
+  box-shadow: 0 0 0 1px hsl(258 75% 58% / 0.1), 0 20px 50px hsl(258 75% 58% / 0.25);
+}
+.btn-premium:active:not(:disabled) {
+  transform: translateY(0) scale(1);
+}
