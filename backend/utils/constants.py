@@ -47,7 +47,7 @@ PLANS = {
         "promo_price": 99.00,
         "currency": "usd",
         "interval": "month",
-        "modules": ["pulse", "tap", "table", "kds"],
+        "modules": ["pulse", "tap", "table", "kds", "manager", "owner"],
         "limits": {"venues": 10, "staff": 50},
         "features": [
             "10 Venues",

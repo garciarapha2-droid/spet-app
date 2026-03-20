@@ -36,7 +36,7 @@ PROTECTED_USERS = [
         "onboarding_completed": True,
         "plan_id": "sync",
         "access_role": "owner",
-        "permissions": {"pulse": True, "tap": True, "table": True, "kds": True},
+        "permissions": {"pulse": True, "tap": True, "table": True, "kds": True, "manager": True, "owner": True},
     },
     {
         "email": "teste1@teste.com",
