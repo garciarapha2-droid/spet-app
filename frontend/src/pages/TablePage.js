@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { tableAPI, tapAPI, staffAPI, venueAPI } from '../services/api';
+import { useAuth } from '../contexts/AuthContext';
 import { toast } from 'sonner';
 import { Input } from '../components/ui/input';
 import { Button } from '../components/ui/button';
@@ -113,6 +114,7 @@ const ElapsedTime = ({ openedAt }) => {
 
 export const TablePage = () => {
   const navigate = useNavigate();
+  const { logout } = useAuth();
   const [moduleBlocked, setModuleBlocked] = useState(false);
   const [tables, setTables] = useState([]);
   const [selectedTable, setSelectedTable] = useState(null);
@@ -153,7 +155,7 @@ export const TablePage = () => {
 
   useEffect(() => {
     venueAPI.checkModuleAccess('table', VENUE_ID())
-      .then(res => { if (!res.data.allowed) setModuleBlocked(true); })
+      .then(res => { const d = res.data?.data || res.data; if (!d.allowed) setModuleBlocked(true); })
       .catch(() => {});
   }, []);
 
@@ -452,7 +454,7 @@ export const TablePage = () => {
         <div className="flex items-center gap-3">
           <ThemeToggle />
           <Button variant="ghost" size="icon" onClick={() => navigate('/venue/home')} data-testid="home-btn"><Home className="h-4 w-4" /></Button>
-          <Button variant="ghost" size="icon" onClick={async () => { const { handleFullLogout } = await import('../utils/logout'); await handleFullLogout(); }} data-testid="logout-btn"><LogOut className="h-4 w-4" /></Button>
+          <Button variant="ghost" size="icon" onClick={async () => { const { handleFullLogout } = await import('../utils/logout'); await handleFullLogout(logout); }} data-testid="logout-btn"><LogOut className="h-4 w-4" /></Button>
         </div>
       </header>
 

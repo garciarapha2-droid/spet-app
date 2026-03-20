@@ -2,7 +2,7 @@
  * Centralized logout handler.
  * Invalidates backend session, clears all local state, redirects to Lovable login.
  */
-const LOVABLE_LOGIN = `${process.env.REACT_APP_LOVABLE_URL || 'https://spetapp.com'}/login`;
+const LOVABLE_LOGIN = process.env.REACT_APP_LOVABLE_LOGIN_URL || 'https://spetapp.com/login';
 
 export async function handleFullLogout(logoutFn) {
   try {

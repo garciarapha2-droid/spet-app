@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { tapAPI, staffAPI, pulseAPI, venueAPI } from '../services/api';
+import { useAuth } from '../contexts/AuthContext';
 import { toast } from 'sonner';
 import { Input } from '../components/ui/input';
 import { Button } from '../components/ui/button';
@@ -103,6 +104,7 @@ function GuestConfirmModal({ session, onConfirm, onCancel }) {
 
 export const TapPage = () => {
   const navigate = useNavigate();
+  const { logout } = useAuth();
   const [moduleBlocked, setModuleBlocked] = useState(false);
   const [sessions, setSessions] = useState([]);
   const [catalog, setCatalog] = useState([]);
@@ -145,7 +147,7 @@ export const TapPage = () => {
 
   useEffect(() => {
     venueAPI.checkModuleAccess('tap', VENUE_ID())
-      .then(res => { if (!res.data.allowed) setModuleBlocked(true); })
+      .then(res => { const d = res.data?.data || res.data; if (!d.allowed) setModuleBlocked(true); })
       .catch(() => {});
   }, []);
 
@@ -506,7 +508,7 @@ export const TapPage = () => {
           <div className="h-4 w-px bg-border" />
           <ThemeToggle />
           <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigate('/venue/home')} data-testid="home-btn"><Home className="h-3.5 w-3.5" /></Button>
-          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={async () => { const { handleFullLogout } = await import('../utils/logout'); await handleFullLogout(); }} data-testid="logout-btn"><LogOut className="h-3.5 w-3.5" /></Button>
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={async () => { const { handleFullLogout } = await import('../utils/logout'); await handleFullLogout(logout); }} data-testid="logout-btn"><LogOut className="h-3.5 w-3.5" /></Button>
         </div>
       </header>
 

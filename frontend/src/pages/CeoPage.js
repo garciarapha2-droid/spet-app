@@ -9,7 +9,7 @@ import { ThemeToggle } from '../components/ThemeToggle';
 import BrandLogo from '../components/BrandLogo';
 import {
   ArrowLeft, LayoutDashboard, DollarSign, TrendingUp, Megaphone,
-  ShoppingCart, Users, Layers, ShieldAlert
+  ShoppingCart, Users, Layers, ShieldAlert, LogOut
 } from 'lucide-react';
 
 import OverviewDashboard from '../components/ceo/OverviewDashboard';
@@ -43,9 +43,12 @@ const DASHBOARDS = {
   risk: RiskDashboard,
 };
 
+import { useAuth } from '../contexts/AuthContext';
+
 export default function CeoPage() {
   const navigate = useNavigate();
   const { theme } = useTheme();
+  const { logout } = useAuth();
   const [activeSection, setActiveSection] = useState('overview');
   const [targets, setTargets] = useState(null);
   const [targetsLoading, setTargetsLoading] = useState(true);
@@ -89,6 +92,9 @@ export default function CeoPage() {
         <div className="flex items-center gap-3">
           <span className="text-[11px]" style={{ color: 'hsl(var(--text-tertiary))' }}>{new Date().toLocaleDateString('en', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}</span>
           <ThemeToggle />
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={async () => { const { handleFullLogout } = await import('../utils/logout'); await handleFullLogout(logout); }} data-testid="logout-btn">
+            <LogOut className="h-3.5 w-3.5" />
+          </Button>
         </div>
       </header>
 

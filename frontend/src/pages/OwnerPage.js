@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ownerAPI } from '../services/api';
+import { useAuth } from '../contexts/AuthContext';
 import { toast } from 'sonner';
 import { Button } from '../components/ui/button';
 import { ThemeToggle } from '../components/ThemeToggle';
@@ -26,6 +27,7 @@ const TABS = [
 
 export const OwnerPage = () => {
   const navigate = useNavigate();
+  const { logout } = useAuth();
   const [activeTab, setActiveTab] = useState('overview');
   const [venues, setVenues] = useState([]);
   const [selectedVenueId, setSelectedVenueId] = useState('all');
@@ -75,7 +77,7 @@ export const OwnerPage = () => {
           <div className="h-5 w-px bg-border" />
           <Button variant="ghost" size="icon" onClick={() => navigate('/venue/home')} data-testid="home-btn"><Home className="h-4 w-4" /></Button>
           <div className="h-5 w-px bg-border" />
-          <Button variant="ghost" size="icon" onClick={async () => { const { handleFullLogout } = await import('../utils/logout'); await handleFullLogout(); }} data-testid="logout-btn"><LogOut className="h-4 w-4" /></Button>
+          <Button variant="ghost" size="icon" onClick={async () => { const { handleFullLogout } = await import('../utils/logout'); await handleFullLogout(logout); }} data-testid="logout-btn"><LogOut className="h-4 w-4" /></Button>
         </div>
       </header>
 

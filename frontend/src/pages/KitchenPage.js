@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { kdsAPI } from '../services/api';
+import { useAuth } from '../contexts/AuthContext';
 import { toast } from 'sonner';
 import { Button } from '../components/ui/button';
 import { ThemeToggle } from '../components/ThemeToggle';
@@ -211,6 +212,7 @@ const KanbanColumn = ({ title, tickets, status, onStatusChange, onSetTime, isDel
 
 export const KitchenPage = () => {
   const navigate = useNavigate();
+  const { logout } = useAuth();
   const [destination, setDestination] = useState('kitchen');
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -392,7 +394,7 @@ export const KitchenPage = () => {
           <div className="h-4 w-px bg-border" />
           <ThemeToggle />
           <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigate('/venue/home')} data-testid="home-btn"><Home className="h-3.5 w-3.5" /></Button>
-          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={async () => { const { handleFullLogout } = await import('../utils/logout'); await handleFullLogout(); }} data-testid="logout-btn"><LogOut className="h-3.5 w-3.5" /></Button>
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={async () => { const { handleFullLogout } = await import('../utils/logout'); await handleFullLogout(logout); }} data-testid="logout-btn"><LogOut className="h-3.5 w-3.5" /></Button>
         </div>
       </header>
 

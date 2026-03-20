@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { managerAPI, tapAPI, staffAPI, venueAPI } from '../services/api';
+import { useAuth } from '../contexts/AuthContext';
 import { toast } from 'sonner';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -33,6 +34,7 @@ const TABS = [
 
 export const ManagerPage = () => {
   const navigate = useNavigate();
+  const { logout } = useAuth();
   const [activeTab, setActiveTab] = useState('overview');
 
   return (
@@ -51,7 +53,7 @@ export const ManagerPage = () => {
           <div className="h-5 w-px bg-border" />
           <Button variant="ghost" size="icon" onClick={() => navigate('/venue/home')} data-testid="home-btn"><Home className="h-4 w-4" /></Button>
           <div className="h-5 w-px bg-border" />
-          <Button variant="ghost" size="icon" onClick={async () => { const { handleFullLogout } = await import('../utils/logout'); await handleFullLogout(); }} data-testid="logout-btn"><LogOut className="h-4 w-4" /></Button>
+          <Button variant="ghost" size="icon" onClick={async () => { const { handleFullLogout } = await import('../utils/logout'); await handleFullLogout(logout); }} data-testid="logout-btn"><LogOut className="h-4 w-4" /></Button>
         </div>
       </header>
 

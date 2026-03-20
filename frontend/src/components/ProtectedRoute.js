@@ -2,7 +2,7 @@ import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
-const LOVABLE_URL = process.env.REACT_APP_LOVABLE_URL || 'https://spetapp.com';
+const LOVABLE_LOGIN_URL = process.env.REACT_APP_LOVABLE_LOGIN_URL || 'https://spetapp.com/login';
 
 const Spinner = () => (
   <div className="flex items-center justify-center min-h-screen bg-[#0a0a0a]">
@@ -12,7 +12,7 @@ const Spinner = () => (
 
 /** Redirect to Lovable login — never show Emergent login */
 const RedirectToLovable = () => {
-  window.location.href = `${LOVABLE_URL}/login`;
+  window.location.href = LOVABLE_LOGIN_URL;
   return <Spinner />;
 };
 
