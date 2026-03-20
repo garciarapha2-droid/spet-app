@@ -311,16 +311,7 @@ select option {
   box-shadow: 0 12px 40px rgba(0,0,0,0.08);
 }
 
-/* Section glow divider */
+/* Section glow */
 .section-glow {
   position: relative;
-}
-.section-glow::before {
-  content: '';
-  position: absolute;
-  top: -8px;
-  left: 30%;
-  width: 40%;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, hsl(258 75% 58% / 0.18), transparent);
 }
