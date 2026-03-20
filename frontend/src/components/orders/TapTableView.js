@@ -37,6 +37,7 @@ export function TapTableView({ defaultMode = "tap" }) {
   const [showConfirm, setShowConfirm] = useState(null);
   const [showAgeCheck, setShowAgeCheck] = useState(null);
   const [server, setServer] = useState(null);
+  const [verifiedTables, setVerifiedTables] = useState(new Set());
 
   // ── Mode change with URL sync ──
   const handleModeChange = (newMode) => {
@@ -92,7 +93,17 @@ export function TapTableView({ defaultMode = "tap" }) {
   };
 
   const handleAddItem = (item) => {
+    // TAP mode: no ID verification — add directly
+    if (mode === "tap") {
+      addItemToOrder(item);
+      return;
+    }
+    // TABLE mode: verify ID once per table for alcoholic items
     if (alcoholicCategories.includes(item.category)) {
+      if (selectedTable && verifiedTables.has(selectedTable)) {
+        addItemToOrder(item);
+        return;
+      }
       setShowAgeCheck(item);
       return;
     }
@@ -101,6 +112,9 @@ export function TapTableView({ defaultMode = "tap" }) {
 
   const handleAgeConfirm = () => {
     if (showAgeCheck) {
+      if (mode === "table" && selectedTable) {
+        setVerifiedTables((prev) => new Set(prev).add(selectedTable));
+      }
       addItemToOrder(showAgeCheck);
       setShowAgeCheck(null);
     }
