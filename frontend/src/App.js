@@ -31,7 +31,14 @@ import { KitchenPage } from './pages/KitchenPage';
 import { ManagerPage } from './pages/ManagerPage';
 import { OwnerPage } from './pages/OwnerPage';
 import CeoPage from './pages/CeoPage';
+import { useAuth } from './contexts/AuthContext';
 const CEOPage = CeoPage;
+
+const AppEntryRedirect = () => {
+  const { user } = useAuth();
+  if (user?.role === 'CEO') return <Navigate to="/ceo" replace />;
+  return <Navigate to="/venue/home" replace />;
+};
 
 function App() {
   return (
@@ -70,6 +77,13 @@ function App() {
               <Route path="/kitchen" element={<ProtectedRoute><KitchenPage /></ProtectedRoute>} />
               <Route path="/owner" element={<ProtectedRoute><OwnerPage /></ProtectedRoute>} />
               <Route path="/ceo" element={<CEORoute><CEOPage /></CEORoute>} />
+
+              {/* /app route — redirects based on user role */}
+              <Route path="/app" element={
+                <ProtectedRoute>
+                  <AppEntryRedirect />
+                </ProtectedRoute>
+              } />
 
               {/* Default */}
               <Route path="*" element={<ProtectedRoute><Navigate to="/venue/home" replace /></ProtectedRoute>} />

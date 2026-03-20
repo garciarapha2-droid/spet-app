@@ -17,6 +17,7 @@ export const PublicOnly = ({ children }) => {
   if (isAuthenticated) {
     if (user?.status === 'pending_payment') return <Navigate to="/payment/pending" replace />;
     if (!user?.onboarding_completed) return <Navigate to="/onboarding" replace />;
+    if (user?.role === 'CEO') return <Navigate to="/ceo" replace />;
     return <Navigate to="/venue/home" replace />;
   }
 

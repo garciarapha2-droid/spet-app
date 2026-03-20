@@ -15,9 +15,12 @@ export const AuthProvider = ({ children }) => {
     }
     try {
       const response = await authAPI.getMe();
-      setUser(response.data);
+      const raw = response.data;
+      const userData = raw?.data || raw;
+      setUser(userData);
     } catch {
       localStorage.removeItem('spetap_token');
+      localStorage.removeItem('spetap_refresh_token');
       setToken(null);
       setUser(null);
     } finally {
@@ -31,8 +34,11 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     const response = await authAPI.login(email, password);
-    const { access_token, user: userData, next } = response.data;
+    const raw = response.data;
+    const payload = raw?.data || raw;
+    const { access_token, refresh_token, user: userData, next } = payload;
     localStorage.setItem('spetap_token', access_token);
+    if (refresh_token) localStorage.setItem('spetap_refresh_token', refresh_token);
     setToken(access_token);
     setUser(userData);
     return next;
@@ -44,12 +50,14 @@ export const AuthProvider = ({ children }) => {
 
   const logout = useCallback(() => {
     localStorage.removeItem('spetap_token');
+    localStorage.removeItem('spetap_refresh_token');
     setToken(null);
     setUser(null);
   }, []);
 
-  const setTokenDirect = useCallback((accessToken, userData) => {
+  const setTokenDirect = useCallback((accessToken, refreshToken, userData) => {
     localStorage.setItem('spetap_token', accessToken);
+    if (refreshToken) localStorage.setItem('spetap_refresh_token', refreshToken);
     setToken(accessToken);
     if (userData) setUser(userData);
     setLoading(false);
@@ -60,7 +68,9 @@ export const AuthProvider = ({ children }) => {
     if (!currentToken) return;
     try {
       const response = await authAPI.getMe();
-      setUser(response.data);
+      const raw = response.data;
+      const userData = raw?.data || raw;
+      setUser(userData);
     } catch {
       // silent fail
     }

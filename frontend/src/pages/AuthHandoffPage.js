@@ -4,6 +4,14 @@ import { useAuth } from '../contexts/AuthContext';
 
 const API_BASE = process.env.REACT_APP_BACKEND_URL || '';
 
+function resolveRoute(userData) {
+  if (!userData) return '/login';
+  if (userData.status === 'pending_payment') return '/payment/pending';
+  if (!userData.onboarding_completed) return '/onboarding';
+  if (userData.role === 'CEO') return '/ceo';
+  return '/venue/home';
+}
+
 export const AuthHandoffPage = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -18,10 +26,10 @@ export const AuthHandoffPage = () => {
     const token = searchParams.get('token');
     const code = searchParams.get('code');
 
-    if (token) {
-      handleTokenHandoff(token);
-    } else if (code) {
+    if (code) {
       handleCodeHandoff(code);
+    } else if (token) {
+      handleTokenHandoff(token);
     } else {
       setError('No authentication data provided');
       setTimeout(() => navigate('/login', { replace: true }), 2000);
@@ -35,9 +43,11 @@ export const AuthHandoffPage = () => {
         headers: { 'Authorization': `Bearer ${token}` },
       });
       if (!res.ok) throw new Error('Invalid token');
-      const userData = await res.json();
-      setTokenDirect(token, userData);
-      navigate('/venue/home', { replace: true });
+      const json = await res.json();
+      const userData = json.data || json;
+      setTokenDirect(token, null, userData);
+      const route = resolveRoute(userData);
+      navigate(route, { replace: true });
     } catch {
       setError('Token validation failed');
       setTimeout(() => navigate('/login', { replace: true }), 2000);
@@ -52,9 +62,11 @@ export const AuthHandoffPage = () => {
         body: JSON.stringify({ code }),
       });
       if (!res.ok) throw new Error('Code exchange failed');
-      const data = await res.json();
-      setTokenDirect(data.access_token, data.user);
-      navigate('/venue/home', { replace: true });
+      const json = await res.json();
+      const payload = json.data || json;
+      setTokenDirect(payload.access_token, payload.refresh_token, payload.user);
+      const route = resolveRoute(payload.user);
+      navigate(route, { replace: true });
     } catch {
       setError('Authentication handoff failed');
       setTimeout(() => navigate('/login', { replace: true }), 2000);

@@ -66,6 +66,8 @@ All `/api/*` endpoints return:
 - [x] Plan naming & pricing: Spet Core/Flow/Sync/OS (approved)
 - [x] Refresh token system (single-use rotation, 30-day lifetime)
 - [x] POST /api/auth/verify-payment — official post-payment activation
+- [x] Handoff auto-login: code in URL → exchange → auto-session → correct route (no login screen)
+- [x] Fixed AuthContext data extraction for response envelope {success, data, error}
 - [x] CEO Dashboard mapping: 14 dashboards, 90+ widgets mapped to endpoints
 - [x] NEW: GET /api/ceo/cash-flow (burn rate, runway, profit margin)
 - [x] 16/16 CEO endpoint tests passed (iteration 67)
