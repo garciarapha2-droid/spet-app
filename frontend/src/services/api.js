@@ -33,8 +33,6 @@ export const authAPI = {
   signup: (email, password, company_name) => api.post('/auth/signup', { email, password, company_name }),
   getMe: () => api.get('/auth/me'),
   logout: () => api.post('/auth/logout'),
-  createHandoff: () => api.post('/auth/handoff/create'),
-  exchangeHandoff: (code) => api.post('/auth/handoff/exchange', { code }),
 };
 
 // Venue

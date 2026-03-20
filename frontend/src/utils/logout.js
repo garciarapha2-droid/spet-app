@@ -1,9 +1,7 @@
 /**
  * Centralized logout handler.
- * Invalidates backend session, clears all local state, redirects to Lovable login.
+ * Invalidates backend session, clears all local state, redirects to /login.
  */
-const LOVABLE_LOGIN = process.env.REACT_APP_LOVABLE_LOGIN_URL || 'https://spetapp.com/login';
-
 export async function handleFullLogout(logoutFn) {
   try {
     const token = localStorage.getItem('spetap_token');
@@ -19,5 +17,5 @@ export async function handleFullLogout(logoutFn) {
   if (logoutFn) logoutFn();
   localStorage.removeItem('spetap_token');
   localStorage.removeItem('spetap_refresh_token');
-  window.location.href = LOVABLE_LOGIN;
+  window.location.href = '/login';
 }

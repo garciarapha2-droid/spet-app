@@ -7,7 +7,6 @@ import { PublicOnly, AuthOnly, ActiveOnly, ProtectedRoute, CEORoute } from './co
 
 // Auth pages
 import { LoginPage } from './pages/LoginPage';
-import { AuthHandoffPage } from './pages/AuthHandoffPage';
 import { SignupPage } from './pages/SignupPage';
 
 // Payment pages
@@ -51,9 +50,6 @@ function App() {
               <Route path="/login" element={<PublicOnly><LoginPage /></PublicOnly>} />
               <Route path="/signup" element={<PublicOnly><SignupPage /></PublicOnly>} />
 
-              {/* Auth handoff (special case) */}
-              <Route path="/auth/handoff" element={<AuthHandoffPage />} />
-
               {/* Payment routes (require auth, any status) */}
               <Route path="/payment/pending" element={<AuthOnly><PaymentPendingPage /></AuthOnly>} />
               <Route path="/payment/success" element={<AuthOnly><PaymentSuccessPage /></AuthOnly>} />
@@ -85,8 +81,9 @@ function App() {
                 </ProtectedRoute>
               } />
 
-              {/* Default */}
-              <Route path="*" element={<ProtectedRoute><Navigate to="/venue/home" replace /></ProtectedRoute>} />
+              {/* Default: unauthenticated → /login, authenticated → role-based */}
+              <Route path="/" element={<PublicOnly><Navigate to="/login" replace /></PublicOnly>} />
+              <Route path="*" element={<ProtectedRoute><AppEntryRedirect /></ProtectedRoute>} />
             </Routes>
             <Toaster />
           </div>

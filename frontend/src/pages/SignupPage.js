@@ -36,16 +36,18 @@ export function SignupPage() {
         body: JSON.stringify({ ...form, origin_url }),
       });
 
-      const data = await res.json();
+      const json = await res.json();
 
       if (!res.ok) {
-        throw new Error(data.detail || 'Signup failed');
+        const msg = json?.error?.message || json?.detail || 'Signup failed';
+        throw new Error(msg);
       }
 
-      localStorage.setItem('spetap_token', data.access_token);
+      const payload = json?.data || json;
+      localStorage.setItem('spetap_token', payload.access_token);
 
-      if (data.checkout_url) {
-        window.location.href = data.checkout_url;
+      if (payload.checkout_url) {
+        window.location.href = payload.checkout_url;
       } else {
         navigate('/payment/pending');
       }
