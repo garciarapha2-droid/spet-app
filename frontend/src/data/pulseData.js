@@ -1,36 +1,74 @@
+// ── Helper: generate past timestamp ──
+const hoursAgo = (h) => new Date(Date.now() - h * 3600000).toISOString();
+const minsAgo = (m) => new Date(Date.now() - m * 60000).toISOString();
+
 // ── Guest (TAP mode) ──
 export const mockGuests = [
   {
     id: "g1", name: "Sofia Cardoso", tabNumber: 106, nfcId: "NFC-0042",
     phone: "+55 11 99999-1234", status: "inside", tier: "Gold", points: 2450,
-    totalSpent: 78.00, checkedInAt: "2026-03-20T21:15:00",
+    totalSpent: 78.00, checkedInAt: hoursAgo(2.5),
     photo: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&h=200&fit=crop&crop=face",
+    timeline: [
+      { time: minsAgo(140), item: "Vodka Red Bull", price: 18.00 },
+      { time: minsAgo(95), item: "Gin Tonic", price: 16.00 },
+      { time: minsAgo(60), item: "Margarita", price: 15.00 },
+      { time: minsAgo(25), item: "Beer", price: 9.00 },
+      { time: minsAgo(10), item: "Nachos", price: 12.00 },
+    ],
+    history: { visits: 24, lastVisit: "2026-03-15", avgSpend: 72.50, avgStay: "2h 45m" },
   },
   {
     id: "g2", name: "Lucas Oliveira", tabNumber: 107, nfcId: "NFC-0088",
     status: "inside", tier: "Silver", points: 680,
-    totalSpent: 34.00, checkedInAt: "2026-03-20T22:00:00",
+    totalSpent: 34.00, checkedInAt: hoursAgo(1.75),
     photo: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&h=200&fit=crop&crop=face",
+    timeline: [
+      { time: minsAgo(90), item: "Beer", price: 9.00 },
+      { time: minsAgo(55), item: "Gin Tonic", price: 16.00 },
+      { time: minsAgo(15), item: "Beer", price: 9.00 },
+    ],
+    history: { visits: 8, lastVisit: "2026-03-12", avgSpend: 38.00, avgStay: "1h 50m" },
   },
   {
     id: "g3", name: "John Smith", tabNumber: 104,
     status: "inside", tier: "Bronze", points: 120,
-    totalSpent: 27.00, checkedInAt: "2026-03-20T22:30:00",
+    totalSpent: 27.00, checkedInAt: hoursAgo(1.25),
     photo: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&h=200&fit=crop&crop=face",
+    timeline: [
+      { time: minsAgo(70), item: "Mojito", price: 15.00 },
+      { time: minsAgo(30), item: "Fries", price: 12.00 },
+    ],
+    history: { visits: 3, lastVisit: "2026-03-01", avgSpend: 25.00, avgStay: "1h 30m" },
   },
   {
     id: "g4", name: "Maria Santos", tabNumber: 101, nfcId: "NFC-0015",
     status: "exited", tier: "Platinum", points: 5200,
-    totalSpent: 156.00, checkedInAt: "2026-03-20T19:00:00",
-    checkedOutAt: "2026-03-20T23:00:00",
+    totalSpent: 156.00, checkedInAt: hoursAgo(6),
+    checkedOutAt: hoursAgo(2),
     photo: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=200&h=200&fit=crop&crop=face",
+    timeline: [
+      { time: hoursAgo(5.5), item: "Champagne", price: 45.00 },
+      { time: hoursAgo(4.5), item: "Vodka Red Bull", price: 18.00 },
+      { time: hoursAgo(3.5), item: "Gin Tonic", price: 16.00 },
+      { time: hoursAgo(3), item: "Nachos", price: 12.00 },
+      { time: hoursAgo(2.5), item: "Margarita", price: 15.00 },
+    ],
+    history: { visits: 42, lastVisit: "2026-03-18", avgSpend: 145.00, avgStay: "3h 30m" },
   },
   {
     id: "g5", name: "Pedro Almeida", tabNumber: 102,
     status: "exited", tier: "Bronze", points: 80,
-    totalSpent: 42.00, checkedInAt: "2026-03-20T20:00:00",
-    checkedOutAt: "2026-03-20T22:30:00",
+    totalSpent: 42.00, checkedInAt: hoursAgo(5),
+    checkedOutAt: hoursAgo(2.5),
     photo: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200&h=200&fit=crop&crop=face",
+    timeline: [
+      { time: hoursAgo(4.5), item: "Beer", price: 9.00 },
+      { time: hoursAgo(3.5), item: "Beer", price: 9.00 },
+      { time: hoursAgo(3), item: "Fries", price: 12.00 },
+      { time: hoursAgo(2.75), item: "Beer", price: 9.00 },
+    ],
+    history: { visits: 5, lastVisit: "2026-03-10", avgSpend: 35.00, avgStay: "2h 15m" },
   },
 ];
 
