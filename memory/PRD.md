@@ -66,10 +66,9 @@ All `/api/*` endpoints return:
 - [x] Plan naming & pricing: Spet Core/Flow/Sync/OS (approved)
 - [x] Refresh token system (single-use rotation, 30-day lifetime)
 - [x] POST /api/auth/verify-payment — official post-payment activation
+- [x] Aligned 3 official test users (removed mock-* users)
+- [x] 30/30 official users tests passed (iteration 66)
 - [x] Enriched /api/auth/me with company, plan, modules_enabled, roles
-- [x] 6 mock test users for all scenarios (active/trial/pending/cancelled/no-onboard/limited)
-- [x] Login allows trial/cancelled statuses
-- [x] 32/32 /me + mock tests passed (iteration 65)
 - [x] Cross-domain handoff system (handoff/create + handoff/exchange) with refresh tokens
 - [x] 17/17 handoff tests passed (iteration 64)
 - [x] 15/15 verify-payment tests passed (iteration 63)
