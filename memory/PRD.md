@@ -99,6 +99,7 @@ All `/api/*` endpoints return:
 - [x] AUTH FIX (2026-03-21): OnboardingPage now shows logout in header (uses AuthHeader with auto-detection)
 - [x] ACCESS FIX (2026-03-21): Updated teste1@teste.com from plan "flow" to "sync" with full module permissions
 - [x] GLOBAL: All logout buttons use centralized handleFullLogout (clear tokens → redirect /login)
+- [x] BUG FIX (2026-03-21): Added auto-unwrap interceptor in api.js for standard {success, data, error} envelope — fixed Manager/Owner crash
 
 ## Current Phase: Integration & Stability
 Focus: Emergent as standalone full-stack app, endpoint stability
