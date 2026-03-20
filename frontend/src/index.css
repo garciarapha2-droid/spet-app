@@ -4,6 +4,11 @@
 @tailwind components;
 @tailwind utilities;
 
+#emergent-badge {
+  display: none !important;
+}
+
+
 /* SPET Design System — Exact Lovable Tokens */
 @layer base {
   :root {

@@ -55,6 +55,10 @@ All pages use `PulseLayout` with consistent navbar, tab navigation, design syste
 - TAP mode: No age verification. Identity verification (photo + name) required before confirming order (anti-fraud)
 - TABLE mode: Age verification for alcoholic items, once per table session. No identity verification.
 
+### Branding & Meta (2026-03-20)
+- Browser tab title: "SPET"
+- "Made with Emergent" badge removed
+
 ## Design System
 - CSS custom properties with HSL tokens
 - **Pulse scope** (`.pulse-scope`): `--radius: 0.875rem`, `text-xs: 12px`
@@ -62,6 +66,10 @@ All pages use `PulseLayout` with consistent navbar, tab navigation, design syste
 - Primary: `258 75% 58%` (#7C3AED purple)
 
 ## Prioritized Backlog
+
+### P0 (Completed)
+- ~~Fix browser tab title~~ ✅
+- ~~Remove "Made with Emergent" branding~~ ✅
 
 ### P1 (Next)
 - Connect TAP/TABLE and Pulse to real backend APIs (replace mock data)
