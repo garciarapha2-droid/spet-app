@@ -342,7 +342,10 @@ export default function OnboardingPage() {
 
   if (!isAuthenticated) return <Navigate to="/login" replace />;
   if (user?.status === 'pending_payment') return <Navigate to="/payment/pending" replace />;
-  if (user?.onboarding_completed) return <Navigate to="/venue/home" replace />;
+  if (user?.onboarding_completed) {
+    if (user?.role === 'CEO') return <Navigate to="/ceo" replace />;
+    return <Navigate to="/venue/home" replace />;
+  }
 
   const TOTAL_STEPS = 5;
   const onNext = () => { setError(''); setStep((s) => s + 1); };
@@ -353,7 +356,12 @@ export default function OnboardingPage() {
     try {
       await apiCall('/complete', {});
       await refreshUser();
-      navigate('/venue/home', { replace: true });
+      // Route based on role
+      if (user?.role === 'CEO') {
+        navigate('/ceo', { replace: true });
+      } else {
+        navigate('/venue/home', { replace: true });
+      }
     } catch (err) {
       setError(err.message);
     } finally {

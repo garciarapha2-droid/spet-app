@@ -679,20 +679,32 @@ export const VenueSelectPage = () => {
     const load = async () => {
       try {
         const res = await venueAPI.getHome();
-        setData(res.data);
-        if (res.data.venues?.length > 0) setSelectedVenue(res.data.venues[0]);
+        const raw = res.data;
+        const homeData = raw?.data || raw;
+        // Filter modules by user's modules_enabled from /auth/me
+        if (homeData.modules && user?.modules_enabled) {
+          const allowed = new Set(user.modules_enabled);
+          homeData.modules = homeData.modules.map(m => ({
+            ...m,
+            enabled: allowed.has(m.key) ? m.enabled : false,
+          }));
+        }
+        setData(homeData);
+        if (homeData.venues?.length > 0) setSelectedVenue(homeData.venues[0]);
       } catch { toast.error('Failed to load venues'); }
       setLoading(false);
     };
     load();
-  }, []);
+  }, [user]);
 
   const loadEvents = useCallback(async () => {
     if (!selectedVenue) return;
     try {
       const dateStr = selectedDate.toISOString().split('T')[0];
       const res = await venueAPI.getEvents(selectedVenue.id, dateStr);
-      setEvents(res.data.events || []);
+      const raw = res.data;
+      const evtData = raw?.data || raw;
+      setEvents(evtData.events || []);
     } catch {}
   }, [selectedVenue, selectedDate]);
 
@@ -704,7 +716,9 @@ export const VenueSelectPage = () => {
       try {
         const month = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}`;
         const res = await venueAPI.getEventDates(selectedVenue.id, month);
-        setEventDates(res.data.dates || []);
+        const raw = res.data;
+        const datesData = raw?.data || raw;
+        setEventDates(datesData.dates || []);
       } catch {}
     };
     loadDates();
@@ -713,7 +727,7 @@ export const VenueSelectPage = () => {
   useEffect(() => {
     if (!selectedVenue) return;
     const loadBarmenData = async () => {
-      try { const res = await staffAPI.getBarmen(selectedVenue.id); setBarmen(res.data.barmen || []); } catch {}
+      try { const res = await staffAPI.getBarmen(selectedVenue.id); const raw = res.data; const d = raw?.data || raw; setBarmen(d.barmen || []); } catch {}
     };
     loadBarmenData();
   }, [selectedVenue]);
@@ -824,7 +838,7 @@ export const VenueSelectPage = () => {
           <div className="h-5 w-px bg-border" />
           <ThemeToggle />
           <div className="h-5 w-px bg-border" />
-          <Button variant="ghost" size="icon" onClick={() => { logout(); window.location.href = process.env.REACT_APP_LOVABLE_LOGIN_URL || 'https://spet.lovable.app/login'; }} data-testid="logout-btn">
+          <Button variant="ghost" size="icon" onClick={() => { logout(); window.location.href = process.env.REACT_APP_LOVABLE_URL || 'https://spetapp.com'; }} data-testid="logout-btn">
             <LogOut className="h-4 w-4" />
           </Button>
         </div>

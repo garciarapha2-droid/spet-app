@@ -66,6 +66,11 @@ All `/api/*` endpoints return:
 - [x] Plan naming & pricing: Spet Core/Flow/Sync/OS (approved)
 - [x] Refresh token system (single-use rotation, 30-day lifetime)
 - [x] POST /api/auth/verify-payment — official post-payment activation
+- [x] Fixed post-login hydration: /auth/me data envelope extraction, modules load correctly
+- [x] Login screen NEVER shows for Lovable handoff users (redirect to Lovable if unauthenticated)
+- [x] Back button protection: ProtectedRoute redirects to Lovable, not Emergent login
+- [x] Onboarding completion routes CEO → /ceo, others → /venue/home
+- [x] Module enforcement: VenueHomePage filters by user's modules_enabled
 - [x] Handoff auto-login: code in URL → exchange → auto-session → correct route (no login screen)
 - [x] Fixed AuthContext data extraction for response envelope {success, data, error}
 - [x] CEO Dashboard mapping: 14 dashboards, 90+ widgets mapped to endpoints

@@ -23,9 +23,12 @@ export const LoginPage = () => {
     try {
       const nextRoute = await login(email, password);
       toast.success('Login successful');
-      navigate(nextRoute.route);
+      const route = nextRoute?.route || '/venue/home';
+      navigate(route, { replace: true });
     } catch (error) {
-      toast.error(error.response?.data?.detail || 'Invalid credentials');
+      const raw = error.response?.data;
+      const msg = raw?.error?.message || raw?.detail || 'Invalid credentials';
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
