@@ -86,6 +86,13 @@ All `/api/*` endpoints return:
 - [x] FEATURE (2026-03-20): Pixel-perfect login page from Lovable design spec — 11/11 passed (iteration 70)
   - Space Grotesk + Inter fonts, spet-icon-hd.png, .btn-premium, .gradient-text, dark/light mode, error states
   - Fixed api.js 401 interceptor to skip auth endpoints for proper error display
+- [x] FEATURE (2026-03-20): Landing Page pixel-perfect — 12 sections (Navbar, Hero typewriter, Problem, Solution Core, How It Works, AI, Benefits, Modules, Pricing, FAQ, Final CTA, Contact Form, Footer)
+- [x] FEATURE (2026-03-20): Shared AuthHeader component (back arrow + spet. logo + theme toggle) used in Login, Signup, Onboarding
+- [x] FEATURE (2026-03-20): Signup page premium redesign with plan selection (4 plans: Core/Flow/Sync/OS)
+- [x] FEATURE (2026-03-20): Landing → Login → Signup flow with consistent navigation
+- [x] CSS: Added .premium-card, .section-glow, scroll reveal animations
+- [x] Route / = Landing page (public), /login, /signup, /onboarding = auth pages with AuthHeader
+- [x] 15/15 landing + auth scenarios passed (iteration 71)
 
 ## Current Phase: Integration & Stability
 Focus: Emergent as standalone full-stack app, endpoint stability
