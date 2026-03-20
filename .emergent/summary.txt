@@ -1,124 +1,114 @@
 <analysis>**original_problem_statement**:
-The user's initial goal was to build a premium, multi-dashboard CEO Operating System as a pure API backend. The project has since evolved into building a complete, standalone full-stack application within the Emergent environment.
+The user's initial goal was to build a premium, multi-dashboard CEO Operating System. The project has evolved through several stages of UI/UX refinement, including pixel-perfect implementations of a landing page, login/signup flow, a main venue dashboard, and a refactored CEO dashboard.
 
-The architecture has been decisively pivoted away from a hybrid model (Lovable frontend + Emergent backend) to a **100% Emergent-owned application**. The Emergent app is now responsible for the entire user lifecycle: Landing Page, Signup, Login, Onboarding, and the core authenticated experience. Lovable now serves only as a source for design specifications.
-
-Recent tasks have focused on implementing a pixel-perfect frontend based on detailed design specs provided by the user. This included a full rebuild of the Login, Signup, and a comprehensive 12-section Landing Page. The most recent requests involve fine-tuning the UI/UX of the landing page to match the design specifications 1:1.
+The current primary objective is to implement the PULSE module, starting with the Guest Check-in page (). The user has provided an exhaustive design and frontend specification document and has given strict, explicit instructions to replicate it **exactly** without any interpretation, optimization, or deviation. The agent's role is defined as a copier or executor, not a designer.
 
 **PRODUCT REQUIREMENTS (Current):**
--   The application must be a visually premium, cohesive, and standalone product.
--   The entire authenticated experience (login, signup, onboarding, logout, session management) must be handled within the Emergent application.
--   The Landing Page (), Login (), and Signup () pages must be pixel-perfect implementations of the provided design specifications.
--   User routing post-login must be robust and context-aware (e.g., CEO to , new user to , standard user to ).
--   All UI components, especially interactive ones like pricing cards and forms, must be implemented exactly as specified, including content, alignment, and styling.
--   A shared, consistent header component must be used across authentication-related pages (Login, Signup, Onboarding).
--   All logout actions must be globally consistent, invalidating the backend session and redirecting the user to .
+-   Implement the Pulse Guest Check-in page with 100% fidelity to the provided .
+-   This includes exact replication of layout, spacing, colors (using provided HSL tokens), typography, components, animations, and text content.
+-   The implementation must use existing or specified components and must not introduce new design patterns.
+-   All new UI must be theme-aware, supporting both light and dark modes as defined in the spec.
+-   The agent must stop and ask for clarification if any part of the specification is unclear, rather than making assumptions.
 
 **User's preferred language**: Portuguese. The next agent **MUST** respond in Portuguese.
 
 **what currently exists?**
-A full-stack application with a FastAPI backend and a heavily modified React frontend.
--   **Backend**: Provides APIs for authentication (JWT), user management (with roles), onboarding, lead capture, and CEO dashboards.
--   **Frontend**: The entire user journey is now implemented.
-    -   A pixel-perfect, 12-section Landing Page at the root () with complex animations and a working contact form.
-    -   A pixel-perfect Login Page () matching the design spec, with dark/light modes and correct error handling.
-    -   A visually upgraded Signup Page () with plan selection cards.
-    -   A functional Onboarding flow ().
-    -   A shared  component for consistent branding.
--   The architectural migration to a standalone Emergent app is complete. All dependencies on the external Lovable service for authentication have been removed.
+A full-stack application with a FastAPI backend and a React frontend. The application has a complete and functional authentication flow (Login, Signup, Onboarding). Key pages have been recently rebuilt to high-fidelity design specifications:
+-   A new pixel-perfect  (the main post-login dashboard).
+-   A refactored  with a new sidebar navigation structure containing 12 dashboards (mostly placeholders) and a  component.
+-   Critical bug fixes have been implemented, including a global API response handler (Axios interceptor) to prevent data-loading crashes, and corrected permissions for test users.
+-   The frontend uses Tailwind CSS, Shadcn UI components, and  for animations.
 
 **Last working item**:
-    - Last item agent was working: The agent was implementing the user's final, specific corrections for the Pricing section on the Landing Page. This involved:
-        1.  Replacing the feature lists in the four pricing cards with the exact text provided by the user.
-        2.  Adding the Upgrade Path visual element (Core → Flow → Sync → OS) below the pricing grid.
-        3.  Ensuring the Get started vs. Upgrade to OS CTA text was correct for each plan.
-    - Status: USER VERIFICATION PENDING
-    - Agent Testing Done: Y
-    - Which testing method agent to use? screenshot tool. The task is a visual refinement, and the user explicitly forbade automated testing for this step. The next agent should take a screenshot of the pricing section to confirm the fixes.
+    - Last item agent was working: The agent received an extremely detailed design specification for the Pulse Guest Check-in page (). The agent's last action was to begin the context-gathering phase by inspecting existing Pulse-related files and verifying that the required  dependency is present. The core task is to implement the new page from the spec.
+    - Status: NOT STARTED
+    - Agent Testing Done: N
+    - Which testing method agent to use? screenshot tool. The user has explicitly forbidden the use of automated testing agents for these UI-centric tasks. The agent must verify the implementation visually against the spec.
     - User Testing Done: N
 
 **All Pending/In progress Issue list**:
-  - Issue 1: Verify Final Pricing Section Refinements (P0)
+  - Issue 1: Implement the Pulse Guest Check-in Page (P0)
 
   **Issues Detail**:
-  - **Issue 1: Verify Final Pricing Section Refinements**
-     - **Attempted fixes**: The agent applied the exact feature text from the user's message and added the Upgrade Path component to . A screenshot was taken in message #320 to show the result.
+  - **Issue 1: Implement the Pulse Guest Check-in Page**
+     - **Attempted fixes**: None. The agent was gathering context.
      - **Next debug checklist**:
-        1.  Carefully review the last screenshot generated ().
-        2.  Compare it against the user's request and screenshot in .
-        3.  Ensure the feature lists for Spet Core, Spet Flow, Spet Sync, and Spet OS are 100% identical to the user's text.
-        4.  Verify the Core → Flow → Sync → OS visual is present below the cards and styled correctly.
-        5.  If any discrepancy exists, edit  inside the  component to make the final correction.
-     - **Why fix this issue and what will be achieved with the fix?** To achieve the user's requirement for a pixel-perfect pricing page, which is critical for product presentation and conversion.
-     - **Status**: USER VERIFICATION PENDING
-     - **Is recurring issue?** Y (This is the third iteration of fixing the pricing cards).
+        1.  Carefully read the entire specification document at .
+        2.  Create the new  and  components in the  directory, using the exact code from the spec.
+        3.  Replace the content of  with the new code provided for  in the spec. Rename the file to  for consistency.
+        4.  Update  to include the new CSS custom properties and utility classes from the spec.
+        5.  Ensure the  is updated as per the spec's instructions.
+        6.  Verify that all dependencies listed in the spec (, , etc.) are in .
+        7.  After implementation, take detailed screenshots of the new page in both light and dark modes, including the slide-in registration panel, and compare them against the spec for 100% fidelity.
+     - **Why fix this issue and what will be achieved with the fix?** This will implement the first core screen of the Pulse module, a key operational area of the application, adhering to the user's strict quality standards.
+     - **Status**: NOT STARTED
+     - **Is recurring issue?** N
      - **Should Test frontend/backend/both after fix?** Frontend
+     - **Blocked on other issue**: None
 
 **In progress Task List**:
 - None.
 
 **Upcoming and Future Tasks**
 **Upcoming Tasks:**
-*   (P1) Apply the same pixel-perfect UI/UX treatment to the **Signup Page** () to ensure it matches the high-fidelity design language of the Login and Landing pages.
-*   (P1) Implement the remaining Priority 2 CEO Dashboard endpoints: .
+*   (P1) Implement the remaining Pulse module pages (, , , ) based on future specs.
+*   (P1) Connect the new CEO dashboards to real backend APIs (they currently use mock data or placeholders).
+*   (P1) Implement the remaining Priority 1 CEO Dashboard endpoint: .
+*   (P1) Apply pixel-perfect UI treatment to the **Signup Page** ().
 
 **Future Tasks:**
 *   (P2) Implement Priority 3 CEO Dashboard endpoints: , , .
 *   (P2) Develop APIs for subscription management (upgrade/downgrade plans).
 *   (P2) Implement a team invite system.
-*   (P3) Refactor  into smaller, section-specific components as suggested in the original design spec (e.g., , ).
+*   (P3) Refactor  into smaller, section-specific components.
 
 **Completed work in this session**
-- **Architectural Migration & Auth Centralization**:
-  - Completed the full migration to an Emergent-only application, removing all dependencies on the external Lovable site for authentication, redirects, and UI.
-  - Refactored , , and  to handle all auth flows internally, redirecting to .
-- **Pixel-Perfect UI Implementation**:
-  - Built a comprehensive, 12-section Landing Page at the root URL () from a detailed spec, including a working contact form connected to the  endpoint.
-  - Rebuilt the  page to be a pixel-perfect match of the user's design.
-  - Rebuilt the  page with a premium design, including plan selection cards.
-- **UI/UX Refinements & Bug Fixes**:
-  - Implemented over 10 specific, pixel-perfect refinements on the landing page related to text alignment, color, icon styles, and layout spacing.
-  - Fixed the text alignment and feature lists in the pricing cards multiple times to match user specifications.
-  - Created and applied a shared  component to , , and  for a consistent look and feel.
-  - Fixed a backend bug preventing Manager and Owner modules from appearing for test users by updating  and .
-- **Testing**: Performed extensive validation using the  for major features and  for UI-specific tasks, achieving 100% pass rates on all tested scenarios.
+- **CEO OS v2.0 Shell Implementation**:
+  - Completely rebuilt  to implement a new sidebar navigation structure.
+  - Created 11 new (placeholder) dashboard components under .
+  - Removed 5 obsolete dashboard components.
+- **Dashboard/Venue Home Screen Rebuild**:
+  - Re-implemented the entire  to be a pixel-perfect match of a detailed design specification.
+- **Critical Bug Fixes**:
+  - **Manager & Owner Dashboard Crash**: Resolved a global data-loading crash by adding an Axios response interceptor to  that automatically unwraps the API response envelope ().
+  - **Auth & Access Consistency**: Added a logout button to the  component, making it visible on the  page. Corrected permissions in  to grant test users full module access.
+- **UI & Theming Fixes**:
+  - Refactored the  to use theme-aware Tailwind classes, fixing visibility issues in light mode.
+  - Added and removed various divider lines on the landing page per user requests.
 
 **Earlier issues found/mentioned but not fixed**
    - None.
 
 **Known issue recurrence from previous fork**
   - **Issue recurrence**: The content and alignment of the **Pricing Cards** on the landing page.
-  - **Recurrence count**: 3. The section was built, then refined, then corrected again based on increasingly specific user feedback.
-  - **Status**: USER VERIFICATION PENDING. The latest fix was just applied.
+  - **Recurrence count**: 3.
+  - **Status**: USER VERIFICATION PENDING. The user has since moved on to other high-priority tasks, so this is considered low priority unless brought up again.
 
 **Code Architecture**
 
 
 **Key Technical Concepts**
--   **Standalone Full-Stack App**: FastAPI backend and React frontend, fully self-contained.
--   **Pixel-Perfect Implementation**: Translating detailed design specs (including typography, color tokens, spacing, and animations) into functional code using Tailwind CSS.
--   **Component-Driven UI**: Using React with functional components, hooks, and context for state management. Shadcn UI for base components.
--   **Centralized Authentication**: JWT-based auth managed entirely within the app, with robust routing using  and a  component.
+-   **Pixel-Perfect Implementation**: The core development methodology is to translate highly detailed design specifications into code with maximum fidelity, using provided CSS variables, typography scales, and spacing rules.
+-   **Design System via CSS Variables**: The UI is built on a comprehensive design token system defined in  using HSL-based CSS custom properties for light and dark modes.
+-   **Axios Interceptors**: An interceptor in  standardizes API responses by automatically unwrapping the  object, simplifying data handling in components and preventing crashes.
+-   **Animation with Framer Motion**: The application uses  for complex layout animations, such as the animated tab pill in the upcoming Pulse module navbar.
 
 **key DB schema**
-  - **leads**:  (Used by the landing page contact form)
-  - **users**: (Implicitly managed via  for test accounts)
+  - **users**: (Managed by  for test accounts with specific plans like 'sync' which grant module access).
+  - **leads**: .
 
 **changes in tech stack**
   - None.
 
 **All files of reference**
--   : The primary file for the last set of tasks. Contains the entire 12-section landing page.
--   : The rebuilt login page.
--   : The rebuilt signup page.
--   : The new shared header component.
--   : Contains the master routing table for the application.
--   : Contains the global CSS variables and utility classes critical for the new UI.
--   : Defines product plans and their features (e.g., pricing cards).
--   : Defines test users and their permissions.
+-   : **Single source of truth for the current task.** Contains complete CSS, code, and asset specifications.
+-   : The existing page that will be replaced by the new implementation.
+-   : Contains the critical Axios interceptor logic.
+-   : Recently rebuilt CEO dashboard shell.
+-   : Recently rebuilt main dashboard.
 
 **Areas that need refactoring**:
-- The  file is over 750 lines long. The original design spec suggested breaking the page into smaller, section-specific components (e.g., , , ). This would significantly improve maintainability and should be considered as a future refactoring task.
+-  is a monolithic 750+ line file that should be broken down into smaller, section-specific components. This is a known future task.
 
 **key api endpoints**
 -   
@@ -127,39 +117,41 @@ A full-stack application with a FastAPI backend and a heavily modified React fro
 -   
 
 **Critical Info for New Agent**
--   **The architecture has pivoted**. The app is now fully standalone. Do not attempt to re-introduce any logic related to Lovable or cross-domain authentication.
--   **The user's standard for UI is pixel-perfect**. Follow design specs with extreme precision. Use the  to verify visual changes.
--   The last user request () explicitly forbade the use of the . Adhere to this instruction for minor UI fixes unless the user specifies otherwise or a new major feature is being built.
--   The pricing card content is now controlled by the  constant in . Any future changes to pricing features should be made there.
+-   **THE USER'S #1 RULE**: Replicate design specs **EXACTLY**. You are an executor, not a designer. Do not interpret, improve, or simplify. If anything is unclear, **you MUST STOP and ask.**
+-   The file  is the absolute source of truth for the immediate task. It contains full code for components and pages.
+-   The user has explicitly forbidden the use of automated testing agents () for these UI-heavy tasks. Validation must be done with screenshots and direct comparison to the spec.
+-   Pay close attention to the  animation details in the spec, especially for the navbar's active tab indicator.
+-   All new components must correctly support both light and dark themes using the established CSS variable system.
 
 **documents and test reports created in this job**
 -   
 -   
 -   
--   
--   
+-    (Updated with recent work)
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  **User (pending verification)**: Provided the exact text for the pricing cards and a visual of the upgrade path, asking the agent to implement it.
-2.  **Agent**: Acknowledged the correction for module alignment was successful.
-3.  **User**: Pointed out that the pricing card text was still wrong, providing a screenshot.
-4.  **Agent**: Showed screenshot of module alignment fix.
-5.  **Agent**: Applied fix for module alignment.
-6.  **Agent**: Understood the module alignment issue.
-7.  **User**: Pointed out that the module cards were not left-aligned, providing a screenshot.
-8.  **Agent**: Finished applying the 10 UI refinements to the landing page.
-9.  **Agent**: Confirmed via screenshot analysis that all 10 fixes were applied.
-10. **User**: Provided a list of 10 pixel-perfect UI refinements for the landing page and explicitly forbade the use of automated testing.
+1.  **User**: Provides an extremely detailed design spec for the  page. Gives a critical, absolute rule: replicate the spec EXACTLY without interpretation. The agent's job is to be a copier, not a designer.
+2.  **Agent**: Acknowledges the strict instructions and begins gathering context on existing Pulse files and dependencies.
+3.  **User**: (Generates a full handoff spec for the entire CEO dashboard for documentation purposes).
+4.  **Agent**: (Acknowledges the generated document).
+5.  **User**: Requests a complete refactor of the CEO dashboard's sidebar navigation, providing a new structure.
+6.  **Agent**: Proposes the new architecture based on the user's request, confirming what will be added, removed, and preserved.
+7.  **User**: Approves the proposed architecture and gives the green light for implementation.
+8.  **Agent**: Implements the new CEO dashboard shell, creating/deleting components, and rewriting the main .
+9.  **Agent**: Verifies the new structure with screenshots and confirms completion.
+10. **User**: Provides a complete design spec to rebuild the main  (Dashboard). (This was completed before the CEO OS refactor).
 
 **Project Health Check:**
 -   **Broken**: None.
--   **Mocked**: None.
+-   **Mocked**: Most of the newly created CEO dashboard pages are placeholders using mocked data structures.
 
 **3rd Party Integrations**
--   None added in this session. The application uses FastAPI, React, and MongoDB.
+-   **Framer Motion**: Used for UI animations.
+-   **Lucide React**: Primary icon library.
+-   **Sonner**: Used for toasts/notifications.
 
 **Testing status**
-  - Testing agent used after significant changes: YES (last used for landing page v1).
+  - Testing agent used after significant changes: NO (explicitly forbidden by user for recent UI tasks).
   - Troubleshoot agent used after agent stuck in loop: NO
   - Test files created: None.
   - Known regressions: None.
@@ -170,4 +162,5 @@ A full-stack application with a FastAPI backend and a heavily modified React fro
 -   **Onboarding User**:  /  (redirects to )
 
 **What agent forgot to execute**
-- The agent implemented the entire  as a single monolithic file, contrary to the best practice of breaking it into smaller, more manageable components per section (, , etc.), which was even hinted at in the user-provided design specification. While not a bug, this is a missed opportunity for better code architecture.</analysis>
+- The agent correctly noted the user's count correction (11 pages vs 10) but didn't explicitly mention it in the final  summary for that task. However, the implementation was correct.
+- The long-standing task to refactor the monolithic  remains on the back burner.</analysis>
