@@ -432,9 +432,11 @@ function Modules() {
       <SectionHeading>Built to match how your venue actually runs</SectionHeading>
       <div className="grid sm:grid-cols-2 gap-5 mt-10">
         {modules.map((m, i) => (
-          <PremiumCard key={i} delay={i * 100}>
-            <div className="flex items-start gap-4">
-              <IconBadge><m.icon size={24} strokeWidth={1} className="text-primary" /></IconBadge>
+          <PremiumCard key={i} delay={i * 100} className="text-left">
+            <div className="flex items-center gap-4">
+              <div className="w-[52px] h-[52px] rounded-[14px] flex items-center justify-center shrink-0" style={{ background: 'linear-gradient(135deg, hsl(var(--primary) / 0.10), hsl(var(--primary) / 0.03))', border: '1px solid hsl(var(--primary) / 0.06)' }}>
+                <m.icon size={24} strokeWidth={1} className="text-primary" />
+              </div>
               <div>
                 <h3 className="text-[18px] font-bold text-foreground">{m.name}</h3>
                 <p className="text-[12px] mt-0.5" style={{ color: 'hsl(var(--text-tertiary))' }}>{m.sub}</p>
