@@ -1,0 +1,99 @@
+{
+  "summary": "Iteration 66: Official Test Users API Tests Complete. All 30 tests pass. Verified the 3 official test users (teste@teste.com, teste1@teste.com, garcia.rapha2@gmail.com) after mock-* users were removed. Each user returns correct status, onboarding state, plan, modules_enabled (intersection of plan and user permissions), and access roles. The mock-owner-active@spetapp.com user returns 401 (properly removed).",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iteration66_official_users.py",
+    "/app/test_reports/pytest/iteration66_official_users.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [],
+  "updated_files": [
+    "/app/backend/tests/test_iteration66_official_users.py"
+  ],
+  "success_rate": {
+    "backend": "100% (30/30 tests passed)",
+    "frontend": "N/A - Backend only testing"
+  },
+  "test_credentials": {
+    "teste": {"email": "teste@teste.com", "password": "12345"},
+    "teste1": {"email": "teste1@teste.com", "password": "12345"},
+    "garcia": {"email": "garcia.rapha2@gmail.com", "password": "12345"}
+  },
+  "seed_data_creation": "3 official test users are seeded on backend startup via ensure_protected_users() in protected_users.py",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "The mock-* users have been removed. Only 3 official test users remain. API responses are wrapped in {data: {...}, success: bool, error: ...} envelope. Key verification: modules_enabled is now intersection of plan modules and user permissions - teste1 has NO kds (only pulse/table/tap from flow plan), garcia has all 8 modules from OS plan.",
+  "features_tested": {
+    "1. GET /api/health (regression)": "PASS - returns healthy",
+    "2. POST /api/auth/login teste@teste.com": "PASS - returns tokens",
+    "3. POST /api/auth/login teste1@teste.com": "PASS - returns tokens",
+    "4. POST /api/auth/login garcia.rapha2@gmail.com": "PASS - returns tokens",
+    "5. GET /api/auth/me for teste@teste.com": {
+      "status=active": "PASS",
+      "onboarding_completed=true": "PASS",
+      "plan.id=sync": "PASS",
+      "modules_enabled=[kds,pulse,table,tap]": "PASS",
+      "roles[0].role=owner": "PASS",
+      "company object with id/name": "PASS",
+      "plan object with id/name/status/interval/modules/limits": "PASS"
+    },
+    "6. GET /api/auth/me for teste1@teste.com": {
+      "status=active": "PASS",
+      "onboarding_completed=false": "PASS",
+      "plan.id=flow": "PASS",
+      "modules_enabled=[pulse,table,tap] (NO kds)": "PASS",
+      "roles[0].role=owner": "PASS",
+      "company object with id/name": "PASS",
+      "plan object complete": "PASS"
+    },
+    "7. GET /api/auth/me for garcia.rapha2@gmail.com": {
+      "role=CEO (user role)": "PASS",
+      "status=active": "PASS",
+      "onboarding_completed=true": "PASS",
+      "plan.id=os": "PASS",
+      "modules_enabled has 8 modules (ai/analytics/bar/finance/kds/pulse/table/tap)": "PASS",
+      "roles[0].role=platform_admin (access role)": "PASS",
+      "company object with id/name": "PASS",
+      "plan object with unlimited limits (-1)": "PASS"
+    },
+    "8. mock-owner-active@spetapp.com removed": "PASS - returns 401 invalid credentials",
+    "9. POST /api/auth/refresh-token (regression)": "PASS - returns new token pair",
+    "10. GET /api/auth/permissions (regression)": "PASS - works for teste@teste.com",
+    "11. GET /api/onboarding/plans (regression)": "PASS - returns 4 plans (core/flow/sync/os)"
+  },
+  "user_data_verified": {
+    "teste@teste.com": {
+      "status": "active",
+      "onboarding_completed": true,
+      "plan_id": "sync",
+      "plan_name": "Spet Sync",
+      "modules_enabled": ["kds", "pulse", "table", "tap"],
+      "access_role": "owner"
+    },
+    "teste1@teste.com": {
+      "status": "active",
+      "onboarding_completed": false,
+      "plan_id": "flow",
+      "plan_name": "Spet Flow",
+      "modules_enabled": ["pulse", "table", "tap"],
+      "access_role": "owner"
+    },
+    "garcia.rapha2@gmail.com": {
+      "status": "active",
+      "onboarding_completed": true,
+      "user_role": "CEO",
+      "plan_id": "os",
+      "plan_name": "Spet OS",
+      "modules_enabled": ["ai", "analytics", "bar", "finance", "kds", "pulse", "table", "tap"],
+      "access_role": "platform_admin"
+    }
+  }
+}

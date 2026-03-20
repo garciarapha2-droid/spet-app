@@ -378,6 +378,7 @@ async def get_current_user_info(user: dict = Depends(require_auth)):
 
     # Build roles with venue info
     roles = []
+    user_permission_modules = set()
     for r in access_rows:
         perm = r["permissions"]
         if isinstance(perm, str):
@@ -386,13 +387,17 @@ async def get_current_user_info(user: dict = Depends(require_auth)):
             except Exception:
                 perm = {}
 
+        # Collect modules from user permissions (true values only)
+        for mod, enabled in perm.items():
+            if enabled and mod != "ceo" and mod != "HOST_COLLECT_DOB":
+                user_permission_modules.add(mod)
+
         role_entry = {
             "venue_id": str(r["venue_id"]) if r["venue_id"] else None,
             "role": r["role"],
             "permissions": perm,
         }
 
-        # If venue has a config, use its modules (overrides plan-level)
         if r["venue_id"]:
             venue_doc = await db.venues.find_one({"id": str(r["venue_id"])}, {"_id": 0})
             if venue_doc:
@@ -401,16 +406,11 @@ async def get_current_user_info(user: dict = Depends(require_auth)):
                 role_entry["venue_name"] = venue_doc.get("name")
                 role_entry["venue_type"] = venue_doc.get("venue_type")
 
-            venue_config = await db.venue_configs.find_one({"venue_id": str(r["venue_id"])}, {"_id": 0})
-            if venue_config and venue_config.get("modules"):
-                modules_enabled = list(set(modules_enabled) | set(venue_config["modules"]))
-
         roles.append(role_entry)
 
-    # Demo accounts always get all modules
-    is_demo = user_row["email"] in DEMO_EMAILS
-    if is_demo and not modules_enabled:
-        modules_enabled = ["pulse", "tap", "table", "kds"]
+    # modules_enabled = intersection of plan modules and user permissions
+    if user_permission_modules:
+        modules_enabled = sorted(set(modules_enabled) & user_permission_modules) if modules_enabled else sorted(user_permission_modules)
 
     return {
         "id": str(user_row["id"]),

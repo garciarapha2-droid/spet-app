@@ -63,11 +63,11 @@ PLANS = {
         "promo_price": 149.00,
         "currency": "usd",
         "interval": "month",
-        "modules": ["pulse", "tap", "table", "kds"],
+        "modules": ["pulse", "tap", "table", "kds", "bar", "finance", "analytics", "ai"],
         "limits": {"venues": -1, "staff": -1},  # unlimited
         "features": [
             "Unlimited Venues",
-            "All Modules",
+            "All Modules + AI",
             "Unlimited staff",
             "CEO dashboard",
             "API access",

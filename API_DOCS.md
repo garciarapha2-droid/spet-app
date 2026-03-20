@@ -706,27 +706,22 @@ The handoff system (`/api/auth/handoff/create` + `/api/auth/handoff/exchange`) i
 
 ---
 
-## Mock Test Users
+## Test Users
 
-These users are **reset on every backend restart** for consistent frontend testing.
-All use password: `test123`
+These users are **reset on every backend restart** for consistent testing.
+Password: `12345` for all.
 
-| Email | Name | Status | Onboarding | Plan | Role | Scenario |
+| Email | Role | Status | Onboarding | Plan | Modules | Route |
 |---|---|---|---|---|---|---|
-| `mock-owner-active@spetapp.com` | Maria Owner | `active` | `true` | Spet Sync | owner | Owner with active plan, all modules |
-| `mock-trial@spetapp.com` | Carlos Trial | `trial` | `true` | Spet Core | owner | User in trial period |
-| `mock-pending@spetapp.com` | Ana Pending | `pending_payment` | `false` | Spet Flow | owner | User with pending payment |
-| `mock-cancelled@spetapp.com` | Pedro Cancelled | `cancelled` | `true` | Spet Flow | owner | User with cancelled plan |
-| `mock-no-onboarding@spetapp.com` | Julia NoOnboard | `active` | `false` | Spet Sync | owner | Active user, onboarding not done |
-| `mock-limited@spetapp.com` | Roberto Staff | `active` | `true` | Spet Core | bartender | Staff with limited permissions |
+| `teste@teste.com` | owner | `active` | `true` | Spet Sync | pulse, tap, table, kds | `/app` |
+| `teste1@teste.com` | owner | `active` | `false` | Spet Flow | pulse, tap, table | `/onboarding` |
+| `garcia.rapha2@gmail.com` | CEO / platform_admin | `active` | `true` | Spet OS | pulse, tap, table, kds, bar, finance, analytics, ai | `/app` |
 
 ### Quick Test
-
 ```bash
-# Login as any mock user
-curl -X POST /api/auth/login -d '{"email":"mock-owner-active@spetapp.com","password":"test123"}'
-
-# Use token to check /auth/me
+# Login
+curl -X POST /api/auth/login -d '{"email":"teste@teste.com","password":"12345"}'
+# Get full profile
 curl -H "Authorization: Bearer {token}" /api/auth/me
 ```
 
