@@ -482,7 +482,7 @@ function Pricing() {
         </div>
 
         {/* Grid */}
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end mt-10">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5 items-end mt-16">
           {PRICING.map((plan, i) => (
             <PremiumCard
               key={plan.id}
@@ -762,6 +762,18 @@ function Footer() {
 }
 
 /* ═══════════════════════════════════════════════════════
+   SECTION DIVIDER
+   ═══════════════════════════════════════════════════════ */
+
+function SectionDivider() {
+  return (
+    <div className="flex items-center justify-center py-4">
+      <div className="w-[580px] max-w-[60%] h-px" style={{ background: 'hsl(var(--foreground) / 0.10)' }} />
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════
    LANDING PAGE
    ═══════════════════════════════════════════════════════ */
 
@@ -771,14 +783,18 @@ export default function LandingPage() {
       <Navbar />
       <Hero />
       <Problem />
+      <SectionDivider />
       <SolutionCore />
       <HowItWorks />
+      <SectionDivider />
       <AISection />
       <Benefits />
+      <SectionDivider />
       <Modules />
       <Pricing />
       <FAQ />
       <FinalCTA />
+      <SectionDivider />
       <ContactForm />
       <Footer />
     </div>

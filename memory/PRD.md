@@ -93,6 +93,8 @@ All `/api/*` endpoints return:
 - [x] CSS: Added .premium-card, .section-glow, scroll reveal animations
 - [x] Route / = Landing page (public), /login, /signup, /onboarding = auth pages with AuthHeader
 - [x] 15/15 landing + auth scenarios passed (iteration 71)
+- [x] UI FIX (2026-03-21): Added centered section divider lines between Problem/SolutionCore, HowItWorks/AI, Benefits/Modules, FinalCTA/Contact
+- [x] UI FIX (2026-03-21): Increased pricing section spacing (mt-10 → mt-16) between heading and cards
 
 ## Current Phase: Integration & Stability
 Focus: Emergent as standalone full-stack app, endpoint stability
