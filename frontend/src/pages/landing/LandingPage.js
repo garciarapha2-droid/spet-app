@@ -127,19 +127,19 @@ function Hero() {
         <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[300px] h-[600px] rounded-full" style={{ background: 'radial-gradient(ellipse, hsl(258 75% 58% / 0.06), transparent 70%)', filter: 'blur(180px)' }} />
       </div>
 
-      <div className="max-w-[1200px] mx-auto px-6 text-center">
+      <div className="max-w-[1400px] mx-auto px-6 text-center">
         {/* Line 1 */}
         <h1
-          className="text-foreground font-black tracking-[-0.05em] leading-[1.02] transition-all duration-1000"
-          style={{ fontSize: 'clamp(44px, 8vw, 96px)', opacity: show ? 1 : 0, transform: show ? 'translateY(0)' : 'translateY(32px)' }}
+          className="text-foreground font-black tracking-[-0.05em] leading-[1.02] whitespace-nowrap transition-all duration-1000"
+          style={{ fontSize: 'clamp(32px, 6vw, 96px)', opacity: show ? 1 : 0, transform: show ? 'translateY(0)' : 'translateY(32px)' }}
         >
           You're not losing money.
         </h1>
 
         {/* Line 2 — typewriter */}
         <h1
-          className="font-black tracking-[-0.05em] leading-[1.02] mt-2 transition-all duration-1000"
-          style={{ fontSize: 'clamp(44px, 8vw, 96px)', color: 'hsl(var(--foreground) / 0.3)', opacity: show ? 1 : 0, transform: show ? 'translateY(0)' : 'translateY(32px)', transitionDelay: '500ms' }}
+          className="font-black tracking-[-0.05em] leading-[1.02] mt-2 whitespace-nowrap transition-all duration-1000"
+          style={{ fontSize: 'clamp(32px, 6vw, 96px)', color: 'hsl(var(--foreground) / 0.3)', opacity: show ? 1 : 0, transform: show ? 'translateY(0)' : 'translateY(32px)', transitionDelay: '500ms' }}
         >
           {typed}
           {!typedDone && <span className="inline-block w-[3px] h-[0.55em] bg-primary rounded-full ml-1 align-middle animate-pulse" />}
@@ -196,7 +196,7 @@ function Hero() {
 function Section({ id, children, glow, className = '' }) {
   const [ref, revealed] = useScrollReveal(0.1);
   return (
-    <section id={id} ref={ref} className={`relative py-14 md:py-20 px-6 lg:px-10 ${className}`}>
+    <section id={id} ref={ref} className={`relative py-14 md:py-20 px-6 lg:px-10 ${glow ? 'mt-6' : ''} ${className}`}>
       {glow && <div className="section-glow" />}
       <div className={`max-w-[1100px] mx-auto transition-all duration-1000 ${revealed ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
         {children}
@@ -215,7 +215,7 @@ function SectionHeading({ children, center = true }) {
 
 function IconBadge({ children }) {
   return (
-    <div className="w-[52px] h-[52px] rounded-[14px] flex items-center justify-center mx-auto" style={{ background: 'linear-gradient(135deg, hsl(var(--primary) / 0.10), hsl(var(--primary) / 0.03))', border: '1px solid hsl(var(--primary) / 0.06)' }}>
+    <div className="w-[56px] h-[52px] rounded-[14px] flex items-center justify-center mx-auto" style={{ background: 'linear-gradient(135deg, hsl(var(--primary) / 0.10), hsl(var(--primary) / 0.03))', border: '1px solid hsl(var(--primary) / 0.06)' }}>
       {children}
     </div>
   );
@@ -259,7 +259,7 @@ function Problem() {
         <div className="mt-6 space-y-4">
           {pains.map((p, i) => (
             <div key={i} className="flex items-center gap-4">
-              <ArrowRight size={18} className="text-primary shrink-0" strokeWidth={1.5} />
+              <ArrowRight size={18} className="text-primary shrink-0" strokeWidth={1} />
               <span className="text-[17px] md:text-[20px] font-medium" style={{ color: 'hsl(var(--foreground) / 0.75)' }}>{p}</span>
             </div>
           ))}
@@ -268,7 +268,7 @@ function Problem() {
 
       <div className="text-center mt-16 md:mt-22">
         <SectionHeading>
-          Guessing is <span className="text-foreground">expensive.</span>
+          Guessing is <span style={{ color: '#7C3AED' }}>expensive.</span>
         </SectionHeading>
       </div>
     </Section>
@@ -294,7 +294,7 @@ function SolutionCore() {
       <div className="grid md:grid-cols-3 gap-5 mt-10">
         {cards.map((c, i) => (
           <PremiumCard key={i} delay={i * 100} className="text-center">
-            <IconBadge><c.icon size={24} strokeWidth={1.5} className="text-primary" /></IconBadge>
+            <IconBadge><c.icon size={24} strokeWidth={1} className="text-primary" /></IconBadge>
             <h3 className="text-[18px] font-bold text-foreground mt-4 mb-2.5">{c.title}</h3>
             <p className="text-[14px] leading-relaxed" style={{ color: 'hsl(var(--text-secondary))' }}>{c.desc}</p>
           </PremiumCard>
@@ -354,6 +354,8 @@ function HowItWorks() {
    ═══════════════════════════════════════════════════════ */
 
 function AISection() {
+  const [ref, revealed] = useScrollReveal(0.2);
+  const [typed, done] = useTypewriter("It's direction.", 45, revealed);
   const cards = [
     { icon: DollarSign, title: 'Know your revenue drivers', desc: 'Spot top spenders, peak hours, and your best-performing nights.' },
     { icon: AlertTriangle, title: 'Catch problems early', desc: 'Know when something is off — before it becomes a real issue.' },
@@ -362,9 +364,11 @@ function AISection() {
   return (
     <Section id="ai" glow>
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[400px] rounded-full -z-10 pointer-events-none" style={{ background: 'radial-gradient(ellipse, hsl(258 75% 58% / 0.10), transparent 70%)', filter: 'blur(200px)' }} />
-      <SectionHeading>
-        This isn't just data. <span className="gradient-text">It's direction.</span>
-      </SectionHeading>
+      <div ref={ref}>
+        <SectionHeading>
+          This isn't just data. <span className="gradient-text">{typed}{!done && <span className="inline-block w-[3px] h-[0.5em] bg-primary rounded-full ml-0.5 align-middle animate-pulse" />}</span>
+        </SectionHeading>
+      </div>
       <div className="text-center max-w-xl mx-auto mt-4 mb-10">
         <p className="text-base md:text-lg font-medium" style={{ color: 'hsl(var(--text-secondary))' }}>Your data is useless without direction.</p>
         <p className="text-base md:text-lg font-semibold text-foreground mt-1">
@@ -374,7 +378,7 @@ function AISection() {
       <div className="grid md:grid-cols-3 gap-5">
         {cards.map((c, i) => (
           <PremiumCard key={i} delay={i * 100} className="text-center">
-            <IconBadge><c.icon size={24} strokeWidth={1.5} className="text-primary" /></IconBadge>
+            <IconBadge><c.icon size={24} strokeWidth={1} className="text-primary" /></IconBadge>
             <h3 className="text-[18px] font-bold text-foreground mt-4 mb-2.5">{c.title}</h3>
             <p className="text-[14px] leading-relaxed" style={{ color: 'hsl(var(--text-secondary))' }}>{c.desc}</p>
           </PremiumCard>
@@ -402,7 +406,7 @@ function Benefits() {
       <div className="grid md:grid-cols-3 gap-5 mt-10">
         {cards.map((c, i) => (
           <PremiumCard key={i} delay={i * 100} className="text-center">
-            <IconBadge><c.icon size={24} strokeWidth={1.5} className="text-primary" /></IconBadge>
+            <IconBadge><c.icon size={24} strokeWidth={1} className="text-primary" /></IconBadge>
             <h3 className="text-[18px] font-bold text-foreground mt-4 mb-2.5">{c.title}</h3>
             <p className="text-[14px] leading-relaxed" style={{ color: 'hsl(var(--text-secondary))' }}>{c.desc}</p>
           </PremiumCard>
@@ -430,7 +434,7 @@ function Modules() {
         {modules.map((m, i) => (
           <PremiumCard key={i} delay={i * 100}>
             <div className="flex items-start gap-4">
-              <IconBadge><m.icon size={24} strokeWidth={1.5} className="text-primary" /></IconBadge>
+              <IconBadge><m.icon size={24} strokeWidth={1} className="text-primary" /></IconBadge>
               <div>
                 <h3 className="text-[18px] font-bold text-foreground">{m.name}</h3>
                 <p className="text-[12px] mt-0.5" style={{ color: 'hsl(var(--text-tertiary))' }}>{m.sub}</p>
@@ -449,10 +453,10 @@ function Modules() {
    ═══════════════════════════════════════════════════════ */
 
 const PRICING = [
-  { id: 'core', name: 'Spet Core', price: 49, tagline: 'The foundation of your guest system', features: ['1 venue', 'Pulse module (CRM)', 'Guest profiles & history', 'Up to 5 staff members', 'Email support'] },
-  { id: 'flow', name: 'Spet Flow', price: 89, tagline: 'Run your venue in real time', features: ['3 venues', 'Pulse + Tap + Table', 'NFC entry tracking', 'Up to 20 staff members', 'Priority support'] },
-  { id: 'sync', name: 'Spet Sync', price: 149, tagline: 'Full operational control', badge: 'Most Popular', highlight: true, features: ['10 venues', 'All modules + KDS', 'Kitchen coordination', 'Up to 50 staff members', 'Dedicated support'] },
-  { id: 'os', name: 'Spet OS', price: 299, tagline: 'For serious operators', badge: 'For serious operators', features: ['Unlimited venues', 'Everything + AI insights', 'CEO dashboard', 'Unlimited staff', 'Custom onboarding'] },
+  { id: 'core', name: 'Spet Core', price: 49, tagline: 'The foundation of your guest system', features: ['1 venue included', 'Pulse module (CRM & guests)', 'Guest profiles & visit history', 'Up to 5 staff members', 'Email support'] },
+  { id: 'flow', name: 'Spet Flow', price: 89, tagline: 'Run your venue in real time', features: ['Up to 3 venues', 'Everything in Core', 'Tap (NFC bar management)', 'Table (reservation & tracking)', 'Up to 20 staff', 'Priority support'] },
+  { id: 'sync', name: 'Spet Sync', price: 149, tagline: 'Full operational control with kitchen coordination', badge: 'Most Popular', highlight: true, features: ['Up to 10 venues', 'Everything in Flow', 'KDS (Kitchen Display System)', 'Kitchen order coordination', 'Up to 50 staff', 'Dedicated account manager'] },
+  { id: 'os', name: 'Spet OS', price: 299, tagline: 'The operating system for high-performing venues', badge: 'For serious operators', features: ['Unlimited venues', 'Everything in Sync', 'AI-powered insights', 'CEO analytics dashboard', 'Unlimited staff', 'Custom onboarding & training'] },
 ];
 
 function Pricing() {
@@ -489,13 +493,13 @@ function Pricing() {
                   {plan.badge}
                 </span>
               )}
-              <h3 className="text-[14px] font-bold text-foreground">{plan.name}</h3>
-              <p className="text-[12px] mt-1" style={{ color: 'hsl(var(--text-tertiary))' }}>{plan.tagline}</p>
-              <div className="mt-4">
+              <h3 className="text-[14px] font-bold text-foreground text-left">{plan.name}</h3>
+              <p className="text-[12px] mt-1 text-left" style={{ color: 'hsl(var(--text-tertiary))' }}>{plan.tagline}</p>
+              <div className="mt-4 text-left">
                 <span className="text-[28px] font-extrabold tracking-tight text-foreground">${plan.price}</span>
                 <span className="text-[13px] ml-1" style={{ color: 'hsl(var(--text-tertiary))' }}>/month</span>
               </div>
-              <ul className="mt-5 space-y-2.5">
+              <ul className="mt-5 space-y-2.5 text-left">
                 {plan.features.map(f => (
                   <li key={f} className="flex items-start gap-2 text-[13px]" style={{ color: 'hsl(var(--text-secondary))' }}>
                     <Check size={14} className="text-primary shrink-0 mt-0.5" /> {f}
