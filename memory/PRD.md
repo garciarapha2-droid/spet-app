@@ -1,127 +1,86 @@
-# SPET — Product Requirements Document
+# SPET CEO Operating System — PRD
 
-## Architecture
-- **Emergent** = Full-stack app (FastAPI + PostgreSQL + MongoDB + React frontend)
-- **Lovable** = Landing/marketing site only (spetapp.com)
-- **No shared auth** — Emergent owns the complete authenticated experience
-- **Lovable CTAs** point to Emergent app (e.g., Login → spetapp.com/login, Sign Up → spetapp.com/signup)
+## Original Problem Statement
+Build a premium, multi-dashboard "CEO Operating System" with pixel-perfect UI implementation following detailed design specifications. The app includes a landing page, auth flow, venue dashboard, CEO dashboard, and the Pulse operational module.
 
-## Final Route Map
-| Route | Access | Description |
-|---|---|---|
-| `/login` | Public | Login page |
-| `/signup` | Public | Signup + plan selection |
-| `/payment/pending` | Auth | Stripe checkout redirect |
-| `/payment/success` | Auth | Payment confirmation |
-| `/onboarding` | Auth+Active | Multi-step onboarding |
-| `/venue/home` | Protected | Main operational dashboard |
-| `/pulse/entry` | Protected | Guest entry module |
-| `/tap` | Protected | Bar/tabs module |
-| `/table` | Protected | Table management module |
-| `/kitchen` | Protected | Kitchen Display System |
-| `/manager` | Protected | Venue operations |
-| `/owner` | Protected | Multi-venue analytics |
-| `/ceo` | CEO only | Platform-wide metrics |
-| `/app` | Protected | Auto-redirect by role |
-| `/` | Any | → /login (unauth) or role-based (auth) |
+## Core Architecture
+- **Frontend**: React 19 + Tailwind CSS + Shadcn UI + Framer Motion
+- **Backend**: FastAPI + PostgreSQL
+- **Auth**: JWT-based authentication with protected test accounts
+- **Theme**: CSS custom properties (HSL tokens) with data-theme light/dark toggle
 
-## Post-Login Routing
-- CEO → `/ceo`
-- Onboarding incomplete → `/onboarding`
-- Pending payment → `/payment/pending`
-- Operational user → `/venue/home`
+## User Personas
+- **CEO**: Platform admin with access to all dashboards (`garcia.rapha2@gmail.com` / `12345`)
+- **Standard User**: Venue operator with module access (`teste@teste.com` / `12345`)
+- **Onboarding User**: New user in setup flow (`teste1@teste.com` / `12345`)
 
-## Logout Flow
-POST /api/auth/logout → clear tokens → redirect to `/login` (same domain)
+## Implemented Features
 
-## API Response Format
-All `/api/*` endpoints return:
-```json
-{ "success": true|false, "data": {...}|null, "error": null|{"code":"...", "message":"..."} }
-```
+### Landing Page ✅
+- Full marketing landing page with pricing cards
+- File: `frontend/src/pages/landing/LandingPage.js` (750+ lines, refactor planned)
 
-## Product Plans
-| ID | Name | Price | Early Price | Modules | Limits |
-|---|---|---|---|---|---|
-| `core` | Spet Core | $79/mo | $39/mo | Pulse | 1 venue, 5 staff |
-| `flow` | Spet Flow | $149/mo | $59/mo | Pulse, Tap, Table | 3 venues, 20 staff |
-| `sync` | Spet Sync | $299/mo | $99/mo | Pulse, Tap, Table, KDS | 10 venues, 50 staff |
-| `os` | Spet OS | $499/mo | $149/mo | All modules | Unlimited |
+### Auth Flow ✅
+- Login, Signup, Onboarding pages
+- Protected routes with role-based access
+- Axios interceptor for API response envelope unwrapping
 
-## Token Configuration
-| Token | Lifetime |
-|---|---|
-| `access_token` | 1 hour |
-| `refresh_token` | 30 days (single-use rotation) |
+### Venue Home (Dashboard) ✅
+- Pixel-perfect implementation from design spec
+- File: `frontend/src/pages/venue/VenueHomePage.js`
 
-## Demo Accounts
-| Email | Password | Role | Behavior |
-|---|---|---|---|
-| garcia.rapha2@gmail.com | 12345 | CEO | Admin, protected |
-| teste@teste.com | 12345 | USER | Demo full (persistent) |
-| teste1@teste.com | 12345 | USER | Demo onboarding (resets on restart) |
+### CEO Dashboard ✅
+- Sidebar navigation with 12 dashboard pages (mostly placeholders with mock data)
+- Revenue Targets component
+- File: `frontend/src/pages/CeoPage.js` + `frontend/src/components/ceo/`
 
-## Tech Stack
-- FastAPI, PostgreSQL, MongoDB, Stripe
-- React frontend with react-router-dom, Shadcn/UI, Tailwind
-- JWT auth (access + refresh tokens), RBAC middleware
+### Pulse Guest Check-in ✅ (2026-03-20)
+- New page at `/pulse/guest` with dedicated PulseLayout
+- KPI cards (Inside, Entries, Denied) with gradient backgrounds and stagger animations
+- NFC scan/search input with focus glow effect
+- Manual entry button with hover/tap animations
+- Guest list with avatar initials, tier badges, tab numbers, spent amounts
+- Slide-in registration panel with avatar camera/upload, form fields, NFC prefill
+- Full theme support (light + dark mode)
+- Framer Motion animated tab pill in navbar (layoutId spring animation)
+- Files created:
+  - `frontend/src/components/pulse/PulseLayout.js`
+  - `frontend/src/components/pulse/GuestRegistration.js`
+  - `frontend/src/pages/pulse/PulseGuest.js`
+- Files modified:
+  - `frontend/src/index.css` (added success/warning/danger tokens, shadow-card, font-feature-settings, Inter weight 900)
+  - `frontend/tailwind.config.js` (added success color, 2xl border radius)
+  - `frontend/src/App.js` (added /pulse/guest route, updated /pulse redirect)
 
-## Completed
-- [x] Full auth system: signup, login, logout, refresh tokens
-- [x] Stripe payment integration (checkout + webhook)
-- [x] Multi-step onboarding (5 steps)
-- [x] RBAC: require_auth, require_active, require_role
-- [x] Paywall middleware (demo accounts bypass)
-- [x] Standardized response format {success, data, error}
-- [x] Module filtering by user.modules_enabled
-- [x] CEO Dashboard: 14 dashboards, 90+ widgets, all P1 endpoints
-- [x] Protected test users (3 accounts, auto-reset on startup)
-- [x] Centralized logout to /login (same domain)
-- [x] All route guards using React Router <Navigate>
-- [x] Response envelope unwrapping fixed across all pages
-- [x] **Architecture migration (2026-03-20): Emergent-only auth, removed Lovable integration**
-- [x] Removed: handoff route, Lovable redirects, REACT_APP_LOVABLE_LOGIN_URL
-- [x] All 12 auth migration scenarios passed (iteration 69)
-- [x] All 9 module/logout scenarios passed (iteration 68)
-- [x] FEATURE (2026-03-20): Pixel-perfect login page from Lovable design spec — 11/11 passed (iteration 70)
-  - Space Grotesk + Inter fonts, spet-icon-hd.png, .btn-premium, .gradient-text, dark/light mode, error states
-  - Fixed api.js 401 interceptor to skip auth endpoints for proper error display
-- [x] FEATURE (2026-03-20): Landing Page pixel-perfect — 12 sections (Navbar, Hero typewriter, Problem, Solution Core, How It Works, AI, Benefits, Modules, Pricing, FAQ, Final CTA, Contact Form, Footer)
-- [x] FEATURE (2026-03-20): Shared AuthHeader component (back arrow + spet. logo + theme toggle) used in Login, Signup, Onboarding
-- [x] FEATURE (2026-03-20): Signup page premium redesign with plan selection (4 plans: Core/Flow/Sync/OS)
-- [x] FEATURE (2026-03-20): Landing → Login → Signup flow with consistent navigation
-- [x] CSS: Added .premium-card, .section-glow, scroll reveal animations
-- [x] Route / = Landing page (public), /login, /signup, /onboarding = auth pages with AuthHeader
-- [x] 15/15 landing + auth scenarios passed (iteration 71)
-- [x] UI FIX (2026-03-21): Added centered section divider lines between Problem/SolutionCore, HowItWorks/AI, Benefits/Modules, FinalCTA/Contact
-- [x] UI FIX (2026-03-21): Increased pricing section spacing (mt-10 → mt-16) between heading and cards
-- [x] AUTH FIX (2026-03-21): Added logout button to AuthHeader (auto-detected via isAuthenticated)
-- [x] AUTH FIX (2026-03-21): OnboardingPage now shows logout in header (uses AuthHeader with auto-detection)
-- [x] ACCESS FIX (2026-03-21): Updated teste1@teste.com from plan "flow" to "sync" with full module permissions
-- [x] GLOBAL: All logout buttons use centralized handleFullLogout (clear tokens → redirect /login)
-- [x] BUG FIX (2026-03-21): Added auto-unwrap interceptor in api.js for standard {success, data, error} envelope — fixed Manager/Owner crash
-- [x] DASHBOARD REBUILD (2026-03-21): Pixel-perfect Dashboard/Venue Home Screen rebuilt from spec
-  - Navbar: spet. logo + venue name + modules icon grid dropdown + email + theme toggle + logout
-  - Calendar: Rounded-full day cells, event dots, month navigation
-  - Event Panel: Date header, empty state, event cards with status badges
-  - Enter Button: Premium gradient, hover animations
-  - Inside Now: Guest count badge, refresh, guest list with avatars
-  - Responsive: grid-cols-1 on mobile, grid-cols-[1fr_400px] on desktop
+## Design System
+- CSS custom properties with HSL tokens in `:root` / `[data-theme]`
+- Font families: Inter (UI), Space Grotesk (brand)
+- Primary: `258 75% 58%` (#7C3AED purple)
+- Success: `160 84% 39%` (#10B981 green)
+- Destructive: `0 62% 50%` (#CE2D2D red)
+- Radius: 0.5rem (global), explicit 2xl=16px for Pulse cards
 
-- [x] CEO OS v2.0 REBUILD (2026-03-21): New sidebar with DASHBOARDS (12 items) + CRM (2 items) groups
-  - Preserved: header, sidebar, revenue targets, footer, dark/light, spacing, typography
-  - Removed: Growth, Marketing, Sales, Customers, Product dashboards
-  - Added: Customer Lifecycle, MRR Retention, CAC & Metrics, Lead Breakdown, Sales KPIs, Cash Flow & MRR, Conversion Rate, Executive, Startup KPIs, CRM Pipeline, CRM Reports
-  - CRM Pipeline: Kanban board with 6 stages, deal cards, search, tags
-  - All 14 sections navigable with consistent mock/placeholder content
+## Prioritized Backlog
 
-## Current Phase: Integration & Stability
-Focus: Emergent as standalone full-stack app, endpoint stability
+### P0 (Done)
+- ✅ Pulse Guest Check-in page
 
-## Backlog
-- [ ] CEO Dashboard P2 endpoints: /api/ceo/conversion-rates
-- [ ] CEO Dashboard P3 endpoints: /api/ceo/crm-reports, /api/ceo/startup-kpis, /api/ceo/mrr-retention
-- [ ] Subscription management (upgrade/downgrade)
-- [ ] Team invite system
-- [ ] Push notifications / PWA
-- [ ] DB consolidation (MongoDB → PostgreSQL)
+### P1 (Next)
+- Implement remaining Pulse module pages (/pulse/inside, /pulse/bar, /pulse/exit, /pulse/rewards) with new PulseLayout
+- Connect CEO dashboards to real backend APIs
+- Implement /api/ceo/conversion-rates endpoint
+- Apply pixel-perfect UI to Signup Page
+
+### P2
+- Implement P3 CEO Dashboard endpoints (crm-reports, startup-kpis, mrr-retention)
+- Subscription management APIs
+- Team invite system
+
+### P3
+- Refactor LandingPage.js into smaller components
+- Pricing card alignment (user verification pending, recurrence count: 3)
+
+## Known Issues
+- Most CEO dashboard pages use placeholder/mock data
+- LandingPage.js is monolithic (750+ lines)
+- Pricing card alignment (low priority, user moved on)

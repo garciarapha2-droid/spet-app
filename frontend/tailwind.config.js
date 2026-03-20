@@ -13,7 +13,8 @@ module.exports = {
                 borderRadius: {
                         lg: 'var(--radius)',
                         md: 'calc(var(--radius) - 2px)',
-                        sm: 'calc(var(--radius) - 4px)'
+                        sm: 'calc(var(--radius) - 4px)',
+                        '2xl': '16px'
                 },
                 colors: {
                         background: 'hsl(var(--background))',
@@ -45,6 +46,10 @@ module.exports = {
                         destructive: {
                                 DEFAULT: 'hsl(var(--destructive))',
                                 foreground: 'hsl(var(--destructive-foreground))'
+                        },
+                        success: {
+                                DEFAULT: 'hsl(var(--success))',
+                                foreground: 'hsl(var(--success-foreground))'
                         },
                         border: 'hsl(var(--border))',
                         input: 'hsl(var(--input))',

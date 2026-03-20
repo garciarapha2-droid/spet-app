@@ -20,6 +20,7 @@ import OnboardingPage from './pages/onboarding/OnboardingPage';
 // Protected pages
 import { VenueSelectPage } from './pages/venue/VenueHomePage';
 import { PulseEntryPage } from './pages/pulse/PulseEntryPage';
+import PulseGuest from './pages/pulse/PulseGuest';
 import { PulseInsidePage } from './pages/pulse/PulseInsidePage';
 import { PulseExitPage } from './pages/pulse/PulseExitPage';
 import { PulseBarPage } from './pages/pulse/PulseBarPage';
@@ -64,7 +65,8 @@ function App() {
               {/* Protected routes (require auth + active + onboarded) */}
               <Route path="/venue/home" element={<ProtectedRoute><VenueSelectPage /></ProtectedRoute>} />
               <Route path="/modules" element={<ProtectedRoute><Navigate to="/venue/home" replace /></ProtectedRoute>} />
-              <Route path="/pulse" element={<ProtectedRoute><Navigate to="/pulse/entry" replace /></ProtectedRoute>} />
+              <Route path="/pulse" element={<ProtectedRoute><Navigate to="/pulse/guest" replace /></ProtectedRoute>} />
+              <Route path="/pulse/guest" element={<ProtectedRoute><PulseGuest /></ProtectedRoute>} />
               <Route path="/pulse/entry" element={<ProtectedRoute><PulseEntryPage /></ProtectedRoute>} />
               <Route path="/pulse/inside" element={<ProtectedRoute><PulseInsidePage /></ProtectedRoute>} />
               <Route path="/pulse/bar" element={<ProtectedRoute><PulseBarPage /></ProtectedRoute>} />
