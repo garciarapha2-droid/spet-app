@@ -1,7 +1,7 @@
 # SPET CEO Operating System — PRD
 
 ## Original Problem Statement
-Build a premium, multi-dashboard "CEO Operating System" with pixel-perfect UI implementation following detailed design specifications. The app includes a landing page, auth flow, venue dashboard, CEO dashboard, and the Pulse operational module.
+Build a premium, multi-dashboard "CEO Operating System" with pixel-perfect UI implementation following detailed design specifications. The app includes a landing page, auth flow, venue dashboard, CEO dashboard, the Pulse operational module, and independent TAP/TABLE order modules.
 
 ## Core Architecture
 - **Frontend**: React 19 + Tailwind CSS + Shadcn UI + Framer Motion
@@ -12,7 +12,7 @@ Build a premium, multi-dashboard "CEO Operating System" with pixel-perfect UI im
 ## User Personas
 - **CEO**: Platform admin with access to all dashboards (`garcia.rapha2@gmail.com` / `12345`)
 - **Standard User**: Venue operator with module access (`teste@teste.com` / `12345`)
-- **Onboarding User**: New user in setup flow (`teste1@teste.com` / `12345`)
+- **Onboarding User**: New user in setup flow (`teste1@teste.com` / `123456`)
 
 ## Implemented Features
 
@@ -23,77 +23,62 @@ Build a premium, multi-dashboard "CEO Operating System" with pixel-perfect UI im
 ### Auth Flow
 - Login, Signup, Onboarding pages
 - Protected routes with role-based access
-- Axios interceptor for API response envelope unwrapping
 
 ### Venue Home (Dashboard)
 - Pixel-perfect implementation from design spec
-- File: `frontend/src/pages/venue/VenueHomePage.js`
 
 ### CEO Dashboard
 - Sidebar navigation with 12 dashboard pages (mostly placeholders with mock data)
-- Revenue Targets component
-- File: `frontend/src/pages/CeoPage.js` + `frontend/src/components/ceo/`
 
-### Pulse Guest Check-in (2026-03-20)
-- Implementation + Visual Audit completed
-- Files: `PulseLayout.js`, `GuestRegistration.js`, `PulseGuest.js`
-- CSS scope `.pulse-scope` for isolated styling
+### Pulse Module — All 5 Pages Complete (2026-03-20)
+All pages use `PulseLayout` with consistent navbar, tab navigation, design system.
 
-### TAP & TABLE Modules — Architecture Correction (2026-03-20)
-**TAP and TABLE are independent modules, NOT part of Pulse.**
+| Page | Route | Component | Status |
+|------|-------|-----------|--------|
+| Check-in | `/pulse/guest` | PulseGuest.js | Done (pixel-perfect spec) |
+| Inside (Live Floor) | `/pulse/inside` | PulseInsidePage.js | Done |
+| Orders (TAP-only) | `/pulse/bar` | PulseBarPage.js | Done (embedded TapTableView) |
+| Exit (Check Out) | `/pulse/exit` | PulseExitPage.js | Done |
+| Membership | `/pulse/rewards` | PulseRewardsPage.js | Done |
 
-#### What was done:
-- Created shared component `src/components/orders/TapTableView.js` with all visual/spec from the TAP & TABLE redesign
-- TAP lives at `/tap` as its own module
-- TABLE lives at `/table` as its own module
-- Both use bidirectional toggle (TAP ↔ TABLE) with animated mode switcher and URL sync
-- Removed "Orders" tab from Pulse module (`PulseLayout.js`)
-- `/pulse/bar` now redirects to `/tap`
-- Standalone navbar (brand, venue, theme toggle, home, logout)
+### TAP & TABLE — Independent Modules (2026-03-20)
+**Architecture**: TAP and TABLE are NOT part of Pulse. They are standalone modules.
 
-#### Files:
-- `src/components/orders/TapTableView.js` — Shared visual component (standalone, no PulseLayout)
-- `src/pages/TapPage.js` — Thin wrapper: `<TapTableView defaultMode="tap" />`
-- `src/pages/TablePage.js` — Thin wrapper: `<TapTableView defaultMode="table" />`
-- `src/data/pulseData.js` — Mock data for TAP/TABLE
+| Module | Route | Mode | Mode Switcher |
+|--------|-------|------|---------------|
+| TAP | `/tap` | tap (default) | Bidirectional TAP/TABLE toggle |
+| TABLE | `/table` | table (default) | Bidirectional TAP/TABLE toggle |
 
-#### Routes:
-| Module | Route | Default Mode |
-|--------|-------|-------------|
-| TAP | `/tap` | tap |
-| TABLE | `/table` | table |
-| Legacy | `/pulse/bar` | Redirects to `/tap` |
+**Shared component**: `components/orders/TapTableView.js` supports both standalone and embedded modes.
 
-#### Note: Currently using MOCK data from `pulseData.js`. Real API integration is a future task.
+**Business Rules**:
+- TAP mode: No age verification. Identity verification (photo + name) required before confirming order (anti-fraud)
+- TABLE mode: Age verification for alcoholic items, once per table session. No identity verification.
 
 ## Design System
-- CSS custom properties with HSL tokens in `:root` / `[data-theme]`
+- CSS custom properties with HSL tokens
 - **Pulse scope** (`.pulse-scope`): `--radius: 0.875rem`, `text-xs: 12px`
 - Font families: Inter (UI), Space Grotesk (brand)
 - Primary: `258 75% 58%` (#7C3AED purple)
-- Success: `160 84% 39%` (#10B981 green)
-- Destructive: `0 62% 50%` (#CE2D2D red)
 
 ## Prioritized Backlog
 
 ### P1 (Next)
-- Connect TAP/TABLE to real backend APIs (replace mock data)
-- Implement remaining Pulse module pages (/pulse/inside, /pulse/exit, /pulse/rewards)
-- Connect CEO dashboards to real backend APIs
+- Connect TAP/TABLE and Pulse to real backend APIs (replace mock data)
 - Implement /api/ceo/conversion-rates endpoint
-- Apply pixel-perfect UI to Signup Page
+- Pixel-perfect Signup Page
 
 ### P2
-- Implement P3 CEO Dashboard endpoints (crm-reports, startup-kpis, mrr-retention)
+- CEO Dashboard endpoints (crm-reports, startup-kpis, mrr-retention)
 - Subscription management APIs
 - Team invite system
+- Manager-configurable identity verification rule
 
 ### P3
 - Refactor LandingPage.js into smaller components
-- Pricing card alignment (user verification pending, recurrence count: 3)
+- Pricing card alignment (user verification pending)
 
 ## Known Issues
-- TAP/TABLE modules use MOCK data (hardcoded in pulseData.js)
-- Most CEO dashboard pages use placeholder/mock data
+- All Pulse pages and TAP/TABLE use MOCK data
+- CEO dashboard pages mostly placeholders
 - LandingPage.js is monolithic (750+ lines)
-- Pulse Guest Check-in uses MOCK guest data

@@ -1,132 +1,230 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { PulseHeader } from '../../components/PulseHeader';
-import { pulseAPI } from '../../services/api';
-import { toast } from 'sonner';
-import { Users, Crown, LogIn, User, Search, DollarSign, ShieldAlert } from 'lucide-react';
-import { Button } from '../../components/ui/button';
-import { Input } from '../../components/ui/input';
+import { useState } from "react";
+import { PulseLayout } from "../../components/pulse/PulseLayout";
+import { motion } from "framer-motion";
+import { Users, Zap, Clock, Search } from "lucide-react";
+import { mockGuests } from "../../data/pulseData";
 
-const VENUE_ID = () => localStorage.getItem('active_venue_id') || '40a24e04-75b6-435d-bfff-ab0d469ce543';
+export default function PulseInsidePage() {
+  const [search, setSearch] = useState("");
 
-export const PulseInsidePage = () => {
-  const navigate = useNavigate();
-  const [guests, setGuests] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
+  const insideGuests = mockGuests.filter((g) => g.status === "inside");
+  const filteredGuests = insideGuests.filter(
+    (g) =>
+      !search ||
+      g.name.toLowerCase().includes(search.toLowerCase()) ||
+      g.tabNumber.toString().includes(search)
+  );
 
-  const loadInside = useCallback(async () => {
-    try {
-      const res = await pulseAPI.getInsideGuests(VENUE_ID());
-      setGuests(res.data.guests || []);
-    } catch (err) {
-      console.error('Failed to load inside guests:', err);
-    }
-    setLoading(false);
-  }, []);
+  const totalSpend = insideGuests.reduce((s, g) => s + g.totalSpent, 0);
 
-  useEffect(() => { loadInside(); }, [loadInside]);
-
-  const handleExit = async (e, guestId, guestName) => {
-    e.stopPropagation();
-    try {
-      const fd = new FormData();
-      fd.append('guest_id', guestId);
-      fd.append('venue_id', VENUE_ID());
-      await pulseAPI.registerExit(fd);
-      toast.success(`${guestName} exited`);
-      await loadInside();
-    } catch (err) {
-      toast.error('Failed to register exit');
-    }
+  const getStayDuration = (checkedInAt) => {
+    const ms = Date.now() - new Date(checkedInAt).getTime();
+    const h = Math.floor(ms / 3600000);
+    const m = Math.floor((ms % 3600000) / 60000);
+    return `${h}h ${m}m`;
   };
 
-  const filtered = search
-    ? guests.filter(g => g.guest_name.toLowerCase().includes(search.toLowerCase()))
-    : guests;
+  const avgStayMs =
+    insideGuests.length > 0
+      ? insideGuests.reduce(
+          (s, g) => s + (Date.now() - new Date(g.checkedInAt).getTime()),
+          0
+        ) / insideGuests.length
+      : 0;
+  const avgH = Math.floor(avgStayMs / 3600000);
+  const avgM = Math.floor((avgStayMs % 3600000) / 60000);
+
+  const kpis = [
+    {
+      label: "Total Spend",
+      value: `$${totalSpend.toFixed(2)}`,
+      icon: Zap,
+      gradient: "from-primary/20 to-primary/5",
+      iconColor: "text-amber-500",
+      iconBg: "bg-amber-500/10",
+    },
+    {
+      label: "Avg Stay",
+      value: `${avgH}h ${avgM}m`,
+      icon: Clock,
+      gradient: "from-muted/60 to-muted/20",
+      iconColor: "text-muted-foreground",
+      iconBg: "bg-muted/50",
+    },
+  ];
 
   return (
-    <div className="min-h-screen bg-background" data-testid="inside-page">
-      <PulseHeader />
-      <main className="w-full px-16 py-10 max-w-[1400px] mx-auto">
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h2 className="text-3xl font-bold tracking-tight">Inside Now</h2>
-            <p className="text-lg text-muted-foreground mt-1">{guests.length} guest{guests.length !== 1 ? 's' : ''} currently inside</p>
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center">
-              <Users className="h-7 w-7 text-primary" />
+    <PulseLayout>
+      {/* Title */}
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <h2 className="text-lg font-bold text-foreground tracking-normal" data-testid="inside-title">
+            Live Floor
+          </h2>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Real-time guest presence
+          </p>
+        </div>
+      </div>
+
+      {/* KPI Row */}
+      <div className="grid grid-cols-3 gap-4 mb-8" data-testid="inside-kpis">
+        {kpis.map((kpi, i) => {
+          const Icon = kpi.icon;
+          return (
+            <motion.div
+              key={kpi.label}
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: i * 0.08, duration: 0.4 }}
+              className={`relative overflow-hidden rounded-2xl border border-border/50 bg-gradient-to-br ${kpi.gradient} p-5`}
+              data-testid={`kpi-${kpi.label.toLowerCase().replace(/\s+/g, "-")}`}
+            >
+              <div className="flex items-center gap-3">
+                <div className={`h-10 w-10 rounded-xl ${kpi.iconBg} flex items-center justify-center`}>
+                  <Icon className={`h-5 w-5 ${kpi.iconColor}`} />
+                </div>
+                <div>
+                  <div className="text-[10px] font-semibold uppercase tracking-[0.15em] text-muted-foreground">
+                    {kpi.label}
+                  </div>
+                  <div className="text-xl font-extrabold text-foreground tabular-nums tracking-tight">
+                    {kpi.value}
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          );
+        })}
+
+        {/* Inside Now — prominent card */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.16, duration: 0.4 }}
+          className="relative overflow-hidden rounded-2xl border border-primary/30 bg-gradient-to-br from-primary/20 to-primary/5 p-5"
+          data-testid="kpi-inside-now"
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="relative">
+                <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                  <Users className="h-5 w-5 text-primary" />
+                </div>
+                <div className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-emerald-400 border-2 border-card" />
+              </div>
+              <div>
+                <div className="text-5xl font-extrabold text-foreground tabular-nums tracking-tight leading-none">
+                  {insideGuests.length}
+                </div>
+              </div>
             </div>
-            <span className="text-5xl font-bold" data-testid="inside-count">{guests.length}</span>
+            <div className="text-[10px] font-bold uppercase tracking-[0.15em] text-primary">
+              Inside Now
+            </div>
           </div>
-        </div>
+        </motion.div>
+      </div>
 
-        {/* Search */}
-        <div className="relative mb-6 max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input value={search} onChange={e => setSearch(e.target.value)}
-            placeholder="Search guest..." className="pl-10" data-testid="inside-search" />
+      {/* Search */}
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2, duration: 0.4 }}
+        className="mb-8"
+      >
+        <div className="relative max-w-md">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Find guest..."
+            className="w-full h-10 pl-9 pr-4 rounded-xl border border-border/30 bg-card/40 text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary/40 focus:shadow-[0_0_0_3px_hsl(258_75%_58%/0.1)] transition-all"
+            data-testid="inside-search"
+          />
         </div>
+      </motion.div>
 
-        {loading ? (
-          <div className="py-20 text-center text-muted-foreground">Loading...</div>
-        ) : filtered.length === 0 ? (
-          <div className="flex flex-col items-center py-20 text-muted-foreground">
-            <Users className="h-16 w-16 mb-4 opacity-20" />
-            <p className="text-xl">{search ? 'No matches' : 'No guests inside right now'}</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-3 gap-4">
-            {filtered.map((g) => (
-              <div key={g.guest_id}
-                onClick={() => navigate(`/pulse/guest/${g.guest_id}`)}
-                className="flex items-center gap-4 p-5 rounded-xl border border-border hover:border-primary/30 hover:bg-primary/5 transition-all cursor-pointer"
-                data-testid={`inside-guest-${g.guest_id}`}>
-                {g.guest_photo ? (
-                  <img src={g.guest_photo} alt="" className="w-14 h-14 rounded-full object-cover" />
+      {/* Guest Cards Grid */}
+      {filteredGuests.length === 0 ? (
+        <div className="text-center py-16" data-testid="inside-empty">
+          <Users className="h-12 w-12 text-muted-foreground/20 mx-auto mb-3" />
+          <p className="text-sm text-muted-foreground">
+            {search ? "No matches" : "No guests inside right now"}
+          </p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" data-testid="inside-guests-grid">
+          {filteredGuests.map((guest, i) => (
+            <motion.div
+              key={guest.id}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.25 + i * 0.06, duration: 0.4 }}
+              whileHover={{ y: -2 }}
+              className="p-5 rounded-2xl border border-border/30 bg-card/60 backdrop-blur hover:border-primary/20 hover:shadow-lg hover:shadow-primary/5 transition-all cursor-pointer"
+              data-testid={`inside-guest-${guest.id}`}
+            >
+              {/* Avatar + Name */}
+              <div className="flex items-center gap-3 mb-4">
+                {guest.photo ? (
+                  <img
+                    src={guest.photo}
+                    alt={guest.name}
+                    className="h-11 w-11 rounded-xl object-cover"
+                  />
                 ) : (
-                  <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center">
-                    <User className="h-6 w-6 text-muted-foreground" />
+                  <div className="h-11 w-11 rounded-xl bg-gradient-to-br from-primary/20 to-accent/10 flex items-center justify-center flex-shrink-0">
+                    <span className="text-sm font-bold text-primary">
+                      {guest.name
+                        .split(" ")
+                        .map((n) => n[0])
+                        .join("")}
+                    </span>
                   </div>
                 )}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <p className="font-semibold truncate">{g.guest_name}</p>
-                    {g.guest_status === 'Blocked' && (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-destructive/10 text-destructive text-xs font-medium" data-testid={`status-blocked-${g.guest_id}`}>
-                        <ShieldAlert className="h-3 w-3" /> Blocked
-                      </span>
-                    )}
-                  </div>
-                  {g.tab_number && (
-                    <p className="text-sm font-semibold text-primary" data-testid={`tab-number-${g.guest_id}`}>
-                      Tab #{g.tab_number} {g.tab_total != null ? `— $${g.tab_total.toFixed(2)}` : ''}
-                    </p>
-                  )}
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
-                    <LogIn className="h-3 w-3" />
-                    <span>{new Date(g.entered_at).toLocaleTimeString()}</span>
-                    <span className="text-muted-foreground/50">|</span>
-                    <span>{g.entry_type?.replace(/_/g, ' ')}</span>
-                  </div>
-                  {g.tags?.includes('vip') && (
-                    <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-full bg-primary/10 text-primary text-xs font-medium">
-                      <Crown className="h-3 w-3" /> VIP
-                    </span>
-                  )}
+                <div>
+                  <p className="text-sm font-semibold text-foreground">
+                    {guest.name}
+                  </p>
+                  <p className="text-xs font-mono text-primary/70">
+                    #{guest.tabNumber}
+                  </p>
                 </div>
-                <Button variant="outline" size="sm"
-                  onClick={(e) => handleExit(e, g.guest_id, g.guest_name)}
-                  className="text-destructive border-destructive/30 hover:bg-destructive/10"
-                  data-testid={`exit-btn-${g.guest_id}`}>
-                  Exit
-                </Button>
               </div>
-            ))}
-          </div>
-        )}
-      </main>
-    </div>
+
+              {/* Stats Row */}
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <div className="text-[9px] font-bold uppercase tracking-[0.15em] text-muted-foreground mb-0.5">
+                    Tier
+                  </div>
+                  <p className="text-xs font-semibold text-foreground">
+                    {guest.tier}
+                  </p>
+                </div>
+                <div>
+                  <div className="text-[9px] font-bold uppercase tracking-[0.15em] text-muted-foreground mb-0.5">
+                    Spent
+                  </div>
+                  <p className="text-xs font-semibold text-foreground tabular-nums">
+                    ${guest.totalSpent.toFixed(0)}
+                  </p>
+                </div>
+                <div>
+                  <div className="text-[9px] font-bold uppercase tracking-[0.15em] text-muted-foreground mb-0.5">
+                    Time
+                  </div>
+                  <p className="text-xs font-semibold text-foreground tabular-nums">
+                    {getStayDuration(guest.checkedInAt)}
+                  </p>
+                </div>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      )}
+    </PulseLayout>
   );
-};
+}

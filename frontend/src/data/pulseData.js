@@ -132,3 +132,21 @@ export const categoryAccents = {
 export const alcoholicCategories = ["Cocktails", "Beers", "Spirits"];
 
 export const pointsPerDollar = 2;
+
+
+// ── Membership Tiers ──
+export const membershipTiers = [
+  { name: "Bronze", minPoints: 0, color: "#CD7F32", perks: "Basic member" },
+  { name: "Silver", minPoints: 500, color: "#A0A0A0", perks: "Priority entry" },
+  { name: "Gold", minPoints: 2000, color: "#DAA520", perks: "VIP access + free drink" },
+  { name: "Platinum", minPoints: 5000, color: "#7B7B7B", perks: "All perks + reserved table" },
+];
+
+// ── Available Rewards ──
+export const availableRewards = [
+  { id: "r1", name: "Free Beer", pointsCost: 100, active: true },
+  { id: "r2", name: "Free Cocktail", pointsCost: 200, active: true },
+  { id: "r3", name: "VIP Table (1h)", pointsCost: 500, active: true },
+  { id: "r4", name: "Bottle Service", pointsCost: 1500, active: true },
+  { id: "r5", name: "Private Event Access", pointsCost: 3000, active: true },
+];

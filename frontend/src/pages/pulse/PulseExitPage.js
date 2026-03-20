@@ -1,262 +1,307 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { PulseHeader } from '../../components/PulseHeader';
-import { pulseAPI, tapAPI } from '../../services/api';
-import { toast } from 'sonner';
-import { LogOut, User, Search, Clock, ArrowDownRight, ArrowUpRight, AlertTriangle, Ban, X, CreditCard, CheckCircle } from 'lucide-react';
-import { Input } from '../../components/ui/input';
-import { Button } from '../../components/ui/button';
+import { useState } from "react";
+import { PulseLayout } from "../../components/pulse/PulseLayout";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  LogOut, User, Search, Clock, ArrowUpRight, ArrowDownRight, X,
+} from "lucide-react";
+import { toast } from "sonner";
+import { mockGuests } from "../../data/pulseData";
 
-const VENUE_ID = () => localStorage.getItem('active_venue_id') || '40a24e04-75b6-435d-bfff-ab0d469ce543';
+export default function PulseExitPage() {
+  const [search, setSearch] = useState("");
+  const [guests, setGuests] = useState(mockGuests);
+  const [showExitConfirm, setShowExitConfirm] = useState(null);
 
-export const PulseExitPage = () => {
-  const navigate = useNavigate();
-  const [guests, setGuests] = useState([]);
-  const [search, setSearch] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [todayExits, setTodayExits] = useState([]);
-  const [exitModal, setExitModal] = useState(null);
-  const [processingPayment, setProcessingPayment] = useState(false);
+  const insideGuests = guests.filter((g) => g.status === "inside");
+  const exitedGuests = guests.filter((g) => g.status === "exited");
 
-  const loadData = useCallback(async () => {
-    try {
-      const [insideRes, exitsRes] = await Promise.all([
-        pulseAPI.getInsideGuests(VENUE_ID()),
-        pulseAPI.getTodayExits(VENUE_ID()),
-      ]);
-      setGuests(insideRes.data.guests || []);
-      setTodayExits(exitsRes.data.exits || []);
-    } catch (err) {
-      console.error(err);
-    }
-    setLoading(false);
-  }, []);
+  const filteredGuests = insideGuests.filter(
+    (g) =>
+      !search ||
+      g.name.toLowerCase().includes(search.toLowerCase()) ||
+      g.tabNumber.toString().includes(search)
+  );
 
-  useEffect(() => { loadData(); }, [loadData]);
-
-  const handleExit = async (guestId, guestName) => {
-    // Check for blocked wristband
-    try {
-      const guestRes = await pulseAPI.getGuest(guestId, VENUE_ID());
-      if (guestRes.data.wristband_blocked) {
-        setExitModal({ type: 'blocked', guest: { guestId, guestName } });
-        return;
-      }
-    } catch {}
-    // Check for open tabs
-    try {
-      const tabRes = await pulseAPI.getTabStatus(guestId, VENUE_ID());
-      if (tabRes.data.has_open_tabs) {
-        setExitModal({ type: 'open_tab', guest: { guestId, guestName }, data: tabRes.data });
-        return;
-      }
-    } catch {}
-    // All clear — register exit
-    try {
-      const fd = new FormData();
-      fd.append('guest_id', guestId);
-      fd.append('venue_id', VENUE_ID());
-      await pulseAPI.registerExit(fd);
-      toast.success(`${guestName} checked out`);
-      await loadData();
-    } catch (err) {
-      toast.error('Failed to register exit');
-    }
+  const handleExit = (guestId) => {
+    setGuests((prev) =>
+      prev.map((g) =>
+        g.id === guestId
+          ? { ...g, status: "exited", checkedOutAt: new Date().toISOString() }
+          : g
+      )
+    );
+    const guest = guests.find((g) => g.id === guestId);
+    setShowExitConfirm(null);
+    toast.success(`${guest?.name} checked out`);
   };
 
-  const filtered = search
-    ? guests.filter(g => g.guest_name.toLowerCase().includes(search.toLowerCase()))
-    : guests;
+  const getStayDuration = (checkedIn, checkedOut) => {
+    const end = checkedOut ? new Date(checkedOut) : new Date();
+    const ms = end.getTime() - new Date(checkedIn).getTime();
+    const h = Math.floor(ms / 3600000);
+    const m = Math.floor((ms % 3600000) / 60000);
+    return `${h}h ${m}m`;
+  };
 
   return (
-    <div className="min-h-screen bg-background" data-testid="exit-page">
-      <PulseHeader />
-      <main className="w-full px-8 py-8 max-w-[1400px] mx-auto">
-        <div className="grid grid-cols-12 gap-10">
-          {/* Left: Inside guests for exit */}
-          <div className="col-span-7">
-            <h2 className="text-3xl font-bold tracking-tight mb-2">Register Exit</h2>
-            <p className="text-lg text-muted-foreground mb-6">{guests.length} guest{guests.length !== 1 ? 's' : ''} inside — tap to check out</p>
+    <PulseLayout>
+      {/* Title */}
+      <div className="mb-8">
+        <h2 className="text-lg font-bold text-foreground tracking-normal" data-testid="exit-title">
+          Check Out
+        </h2>
+        <p className="text-xs text-muted-foreground mt-0.5">
+          {insideGuests.length} guest{insideGuests.length !== 1 ? "s" : ""} inside — tap to register exit
+        </p>
+      </div>
 
-            <div className="relative mb-6">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input value={search} onChange={e => setSearch(e.target.value)}
-                placeholder="Search guest..." className="pl-10"
-                data-testid="exit-search-input" />
+      <div className="grid grid-cols-12 gap-8">
+        {/* Left: Inside guests */}
+        <div className="col-span-7">
+          {/* Search */}
+          <div className="relative mb-6">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search guest..."
+              className="w-full h-10 pl-9 pr-4 rounded-xl border border-border/30 bg-card/40 text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary/40 focus:shadow-[0_0_0_3px_hsl(258_75%_58%/0.1)] transition-all"
+              data-testid="exit-search"
+            />
+          </div>
+
+          {filteredGuests.length === 0 ? (
+            <div className="text-center py-16" data-testid="exit-empty">
+              <LogOut className="h-12 w-12 text-muted-foreground/20 mx-auto mb-3" />
+              <p className="text-sm text-muted-foreground">
+                {search ? "No matches" : "No guests inside"}
+              </p>
             </div>
+          ) : (
+            <div className="space-y-2" data-testid="exit-guest-list">
+              {filteredGuests.map((guest, i) => (
+                <motion.div
+                  key={guest.id}
+                  initial={{ opacity: 0, x: -12 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.1 + i * 0.05 }}
+                  whileHover={{ x: 4 }}
+                  className="flex items-center gap-4 p-4 rounded-2xl border border-border/30 bg-card/60 backdrop-blur hover:border-destructive/20 hover:bg-card/80 transition-all cursor-pointer"
+                  onClick={() => setShowExitConfirm(guest.id)}
+                  data-testid={`exit-guest-${guest.id}`}
+                >
+                  {/* Avatar */}
+                  {guest.photo ? (
+                    <img
+                      src={guest.photo}
+                      alt={guest.name}
+                      className="h-11 w-11 rounded-xl object-cover flex-shrink-0"
+                    />
+                  ) : (
+                    <div className="h-11 w-11 rounded-xl bg-gradient-to-br from-primary/20 to-accent/10 flex items-center justify-center flex-shrink-0">
+                      <span className="text-sm font-bold text-primary">
+                        {guest.name
+                          .split(" ")
+                          .map((n) => n[0])
+                          .join("")}
+                      </span>
+                    </div>
+                  )}
 
-            {loading ? (
-              <div className="py-20 text-center text-muted-foreground">Loading...</div>
-            ) : filtered.length === 0 ? (
-              <div className="flex flex-col items-center py-20 text-muted-foreground">
-                <LogOut className="h-16 w-16 mb-4 opacity-20" />
-                <p className="text-xl">{search ? 'No matches' : 'No guests inside'}</p>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {filtered.map((g) => (
-                  <div key={g.guest_id}
-                    className="flex items-center gap-4 p-4 rounded-xl border border-border hover:border-destructive/30 hover:bg-destructive/5 transition-all cursor-pointer"
-                    onClick={() => handleExit(g.guest_id, g.guest_name)}
-                    data-testid={`exit-guest-${g.guest_id}`}>
-                    {g.guest_photo ? (
-                      <img src={g.guest_photo} alt="" className="w-12 h-12 rounded-full object-cover" />
-                    ) : (
-                      <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
-                        <User className="h-5 w-5 text-muted-foreground" />
-                      </div>
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <p className="font-semibold truncate">{g.guest_name}</p>
-                        {g.tab_number && <span className="text-primary font-bold text-sm" data-testid={`exit-tab-${g.guest_id}`}>#{g.tab_number}</span>}
-                      </div>
-                      <p className="text-xs text-muted-foreground flex items-center gap-1">
-                        <ArrowUpRight className="h-3 w-3 text-green-500" />
-                        In since {new Date(g.entered_at).toLocaleTimeString()} — {g.entry_type?.replace(/_/g, ' ')}
+                  {/* Info */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-semibold text-foreground truncate">
+                        {guest.name}
                       </p>
+                      <span className="text-xs font-mono font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded-md">
+                        #{guest.tabNumber}
+                      </span>
                     </div>
-                    <Button variant="destructive" size="sm">
-                      <LogOut className="h-4 w-4 mr-1" /> Exit
-                    </Button>
+                    <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
+                      <span className="px-2 py-0.5 rounded-full bg-muted/50 text-[10px] font-medium">
+                        {guest.tier}
+                      </span>
+                      <span className="font-semibold text-foreground tabular-nums">
+                        ${guest.totalSpent.toFixed(2)}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <ArrowUpRight className="h-3 w-3 text-emerald-400" />
+                        {new Date(guest.checkedInAt).toLocaleTimeString([], {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </span>
+                    </div>
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
 
-          {/* Right: All exits today with times */}
-          <div className="col-span-5 border-l border-border pl-10">
-            <h3 className="text-xl font-semibold mb-6">
-              Exits Today <span className="text-muted-foreground font-normal text-base ml-2">({todayExits.length})</span>
-            </h3>
-            {todayExits.length === 0 ? (
-              <p className="text-sm text-muted-foreground py-8 text-center">No exits today</p>
-            ) : (
-              <div className="space-y-3 max-h-[600px] overflow-y-auto">
-                {todayExits.map((e, i) => (
-                  <div key={i} className="flex items-center gap-3 p-4 rounded-xl bg-card border border-border">
-                    {e.guest_photo ? (
-                      <img src={e.guest_photo} alt="" className="w-10 h-10 rounded-full object-cover" />
-                    ) : (
-                      <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
-                        <User className="h-4 w-4 text-muted-foreground" />
-                      </div>
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium truncate">{e.guest_name}</p>
-                      <div className="flex gap-4 text-xs text-muted-foreground mt-0.5">
-                        {e.entered_at && (
-                          <span className="flex items-center gap-1">
-                            <ArrowUpRight className="h-3 w-3 text-green-500" />
-                            In: {new Date(e.entered_at).toLocaleTimeString()}
-                          </span>
-                        )}
-                        <span className="flex items-center gap-1">
-                          <ArrowDownRight className="h-3 w-3 text-destructive" />
-                          Out: {new Date(e.exited_at).toLocaleTimeString()}
-                        </span>
-                      </div>
-                    </div>
-                    {e.entered_at && (
-                      <div className="text-right">
-                        <p className="text-xs text-muted-foreground flex items-center gap-1">
-                          <Clock className="h-3 w-3" />
-                          {(() => {
-                            const ms = new Date(e.exited_at) - new Date(e.entered_at);
-                            const h = Math.floor(ms / 3600000);
-                            const m = Math.floor((ms % 3600000) / 60000);
-                            return `${h}h ${m}m`;
-                          })()}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+                  {/* Exit Button */}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowExitConfirm(guest.id);
+                    }}
+                    className="h-9 w-9 rounded-xl border border-destructive/30 bg-destructive/5 flex items-center justify-center text-destructive hover:bg-destructive/10 transition-colors"
+                    data-testid={`exit-btn-${guest.id}`}
+                  >
+                    <LogOut className="h-4 w-4" />
+                  </button>
+                </motion.div>
+              ))}
+            </div>
+          )}
         </div>
 
-        {/* Exit Block Modal */}
-        {exitModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" data-testid="exit-modal-overlay">
-            <div className={`relative max-w-md w-full mx-4 rounded-2xl border-2 p-8 text-center ${
-              exitModal.type === 'blocked' ? 'bg-card border-destructive/50' : 'bg-card border-destructive/50'
-            }`} data-testid="exit-modal">
-              <button onClick={() => setExitModal(null)} className="absolute top-4 right-4 text-muted-foreground hover:text-foreground">
-                <X className="h-5 w-5" />
-              </button>
-              {exitModal.type === 'open_tab' ? (
-                <>
-                  <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center mx-auto mb-5">
-                    <AlertTriangle className="h-8 w-8 text-destructive" />
-                  </div>
-                  <h3 className="text-xl font-bold text-destructive mb-2">Open Tab Pending</h3>
-                  <p className="text-lg font-semibold mb-1">{exitModal.guest.guestName}</p>
-                  <p className="text-3xl font-bold text-destructive mb-2">${exitModal.data.total_owed.toFixed(2)}</p>
-                  <p className="text-muted-foreground mb-6">
-                    {exitModal.data.open_tabs.length} open tab{exitModal.data.open_tabs.length > 1 ? 's' : ''}.
-                    Guest cannot leave without payment.
-                  </p>
-                  <div className="space-y-3">
-                    <Button className="w-full h-12 text-base bg-primary hover:bg-primary/90"
-                      onClick={() => { setExitModal(null); navigate('/tap'); }}
-                      data-testid="go-to-checkout-btn">
-                      <CreditCard className="h-5 w-5 mr-2" /> Go to Checkout
-                    </Button>
-                    <Button variant="outline" className="w-full h-12 text-base border-green-500/50 text-green-600 hover:bg-green-500/10"
-                      disabled={processingPayment}
-                      onClick={async () => {
-                        setProcessingPayment(true);
-                        try {
-                          for (const tab of exitModal.data.open_tabs) {
-                            const fd = new FormData();
-                            fd.append('method', 'card');
-                            fd.append('amount', (tab.total || exitModal.data.total_owed).toString());
-                            await tapAPI.closeSession(tab.session_id || tab.id, fd);
-                          }
-                          toast.success(`Payment processed for ${exitModal.guest.guestName}`);
-                          const exitFd = new FormData();
-                          exitFd.append('guest_id', exitModal.guest.guestId);
-                          exitFd.append('venue_id', VENUE_ID());
-                          await pulseAPI.registerExit(exitFd);
-                          toast.success(`${exitModal.guest.guestName} checked out`);
-                          setExitModal(null);
-                          await loadData();
-                        } catch (err) {
-                          toast.error('Failed to process payment');
-                          console.error(err);
-                        }
-                        setProcessingPayment(false);
-                      }}
-                      data-testid="mark-as-paid-btn">
-                      <CheckCircle className="h-5 w-5 mr-2" /> Mark as Paid
-                    </Button>
-                    <Button variant="ghost" className="w-full" onClick={() => setExitModal(null)} data-testid="exit-modal-cancel-btn">
-                      Cancel
-                    </Button>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center mx-auto mb-5">
-                    <Ban className="h-8 w-8 text-destructive" />
-                  </div>
-                  <h3 className="text-xl font-bold text-destructive mb-2">Wristband Blocked</h3>
-                  <p className="text-lg font-semibold mb-3">{exitModal.guest.guestName}</p>
-                  <p className="text-muted-foreground mb-6">
-                    This wristband is blocked. Please contact management.
-                  </p>
-                  <Button variant="outline" className="border-destructive/30" onClick={() => setExitModal(null)} data-testid="exit-modal-close-btn">
-                    Understood
-                  </Button>
-                </>
-              )}
-            </div>
+        {/* Right: Exits Today */}
+        <div className="col-span-5 border-l border-border/30 pl-8">
+          <div className="flex items-center gap-2 mb-5">
+            <h3 className="text-sm font-bold text-foreground">
+              Exits Today
+            </h3>
+            <span className="text-[10px] font-bold bg-muted/50 text-muted-foreground px-2 py-0.5 rounded-full">
+              {exitedGuests.length}
+            </span>
           </div>
-        )}
-      </main>
-    </div>
+
+          {exitedGuests.length === 0 ? (
+            <p className="text-xs text-muted-foreground text-center py-8">
+              No exits today
+            </p>
+          ) : (
+            <div className="space-y-2 max-h-[calc(100vh-20rem)] overflow-y-auto" data-testid="exits-today">
+              {exitedGuests.map((guest, i) => (
+                <motion.div
+                  key={guest.id}
+                  initial={{ opacity: 0, x: 12 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.15 + i * 0.05 }}
+                  className="flex items-center gap-3 p-3.5 rounded-2xl bg-card/40 border border-border/20"
+                  data-testid={`exited-${guest.id}`}
+                >
+                  {guest.photo ? (
+                    <img
+                      src={guest.photo}
+                      alt={guest.name}
+                      className="h-9 w-9 rounded-lg object-cover flex-shrink-0"
+                    />
+                  ) : (
+                    <div className="h-9 w-9 rounded-lg bg-muted/30 flex items-center justify-center flex-shrink-0">
+                      <User className="h-4 w-4 text-muted-foreground" />
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-semibold text-foreground truncate">
+                      {guest.name}
+                    </p>
+                    <div className="flex items-center gap-3 text-[10px] text-muted-foreground mt-0.5">
+                      <span className="flex items-center gap-1">
+                        <ArrowUpRight className="h-2.5 w-2.5 text-emerald-400" />
+                        {new Date(guest.checkedInAt).toLocaleTimeString([], {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </span>
+                      {guest.checkedOutAt && (
+                        <span className="flex items-center gap-1">
+                          <ArrowDownRight className="h-2.5 w-2.5 text-destructive" />
+                          {new Date(guest.checkedOutAt).toLocaleTimeString([], {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  {guest.checkedOutAt && (
+                    <div className="text-right">
+                      <p className="text-[10px] text-muted-foreground flex items-center gap-1">
+                        <Clock className="h-2.5 w-2.5" />
+                        {getStayDuration(guest.checkedInAt, guest.checkedOutAt)}
+                      </p>
+                      <p className="text-xs font-bold text-foreground tabular-nums">
+                        ${guest.totalSpent.toFixed(2)}
+                      </p>
+                    </div>
+                  )}
+                </motion.div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Exit Confirmation Modal */}
+      <AnimatePresence>
+        {showExitConfirm &&
+          (() => {
+            const guest = insideGuests.find((g) => g.id === showExitConfirm);
+            if (!guest) return null;
+            return (
+              <>
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="fixed inset-0 z-[100] bg-background/80 backdrop-blur-sm"
+                  onClick={() => setShowExitConfirm(null)}
+                />
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  transition={{ type: "spring", bounce: 0.2 }}
+                  className="fixed inset-0 z-[101] flex items-center justify-center p-4"
+                >
+                  <div
+                    className="w-full max-w-sm bg-card border border-border/30 rounded-3xl p-8 shadow-2xl text-center"
+                    data-testid="exit-confirm-modal"
+                  >
+                    {guest.photo ? (
+                      <img
+                        src={guest.photo}
+                        alt={guest.name}
+                        className="h-20 w-20 rounded-full object-cover mx-auto border-4 border-destructive/20 mb-4"
+                      />
+                    ) : (
+                      <div className="mx-auto h-20 w-20 rounded-full bg-destructive/10 border-2 border-destructive/20 flex items-center justify-center mb-4">
+                        <LogOut className="h-10 w-10 text-destructive/40" />
+                      </div>
+                    )}
+                    <h3 className="text-xl font-extrabold text-foreground tracking-normal">
+                      {guest.name}
+                    </h3>
+                    <span className="inline-block text-xs font-mono font-bold bg-muted/50 px-3 py-1 rounded-full mt-2 mb-1">
+                      Tab #{guest.tabNumber}
+                    </span>
+                    <p className="text-sm font-semibold text-foreground mb-1">
+                      Total: ${guest.totalSpent.toFixed(2)}
+                    </p>
+                    <p className="text-sm text-muted-foreground mb-6">
+                      Confirm checkout for this guest?
+                    </p>
+                    <div className="grid grid-cols-2 gap-3">
+                      <button
+                        onClick={() => setShowExitConfirm(null)}
+                        className="py-3 rounded-xl border border-border/30 font-semibold text-foreground hover:bg-muted/50 transition-colors"
+                        data-testid="exit-cancel"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={() => handleExit(guest.id)}
+                        className="py-3 rounded-xl bg-gradient-to-r from-destructive to-destructive/80 text-destructive-foreground font-bold shadow-lg shadow-destructive/20 hover:shadow-xl transition-all"
+                        data-testid="exit-confirm"
+                      >
+                        Check Out
+                      </button>
+                    </div>
+                  </div>
+                </motion.div>
+              </>
+            );
+          })()}
+      </AnimatePresence>
+    </PulseLayout>
   );
-};
+}
