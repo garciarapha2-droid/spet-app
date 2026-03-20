@@ -1,0 +1,113 @@
+{
+  "summary": "Iteration 71: Landing Page + Auth Flow Testing - ALL 15 SCENARIOS PASSED. Landing page pixel-perfect with 12 sections (Navbar, Hero typewriter, Problem, Solution, How It Works, AI, Benefits, Modules, Pricing, FAQ, Contact Form, Footer). Login/Signup pages use shared AuthHeader (back arrow + spet. logo + theme toggle). Critical bug fix VERIFIED: teste1@teste.com now redirects to /onboarding (NOT stuck on login). All logout flows redirect to /login on same domain.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/test_reports/iteration_71.json"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [],
+  "updated_files": [],
+  "success_rate": {
+    "backend": "N/A - Frontend only testing",
+    "frontend": "100% (15/15 scenarios passed)"
+  },
+  "test_credentials": {
+    "regular_user_onboarded": {"email": "teste@teste.com", "password": "12345", "role": "USER", "expected_redirect": "/venue/home"},
+    "regular_user_not_onboarded": {"email": "teste1@teste.com", "password": "12345", "role": "USER", "expected_redirect": "/onboarding"},
+    "ceo_user": {"email": "garcia.rapha2@gmail.com", "password": "12345", "role": "CEO", "expected_redirect": "/ceo"}
+  },
+  "seed_data_creation": "None - using existing test users",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "All landing page sections verified. AuthHeader component (back arrow + spet. logo + theme toggle) used across LoginPage, SignupPage, OnboardingPage. Critical bug fix VERIFIED: teste1@teste.com redirects to /onboarding. Key data-testids: landing-page, navbar, hero, hero-cta-primary, nav-login, nav-signup, theme-toggle, pricing-cta-{core|flow|sync|os}, login-page, signup-page, onboarding-page, back-button, email-input, password-input, login-button, signup-submit-btn, logout-btn, plan-option-{id}.",
+  "features_tested": {
+    "Scenario 1: Landing Page Renders": {
+      "status": "PASS",
+      "details": "Landing page at / renders with data-testid='landing-page', navbar, hero with typewriter animation, nav-login, nav-signup, theme-toggle, hero-cta-primary"
+    },
+    "Scenario 2: Nav Login → /login": {
+      "status": "PASS",
+      "details": "Click 'Log in' in navbar navigates to /login"
+    },
+    "Scenario 3: Nav Signup → /signup": {
+      "status": "PASS",
+      "details": "Click 'Start Now' in navbar navigates to /signup"
+    },
+    "Scenario 4: Pricing Section (4 cards)": {
+      "status": "PASS",
+      "details": "Scroll to #pricing shows 4 pricing cards: Core $49, Flow $89, Sync $149, OS $299. All have data-testid='pricing-cta-{id}'"
+    },
+    "Scenario 5: Theme Toggle": {
+      "status": "PASS",
+      "details": "Theme toggle switches between dark (rgb(3,4,7)) and light (rgb(245,247,249)) mode"
+    },
+    "Scenario 6: Login Page with AuthHeader": {
+      "status": "PASS",
+      "details": "Login page has AuthHeader (back-button, spet. logo, theme-toggle), email/password inputs, premium login button"
+    },
+    "Scenario 7: Signup Page with AuthHeader & Plans": {
+      "status": "PASS",
+      "details": "Signup page has AuthHeader, name/email/password inputs, 4 plan options (plan-option-core/flow/sync/os), 'Get started' button"
+    },
+    "Scenario 8: Login teste@teste.com → /venue/home": {
+      "status": "PASS",
+      "details": "Onboarded user correctly redirects to /venue/home"
+    },
+    "Scenario 9: Login teste1@teste.com → /onboarding (BUG FIX)": {
+      "status": "PASS",
+      "details": "BUG FIX VERIFIED: Non-onboarded user now correctly redirects to /onboarding (NOT stuck on login). OnboardingPage shows AuthHeader with back button."
+    },
+    "Scenario 10: Login CEO → /ceo": {
+      "status": "PASS",
+      "details": "CEO user garcia.rapha2@gmail.com correctly redirects to /ceo Executive Overview dashboard"
+    },
+    "Scenario 11: Logout /venue/home → /login (same domain)": {
+      "status": "PASS",
+      "details": "Logout from /venue/home redirects to /login on same Emergent domain (not external)"
+    },
+    "Scenario 12: Logout /ceo → /login (same domain)": {
+      "status": "PASS",
+      "details": "Logout from /ceo redirects to /login on same Emergent domain"
+    },
+    "Scenario 13: Signup 'Sign in' link → /login": {
+      "status": "PASS",
+      "details": "Click 'Sign in' link on signup page navigates to /login"
+    },
+    "Scenario 14: Login 'Get started' link → /signup": {
+      "status": "PASS",
+      "details": "Click 'Get started' link on login page navigates to /signup"
+    },
+    "Scenario 15: Signup Back Button → /login": {
+      "status": "PASS",
+      "details": "AuthHeader back button on signup page navigates to /login (as configured with backTo='/login')"
+    }
+  },
+  "landing_page_sections_verified": [
+    "Navbar (sticky, logo, nav links, Log in, Start Now, theme toggle)",
+    "Hero (typewriter animation, CTAs)",
+    "Problem section",
+    "Solution Core (3 cards)",
+    "How It Works (4 steps)",
+    "AI Section",
+    "Benefits (3 cards)",
+    "Modules (4 cards)",
+    "Pricing (4 plans: $49, $89, $149, $299)",
+    "FAQ (6 items, accordion)",
+    "Final CTA",
+    "Contact Form",
+    "Footer"
+  ],
+  "auth_header_component_verified": {
+    "used_in": ["LoginPage", "SignupPage", "OnboardingPage"],
+    "features": ["Back arrow (navigates to backTo prop)", "spet. logo with gradient dot", "Theme toggle (Sun/Moon)"],
+    "data_testids": ["back-button", "theme-toggle"]
+  }
+}

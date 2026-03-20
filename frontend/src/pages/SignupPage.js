@@ -1,27 +1,64 @@
 import React, { useState } from 'react';
-import { useNavigate, Link, Navigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { Loader2 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { AuthHeader } from '../components/AuthHeader';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
 const PLANS = [
-  { id: 'starter', name: 'Starter', price: 79, features: ['1 Venue', 'Pulse + Tap', 'Basic KDS', 'Up to 5 staff'] },
-  { id: 'growth', name: 'Growth', price: 149, features: ['3 Venues', 'All Modules', 'Advanced KDS', 'Up to 20 staff'] },
-  { id: 'enterprise', name: 'Enterprise', price: 299, features: ['Unlimited', 'All Modules', 'Unlimited staff', 'CEO dashboard'] },
+  {
+    id: 'core',
+    name: 'Spet Core',
+    price: 49,
+    tagline: 'CRM & Guest Intelligence',
+    features: ['1 Venue', 'Pulse module', 'Up to 5 staff', 'Basic support'],
+  },
+  {
+    id: 'flow',
+    name: 'Spet Flow',
+    price: 89,
+    tagline: 'Tap + Table',
+    features: ['3 Venues', 'Pulse + Tap + Table', 'Up to 20 staff', 'Priority support'],
+  },
+  {
+    id: 'sync',
+    name: 'Spet Sync',
+    price: 149,
+    tagline: 'Full operational control',
+    popular: true,
+    features: ['10 Venues', 'All core modules + KDS', 'Up to 50 staff', 'Dedicated support'],
+  },
+  {
+    id: 'os',
+    name: 'Spet OS',
+    price: 299,
+    tagline: 'Everything + AI insights',
+    features: ['Unlimited venues', 'All modules + AI', 'Unlimited staff', 'CEO dashboard'],
+  },
 ];
 
 export function SignupPage() {
   const navigate = useNavigate();
   const { isAuthenticated, user } = useAuth();
-  const [form, setForm] = useState({ name: '', email: '', password: '', plan_id: 'starter' });
+  const [form, setForm] = useState({ name: '', email: '', password: '', plan_id: 'sync' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   if (isAuthenticated) {
-    if (user?.status === 'pending_payment') return <Navigate to="/payment/pending" replace />;
-    if (!user?.onboarding_completed) return <Navigate to="/onboarding" replace />;
-    return <Navigate to="/venue/home" replace />;
+    if (user?.status === 'pending_payment') {
+      window.location.href = '/payment/pending';
+      return null;
+    }
+    if (!user?.onboarding_completed) {
+      window.location.href = '/onboarding';
+      return null;
+    }
+    window.location.href = '/venue/home';
+    return null;
   }
+
+  const set = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }));
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -52,117 +89,189 @@ export function SignupPage() {
         navigate('/payment/pending');
       }
     } catch (err) {
-      setError(err.message);
+      setError(err.message || 'Signup failed');
     } finally {
       setLoading(false);
     }
   };
 
-  const set = (key) => (e) => setForm({ ...form, [key]: e.target.value });
-
   return (
-    <div data-testid="signup-page" className="min-h-screen bg-[#0a0a0a] flex items-center justify-center p-4">
-      <div className="w-full max-w-lg">
-        <div className="text-center mb-8">
-          <h1 data-testid="signup-title" className="text-3xl font-bold text-white tracking-tight">Create Your Account</h1>
-          <p className="text-zinc-400 mt-2">Start managing your venue with SPET</p>
-        </div>
+    <div className="flex flex-col min-h-screen bg-background" data-testid="signup-page">
+      <AuthHeader backTo="/login" />
 
-        {error && (
-          <div data-testid="signup-error" className="bg-red-500/10 border border-red-500/30 text-red-400 px-4 py-3 rounded-lg mb-6 text-sm">
-            {error}
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-5">
-          <div>
-            <label className="block text-sm font-medium text-zinc-300 mb-1.5">Name</label>
-            <input
-              data-testid="signup-name-input"
-              type="text"
-              value={form.name}
-              onChange={set('name')}
-              className="w-full px-3 py-2.5 bg-zinc-900 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-              placeholder="Your full name"
-              required
+      <main className="flex-1 flex items-center justify-center -mt-8 px-6">
+        <div className="w-full max-w-[480px] space-y-4">
+          {/* Identity Block */}
+          <div className="flex flex-col items-center text-center">
+            <img
+              src="/spet-icon-hd.png"
+              alt="Spet"
+              className="w-[120px] h-[120px] rounded-[28px]"
             />
+            <h1
+              className="mt-3 text-[22px] font-semibold tracking-tight text-foreground"
+              style={{ fontFamily: "'Space Grotesk', sans-serif" }}
+            >
+              Create your account
+            </h1>
+            <p className="mt-1 text-[13px]" style={{ color: 'hsl(var(--text-tertiary))' }}>
+              Start managing your venue in minutes
+            </p>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-zinc-300 mb-1.5">Email</label>
-            <input
-              data-testid="signup-email-input"
-              type="email"
-              value={form.email}
-              onChange={set('email')}
-              className="w-full px-3 py-2.5 bg-zinc-900 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-              placeholder="you@company.com"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-zinc-300 mb-1.5">Password</label>
-            <input
-              data-testid="signup-password-input"
-              type="password"
-              value={form.password}
-              onChange={set('password')}
-              className="w-full px-3 py-2.5 bg-zinc-900 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-              placeholder="Min 6 characters"
-              required
-              minLength={6}
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-zinc-300 mb-3">Select Plan</label>
-            <div className="space-y-2.5">
-              {PLANS.map((plan) => (
-                <label
-                  key={plan.id}
-                  data-testid={`plan-option-${plan.id}`}
-                  className={`flex items-start gap-3 p-4 border rounded-lg cursor-pointer transition-all ${
-                    form.plan_id === plan.id
-                      ? 'border-blue-500 bg-blue-500/10'
-                      : 'border-zinc-700 bg-zinc-900 hover:border-zinc-600'
-                  }`}
-                >
-                  <input
-                    type="radio"
-                    name="plan"
-                    value={plan.id}
-                    checked={form.plan_id === plan.id}
-                    onChange={set('plan_id')}
-                    className="mt-1 accent-blue-500"
-                  />
-                  <div className="flex-1">
-                    <div className="flex justify-between items-center">
-                      <span className="font-semibold text-white">{plan.name}</span>
-                      <span className="text-blue-400 font-bold">${plan.price}/mo</span>
-                    </div>
-                    <div className="text-xs text-zinc-500 mt-1">{plan.features.join(' · ')}</div>
-                  </div>
-                </label>
-              ))}
+          {/* Error */}
+          {error && (
+            <div
+              className="px-4 py-2.5 text-[13px] text-center rounded-lg border"
+              style={{
+                color: 'hsl(var(--destructive))',
+                backgroundColor: 'hsl(var(--destructive) / 0.1)',
+                borderColor: 'hsl(var(--destructive) / 0.2)',
+              }}
+              data-testid="signup-error"
+            >
+              {error}
             </div>
-          </div>
+          )}
 
-          <button
-            data-testid="signup-submit-btn"
-            type="submit"
-            disabled={loading}
-            className="w-full bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {loading ? 'Creating Account...' : 'Create Account & Pay'}
-          </button>
-        </form>
+          {/* Form */}
+          <form onSubmit={handleSubmit} className="space-y-3.5">
+            {/* Name */}
+            <div className="space-y-1.5">
+              <label
+                htmlFor="signup-name"
+                className="block text-[13px] font-medium"
+                style={{ color: 'hsl(var(--text-secondary))' }}
+              >
+                Full name
+              </label>
+              <input
+                id="signup-name"
+                type="text"
+                value={form.name}
+                onChange={set('name')}
+                placeholder="Your full name"
+                required
+                className="flex h-12 w-full rounded-[14px] border border-input bg-card px-4 py-2 text-[14px] text-foreground placeholder:text-muted-foreground ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 transition-colors"
+                data-testid="signup-name-input"
+              />
+            </div>
 
-        <p className="text-center mt-6 text-sm text-zinc-500">
-          Already have an account?{' '}
-          <Link to="/login" className="text-blue-400 hover:text-blue-300">Log in</Link>
-        </p>
-      </div>
+            {/* Email */}
+            <div className="space-y-1.5">
+              <label
+                htmlFor="signup-email"
+                className="block text-[13px] font-medium"
+                style={{ color: 'hsl(var(--text-secondary))' }}
+              >
+                Email
+              </label>
+              <input
+                id="signup-email"
+                type="email"
+                value={form.email}
+                onChange={set('email')}
+                placeholder="you@company.com"
+                required
+                className="flex h-12 w-full rounded-[14px] border border-input bg-card px-4 py-2 text-[14px] text-foreground placeholder:text-muted-foreground ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 transition-colors"
+                data-testid="signup-email-input"
+              />
+            </div>
+
+            {/* Password */}
+            <div className="space-y-1.5">
+              <label
+                htmlFor="signup-password"
+                className="block text-[13px] font-medium"
+                style={{ color: 'hsl(var(--text-secondary))' }}
+              >
+                Password
+              </label>
+              <input
+                id="signup-password"
+                type="password"
+                value={form.password}
+                onChange={set('password')}
+                placeholder="Min 6 characters"
+                required
+                minLength={6}
+                className="flex h-12 w-full rounded-[14px] border border-input bg-card px-4 py-2 text-[14px] text-foreground placeholder:text-muted-foreground ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 transition-colors"
+                data-testid="signup-password-input"
+              />
+            </div>
+
+            {/* Plan Selection */}
+            <div className="space-y-2 pt-1">
+              <label
+                className="block text-[13px] font-medium"
+                style={{ color: 'hsl(var(--text-secondary))' }}
+              >
+                Choose your plan
+              </label>
+              <div className="grid grid-cols-2 gap-2.5">
+                {PLANS.map((plan) => (
+                  <label
+                    key={plan.id}
+                    data-testid={`plan-option-${plan.id}`}
+                    className={`relative flex flex-col p-3.5 border rounded-xl cursor-pointer transition-all duration-200 ${
+                      form.plan_id === plan.id
+                        ? 'border-primary/50 bg-primary/5'
+                        : 'border-border bg-card hover:border-primary/20'
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="plan"
+                      value={plan.id}
+                      checked={form.plan_id === plan.id}
+                      onChange={set('plan_id')}
+                      className="sr-only"
+                    />
+                    {plan.popular && (
+                      <span className="absolute -top-2 right-3 px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider bg-primary text-primary-foreground">
+                        Popular
+                      </span>
+                    )}
+                    <div className="flex items-baseline justify-between">
+                      <span className="text-[13px] font-bold text-foreground">{plan.name}</span>
+                      <span className="text-[13px] font-bold" style={{ color: 'hsl(var(--primary))' }}>
+                        ${plan.price}
+                        <span className="text-[10px] font-normal" style={{ color: 'hsl(var(--text-tertiary))' }}>/mo</span>
+                      </span>
+                    </div>
+                    <span className="text-[11px] mt-0.5" style={{ color: 'hsl(var(--text-tertiary))' }}>
+                      {plan.tagline}
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* Submit */}
+            <button
+              type="submit"
+              disabled={loading}
+              className="btn-premium mt-2 flex items-center justify-center w-full h-[48px] rounded-full bg-primary text-primary-foreground text-[15px] font-semibold disabled:opacity-50 disabled:pointer-events-none"
+              data-testid="signup-submit-btn"
+            >
+              {loading ? <Loader2 size={18} className="animate-spin" /> : 'Get started'}
+            </button>
+          </form>
+
+          {/* Footer */}
+          <p className="text-center text-[13px]" style={{ color: 'hsl(var(--text-tertiary))' }}>
+            Already have an account?{' '}
+            <Link
+              to="/login"
+              className="font-medium transition-all hover:brightness-125"
+              style={{ color: 'hsl(var(--primary))' }}
+              data-testid="login-link"
+            >
+              Sign in
+            </Link>
+          </p>
+        </div>
+      </main>
     </div>
   );
 }

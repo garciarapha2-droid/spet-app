@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { AuthHeader } from '../../components/AuthHeader';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
@@ -370,21 +371,29 @@ export default function OnboardingPage() {
   };
 
   return (
-    <div data-testid="onboarding-page" className="min-h-screen bg-[#0a0a0a] flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        <StepIndicator current={step} total={TOTAL_STEPS} />
+    <div data-testid="onboarding-page" className="min-h-screen bg-background flex flex-col">
+      <AuthHeader backTo="/login" />
+      <div className="flex-1 flex items-center justify-center p-4">
+        <div className="w-full max-w-md">
+          <StepIndicator current={step} total={TOTAL_STEPS} />
 
-        {error && (
-          <div data-testid="onboarding-error" className="bg-red-500/10 border border-red-500/30 text-red-400 px-4 py-3 rounded-lg mb-6 text-sm">
-            {error}
-          </div>
-        )}
+          {error && (
+            <div data-testid="onboarding-error" className="px-4 py-2.5 text-[13px] text-center rounded-lg border mb-6"
+              style={{
+                color: 'hsl(var(--destructive))',
+                backgroundColor: 'hsl(var(--destructive) / 0.1)',
+                borderColor: 'hsl(var(--destructive) / 0.2)',
+              }}>
+              {error}
+            </div>
+          )}
 
-        {step === 0 && <WelcomeStep onNext={onNext} />}
-        {step === 1 && <AccountSetupStep onNext={onNext} onError={onError} />}
-        {step === 2 && <PasswordResetStep onNext={onNext} onError={onError} />}
-        {step === 3 && <ModulesSetupStep onNext={onNext} onError={onError} />}
-        {step === 4 && <CompleteStep onComplete={onComplete} loading={completing} />}
+          {step === 0 && <WelcomeStep onNext={onNext} />}
+          {step === 1 && <AccountSetupStep onNext={onNext} onError={onError} />}
+          {step === 2 && <PasswordResetStep onNext={onNext} onError={onError} />}
+          {step === 3 && <ModulesSetupStep onNext={onNext} onError={onError} />}
+          {step === 4 && <CompleteStep onComplete={onComplete} loading={completing} />}
+        </div>
       </div>
     </div>
   );

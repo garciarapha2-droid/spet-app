@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Sun, Moon, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { useTheme } from '../contexts/ThemeContext';
+import { AuthHeader } from '../components/AuthHeader';
 
 export const LoginPage = () => {
   const [email, setEmail] = useState('');
@@ -10,7 +10,6 @@ export const LoginPage = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
-  const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -30,36 +29,8 @@ export const LoginPage = () => {
 
   return (
     <div className="flex flex-col min-h-screen bg-background" data-testid="login-page">
-      {/* ── Header ── */}
-      <header className="flex items-center justify-between h-[76px] px-8 lg:px-12 max-w-[1200px] mx-auto w-full z-20">
-        <div className="flex items-center gap-2">
-          <Link
-            to="/"
-            className="p-2 -ml-2 rounded-full transition-all duration-200 hover:bg-muted"
-            data-testid="back-button"
-          >
-            <ArrowLeft size={18} style={{ color: 'hsl(var(--text-tertiary))' }} />
-          </Link>
-          <Link to="/" className="flex items-center">
-            <span
-              className="text-[22px] font-bold tracking-tight text-foreground"
-              style={{ fontFamily: "'Space Grotesk', sans-serif" }}
-            >
-              spet<span className="gradient-text">.</span>
-            </span>
-          </Link>
-        </div>
-        <button
-          onClick={toggleTheme}
-          className="p-2.5 rounded-full transition-all duration-200 hover:bg-muted"
-          style={{ color: 'hsl(var(--text-tertiary))' }}
-          data-testid="theme-toggle"
-        >
-          {theme === 'dark' ? <Sun size={17} /> : <Moon size={17} />}
-        </button>
-      </header>
+      <AuthHeader backTo="/" />
 
-      {/* ── Form Container ── */}
       <main className="flex-1 flex items-center justify-center -mt-16 px-6">
         <div className="w-full max-w-[420px] space-y-4">
           {/* Identity Block */}
@@ -98,7 +69,6 @@ export const LoginPage = () => {
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Email */}
             <div className="space-y-1.5">
               <label
                 htmlFor="login-email"
@@ -119,7 +89,6 @@ export const LoginPage = () => {
               />
             </div>
 
-            {/* Password */}
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
                 <label
@@ -150,7 +119,6 @@ export const LoginPage = () => {
               />
             </div>
 
-            {/* Submit */}
             <button
               type="submit"
               disabled={loading}
@@ -161,7 +129,6 @@ export const LoginPage = () => {
             </button>
           </form>
 
-          {/* Footer */}
           <p className="text-center text-[13px]" style={{ color: 'hsl(var(--text-tertiary))' }}>
             Don't have an account?{' '}
             <Link

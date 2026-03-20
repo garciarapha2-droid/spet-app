@@ -8,6 +8,7 @@ import { PublicOnly, AuthOnly, ActiveOnly, ProtectedRoute, CEORoute } from './co
 // Auth pages
 import { LoginPage } from './pages/LoginPage';
 import { SignupPage } from './pages/SignupPage';
+import LandingPage from './pages/landing/LandingPage';
 
 // Payment pages
 import { PaymentPendingPage } from './pages/PaymentPendingPage';
@@ -46,6 +47,9 @@ function App() {
         <BrowserRouter>
           <div className="App">
             <Routes>
+              {/* Landing page */}
+              <Route path="/" element={<LandingPage />} />
+
               {/* Public only routes (redirect if authenticated) */}
               <Route path="/login" element={<PublicOnly><LoginPage /></PublicOnly>} />
               <Route path="/signup" element={<PublicOnly><SignupPage /></PublicOnly>} />
@@ -82,7 +86,6 @@ function App() {
               } />
 
               {/* Default: unauthenticated → /login, authenticated → role-based */}
-              <Route path="/" element={<PublicOnly><Navigate to="/login" replace /></PublicOnly>} />
               <Route path="*" element={<ProtectedRoute><AppEntryRedirect /></ProtectedRoute>} />
             </Routes>
             <Toaster />
