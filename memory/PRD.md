@@ -1,10 +1,10 @@
 # SPET CEO Operating System — PRD
 
 ## Original Problem Statement
-Build a premium, multi-dashboard "CEO Operating System" with pixel-perfect UI implementation following detailed design specifications. The app includes a landing page, auth flow, venue dashboard, CEO dashboard, the Pulse operational module, independent TAP/TABLE order modules, and a comprehensive onboarding wizard that serves as a system configuration engine.
+Build a premium, multi-dashboard "CEO Operating System" with pixel-perfect UI implementation following detailed design specifications. The app includes a landing page, auth flow, venue dashboard, CEO dashboard, the Pulse operational module, independent TAP/TABLE order modules, a comprehensive onboarding wizard, and a complete Manager Dashboard module.
 
 ## Core Architecture
-- **Frontend**: React 19 + Tailwind CSS + Shadcn UI + Framer Motion
+- **Frontend**: React 19 + Tailwind CSS + Shadcn UI + Framer Motion + Recharts
 - **Backend**: FastAPI + MongoDB + PostgreSQL
 - **Auth**: JWT-based authentication with protected test accounts
 - **Theme**: CSS custom properties (HSL tokens) with data-theme light/dark toggle
@@ -16,73 +16,60 @@ Build a premium, multi-dashboard "CEO Operating System" with pixel-perfect UI im
 
 ## Implemented Features
 
-### Onboarding Wizard — COMPLETE (2026-03-21)
-Full 10-step onboarding wizard that serves as the system configuration engine.
+### Manager Dashboard Module — COMPLETE (2026-03-21)
+Full 16-page manager dashboard module with collapsible sidebar, theme toggle, and mock data.
 
 **Architecture:**
-- `OnboardingWizard.js` — Main shell with navbar, progress bar, animated transitions, step indicator dots
-- Steps in `/pages/onboarding/steps/` — 10 step components
-- Dynamic step insertion based on enabled modules
-- Backend persistence via `/api/onboarding/save-config`, `/api/onboarding/complete`, `/api/onboarding/skip`
+- `ManagerLayout.js` — Shell with collapsible sidebar (w-240 ↔ w-60), theme toggle, back button
+- 9 top-level pages + expandable Loyalty sub-module (7 pages)
+- All routes under `/manager/*`, completely isolated from other modules
+- Mock data from `managerData.js` and `managerModuleData.js`
 
-**Base Steps (always present):**
-| Step | Component | Description |
-|------|-----------|-------------|
-| 1 - Welcome | WelcomeStep.js | Branding, ambient glow, "Get Started" CTA |
-| 2 - Confirm Account | ConfirmAccountStep.js | Venue name + type (multi-select) |
-| 3 - Role Decision | RoleDecisionStep.js | Owner/Manager role with conditional manager form |
-| 4 - Initial Setup | InitialSetupStep.js | 3 internal tabs: Payments → Team → Modules |
-| 10 - Finish | FinishSetupStep.js | Completion checklist + "Enter System" |
+**Routes:**
+| Route | Component | Description |
+|-------|-----------|-------------|
+| /manager | ManagerOverview | Smart Insights, KPIs, charts, alerts |
+| /manager/staff | StaffRoles | System users + operational staff |
+| /manager/tables | TablesByServer | Kanban board by server |
+| /manager/menu | MenuProducts | Search, filter, list/grid views |
+| /manager/shift | ShiftOperations | KPIs, earnings, charts, AI partner |
+| /manager/tips | Tips | Staff tip cards + details table |
+| /manager/guests | NfcGuests | Guest list + profile modal |
+| /manager/reports | ReportsFinance | Period filters, charts, sales table |
+| /manager/settings | ManagerSettings | Venue config + integrations |
+| /manager/loyalty | LoyaltyRewards | Hero, KPIs, distribution chart |
+| /manager/loyalty/guests | LoyaltyGuests | Filterable guest directory |
+| /manager/loyalty/guests/:id | LoyaltyGuestProfile | Full profile page |
+| /manager/loyalty/tiers | LoyaltyTiers | Tier cards + automation rules |
+| /manager/loyalty/campaigns | LoyaltyCampaigns | Campaign list + create modal |
+| /manager/loyalty/rewards | LoyaltyRewardsPage | Reward grid with toggles |
+| /manager/loyalty/insights | LoyaltyInsights | Insights + actionable guests |
 
-**Conditional Steps:**
-| Step | Component | Condition |
-|------|-----------|-----------|
-| 5 - Menu Setup | PulseMenuSetup.js | pulse OR tap OR table enabled |
-| 6 - Rewards Setup | PulseRewardsSetup.js | pulse enabled |
-| 7 - Table Setup | TableSetup.js | table enabled |
-| 8 - Floor Plan | FloorPlanBuilder.js | table enabled |
-| 9 - Reservations | ReservationSetup.js | reservations enabled |
+**Testing:** 100% pass (22/22 features tested, iteration_73.json)
 
-**Business Rules:**
-- `teste1@teste.com` always lands on onboarding (reset on startup)
-- New users see onboarding on first login
-- After completion: redirect to system, don't show again
-- After skip: mark as skipped, allow completing later
-- All config persists to MongoDB and controls system behavior
-
-**Onboarding State:** not_started | in_progress | completed | skipped
+### Onboarding Wizard — COMPLETE (2026-03-21)
+Full 10-step onboarding wizard. Testing: 100% pass (iteration_72.json)
 
 ### Landing Page
-- Full marketing landing page with pricing cards
+Full marketing landing page with pricing cards
 
 ### Auth Flow
-- Login, Signup, Onboarding pages
-- Protected routes with role-based access
+Login, Signup, Onboarding pages. Protected routes with role-based access.
 
 ### Venue Home (Dashboard)
-- Pixel-perfect implementation from design spec
+Pixel-perfect implementation from design spec
 
 ### CEO Dashboard
-- Sidebar navigation with 12 dashboard pages
+Sidebar navigation with 12 dashboard pages
 
 ### Pulse Module — All 5 Pages Complete
-| Page | Route | Status |
-|------|-------|--------|
-| Check-in | `/pulse/guest` | Done |
-| Inside | `/pulse/inside` | Done |
-| Orders | `/pulse/bar` | Done |
-| Exit | `/pulse/exit` | Done |
-| Membership | `/pulse/rewards` | Done |
+Check-in, Inside, Orders, Exit, Membership
 
 ### TAP & TABLE — Independent Modules
-| Module | Route | Features |
-|--------|-------|----------|
-| TAP | `/tap` | Identity verification (anti-fraud) |
-| TABLE | `/table` | Age verification for alcohol |
+TAP (identity verification), TABLE (age verification)
 
 ### Branding
-- Browser tab title: "SPET"
-- "Made with Emergent" badge removed
+Browser tab title: "SPET", "Made with Emergent" badge removed
 
 ## Design System
 - CSS custom properties with HSL tokens
@@ -93,6 +80,7 @@ Full 10-step onboarding wizard that serves as the system configuration engine.
 
 ### P1 (Next)
 - Connect TAP/TABLE and Pulse to real backend APIs (replace mock data)
+- Connect Manager Dashboard to real backend APIs
 - Implement /api/ceo/conversion-rates endpoint
 - Pixel-perfect Signup Page
 - Manager-configurable identity verification rule
@@ -105,12 +93,13 @@ Full 10-step onboarding wizard that serves as the system configuration engine.
 ### P3
 - Refactor LandingPage.js into smaller components
 - Pricing card alignment
+- Clean up ManagerPage.legacy.js (old file preserved)
 
 ## Key API Endpoints
-- `POST /api/onboarding/save-config` — Save onboarding config to MongoDB
-- `POST /api/onboarding/complete` — Mark complete + persist all config
+- `POST /api/onboarding/save-config` — Save onboarding config
+- `POST /api/onboarding/complete` — Mark complete
 - `POST /api/onboarding/skip` — Skip onboarding
 
 ## Testing
-- Onboarding wizard: 100% pass (backend 15/15, frontend all 10 steps)
-- Test report: `/app/test_reports/iteration_72.json`
+- Manager Dashboard: 100% pass (22/22 features, iteration_73.json)
+- Onboarding wizard: 100% pass (15/15 backend + all frontend, iteration_72.json)

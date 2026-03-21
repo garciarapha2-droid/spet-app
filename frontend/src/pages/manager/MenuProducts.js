@@ -94,12 +94,10 @@ export default function MenuProducts() {
                 const margin = ((m.price - m.cost) / m.price * 100).toFixed(0);
                 const marginColor = margin > 70 ? 'text-[hsl(var(--success))]' : margin > 50 ? 'text-[hsl(var(--warning))]' : 'text-[hsl(var(--danger))]';
                 return (
-                  <motion.tr
+                  <tr
                     key={m.id}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: i * 0.02 }}
                     className="border-b border-[hsl(var(--border)_/_0.5)] hover:bg-[hsl(var(--muted)_/_0.3)] transition-colors group"
+                    style={{ opacity: 1 }}
                   >
                     <td className="px-4 py-2.5 text-sm font-medium text-foreground">{m.name}</td>
                     <td className="px-4 py-2.5 text-sm text-muted-foreground">{m.category}</td>
@@ -114,7 +112,7 @@ export default function MenuProducts() {
                         <button className="p-1.5 rounded-md hover:bg-[hsl(var(--danger)_/_0.1)]"><Trash2 className="h-3.5 w-3.5 text-muted-foreground hover:text-[hsl(var(--danger))]" /></button>
                       </div>
                     </td>
-                  </motion.tr>
+                  </tr>
                 );
               })}
             </tbody>
