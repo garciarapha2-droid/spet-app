@@ -167,12 +167,15 @@ export default function PulseMenuSetup({ data, updateData, onNext, onBack }) {
                 <span className={`text-[9px] font-bold uppercase mt-1 truncate w-full text-center ${isActive ? cs.accent : 'text-muted-foreground'}`}>
                   {cat}
                 </span>
-                <button
+                <div
+                  role="button"
+                  tabIndex={0}
                   onClick={(e) => { e.stopPropagation(); removeCategory(cat); }}
+                  onKeyDown={(e) => { if (e.key === 'Enter') { e.stopPropagation(); removeCategory(cat); } }}
                   className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                 >
                   <X size={10} />
-                </button>
+                </div>
               </button>
             );
           })}
