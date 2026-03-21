@@ -201,7 +201,7 @@ export default function VenueComparison() {
           </motion.div>
 
           {/* Night Cards */}
-          <div className="space-y-3">
+          <div className="flex flex-col gap-3">
             {nightData.map((n, i) => (
               <motion.div
                 key={n.id}
