@@ -2,9 +2,11 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import {
-  ChevronRight, Users, Calendar, Building2, Clock
+  ChevronRight, Users, Calendar as CalendarIcon, Building2, Clock
 } from 'lucide-react';
 import { ownerVenues, ownerEvents, venueColors } from '../../../data/ownerData';
+import { Popover, PopoverTrigger, PopoverContent } from '../../../components/ui/popover';
+import { Calendar } from '../../../components/ui/calendar';
 
 const fadeUp = { initial: { opacity: 0, y: 10 }, animate: { opacity: 1, y: 0 }, transition: { duration: 0.3, ease: [0.4, 0, 0.2, 1] } };
 
@@ -41,6 +43,8 @@ export default function VenueManagement() {
   const navigate = useNavigate();
   const [view, setView] = useState('venues');
   const [period, setPeriod] = useState('Today');
+  const [selectedDate, setSelectedDate] = useState(null);
+  const [calendarOpen, setCalendarOpen] = useState(false);
 
   return (
     <div data-testid="venue-management">
@@ -69,10 +73,10 @@ export default function VenueManagement() {
 
         {/* Right: Time Filter */}
         <div className="flex items-center gap-1 p-1 rounded-lg bg-[hsl(var(--muted)_/_0.5)]" data-testid="venue-period-selector">
-          {['Today', 'Yesterday', 'Weekly', 'Date'].map(p => (
+          {['Today', 'Yesterday', 'Weekly'].map(p => (
             <button
               key={p}
-              onClick={() => setPeriod(p)}
+              onClick={() => { setPeriod(p); setSelectedDate(null); }}
               className={`px-3 py-1.5 text-xs font-semibold rounded-md capitalize transition-all ${
                 period === p
                   ? 'bg-foreground text-background shadow-sm'
@@ -80,11 +84,35 @@ export default function VenueManagement() {
               }`}
               data-testid={`venue-period-${p.toLowerCase()}`}
             >
-              {p === 'Date' ? (
-                <span className="flex items-center gap-1.5"><Calendar className="h-3 w-3" /> Date</span>
-              ) : p}
+              {p}
             </button>
           ))}
+          <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
+            <PopoverTrigger asChild>
+              <button
+                onClick={() => { setPeriod('Date'); setCalendarOpen(true); }}
+                className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${
+                  period === 'Date'
+                    ? 'bg-foreground text-background shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+                data-testid="venue-period-date"
+              >
+                <span className="flex items-center gap-1.5">
+                  <CalendarIcon className="h-3 w-3" />
+                  {selectedDate ? selectedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'Date'}
+                </span>
+              </button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="end">
+              <Calendar
+                mode="single"
+                selected={selectedDate}
+                onSelect={(date) => { setSelectedDate(date); setPeriod('Date'); setCalendarOpen(false); }}
+                initialFocus
+              />
+            </PopoverContent>
+          </Popover>
         </div>
       </div>
 
@@ -182,7 +210,7 @@ export default function VenueManagement() {
                       >
                         <div className="flex items-start gap-3">
                           <div className={`h-10 w-10 rounded-lg bg-[hsl(var(--muted)_/_0.5)] flex items-center justify-center shrink-0`}>
-                            <Calendar className="h-5 w-5 text-muted-foreground" />
+                            <CalendarIcon className="h-5 w-5 text-muted-foreground" />
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-1.5">
