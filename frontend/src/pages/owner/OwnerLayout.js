@@ -114,7 +114,7 @@ export default function OwnerLayout() {
     location.pathname.startsWith('/owner/finance/costs/') ? { title: 'Venue Cost Detail', subtitle: 'Cost drill-down' } :
     location.pathname.startsWith('/owner/system/venues/') && location.pathname.includes('/events/') ? { title: 'Event Detail', subtitle: 'Night analysis' } :
     location.pathname.startsWith('/owner/system/venues/') ? { title: 'Venue Detail', subtitle: 'Venue drill-down' } :
-    location.pathname.startsWith('/owner/customers/audience/') ? { title: 'Genre Detail', subtitle: 'Audience deep dive' } :
+    location.pathname.startsWith('/owner/customers/audience/') ? (() => { const s = location.pathname.split('/').pop(); const n = { techno:'Techno', house:'House', hiphop:'Hip Hop', latin:'Latin', 'rnb-soul':'R&B / Soul', 'pop-commercial':'Pop / Commercial' }[s] || s; return { title: `${n} — Genre Intelligence`, subtitle: 'Customers \u203A Audience' }; })() :
     { title: 'Owner', subtitle: '' });
 
   return (
