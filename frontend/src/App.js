@@ -112,7 +112,7 @@ function App() {
               <Route path="/modules" element={<ProtectedRoute><Navigate to="/venue/home" replace /></ProtectedRoute>} />
               <Route path="/pulse" element={<ProtectedRoute><Navigate to="/pulse/guest" replace /></ProtectedRoute>} />
               <Route path="/pulse/guest" element={<ProtectedRoute><PulseGuest /></ProtectedRoute>} />
-              <Route path="/pulse/entry" element={<ProtectedRoute><PulseEntryPage /></ProtectedRoute>} />
+              <Route path="/pulse/entry" element={<ProtectedRoute><Navigate to="/pulse/guest" replace /></ProtectedRoute>} />
               <Route path="/pulse/inside" element={<ProtectedRoute><PulseInsidePage /></ProtectedRoute>} />
               <Route path="/pulse/bar" element={<ProtectedRoute><PulseBarPage /></ProtectedRoute>} />
               <Route path="/pulse/exit" element={<ProtectedRoute><PulseExitPage /></ProtectedRoute>} />
