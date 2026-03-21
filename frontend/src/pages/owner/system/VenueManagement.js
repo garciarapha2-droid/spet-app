@@ -36,11 +36,11 @@ export default function VenueManagement() {
   const [period, setPeriod] = useState('Today');
 
   return (
-    <div className="space-y-6" data-testid="venue-management">
+    <div className="space-y-10" data-testid="venue-management">
       {/* Top Controls */}
       <div className="flex items-center justify-between">
         {/* Left: View Toggle */}
-        <div className="flex items-center bg-[hsl(var(--muted)_/_0.4)] p-1 rounded-xl" data-testid="venue-view-toggle">
+        <div className="flex items-center gap-1.5 bg-[hsl(var(--muted)_/_0.4)] p-1.5 rounded-xl" data-testid="venue-view-toggle">
           {[
             { key: 'venues', label: 'Venues' },
             { key: 'nights', label: 'Nights / Events' },
@@ -48,7 +48,7 @@ export default function VenueManagement() {
             <button
               key={v.key}
               onClick={() => setView(v.key)}
-              className={`px-5 py-2 text-xs font-semibold rounded-lg transition-all ${
+              className={`px-6 py-2.5 text-xs font-semibold rounded-lg transition-all ${
                 view === v.key
                   ? 'bg-foreground text-background shadow-sm'
                   : 'text-muted-foreground hover:text-foreground'
@@ -61,12 +61,12 @@ export default function VenueManagement() {
         </div>
 
         {/* Right: Period Selector */}
-        <div className="flex items-center bg-[hsl(var(--muted)_/_0.4)] p-1 rounded-xl" data-testid="venue-period-selector">
+        <div className="flex items-center gap-1.5 bg-[hsl(var(--muted)_/_0.4)] p-1.5 rounded-xl" data-testid="venue-period-selector">
           {['Today', 'Yesterday', 'Weekly', 'Date'].map(p => (
             <button
               key={p}
               onClick={() => setPeriod(p)}
-              className={`px-4 py-2 text-xs font-semibold rounded-lg transition-all ${
+              className={`px-5 py-2.5 text-xs font-semibold rounded-lg transition-all ${
                 period === p
                   ? 'bg-foreground text-background shadow-sm'
                   : 'text-muted-foreground hover:text-foreground'
@@ -83,7 +83,7 @@ export default function VenueManagement() {
 
       {/* VENUES VIEW — Stacked List */}
       {view === 'venues' && (
-        <div className="space-y-5" data-testid="venues-list-view">
+        <div className="space-y-8" data-testid="venues-list-view">
           {ownerVenues.map((v, i) => {
             const vc = venueColors[v.name];
             const st = statusLabel[v.status];
@@ -93,7 +93,7 @@ export default function VenueManagement() {
                 {...fadeUp}
                 transition={{ ...fadeUp.transition, delay: 0.05 + i * 0.05 }}
                 onClick={() => navigate(`/owner/system/venues/${v.id}`)}
-                className="rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-6 hover:border-[hsl(var(--primary)_/_0.25)] hover:shadow-[0_2px_12px_0_hsl(var(--foreground)_/_0.04)] cursor-pointer transition-all group"
+                className="rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-8 hover:border-[hsl(var(--primary)_/_0.25)] hover:shadow-[0_2px_12px_0_hsl(var(--foreground)_/_0.04)] cursor-pointer transition-all group"
                 data-testid={`venue-row-${v.id}`}
               >
                 <div className="flex items-start gap-5">
@@ -108,7 +108,7 @@ export default function VenueManagement() {
                       <span className={`w-3 h-3 rounded-full shrink-0 ${vc?.dot || 'bg-muted-foreground'}`} />
                       <h3 className="text-base font-bold text-foreground">Demo Club &mdash; {v.name}</h3>
                     </div>
-                    <p className="text-xs text-muted-foreground mt-1 ml-6">{v.address}</p>
+                    <p className="text-xs text-muted-foreground mt-1.5 ml-6">{v.address}</p>
                   </div>
 
                   {/* Status Badge */}
@@ -116,25 +116,25 @@ export default function VenueManagement() {
                 </div>
 
                 {/* Metrics Row */}
-                <div className="flex items-end gap-8 mt-5 ml-[68px]">
+                <div className="flex items-end gap-12 mt-8 ml-[68px]">
                   <div>
-                    <p className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground mb-1">Revenue</p>
+                    <p className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground mb-2">Revenue</p>
                     <p className="text-xl font-bold text-foreground tabular-nums">${(v.revenue / 1000).toFixed(0)}K</p>
                   </div>
                   <div>
-                    <p className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground mb-1">Staff</p>
+                    <p className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground mb-2">Staff</p>
                     <p className="text-xl font-bold text-foreground tabular-nums">{v.staffCount}</p>
                   </div>
                   <div>
-                    <p className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground mb-1">Tables</p>
+                    <p className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground mb-2">Tables</p>
                     <p className="text-xl font-bold text-foreground tabular-nums">{v.tables}</p>
                   </div>
                   <div>
-                    <p className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground mb-1">Hours</p>
+                    <p className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground mb-2">Hours</p>
                     <p className="text-lg font-bold text-foreground">{v.hours}</p>
                   </div>
                   <div>
-                    <p className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground mb-1">Growth</p>
+                    <p className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground mb-2">Growth</p>
                     <p className={`text-xl font-bold tabular-nums flex items-center gap-1 ${v.growth > 0 ? 'text-[hsl(var(--success))]' : 'text-[hsl(var(--danger))]'}`}>
                       {v.growth > 0 ? <ArrowUpRight className="h-4 w-4" /> : <ArrowDownRight className="h-4 w-4" />}
                       {v.growth > 0 ? '+' : ''}{v.growth}%
@@ -149,7 +149,7 @@ export default function VenueManagement() {
 
       {/* NIGHTS / EVENTS VIEW — Grouped by Venue */}
       {view === 'nights' && (
-        <div className="space-y-8" data-testid="nights-list-view">
+        <div className="space-y-10" data-testid="nights-list-view">
           {groupedEvents.map((group, gi) => {
             const vc = venueColors[group.venue.name];
             return (
@@ -162,7 +162,7 @@ export default function VenueManagement() {
                 </div>
 
                 {/* Event Cards */}
-                <div className="space-y-3">
+                <div className="space-y-5">
                   {group.events.map((ev, ei) => {
                     const hl = healthLabel[ev.health];
                     return (
@@ -171,7 +171,7 @@ export default function VenueManagement() {
                         {...fadeUp}
                         transition={{ ...fadeUp.transition, delay: 0.1 + gi * 0.06 + ei * 0.03 }}
                         onClick={() => navigate(`/owner/system/venues/${ev.venueId}/events/${ev.id}`)}
-                        className="rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-5 hover:border-[hsl(var(--primary)_/_0.25)] hover:shadow-[0_2px_12px_0_hsl(var(--foreground)_/_0.04)] cursor-pointer transition-all group"
+                        className="rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-7 hover:border-[hsl(var(--primary)_/_0.25)] hover:shadow-[0_2px_12px_0_hsl(var(--foreground)_/_0.04)] cursor-pointer transition-all group"
                         data-testid={`night-row-${ev.id}`}
                       >
                         <div className="flex items-start gap-5">
@@ -188,25 +188,25 @@ export default function VenueManagement() {
                           <ChevronRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0 mt-1" />
                         </div>
 
-                        <div className="flex items-end gap-8 mt-4 ml-[60px]">
+                        <div className="flex items-end gap-12 mt-6 ml-[60px]">
                           <div>
-                            <p className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground mb-1">Revenue</p>
+                            <p className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground mb-2">Revenue</p>
                             <p className="text-lg font-bold text-foreground tabular-nums">${(ev.revenue / 1000).toFixed(1)}K</p>
                           </div>
                           <div>
-                            <p className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground mb-1">Profit</p>
+                            <p className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground mb-2">Profit</p>
                             <p className="text-lg font-bold text-foreground tabular-nums">${(ev.profit / 1000).toFixed(1)}K</p>
                           </div>
                           <div>
-                            <p className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground mb-1">Guests</p>
+                            <p className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground mb-2">Guests</p>
                             <p className="text-lg font-bold text-foreground tabular-nums">{ev.guests}</p>
                           </div>
                           <div>
-                            <p className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground mb-1">Avg Ticket</p>
+                            <p className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground mb-2">Avg Ticket</p>
                             <p className="text-lg font-bold text-foreground tabular-nums">${ev.avgTicket}</p>
                           </div>
                           <div>
-                            <p className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground mb-1">Margin</p>
+                            <p className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground mb-2">Margin</p>
                             <p className="text-lg font-bold text-foreground tabular-nums">{ev.margin}%</p>
                           </div>
                         </div>
