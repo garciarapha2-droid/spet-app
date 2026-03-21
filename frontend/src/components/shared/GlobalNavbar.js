@@ -174,9 +174,7 @@ export default function GlobalNavbar() {
 
       {/* Zone Left — Branding */}
       <div className="flex items-center shrink-0 relative z-10">
-        <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center" data-testid="spet-icon">
-          <span className="text-white text-sm font-bold">S</span>
-        </div>
+        <img src="/spet-icon.png" alt="spet" className="h-8 w-8 rounded-lg object-cover" data-testid="spet-icon" />
         <span className="text-lg font-bold tracking-tight text-foreground ml-2" style={{ fontFamily: "'Space Grotesk', sans-serif" }} data-testid="spet-text">spet.</span>
         <span className="text-sm text-muted-foreground ml-2" data-testid="venue-name">Demo Club</span>
       </div>
