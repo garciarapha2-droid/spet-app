@@ -1,434 +1,192 @@
-import React from 'react';
-import { motion } from 'framer-motion';
-import { useParams, useNavigate } from 'react-router-dom';
-import {
-  ChevronLeft, Brain, DollarSign, Calendar, ShoppingBag, TrendingUp,
-  Heart, Clock, ArrowUpRight, ArrowDownRight, Zap, MapPin, Star, Gift
-} from 'lucide-react';
-import {
-  ownerGuests, ownerEvents,
-  guestPurchaseHistory, guestEventAttendance, guestLoyaltyActivity,
-  guestVenueBreakdown, guestCategoryBreakdown, guestVisitTimeline
-} from '../../../data/ownerData';
+import { useState, useRef } from "react";
+import { useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
+import { Users, TrendingUp, ShieldX, Scan, UserPlus, ChevronRight } from "lucide-react";
+import { toast } from "sonner";
 
-const fadeUp = {
-  initial: { opacity: 0, y: 12 },
+const fadeUp = (delay = 0) => ({
+  initial: { opacity: 0, y: 8 },
   animate: { opacity: 1, y: 0 },
-  transition: { duration: 0.35, ease: [0.4, 0, 0.2, 1] }
+  transition: { duration: 0.3, delay, ease: [0.4, 0, 0.2, 1] },
+});
+
+const entryGuests = [
+  { id: "pg1", name: "Sofia Cardoso", tabNumber: 106, status: "inside", tier: "Gold", checkedInAt: "2026-03-20T21:15:00" },
+  { id: "pg2", name: "Lucas Oliveira", tabNumber: 107, status: "inside", tier: "Silver", checkedInAt: "2026-03-20T22:00:00" },
+  { id: "pg3", name: "John Smith", tabNumber: 104, status: "inside", tier: "Bronze", checkedInAt: "2026-03-20T22:30:00" },
+  { id: "pg4", name: "Maria Santos", tabNumber: 101, status: "exited", tier: "Platinum", checkedInAt: "2026-03-20T19:00:00" },
+  { id: "pg5", name: "Pedro Almeida", tabNumber: 102, status: "exited", tier: "Bronze", checkedInAt: "2026-03-20T20:00:00" },
+];
+
+const tierColors = {
+  Gold:     { avatar: "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400", badge: "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400" },
+  Silver:   { avatar: "bg-gray-100 dark:bg-gray-800/40 text-gray-700 dark:text-gray-300", badge: "bg-gray-100 dark:bg-gray-800/40 text-gray-700 dark:text-gray-300" },
+  Bronze:   { avatar: "bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400", badge: "bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400" },
+  Platinum: { avatar: "bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-400", badge: "bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-400" },
 };
 
-const tierBadge = {
-  VIP: 'bg-[hsl(var(--primary)_/_0.1)] text-[hsl(var(--primary))]',
-  Platinum: 'bg-purple-500/10 text-purple-400',
-  Gold: 'bg-[hsl(var(--warning)_/_0.1)] text-[hsl(var(--warning))]',
-  Silver: 'bg-[hsl(var(--muted))] text-muted-foreground',
-  Bronze: 'bg-[hsl(var(--muted))] text-muted-foreground',
+const statusColors = {
+  inside: "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400",
+  exited: "bg-muted text-muted-foreground",
 };
 
-const segmentBadge = {
-  vip: 'bg-[hsl(var(--primary)_/_0.1)] text-[hsl(var(--primary))]',
-  active: 'bg-[hsl(var(--success)_/_0.1)] text-[hsl(var(--success))]',
-  new: 'bg-blue-500/10 text-blue-500',
-  at_risk: 'bg-[hsl(var(--danger)_/_0.1)] text-[hsl(var(--danger))]',
-  lost: 'bg-[hsl(var(--danger)_/_0.1)] text-[hsl(var(--danger))]',
-};
-
-const venueDot = { Downtown: 'bg-[hsl(var(--success))]', Midtown: 'bg-blue-500', Uptown: 'bg-purple-500' };
-const venueBarBg = { Downtown: 'bg-[hsl(var(--success)_/_0.6)]', Midtown: 'bg-blue-500/60', Uptown: 'bg-purple-500/60' };
-
-function getRiskLevel(g) {
-  if (!g.riskSignal || g.riskSignal === 'none') return 'low';
-  if (g.riskSignal.includes('high') || g.riskSignal.includes('inactive')) return 'high';
-  return 'medium';
+function getInitials(name) {
+  return name.split(" ").map(w => w[0]).join("").toUpperCase();
 }
 
-function getFreqLabel(f) {
-  if (f === 'Weekly') return 'Every 7d';
-  if (f === 'Bi-weekly') return 'Every 14d';
-  if (f === 'Monthly') return 'Every 30d';
-  return f;
-}
-
-function SectionHeader({ icon: Icon, title, subtitle }) {
-  return (
-    <div className="flex items-center gap-3 mb-4">
-      <div className="h-9 w-9 rounded-lg bg-[hsl(var(--primary)_/_0.1)] flex items-center justify-center">
-        <Icon className="h-[18px] w-[18px] text-[hsl(var(--primary))]" />
-      </div>
-      <div>
-        <h3 className="text-base font-semibold text-foreground">{title}</h3>
-        <p className="text-xs text-muted-foreground">{subtitle}</p>
-      </div>
-    </div>
-  );
+function formatTime(iso) {
+  return new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
 
 export default function CustomerProfile() {
-  const { guestId } = useParams();
   const navigate = useNavigate();
-  const guest = ownerGuests.find(g => g.id === guestId);
+  const [scanInput, setScanInput] = useState("");
+  const [isFocused, setIsFocused] = useState(false);
+  const inputRef = useRef(null);
 
-  if (!guest) return (
-    <div className="flex items-center justify-center h-64">
-      <p className="text-sm text-muted-foreground">Guest not found</p>
-    </div>
-  );
+  const insideCount = entryGuests.filter(g => g.status === "inside").length;
+  const deniedCount = 0;
 
-  const risk = getRiskLevel(guest);
-  const venues = guestVenueBreakdown[guest.id] || [{ venue: guest.preferredVenue, spent: guest.totalSpent, visits: guest.visits }];
-  const categories = guestCategoryBreakdown[guest.id] || [{ category: guest.favoriteCategory, amount: guest.totalSpent }];
-  const events = guestEventAttendance[guest.id] || [];
-  const purchases = guestPurchaseHistory.filter(p => p.guestId === guest.id);
-  const loyalty = guestLoyaltyActivity[guest.id];
-  const timeline = guestVisitTimeline[guest.id] || [];
-  const totalVenueSpent = venues.reduce((s, v) => s + v.spent, 0) || 1;
-  const totalCatAmount = categories.reduce((s, c) => s + c.amount, 0) || 1;
-  const maxCatAmount = Math.max(...categories.map(c => c.amount), 1);
-  const isHealthy = risk === 'low';
-  const spendLabel = guest.spendTrend === 'up' ? 'Increasing' : guest.spendTrend === 'down' ? 'Declining' : 'Stable';
-  const riskSignalLabel = isHealthy ? 'Healthy' : risk === 'medium' ? 'Monitor' : 'High Risk';
+  const kpis = [
+    { label: "GUESTS INSIDE", value: insideCount, icon: Users, color: "bg-primary", iconColor: "text-primary", live: true },
+    { label: "TOTAL ENTRIES", value: entryGuests.length, icon: TrendingUp, color: "bg-emerald-500", iconColor: "text-emerald-500" },
+    { label: "DENIED", value: deniedCount, icon: ShieldX, color: "bg-destructive", iconColor: "text-destructive" },
+  ];
 
-  const riskStyles = {
-    low: { border: 'border-[hsl(var(--success)_/_0.3)]', bg: 'bg-[hsl(var(--success)_/_0.05)]', text: 'text-[hsl(var(--success))]', label: 'Healthy', emoji: '\u2705' },
-    medium: { border: 'border-[hsl(var(--warning)_/_0.3)]', bg: 'bg-[hsl(var(--warning)_/_0.05)]', text: 'text-[hsl(var(--warning))]', label: 'Medium Risk', emoji: '\u26A1' },
-    high: { border: 'border-[hsl(var(--danger)_/_0.3)]', bg: 'bg-[hsl(var(--danger)_/_0.05)]', text: 'text-[hsl(var(--danger))]', label: 'High Risk', emoji: '\u26A0\uFE0F' },
+  const handleScan = (e) => {
+    e.preventDefault();
+    if (!scanInput.trim()) return;
+    const q = scanInput.trim().toLowerCase();
+    const match = entryGuests.find(g =>
+      g.name.toLowerCase().includes(q) || g.tabNumber.toString() === q.replace("#", "")
+    );
+    if (match) {
+      toast.success(`Found ${match.name}`);
+    } else {
+      toast.error("No matching guest or tab found");
+    }
+    setScanInput("");
   };
-  const rs = riskStyles[risk];
-
-  const insightBarStyles = {
-    low: { bg: 'bg-[hsl(var(--success)_/_0.05)]', border: 'border border-[hsl(var(--success)_/_0.2)]', text: 'text-[hsl(var(--success))]' },
-    medium: { bg: 'bg-[hsl(var(--warning)_/_0.05)]', border: 'border border-[hsl(var(--warning)_/_0.2)]', text: 'text-[hsl(var(--warning))]' },
-    high: { bg: 'bg-[hsl(var(--danger)_/_0.05)]', border: 'border border-[hsl(var(--danger)_/_0.2)]', text: 'text-[hsl(var(--danger))]' },
-  };
-  const ib = insightBarStyles[risk];
-
-  const insightText = isHealthy
-    ? `No risk signals detected. Guest favors ${guest.preferredVenue} (${Math.round((venues.find(v => v.venue === guest.preferredVenue)?.spent || 0) / totalVenueSpent * 100)}% of spend)`
-    : `${guest.riskSignal} \u00B7 Last visit ${guest.lastVisitDaysAgo} days ago`;
-
-  // Visit timeline helpers
-  const venueKeys = ['Downtown', 'Midtown', 'Uptown'];
-  const maxMonthlyVisits = Math.max(...timeline.map(m => venueKeys.reduce((s, v) => s + (m[v] || 0), 0)), 1);
 
   return (
-    <div className="flex flex-col gap-6" data-testid="customer-profile">
+    <div className="flex flex-col gap-0" data-testid="customer-profile-entry">
 
-      {/* 1. Back button */}
-      <motion.button
-        {...fadeUp}
-        onClick={() => navigate(-1)}
-        className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors self-start mb-[-8px]"
-        data-testid="back-button"
-      >
-        <ChevronLeft className="h-3.5 w-3.5" /> Back
-      </motion.button>
-
-      {/* 2. Header Card */}
-      <motion.div {...fadeUp} className="rounded-xl border border-border bg-[hsl(var(--card))] p-5" data-testid="profile-header">
-        <div className="flex items-start gap-4">
-          <div className="h-14 w-14 rounded-full bg-[hsl(var(--primary)_/_0.15)] flex items-center justify-center shrink-0">
-            <span className="text-lg font-bold text-[hsl(var(--primary))]">{guest.name.split(' ').map(n => n[0]).join('')}</span>
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-lg font-bold text-foreground">{guest.name}</p>
-            <div className="flex gap-2 flex-wrap mb-1">
-              <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${tierBadge[guest.tier] || ''}`}>{guest.tier}</span>
-              <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold capitalize ${segmentBadge[guest.segment] || ''}`}>{guest.segment?.replace('_', ' ')}</span>
-            </div>
-            <p className="text-xs text-muted-foreground">{guest.email} &middot; Last visit {guest.lastVisit} ({guest.lastVisitDaysAgo}d ago)</p>
-          </div>
-          <div className="flex gap-2 shrink-0">
-            <button className="px-3 py-1.5 rounded-lg bg-foreground text-background text-xs font-semibold hover:opacity-90 transition-opacity" data-testid="send-reward-btn">Send Reward</button>
-            <button className="px-3 py-1.5 rounded-lg border border-border text-xs font-semibold text-foreground hover:bg-[hsl(var(--muted))] transition-colors" data-testid="message-btn">Message</button>
-          </div>
-        </div>
-      </motion.div>
-
-      {/* 3. Behavior Summary */}
-      <motion.div {...fadeUp} transition={{ ...fadeUp.transition, delay: 0.03 }} className="rounded-xl border border-border bg-[hsl(var(--card))] p-5" data-testid="behavior-summary">
-        <SectionHeader icon={Brain} title="Behavior Summary" subtitle="AI-generated profile insights" />
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          {/* Preferred Venue */}
-          <div className="p-3 rounded-lg bg-[hsl(var(--muted)_/_0.3)]">
-            <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Preferred Venue</p>
-            <div className="flex items-center gap-1.5">
-              <span className={`h-2 w-2 rounded-full ${venueDot[guest.preferredVenue] || 'bg-muted-foreground'}`} />
-              <span className="text-sm font-semibold text-foreground">{guest.preferredVenue}</span>
-            </div>
-          </div>
-          {/* Top Event */}
-          <div className="p-3 rounded-lg bg-[hsl(var(--muted)_/_0.3)]">
-            <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Top Event</p>
-            <span className="text-sm font-semibold text-foreground">{guest.topEvent}</span>
-          </div>
-          {/* Spend Trend */}
-          <div className="p-3 rounded-lg bg-[hsl(var(--muted)_/_0.3)]">
-            <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Spend Trend</p>
-            <div className="flex items-center gap-1">
-              {guest.spendTrend === 'up' ? <ArrowUpRight className="h-3.5 w-3.5 text-[hsl(var(--success))]" /> : guest.spendTrend === 'down' ? <ArrowDownRight className="h-3.5 w-3.5 text-[hsl(var(--danger))]" /> : null}
-              <span className={`text-sm font-semibold ${guest.spendTrend === 'up' ? 'text-[hsl(var(--success))]' : guest.spendTrend === 'down' ? 'text-[hsl(var(--danger))]' : 'text-muted-foreground'}`}>{spendLabel}</span>
-            </div>
-          </div>
-          {/* Risk Signal */}
-          <div className="p-3 rounded-lg bg-[hsl(var(--muted)_/_0.3)]">
-            <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Risk Signal</p>
-            <span className={`text-sm font-semibold ${isHealthy ? 'text-[hsl(var(--success))]' : risk === 'medium' ? 'text-[hsl(var(--warning))]' : 'text-[hsl(var(--danger))]'}`}>{riskSignalLabel}</span>
-          </div>
-        </div>
-        {/* Insight Bar */}
-        <div className={`mt-3 p-3 rounded-lg text-xs ${ib.bg} ${ib.border} ${ib.text}`}>
-          <Zap className="h-3 w-3 inline mr-1.5" />
-          {insightText}
-        </div>
-      </motion.div>
-
-      {/* 4. KPIs Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
-        {[
-          { icon: DollarSign, value: `$${guest.totalSpent.toLocaleString()}`, label: 'Total Spent' },
-          { icon: Calendar, value: guest.visits, label: 'Visits' },
-          { icon: ShoppingBag, value: `$${guest.avgSpend}`, label: 'Avg Spend' },
-          { icon: TrendingUp, value: `${guest.score}/100`, label: 'Score' },
-          { icon: Heart, value: guest.favoriteCategory, label: 'Favorite' },
-          { icon: Clock, value: getFreqLabel(guest.frequency), label: 'Frequency' },
-        ].map((kpi, i) => (
-          <motion.div
-            key={kpi.label}
-            {...fadeUp}
-            transition={{ ...fadeUp.transition, delay: i * 0.03 }}
-            className="rounded-xl border border-border bg-[hsl(var(--card))] p-3 flex flex-col gap-1"
-            data-testid={`kpi-${kpi.label.toLowerCase().replace(/\s/g, '-')}`}
+      {/* Seção 1 — KPIs */}
+      <div className="grid grid-cols-3 gap-6 mb-8" data-testid="cp-kpi-grid">
+        {kpis.map((kpi, i) => (
+          <motion.div key={kpi.label} {...fadeUp(i * 0.08)}
+            className="flex items-center gap-4 p-5 rounded-xl bg-card border border-border/50"
+            data-testid={`cp-kpi-${kpi.label.toLowerCase().replace(/\s+/g, "-")}`}
           >
-            <kpi.icon className="h-3.5 w-3.5 text-muted-foreground" />
-            <span className="text-lg font-bold text-foreground tabular-nums">{kpi.value}</span>
-            <span className="text-[10px] text-muted-foreground uppercase tracking-wider">{kpi.label}</span>
+            <div className={`w-1 h-10 rounded-full ${kpi.color}`} />
+            <div>
+              <div className="flex items-center gap-1.5">
+                <kpi.icon className={`h-4 w-4 ${kpi.iconColor}`} />
+                <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">{kpi.label}</span>
+              </div>
+              <div className="flex items-center gap-2 mt-0.5">
+                <span className="text-3xl font-extrabold text-foreground tabular-nums">{kpi.value}</span>
+                {kpi.live && <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />}
+              </div>
+            </div>
           </motion.div>
         ))}
       </div>
 
-      {/* 5. Retention Risk Alert */}
-      <motion.div
-        {...fadeUp}
-        transition={{ ...fadeUp.transition, delay: 0.05 }}
-        className={`rounded-xl ${rs.border} ${rs.bg} p-4`}
-        data-testid="risk-alert"
-      >
-        <p className={`text-xs font-semibold uppercase ${rs.text}`}>{rs.emoji} {rs.label}</p>
-        <p className="text-xs text-muted-foreground mt-0.5">
-          {isHealthy ? `Active and healthy. Last visit ${guest.lastVisitDaysAgo} day(s) ago — within expected frequency.`
-            : risk === 'medium' ? `Visit frequency declining. Last seen ${guest.lastVisit}. Consider targeted re-engagement.`
-            : `${guest.riskSignal}. Last visit ${guest.lastVisitDaysAgo} day(s) ago. Immediate intervention recommended.`}
-        </p>
+      {/* Seção 2 — Scan NFC + Manual Entry */}
+      <motion.div {...fadeUp(0.25)} className="mb-8" data-testid="cp-scan-section">
+        <div className="flex items-center gap-2 mb-2">
+          <Scan className="h-4 w-4 text-muted-foreground" />
+          <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">SCAN NFC TAG</span>
+        </div>
+
+        <div className="flex items-stretch gap-3">
+          {/* Scan Input */}
+          <form onSubmit={handleScan} className="flex-1 relative">
+            {/* Glow wrapper */}
+            <div className={`absolute -inset-px rounded-2xl blur-sm bg-gradient-to-r from-primary/40 via-primary/10 to-transparent transition-opacity duration-500 pointer-events-none ${isFocused ? "opacity-100" : "opacity-0"}`} />
+            <div className="relative">
+              <Scan className={`absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 transition-colors ${isFocused ? "text-primary" : "text-muted-foreground"}`} />
+              <input
+                ref={inputRef}
+                type="text"
+                value={scanInput}
+                onChange={e => setScanInput(e.target.value)}
+                onFocus={() => setIsFocused(true)}
+                onBlur={() => setIsFocused(false)}
+                placeholder="Scan NFC or type name..."
+                autoFocus
+                className="w-full h-14 pl-12 pr-4 rounded-xl border border-border/50 bg-card text-foreground text-base font-medium placeholder:text-muted-foreground/50 focus:border-primary/40 focus:ring-2 focus:ring-primary/10 focus:outline-none transition-all"
+                data-testid="cp-nfc-scan-input"
+              />
+            </div>
+            <p className="text-xs text-muted-foreground mt-1.5 pl-1">Place tag on reader or type UID and press Enter</p>
+          </form>
+
+          {/* Manual Entry Button */}
+          <button
+            onClick={() => navigate("/pulse/inside")}
+            className="group flex flex-col items-center justify-center px-6 rounded-xl border border-dashed border-border/60 bg-card cursor-pointer min-w-[140px] hover:border-primary/30 hover:bg-primary/5 transition-all"
+            data-testid="cp-manual-entry-btn"
+          >
+            <UserPlus className="h-5 w-5 text-primary mb-1 group-hover:scale-110 transition-transform" />
+            <span className="text-xs font-semibold text-foreground">Manual Entry</span>
+            <span className="text-[10px] text-muted-foreground">Without NFC</span>
+          </button>
+        </div>
       </motion.div>
 
-      {/* 6. Venue Breakdown + Category Breakdown */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Venue Breakdown */}
-        <motion.div {...fadeUp} transition={{ ...fadeUp.transition, delay: 0.1 }} className="rounded-xl border border-border bg-[hsl(var(--card))] p-5" data-testid="venue-breakdown">
-          <SectionHeader icon={MapPin} title="Venue Breakdown" subtitle="Where they spend" />
-          <div className="flex flex-col gap-3">
-            {venues.map((v, i) => {
-              const pct = Math.round((v.spent / totalVenueSpent) * 100);
-              return (
-                <div key={v.venue} className="flex items-center gap-3">
-                  <div className="flex items-center gap-2 w-24 shrink-0">
-                    <span className={`h-2.5 w-2.5 rounded-full shrink-0 ${venueDot[v.venue] || 'bg-muted-foreground'}`} />
-                    <span className="text-xs font-medium text-foreground truncate">{v.venue}</span>
-                  </div>
-                  <div className="flex-1 h-7 rounded-md bg-[hsl(var(--muted)_/_0.4)] relative overflow-hidden">
-                    <motion.div
-                      initial={{ width: 0 }}
-                      animate={{ width: `${Math.max(pct, 15)}%` }}
-                      transition={{ duration: 0.6, delay: 0.3 + i * 0.1 }}
-                      className={`h-full rounded-md ${venueBarBg[v.venue] || 'bg-muted-foreground/60'}`}
-                    />
-                    <span className="absolute inset-0 flex items-center px-3 text-xs font-medium text-foreground">
-                      ${v.spent.toLocaleString()} &middot; {v.visits} visits
-                    </span>
-                  </div>
-                  <span className="text-xs font-semibold text-muted-foreground w-10 text-right">{pct}%</span>
-                </div>
-              );
-            })}
-          </div>
-        </motion.div>
+      {/* Seção 3 — Guests Today */}
+      <motion.div {...fadeUp(0.35)} data-testid="cp-guests-today-section">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-lg font-bold text-foreground">Guests Today</h2>
+          <span className="text-sm font-semibold text-primary tabular-nums">{entryGuests.length} guests</span>
+        </div>
 
-        {/* Category Breakdown */}
-        <motion.div {...fadeUp} transition={{ ...fadeUp.transition, delay: 0.12 }} className="rounded-xl border border-border bg-[hsl(var(--card))] p-5" data-testid="category-breakdown">
-          <SectionHeader icon={ShoppingBag} title="Category Breakdown" subtitle="What they buy" />
-          <div className="flex flex-col gap-3">
-            {categories.map((c, i) => {
-              const pct = Math.round((c.amount / totalCatAmount) * 100);
-              const barPct = Math.max((c.amount / maxCatAmount) * 100, 15);
-              return (
-                <div key={c.category} className="flex items-center gap-3">
-                  <span className="text-xs font-medium text-foreground w-24 shrink-0 truncate">{c.category}</span>
-                  <div className="flex-1 h-7 rounded-md bg-[hsl(var(--muted)_/_0.4)] relative overflow-hidden">
-                    <motion.div
-                      initial={{ width: 0 }}
-                      animate={{ width: `${barPct}%` }}
-                      transition={{ duration: 0.6, delay: 0.3 + i * 0.1 }}
-                      className="h-full rounded-md bg-emerald-500/60"
-                    />
-                    <span className="absolute inset-0 flex items-center px-3 text-xs font-medium text-foreground">
-                      ${c.amount.toLocaleString()}
-                    </span>
-                  </div>
-                  <span className="text-xs font-semibold text-muted-foreground w-10 text-right">{pct}%</span>
-                </div>
-              );
-            })}
+        {entryGuests.length === 0 ? (
+          <div className="rounded-xl border border-border/50 bg-card flex flex-col items-center justify-center py-16" data-testid="cp-guests-empty">
+            <Users className="h-10 w-10 text-muted-foreground/20 mb-3" />
+            <p className="text-sm text-muted-foreground">No guests registered yet</p>
           </div>
-        </motion.div>
-      </div>
-
-      {/* 7. Events Attended + Event Timeline */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Events Attended */}
-        <motion.div {...fadeUp} transition={{ ...fadeUp.transition, delay: 0.14 }} className="rounded-xl border border-border bg-[hsl(var(--card))] p-5" data-testid="events-attended">
-          <SectionHeader icon={Star} title="Events Attended" subtitle="Click to view event detail" />
-          <div className="flex flex-col gap-2">
-            {events.length > 0 ? events.map((ev, i) => {
-              const oe = ownerEvents.find(e => e.name === ev.event && e.venueName === ev.venue);
+        ) : (
+          <div className="rounded-xl border border-border/50 bg-card overflow-hidden" data-testid="cp-guests-list">
+            {entryGuests.map((guest, idx) => {
+              const tc = tierColors[guest.tier] || tierColors.Bronze;
+              const sc = statusColors[guest.status] || statusColors.exited;
               return (
                 <div
-                  key={i}
-                  onClick={() => oe && navigate(`/owner/system/venues/${oe.venueId}/events/${oe.id}`)}
-                  className="flex items-center justify-between p-2.5 rounded-lg bg-[hsl(var(--muted)_/_0.3)] hover:bg-[hsl(var(--muted)_/_0.5)] cursor-pointer transition-colors"
-                  data-testid={`event-${i}`}
+                  key={guest.id}
+                  onClick={() => navigate(`/owner/customers/${guest.id}`)}
+                  className={`flex items-center px-5 py-3.5 hover:bg-muted/20 transition-colors cursor-pointer group ${idx > 0 ? "border-t border-border/30" : ""}`}
+                  data-testid={`cp-guest-row-${guest.id}`}
                 >
-                  <div className="flex items-center gap-2">
-                    <span className={`h-2 w-2 rounded-full shrink-0 ${venueDot[ev.venue] || 'bg-muted-foreground'}`} />
-                    <div>
-                      <p className="text-sm font-semibold text-foreground">{ev.event}</p>
-                      <p className="text-xs text-muted-foreground">{ev.venue} &middot; {ev.attended} times</p>
-                    </div>
+                  {/* Avatar */}
+                  <div className={`h-9 w-9 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${tc.avatar}`}>
+                    {getInitials(guest.name)}
                   </div>
-                  <div className="text-right">
-                    <p className="text-sm font-bold text-foreground tabular-nums">${ev.totalSpent.toLocaleString()}</p>
-                    <p className="text-xs text-muted-foreground">Avg ${ev.avgSpend}</p>
-                  </div>
+
+                  {/* Name + Tab */}
+                  <span className="text-sm font-semibold text-foreground ml-3 group-hover:text-primary transition-colors">{guest.name}</span>
+                  <span className="text-xs font-mono text-muted-foreground ml-2">#{guest.tabNumber}</span>
+
+                  <span className="flex-1" />
+
+                  {/* Time */}
+                  <span className="text-xs text-muted-foreground tabular-nums mr-3">{formatTime(guest.checkedInAt)}</span>
+
+                  {/* Tier Badge */}
+                  <span className={`text-[10px] font-semibold uppercase px-2 py-0.5 rounded-full mr-3 ${tc.badge}`}>{guest.tier}</span>
+
+                  {/* Status Pill */}
+                  <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full capitalize ${sc}`}>{guest.status}</span>
+
+                  {/* Chevron */}
+                  <ChevronRight className="h-4 w-4 text-muted-foreground/30 ml-2 group-hover:text-muted-foreground/60 transition-colors" />
                 </div>
               );
-            }) : <p className="text-xs text-muted-foreground text-center py-4">No event data</p>}
+            })}
           </div>
-        </motion.div>
-
-        {/* Event Timeline */}
-        <motion.div {...fadeUp} transition={{ ...fadeUp.transition, delay: 0.16 }} className="rounded-xl border border-border bg-[hsl(var(--card))] p-5" data-testid="event-timeline">
-          <SectionHeader icon={Calendar} title="Event Timeline" subtitle="Chronological attendance" />
-          {/* Auto-insight */}
-          <div className="p-2.5 rounded-lg bg-[hsl(var(--primary)_/_0.05)] border border-[hsl(var(--primary)_/_0.15)] mb-4">
-            <p className="text-xs text-[hsl(var(--primary))]">
-              <Zap className="h-3 w-3 inline mr-1.5" />
-              Most active at {guest.preferredVenue} events — {guest.topEvent} is the favorite
-            </p>
-          </div>
-          <div className="flex flex-col gap-1.5">
-            {purchases.length > 0 ? purchases.map((p, i) => (
-              <div key={p.id} className="flex items-center gap-3 py-2 text-xs">
-                <span className="w-14 text-muted-foreground tabular-nums">{p.date}</span>
-                <span className={`h-2 w-2 rounded-full shrink-0 ${venueDot[p.venue] || 'bg-muted-foreground'}`} />
-                <span className="font-medium text-foreground flex-1">{p.event} &middot; {p.venue}</span>
-                <span className="font-bold tabular-nums text-foreground">${p.total}</span>
-              </div>
-            )) : <p className="text-xs text-muted-foreground text-center py-4">No timeline data</p>}
-          </div>
-        </motion.div>
-      </div>
-
-      {/* 8. Loyalty Activity + Visit Timeline */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Loyalty Activity */}
-        <motion.div {...fadeUp} transition={{ ...fadeUp.transition, delay: 0.18 }} className="rounded-xl border border-border bg-[hsl(var(--card))] p-5" data-testid="loyalty-activity">
-          <SectionHeader icon={Gift} title="Loyalty Activity" subtitle={guest.loyaltyEnrolled ? 'Enrolled' : 'Not enrolled'} />
-          {loyalty ? (
-            <div className="flex flex-col gap-2">
-              {loyalty.map((l, i) => (
-                <div key={i} className="flex items-center justify-between p-2.5 rounded-lg bg-[hsl(var(--muted)_/_0.3)] text-xs">
-                  <div>
-                    <p className="font-semibold text-foreground">{l.detail.split('\n')[0]}</p>
-                    <p className="text-muted-foreground">{l.detail.includes('\n') ? l.detail.split('\n')[1] : ''}</p>
-                  </div>
-                  <div className="text-right shrink-0">
-                    <p className="text-muted-foreground">{l.date}</p>
-                    <p className="font-bold text-foreground tabular-nums">{l.balance.toLocaleString()} pts</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-8">
-              <Gift className="h-6 w-6 text-muted-foreground mx-auto mb-3" />
-              <p className="text-sm text-muted-foreground mb-4">Not enrolled in loyalty program</p>
-              <button className="px-4 py-2 rounded-lg bg-foreground text-background text-xs font-semibold hover:opacity-90 transition-opacity" data-testid="enroll-guest-btn">
-                Enroll Guest
-              </button>
-            </div>
-          )}
-        </motion.div>
-
-        {/* Visit Timeline (vertical bars) */}
-        <motion.div {...fadeUp} transition={{ ...fadeUp.transition, delay: 0.2 }} className="rounded-xl border border-border bg-[hsl(var(--card))] p-5" data-testid="visit-timeline">
-          <SectionHeader icon={TrendingUp} title="Visit Timeline" subtitle="Monthly behavior" />
-          {timeline.length > 0 ? (
-            <>
-              <div className="flex items-end gap-4" style={{ height: 180 }}>
-                {timeline.map((m) => {
-                  const total = venueKeys.reduce((s, v) => s + (m[v] || 0), 0);
-                  const dominant = venueKeys.reduce((best, v) => (m[v] || 0) > (m[best] || 0) ? v : best, venueKeys[0]);
-                  const barH = Math.max(30, (total / maxMonthlyVisits) * 130);
-                  return (
-                    <div key={m.month} className="flex-1 text-center flex flex-col items-center justify-end">
-                      <span className="text-xs font-bold tabular-nums text-foreground mb-1">{total} visits</span>
-                      <motion.div
-                        initial={{ height: 0 }}
-                        animate={{ height: barH }}
-                        transition={{ duration: 0.6, delay: 0.3 }}
-                        className={`w-full rounded-md ${venueBarBg[dominant] || 'bg-muted-foreground/60'}`}
-                      />
-                      <div className="flex items-center gap-1 mt-2">
-                        <span className={`h-2 w-2 rounded-full ${venueDot[dominant] || 'bg-muted-foreground'}`} />
-                        <span className="text-[10px] text-muted-foreground">{m.month}</span>
-                      </div>
-                      <span className="text-[10px] font-medium text-muted-foreground">${(m.totalSpent || 0).toLocaleString()}</span>
-                    </div>
-                  );
-                })}
-              </div>
-              {/* Legend */}
-              <div className="flex items-center gap-4 mt-4 pt-3 border-t border-border">
-                {venueKeys.filter(v => timeline.some(m => (m[v] || 0) > 0)).map(v => (
-                  <div key={v} className="flex items-center gap-1.5">
-                    <span className={`h-2 w-2 rounded-full ${venueDot[v]}`} />
-                    <span className="text-[10px] text-muted-foreground">{v}</span>
-                  </div>
-                ))}
-              </div>
-            </>
-          ) : (
-            <p className="text-xs text-muted-foreground text-center py-4">No visit timeline data</p>
-          )}
-        </motion.div>
-      </div>
-
-      {/* 9. Purchase History */}
-      <motion.div {...fadeUp} transition={{ ...fadeUp.transition, delay: 0.22 }} className="rounded-xl border border-border bg-[hsl(var(--card))] p-5" data-testid="purchase-history">
-        <SectionHeader icon={ShoppingBag} title="Purchase History" subtitle="Recent orders" />
-        <div className="flex flex-col gap-2">
-          {purchases.length > 0 ? purchases.map((p) => (
-            <div key={p.id} className="flex items-center justify-between p-3 rounded-lg bg-[hsl(var(--muted)_/_0.3)] text-xs">
-              <div className="flex items-start gap-2">
-                <span className={`h-2 w-2 rounded-full shrink-0 mt-1 ${venueDot[p.venue] || 'bg-muted-foreground'}`} />
-                <div>
-                  <p className="font-semibold text-foreground">{p.items}</p>
-                  <p className="text-muted-foreground">{p.date} &middot; {p.event} &middot; {p.venue}</p>
-                </div>
-              </div>
-              <span className="font-bold text-foreground tabular-nums shrink-0">${p.total}</span>
-            </div>
-          )) : <p className="text-xs text-muted-foreground text-center py-4">No purchase data</p>}
-        </div>
+        )}
       </motion.div>
     </div>
   );
