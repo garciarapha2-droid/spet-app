@@ -31,11 +31,11 @@ def _user_has_access(user: dict, module: dict) -> bool:
     for r in roles:
         role_name = r.get("role", "")
         role_level = ROLE_HIERARCHY.get(role_name, 0)
-        # Admins and owners have access to all modules
-        if role_level >= 70:
-            return True
-        # Permission-based access
+        # Permission-based access (e.g. pulse, tap, table, kds)
         if module["permission"]:
+            # Owners+ auto-have all permission-based modules
+            if role_level >= 70:
+                return True
             perms = r.get("permissions", {})
             if isinstance(perms, str):
                 try:
@@ -44,7 +44,7 @@ def _user_has_access(user: dict, module: dict) -> bool:
                     perms = {}
             if perms.get(module["permission"]):
                 return True
-        # Role-based access
+        # Role-based access (e.g. manager, owner, ceo) — must meet min_role level
         if module["min_role"]:
             min_level = ROLE_HIERARCHY.get(module["min_role"], 100)
             if role_level >= min_level:
