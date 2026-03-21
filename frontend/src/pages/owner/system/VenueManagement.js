@@ -96,27 +96,23 @@ export default function VenueManagement() {
                 className="rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-8 hover:border-[hsl(var(--primary)_/_0.25)] hover:shadow-[0_2px_12px_0_hsl(var(--foreground)_/_0.04)] cursor-pointer transition-all group"
                 data-testid={`venue-row-${v.id}`}
               >
-                <div className="flex items-start gap-5">
-                  {/* Icon */}
-                  <div className="h-12 w-12 rounded-xl bg-[hsl(var(--primary)_/_0.08)] flex items-center justify-center shrink-0">
+                {/* Header: Icon + Name/Address + Badge */}
+                <div className="flex items-start gap-4">
+                  <div className="h-11 w-11 rounded-xl bg-[hsl(var(--primary)_/_0.08)] flex items-center justify-center shrink-0">
                     <Building2 className="h-5 w-5 text-[hsl(var(--primary))]" />
                   </div>
-
-                  {/* Name + Address */}
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-3">
-                      <span className={`w-3 h-3 rounded-full shrink-0 ${vc?.dot || 'bg-muted-foreground'}`} />
-                      <h3 className="text-base font-bold text-foreground">Demo Club &mdash; {v.name}</h3>
+                    <div className="flex items-center gap-1.5">
+                      <h3 className="text-[15px] font-bold text-foreground">Demo Club &mdash; {v.name}</h3>
+                      <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${vc?.dot || 'bg-muted-foreground'}`} />
                     </div>
-                    <p className="text-xs text-muted-foreground mt-1.5 ml-6">{v.address}</p>
+                    <p className="text-xs text-muted-foreground mt-1">{v.address}, {v.name}</p>
                   </div>
-
-                  {/* Status Badge */}
                   <span className={`text-[10px] px-3 py-1 rounded-full font-bold uppercase tracking-wider shrink-0 ${st?.cls || ''}`} data-testid={`venue-status-${v.id}`}>{st?.text}</span>
                 </div>
 
-                {/* Metrics Row */}
-                <div className="flex items-end gap-12 mt-8 ml-[68px]">
+                {/* Metrics: 5-column grid, full width */}
+                <div className="grid grid-cols-5 gap-4 mt-7">
                   <div>
                     <p className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground mb-2">Revenue</p>
                     <p className="text-xl font-bold text-foreground tabular-nums">${(v.revenue / 1000).toFixed(0)}K</p>
@@ -135,8 +131,7 @@ export default function VenueManagement() {
                   </div>
                   <div>
                     <p className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground mb-2">Growth</p>
-                    <p className={`text-xl font-bold tabular-nums flex items-center gap-1 ${v.growth > 0 ? 'text-[hsl(var(--success))]' : 'text-[hsl(var(--danger))]'}`}>
-                      {v.growth > 0 ? <ArrowUpRight className="h-4 w-4" /> : <ArrowDownRight className="h-4 w-4" />}
+                    <p className={`text-xl font-bold tabular-nums ${v.growth > 0 ? 'text-[hsl(var(--success))]' : 'text-[hsl(var(--danger))]'}`}>
                       {v.growth > 0 ? '+' : ''}{v.growth}%
                     </p>
                   </div>
