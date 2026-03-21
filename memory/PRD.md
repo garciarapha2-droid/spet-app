@@ -1,105 +1,76 @@
-# SPET CEO Operating System — PRD
+# SPET CEO Operational Intelligence Platform — PRD
 
 ## Original Problem Statement
-Build a premium, multi-dashboard "CEO Operating System" with pixel-perfect UI implementation following detailed design specifications. The app includes a landing page, auth flow, venue dashboard, CEO dashboard, the Pulse operational module, independent TAP/TABLE order modules, a comprehensive onboarding wizard, and a complete Manager Dashboard module.
+Build a comprehensive CEO/Owner operational intelligence platform for venue management with modules for Pulse (real-time ops), TAP (point-of-sale), TABLE (reservations), KDS (kitchen), Manager Dashboard, and Owner Command Center. Strict spec-driven development with mock-data-first approach.
 
 ## Core Architecture
-- **Frontend**: React 19 + Tailwind CSS + Shadcn UI + Framer Motion + Recharts
-- **Backend**: FastAPI + MongoDB + PostgreSQL
-- **Auth**: JWT-based authentication with protected test accounts
-- **Theme**: CSS custom properties (HSL tokens) with data-theme light/dark toggle
+- **Frontend**: React 18 + Tailwind CSS + Shadcn/UI + Framer Motion + Recharts
+- **Backend**: FastAPI + MongoDB
+- **Auth**: JWT-based with role-based access (CEO, Owner, Manager, Staff)
 
-## User Personas
-- **CEO**: Platform admin with access to all dashboards (`garcia.rapha2@gmail.com` / `12345`)
-- **Standard User**: Venue operator with module access (`teste@teste.com` / `12345`)
-- **Onboarding User**: New user in setup flow (`teste1@teste.com` / `12345`)
+## Modules Implemented
 
-## Implemented Features
+### 1. Onboarding Wizard (10 steps) — COMPLETE
+### 2. Pulse Module — COMPLETE (mock data)
+### 3. TAP Module — COMPLETE (mock data)
+### 4. TABLE Module — COMPLETE (mock data)
+### 5. KDS Module — COMPLETE (mock data)
+### 6. CEO Dashboard — COMPLETE (mock data)
+### 7. Manager Dashboard (16 pages) — COMPLETE (mock data)
+  - Tested: iteration_73.json — 100% pass
 
-### Manager Dashboard Module — COMPLETE (2026-03-21)
-Full 16-page manager dashboard module with collapsible sidebar, theme toggle, and mock data.
+### 8. Owner Command Center (24+ pages) — PHASE 1+2 COMPLETE (mock data)
+  - **Layout**: Collapsible sidebar with grouped navigation, breadcrumbs, theme toggle
+  - **Overview**: KPIs, Venue Performance, Retention & Loyalty, AI Business Overview, Top Customers, Smart Insights, Attention Points, Action Center
+  - **Performance** (4 pages): Revenue Analytics, Profit Analysis, Venue Comparison, Time Analysis — FULLY IMPLEMENTED
+  - **Customers** (6 pages): Customer Intelligence, Audience Intelligence, Segments, Churn & Retention, Customer Profile (GuestFullHistory), Audience Genre Detail — FULLY IMPLEMENTED
+  - **Growth** (2 pages): Loyalty Performance, Campaign Performance — FULLY IMPLEMENTED
+  - **Finance** (4 pages): Financial Overview, Cost Analysis, Venue Cost Detail, Risk Alerts — FULLY IMPLEMENTED
+  - **Insights** (2 pages): Smart Insights, Action Center — FULLY IMPLEMENTED
+  - **System** (4 pages): Venue Management, Venue Detail, Event Detail, Owner Settings — FULLY IMPLEMENTED
+  - **Canonical GuestFullHistory**: Shared component at `/app/frontend/src/components/shared/GuestFullHistory.js`
+  - Tested: iteration_74.json — 100% pass (29/29 features)
 
-**Architecture:**
-- `ManagerLayout.js` — Shell with collapsible sidebar (w-240 ↔ w-60), theme toggle, back button
-- 9 top-level pages + expandable Loyalty sub-module (7 pages)
-- All routes under `/manager/*`, completely isolated from other modules
-- Mock data from `managerData.js` and `managerModuleData.js`
+## Bug Fixes Completed
+- Module access for teste@teste.com corrected (TAP, KDS enabled; CEO hidden)
+- "Modules" dropdown removed from main header
+- "CEO (Locked)" card hidden from non-CEO users in PulseHeader
 
-**Routes:**
-| Route | Component | Description |
-|-------|-----------|-------------|
-| /manager | ManagerOverview | Smart Insights, KPIs, charts, alerts |
-| /manager/staff | StaffRoles | System users + operational staff |
-| /manager/tables | TablesByServer | Kanban board by server |
-| /manager/menu | MenuProducts | Search, filter, list/grid views |
-| /manager/shift | ShiftOperations | KPIs, earnings, charts, AI partner |
-| /manager/tips | Tips | Staff tip cards + details table |
-| /manager/guests | NfcGuests | Guest list + profile modal |
-| /manager/reports | ReportsFinance | Period filters, charts, sales table |
-| /manager/settings | ManagerSettings | Venue config + integrations |
-| /manager/loyalty | LoyaltyRewards | Hero, KPIs, distribution chart |
-| /manager/loyalty/guests | LoyaltyGuests | Filterable guest directory |
-| /manager/loyalty/guests/:id | LoyaltyGuestProfile | Full profile page |
-| /manager/loyalty/tiers | LoyaltyTiers | Tier cards + automation rules |
-| /manager/loyalty/campaigns | LoyaltyCampaigns | Campaign list + create modal |
-| /manager/loyalty/rewards | LoyaltyRewardsPage | Reward grid with toggles |
-| /manager/loyalty/insights | LoyaltyInsights | Insights + actionable guests |
+## Key Routes
+- `/owner` — Owner Command Center (new module, replaces legacy)
+- `/owner/performance/revenue|profit|venues|time`
+- `/owner/customers/intelligence|audience|segments|churn`
+- `/owner/customers/:guestId` — Guest Full History
+- `/owner/customers/audience/:genreSlug` — Genre Detail
+- `/owner/growth/loyalty|campaigns`
+- `/owner/finance/overview|costs|risk`
+- `/owner/finance/costs/:venueName` — Venue Cost Detail
+- `/owner/insights/smart|actions`
+- `/owner/system/venues|settings`
+- `/owner/system/venues/:venueId` — Venue Detail
+- `/owner/system/venues/:venueId/events/:eventId` — Event Detail
 
-**Testing:** 100% pass (22/22 features tested, iteration_73.json)
-
-### Onboarding Wizard — COMPLETE (2026-03-21)
-Full 10-step onboarding wizard. Testing: 100% pass (iteration_72.json)
-
-### Landing Page
-Full marketing landing page with pricing cards
-
-### Auth Flow
-Login, Signup, Onboarding pages. Protected routes with role-based access.
-
-### Venue Home (Dashboard)
-Pixel-perfect implementation from design spec
-
-### CEO Dashboard
-Sidebar navigation with 12 dashboard pages
-
-### Pulse Module — All 5 Pages Complete
-Check-in, Inside, Orders, Exit, Membership
-
-### TAP & TABLE — Independent Modules
-TAP (identity verification), TABLE (age verification)
-
-### Branding
-Browser tab title: "SPET", "Made with Emergent" badge removed
-
-## Design System
-- CSS custom properties with HSL tokens
-- Font: Inter (body), Space Grotesk (headings/brand)
-- Primary: `258 75% 58%` (#7C3AED purple)
+## Test Credentials
+- CEO: garcia.rapha2@gmail.com / 12345
+- Owner: teste@teste.com / 12345
+- Onboarding: teste1@teste.com / 12345
 
 ## Prioritized Backlog
 
-### P1 (Next)
-- Connect TAP/TABLE and Pulse to real backend APIs (replace mock data)
-- Connect Manager Dashboard to real backend APIs
-- Implement /api/ceo/conversion-rates endpoint
+### P0 — In Progress
+- Phase 5: System-wide Guest Profile integration (Manager + Pulse modules)
+
+### P1
+- API Integration: Connect all modules to real backend APIs
+- CEO Dashboard endpoint: `/api/ceo/conversion-rates`
 - Pixel-perfect Signup Page
-- Manager-configurable identity verification rule
 
 ### P2
-- CEO Dashboard endpoints (crm-reports, startup-kpis, mrr-retention)
-- Subscription management APIs
-- Team invite system
+- Additional CEO Dashboard endpoints (crm-reports, startup-kpis, mrr-retention)
+- Subscription and team invite management APIs
 
 ### P3
-- Refactor LandingPage.js into smaller components
-- Pricing card alignment
-- Clean up ManagerPage.legacy.js (old file preserved)
-
-## Key API Endpoints
-- `POST /api/onboarding/save-config` — Save onboarding config
-- `POST /api/onboarding/complete` — Mark complete
-- `POST /api/onboarding/skip` — Skip onboarding
-
-## Testing
-- Manager Dashboard: 100% pass (22/22 features, iteration_73.json)
-- Onboarding wizard: 100% pass (15/15 backend + all frontend, iteration_72.json)
+- Refactor LandingPage.js
+- Remove ManagerPage.legacy.js
+- Rename OwnerPage.js → OwnerPage.legacy.js (already done)
+- Pricing card alignment (user verification pending)

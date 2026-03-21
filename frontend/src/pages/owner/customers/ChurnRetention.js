@@ -98,7 +98,7 @@ export default function ChurnRetention() {
           <div><p className="text-base font-semibold text-foreground">At-Risk & Lost Guests</p><p className="text-xs text-muted-foreground">Guests needing re-engagement</p></div>
         </div>
         <div className="space-y-2">
-          {[...atRiskGuests, ...lostGuests].map((g, i) => (
+          {[...atRiskGuests, ...lostGuests].filter((g, i, arr) => arr.findIndex(x => x.id === g.id) === i).map((g, i) => (
             <motion.div key={g.id} {...fadeUp} transition={{ ...fadeUp.transition, delay: 0.3 + i * 0.03 }}
               onClick={() => navigate(`/owner/customers/${g.id}`)}
               className="flex items-center gap-3 p-3 rounded-lg hover:bg-[hsl(var(--muted)_/_0.3)] cursor-pointer transition-colors group"

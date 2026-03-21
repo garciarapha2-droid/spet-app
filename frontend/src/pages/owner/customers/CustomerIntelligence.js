@@ -86,7 +86,7 @@ export default function CustomerIntelligence() {
             </thead>
             <tbody>
               {filtered.map((g, i) => (
-                <motion.tr key={g.id} {...fadeUp} transition={{ ...fadeUp.transition, delay: 0.25 + i * 0.02 }}
+                <tr key={g.id}
                   onClick={() => setSelectedGuest(g)}
                   className="border-b border-[hsl(var(--border)_/_0.5)] hover:bg-[hsl(var(--muted)_/_0.3)] cursor-pointer transition-colors group"
                   data-testid={`ci-row-${g.id}`}
@@ -112,7 +112,7 @@ export default function CustomerIntelligence() {
                   <td className="p-3">
                     <span className={`text-xs font-medium ${g.spendTrend === 'up' ? 'text-[hsl(var(--success))]' : g.spendTrend === 'down' ? 'text-[hsl(var(--danger))]' : 'text-muted-foreground'}`}>{g.spendTrend}</span>
                   </td>
-                </motion.tr>
+                </tr>
               ))}
             </tbody>
           </table>
