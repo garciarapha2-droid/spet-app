@@ -15,7 +15,7 @@ import requests
 import os
 import json
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://manager-module.preview.emergentagent.com').rstrip('/')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://owner-insights-hub.preview.emergentagent.com').rstrip('/')
 VENUE_ID = "40a24e04-75b6-435d-bfff-ab0d469ce543"
 
 # Test credentials

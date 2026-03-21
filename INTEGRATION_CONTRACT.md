@@ -27,7 +27,7 @@ Checkout (Stripe)                   /manager (admin)
 
 ```
 Production:  https://app.spetapp.com  (or assigned Emergent domain)
-Preview:     https://manager-module.preview.emergentagent.com
+Preview:     https://owner-insights-hub.preview.emergentagent.com
 ```
 
 All endpoints are prefixed with `/api`.
