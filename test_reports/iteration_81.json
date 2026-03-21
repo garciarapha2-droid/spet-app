@@ -1,0 +1,118 @@
+{
+  "summary": "Frontend testing of Venue Comparison page at /owner/performance/venues. Complete rewrite with dual mode (Venue/Night) tested successfully. All 17 features passed - page loads, mode toggle, period filter, Venue mode chart and cards, Night mode chart and cards, mode switching.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {
+        "screen": "Venue Comparison - Charts",
+        "issues": ["Console warnings about chart dimensions being -1. This is a known Recharts issue when charts render before container has dimensions. Not blocking functionality."]
+      }
+    ]
+  },
+  "test_report_links": [
+    "/app/test_reports/iteration_81.json"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "All data-testid attributes present and correctly named",
+    "Mode toggle works correctly with Building2 icon for Venue and Moon icon for Night",
+    "Period filter shows 5 pills (Today, Weekly, Monthly, Yearly, Custom) with Weekly active by default",
+    "VENUE MODE: Revenue Comparison chart renders with grouped blue (Revenue) and green (Profit) bars for 3 venues",
+    "VENUE MODE: Chart has TrendingUp icon, title 'Revenue Comparison', subtitle 'Side-by-side venue performance'",
+    "VENUE MODE: 3 venue cards (Downtown, Midtown, Uptown) in 3-column grid with all 6 metrics each",
+    "VENUE MODE: Downtown shows 'Top performer' badge (green), $72K revenue, $29K profit, 40.3% margin, 68% retention, 890 guests, +12.4% growth",
+    "VENUE MODE: Midtown shows 'Needs attention' badge (warning), $58K revenue",
+    "VENUE MODE: Uptown shows 'Underperforming' badge (red), $40K revenue, -5.2% growth",
+    "VENUE MODE: Cards have italic insight text and are clickable with hover effects",
+    "NIGHT MODE: Night Comparison chart with Moon icon header renders correctly",
+    "NIGHT MODE: 6 night cards in vertical list with correct data (Friday Night Live $8.4K, Saturday Bash $9.2K, etc.)",
+    "NIGHT MODE: Each card shows Calendar icon, night name, venue badge, revenue, and inline metrics",
+    "NIGHT MODE: Growth values are color-coded (green for positive, red for negative)",
+    "Mode toggle switches between Venue and Night modes correctly"
+  ],
+  "updated_files": [],
+  "success_rate": {
+    "backend": "N/A - frontend only testing",
+    "frontend": "100%"
+  },
+  "test_credentials": "teste@teste.com / 12345",
+  "seed_data_creation": "Venue data from ownerData.js, Night data hardcoded inline in component",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Venue Comparison page fully tested. All features working: Mode toggle (Venue/Night), Period filter (5 pills), Venue mode with Revenue Comparison chart and 3 venue cards, Night mode with Night Comparison chart and 6 night cards. All data-testid attributes present. Chart dimension warnings are known Recharts issue, not blocking.",
+  "features_tested": {
+    "1_page_loads": {
+      "status": "PASS",
+      "details": "Page loads at /owner/performance/venues with data-testid='venue-comparison'"
+    },
+    "2_mode_toggle": {
+      "status": "PASS",
+      "details": "Mode toggle shows Venue (Building2 icon) and Night (Moon icon), Venue active by default"
+    },
+    "3_period_filter": {
+      "status": "PASS",
+      "details": "Period filter shows 5 pills (Today, Weekly, Monthly, Yearly, Custom) with Weekly active by default"
+    },
+    "4_venue_mode_chart": {
+      "status": "PASS",
+      "details": "Revenue Comparison chart renders with grouped blue (Revenue) and green (Profit) bars for 3 venues"
+    },
+    "5_venue_mode_chart_header": {
+      "status": "PASS",
+      "details": "Chart has TrendingUp icon, title 'Revenue Comparison', subtitle 'Side-by-side venue performance'"
+    },
+    "6_venue_mode_cards": {
+      "status": "PASS",
+      "details": "3 venue cards (Downtown, Midtown, Uptown) in 3-column grid with all 6 metrics each"
+    },
+    "7_downtown_card_details": {
+      "status": "PASS",
+      "details": "Downtown shows 'Top performer' badge (green), $72K revenue, $29K profit, 40.3% margin, 68% retention, 890 guests, +12.4% growth"
+    },
+    "8_midtown_card_details": {
+      "status": "PASS",
+      "details": "Midtown shows 'Needs attention' badge (warning), $58K revenue"
+    },
+    "9_uptown_card_details": {
+      "status": "PASS",
+      "details": "Uptown shows 'Underperforming' badge (red), $40K revenue, -5.2% growth"
+    },
+    "10_venue_cards_italic_insight": {
+      "status": "PASS",
+      "details": "Cards have italic insight text"
+    },
+    "11_venue_cards_clickable": {
+      "status": "PASS",
+      "details": "Cards are clickable with cursor-pointer and hover effects"
+    },
+    "12_switch_to_night_mode": {
+      "status": "PASS",
+      "details": "Clicking Night mode toggle switches to Night mode correctly"
+    },
+    "13_night_mode_chart": {
+      "status": "PASS",
+      "details": "Night Comparison chart with Moon icon header renders correctly"
+    },
+    "14_night_mode_cards": {
+      "status": "PASS",
+      "details": "6 night cards in vertical list (Friday Night Live $8.4K, Saturday Bash $9.2K, Thirsty Thursday $5.6K, Weekend Vibes $6.8K, Ladies Night $4.2K, Late Night Sessions $3.8K)"
+    },
+    "15_night_card_details": {
+      "status": "PASS",
+      "details": "Each card shows Calendar icon, night name, venue badge, revenue, and inline metrics (Profit/Guests/Margin/Retention/Growth)"
+    },
+    "16_growth_color_coding": {
+      "status": "PASS",
+      "details": "Growth values are color-coded (green for positive, red for negative)"
+    },
+    "17_switch_back_to_venue_mode": {
+      "status": "PASS",
+      "details": "Mode toggle switches back to Venue mode correctly"
+    }
+  }
+}
