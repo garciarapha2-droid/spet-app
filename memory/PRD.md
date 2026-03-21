@@ -14,7 +14,7 @@ Build a comprehensive CEO/Owner operational intelligence platform for venue mana
 ### 2. Pulse Module — COMPLETE (mock data)
 ### 3. TAP Module — COMPLETE (mock data)
 ### 4. TABLE Module — COMPLETE (mock data)
-### 5. KDS Module — COMPLETE (mock data)
+### 5. KDS Module — COMPLETE (mock data, rewritten twice to spec)
 ### 6. CEO Dashboard — COMPLETE (mock data)
 ### 7. Manager Dashboard (16 pages) — COMPLETE (mock data)
   - Tested: iteration_73.json — 100% pass
@@ -34,8 +34,16 @@ Build a comprehensive CEO/Owner operational intelligence platform for venue mana
 ### 9. Global Design System & Spacing Standard — COMPLETE
   - Created `/app/design-system.md` with full spacing rules
   - Applied across Owner (24 pages), Manager (17 pages), Pulse (7 pages), shared components
-  - Standard: Card→Card 16px (space-y-4), Sections 24px (mb-6), Card padding 20px (p-5), Internal items 8px (space-y-2), Columns 24px (gap-6), Page padding 24px (p-6)
+  - Standard: Card→Card 16px (gap-4), Sections 24px (mb-6), Card padding 20px (p-5), Internal items 8px (gap-2), Columns 24px (gap-6), Page padding 24px (p-6)
+  - **CRITICAL**: Use `flex flex-col gap-*` instead of `space-y-*` for vertical lists
   - Tested: iteration_75.json — 100% pass (18/18 features)
+
+### 10. Pixel-Perfect Page Rewrites — COMPLETE
+  - **CampaignPerformance.js** — Rewritten to detailed spec (2025-03-21)
+  - **CostAnalysis.js** — Rewritten to detailed spec (2025-03-21)
+  - **LoyaltyPerformance.js** — Rewritten to detailed spec (2025-03-21)
+    - Tested: iteration_76.json — 100% pass (11/11 features)
+    - Features: 4 KPIs, Tier Distribution chart, Revenue by Tier bars, expandable Tier Detail Panel, guest navigation, Growth Opportunity insight
 
 ## Canonical Guest Full History Component
 **Location**: `/app/frontend/src/components/shared/GuestFullHistory.js`
@@ -67,7 +75,8 @@ Build a comprehensive CEO/Owner operational intelligence platform for venue mana
 ## Prioritized Backlog
 
 ### P0 — Next
-- Spec do Smart Insights page (user request pending details)
+- Specs for Campaign Performance rewrite (user mentioned, pending details)
+- Specs for Financial Overview rewrite (user mentioned, pending details)
 - Phase 5: System-wide Guest Profile integration (Manager Loyalty → Guests uses GuestFullHistory)
 
 ### P1
@@ -77,7 +86,7 @@ Build a comprehensive CEO/Owner operational intelligence platform for venue mana
 - Pixel-perfect Signup Page
 
 ### P2
-- Additional CEO Dashboard endpoints
+- Additional CEO Dashboard endpoints (crm-reports, startup-kpis, mrr-retention)
 - Subscription and team invite management APIs
 
 ### P3
