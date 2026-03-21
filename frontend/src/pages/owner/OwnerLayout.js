@@ -6,6 +6,7 @@ import {
   Users, Layers, Heart, Target, Sparkles, AlertTriangle, ListChecks,
   Settings, ArrowLeft, Sun, Moon, ChevronLeft, ChevronRight, ChevronDown
 } from 'lucide-react';
+import { ownerEvents } from '../../data/ownerData';
 
 const navGroups = [
   {
@@ -112,7 +113,7 @@ export default function OwnerLayout() {
   const currentPage = pageTitles[location.pathname] ||
     (location.pathname.startsWith('/owner/customers/') && location.pathname.split('/').length === 4 ? { title: 'Customer Profile', subtitle: 'Guest history' } :
     location.pathname.startsWith('/owner/finance/costs/') ? { title: 'Venue Cost Detail', subtitle: 'Cost drill-down' } :
-    location.pathname.startsWith('/owner/system/venues/') && location.pathname.includes('/events/') ? { title: 'Event Detail', subtitle: 'Night analysis' } :
+    location.pathname.startsWith('/owner/system/venues/') && location.pathname.includes('/events/') ? (() => { const eid = location.pathname.split('/').pop(); const ev = ownerEvents.find(e => e.id === eid); return ev ? { title: ev.name, subtitle: `${ev.venueName} \u00B7 ${ev.date}` } : { title: 'Event Detail', subtitle: 'Night analysis' }; })() :
     location.pathname.startsWith('/owner/system/venues/') ? { title: 'Venue Detail', subtitle: 'Venue drill-down' } :
     location.pathname.startsWith('/owner/customers/audience/') ? (() => { const s = location.pathname.split('/').pop(); const n = { techno:'Techno', house:'House', hiphop:'Hip Hop', latin:'Latin', 'rnb-soul':'R&B / Soul', 'pop-commercial':'Pop / Commercial' }[s] || s; return { title: `${n} — Genre Intelligence`, subtitle: 'Customers \u203A Audience' }; })() :
     { title: 'Owner', subtitle: '' });
