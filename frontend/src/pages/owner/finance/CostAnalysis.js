@@ -63,7 +63,7 @@ export default function CostAnalysis() {
       <motion.div {...fadeUp} transition={{ ...fadeUp.transition, delay: 0.2 }} className="rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-5">
         <p className="text-base font-semibold text-foreground mb-1">Cost by Venue</p>
         <p className="text-xs text-muted-foreground mb-4">Click to drill down</p>
-        <div className="space-y-3">
+        <div className="space-y-2">
           {ownerVenues.map((v, i) => {
             const vc = venueColors[v.name];
             const scv = staffCostByVenue.find(s => s.venue === v.name);

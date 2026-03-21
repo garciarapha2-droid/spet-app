@@ -33,7 +33,7 @@ export default function RiskAlerts() {
       </div>
 
       {/* Alert List */}
-      <div className="space-y-3">
+      <div className="space-y-4">
         {riskAlerts.map((alert, i) => {
           const cfg = severityConfig[alert.severity];
           const Icon = cfg.icon;

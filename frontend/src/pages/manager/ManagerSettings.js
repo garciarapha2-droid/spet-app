@@ -54,7 +54,7 @@ export default function ManagerSettings() {
       {/* Integrations */}
       <motion.div {...fadeUp} transition={{ ...fadeUp.transition, delay: 0.1 }} className="rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-5">
         <p className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground mb-4">Integrations</p>
-        <div className="space-y-3">
+        <div className="space-y-4">
           <div className="flex items-center justify-between p-3 rounded-lg bg-[hsl(var(--muted)_/_0.3)]">
             <div>
               <p className="text-sm font-medium text-foreground">Stripe</p>

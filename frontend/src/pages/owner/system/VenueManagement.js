@@ -45,7 +45,7 @@ export default function VenueManagement() {
   return (
     <div data-testid="venue-management">
       {/* ── Top Controls ── */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-8">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-6">
         {/* Left: View Toggle */}
         <div className="flex items-center gap-1 p-1 rounded-lg bg-[hsl(var(--muted)_/_0.5)]" data-testid="venue-view-toggle">
           {[
@@ -92,7 +92,7 @@ export default function VenueManagement() {
           VENUES VIEW
          ══════════════════════════════════════════ */}
       {view === 'venues' && (
-        <div className="space-y-10" data-testid="venues-list-view">
+        <div className="space-y-4" data-testid="venues-list-view">
           {ownerVenues.map((v, i) => {
             const vs = venueStyle[v.name] || venueStyle.Downtown;
             const st = statusBadge[v.status];
@@ -102,7 +102,7 @@ export default function VenueManagement() {
                 {...fadeUp}
                 transition={{ ...fadeUp.transition, delay: 0.04 + i * 0.04 }}
                 onClick={() => navigate(`/owner/system/venues/${v.id}`)}
-                className={`rounded-xl border ${vs.border} bg-[hsl(var(--card))] p-8 hover:shadow-sm cursor-pointer transition-all group`}
+                className={`rounded-xl border ${vs.border} bg-[hsl(var(--card))] p-5 hover:shadow-sm cursor-pointer transition-all group`}
                 data-testid={`venue-row-${v.id}`}
               >
                 {/* Header: Icon + Name/Addr + Badge */}
@@ -121,7 +121,7 @@ export default function VenueManagement() {
                 </div>
 
                 {/* Metrics: 5-col grid */}
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mt-6">
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-6 mt-4">
                   <div>
                     <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Revenue</p>
                     <p className="text-sm font-bold text-foreground tabular-nums">${(v.revenue / 1000).toFixed(0)}K</p>
@@ -155,7 +155,7 @@ export default function VenueManagement() {
           NIGHTS / EVENTS VIEW
          ══════════════════════════════════════════ */}
       {view === 'nights' && (
-        <div className="space-y-8" data-testid="nights-list-view">
+        <div className="space-y-6" data-testid="nights-list-view">
           {groupedEvents.map((group, gi) => {
             const vs = venueStyle[group.venue.name] || venueStyle.Downtown;
             return (
@@ -177,7 +177,7 @@ export default function VenueManagement() {
                         {...fadeUp}
                         transition={{ ...fadeUp.transition, delay: 0.08 + gi * 0.05 + ei * 0.03 }}
                         onClick={() => navigate(`/owner/system/venues/${ev.venueId}/events/${ev.id}`)}
-                        className={`rounded-xl border ${vs.border} bg-[hsl(var(--card))] p-8 hover:shadow-sm cursor-pointer transition-all group`}
+                        className={`rounded-xl border ${vs.border} bg-[hsl(var(--card))] p-5 hover:shadow-sm cursor-pointer transition-all group`}
                         data-testid={`night-row-${ev.id}`}
                       >
                         <div className="flex items-start gap-3">
@@ -194,7 +194,7 @@ export default function VenueManagement() {
                           <ChevronRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0 mt-1" />
                         </div>
 
-                        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mt-6">
+                        <div className="grid grid-cols-2 md:grid-cols-5 gap-6 mt-4">
                           <div>
                             <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Revenue</p>
                             <p className="text-sm font-bold text-foreground tabular-nums">${(ev.revenue / 1000).toFixed(1)}K</p>

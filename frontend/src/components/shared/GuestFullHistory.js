@@ -44,7 +44,7 @@ export function CustomerProfileModal({ guest, onClose }) {
           <X className="h-4 w-4 text-muted-foreground" />
         </button>
 
-        <div className="p-6 space-y-5">
+        <div className="p-5 space-y-4">
           {/* Header */}
           <div className="flex items-start gap-4">
             <div className="h-12 w-12 rounded-full bg-[hsl(var(--primary)_/_0.12)] flex items-center justify-center text-sm font-bold text-[hsl(var(--primary))] shrink-0">
@@ -241,7 +241,7 @@ export default function GuestFullHistory({ guest, onBack }) {
       </motion.div>
 
       {/* ── 4+5. VENUE BREAKDOWN + CATEGORY BREAKDOWN ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Venue Breakdown */}
         <motion.div {...fadeUp} transition={{ ...fadeUp.transition, delay: 0.26 }} className="rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] px-6 py-5">
           <div className="flex items-center gap-3 mb-5">
@@ -318,7 +318,7 @@ export default function GuestFullHistory({ guest, onBack }) {
       </div>
 
       {/* ── 6+7. EVENTS ATTENDED + EVENT TIMELINE ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Events Attended */}
         <motion.div {...fadeUp} transition={{ ...fadeUp.transition, delay: 0.34 }} className="rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] px-6 py-5">
           <div className="flex items-center gap-3 mb-5">

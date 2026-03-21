@@ -97,7 +97,7 @@ export default function PulseGuest() {
   return (
     <PulseLayout>
       {/* Hero KPIs */}
-      <div className="mb-10 grid grid-cols-3 gap-4" data-testid="kpi-grid">
+      <div className="mb-6 grid grid-cols-3 gap-4" data-testid="kpi-grid">
         {kpis.map((kpi, i) => (
           <motion.div
             key={kpi.label}
@@ -130,7 +130,7 @@ export default function PulseGuest() {
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}
-        className="mb-10 grid grid-cols-1 gap-4 lg:grid-cols-[1fr_240px]"
+        className="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-[1fr_240px]"
         data-testid="scan-section"
       >
         <div className="group relative">

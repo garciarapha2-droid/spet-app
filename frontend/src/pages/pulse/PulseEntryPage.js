@@ -341,7 +341,7 @@ export const PulseEntryPage = () => {
 
       <main className="w-full px-16 py-12">
         {/* KPI Cards */}
-        <div className="grid grid-cols-3 gap-16 mb-16">
+        <div className="grid grid-cols-3 gap-6 mb-6">
           <div className="space-y-3">
             <div className="flex items-center gap-3 text-sm font-medium text-muted-foreground uppercase tracking-wider">
               <Users className="h-5 w-5 text-primary" />
@@ -368,11 +368,11 @@ export const PulseEntryPage = () => {
         </div>
 
         {/* Main area: 12 col grid */}
-        <div className={`grid ${showRightPanel ? 'grid-cols-12 gap-10' : 'grid-cols-12 gap-10'}`}>
+        <div className={`grid ${showRightPanel ? 'grid-cols-12 gap-6' : 'grid-cols-12 gap-6'}`}>
           {/* Left: Scan + Manual + Guest list */}
           <div className={showRightPanel ? 'col-span-7' : 'col-span-12'}>
             {/* Scan + Manual Entry */}
-            <div className="grid grid-cols-12 gap-8 mb-16">
+            <div className="grid grid-cols-12 gap-6 mb-6">
               <div className="col-span-8">
                 <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-4">
                   Scan NFC Tag

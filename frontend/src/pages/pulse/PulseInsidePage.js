@@ -58,7 +58,7 @@ export default function PulseInsidePage() {
   return (
     <PulseLayout>
       {/* Title */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex items-center justify-between mb-6">
         <div>
           <h2 className="text-lg font-bold text-foreground tracking-normal" data-testid="inside-title">
             Live Floor
@@ -70,7 +70,7 @@ export default function PulseInsidePage() {
       </div>
 
       {/* KPI Row */}
-      <div className="grid grid-cols-3 gap-4 mb-8" data-testid="inside-kpis">
+      <div className="grid grid-cols-3 gap-4 mb-6" data-testid="inside-kpis">
         {kpis.map((kpi, i) => {
           const Icon = kpi.icon;
           return (
@@ -130,7 +130,7 @@ export default function PulseInsidePage() {
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2, duration: 0.4 }}
-        className="mb-8"
+        className="mb-6"
       >
         <div className="relative max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />

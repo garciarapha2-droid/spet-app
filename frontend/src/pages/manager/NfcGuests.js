@@ -142,7 +142,7 @@ function GuestProfileModal({ guest, onClose }) {
           <X className="h-5 w-5 text-muted-foreground" />
         </button>
 
-        <div className="p-6 space-y-5">
+        <div className="p-5 space-y-4">
           {/* Header */}
           <div className="flex items-start gap-4">
             <div className="h-14 w-14 rounded-2xl bg-[hsl(var(--primary)_/_0.15)] flex items-center justify-center text-lg font-bold text-[hsl(var(--primary))]">

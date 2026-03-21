@@ -80,7 +80,7 @@ export default function EventDetail() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <motion.div {...fadeUp} transition={{ ...fadeUp.transition, delay: 0.25 }} className="rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-5">
           <p className="text-base font-semibold text-foreground mb-4">Cost Breakdown</p>
-          <div className="space-y-3">
+          <div className="space-y-2">
             {eventCostBreakdown.map((c, i) => (
               <div key={c.name} className="flex items-center gap-3">
                 <span className="text-sm font-medium text-foreground flex-1">{c.name}</span>

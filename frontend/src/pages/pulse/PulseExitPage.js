@@ -46,7 +46,7 @@ export default function PulseExitPage() {
   return (
     <PulseLayout>
       {/* Title */}
-      <div className="mb-8">
+      <div className="mb-6">
         <h2 className="text-lg font-bold text-foreground tracking-normal" data-testid="exit-title">
           Check Out
         </h2>
@@ -55,7 +55,7 @@ export default function PulseExitPage() {
         </p>
       </div>
 
-      <div className="grid grid-cols-12 gap-8">
+      <div className="grid grid-cols-12 gap-6">
         {/* Left: Inside guests */}
         <div className="col-span-7">
           {/* Search */}

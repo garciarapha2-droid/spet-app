@@ -45,7 +45,7 @@ export default function ActionCenter() {
       </div>
 
       {/* Action Cards */}
-      <div className="space-y-3">
+      <div className="space-y-4">
         {filtered.map((a, i) => {
           const StatusIcon = statusIcon[a.status];
           return (

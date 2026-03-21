@@ -21,7 +21,7 @@ export default function PulseRewardsPage() {
   return (
     <PulseLayout>
       {/* Title */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex items-center justify-between mb-6">
         <div>
           <h2 className="text-lg font-bold text-foreground tracking-normal" data-testid="rewards-title">
             Membership
@@ -45,7 +45,7 @@ export default function PulseRewardsPage() {
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.05, duration: 0.4 }}
-        className="rounded-2xl border border-border/50 bg-gradient-to-br from-primary/10 to-primary/5 p-6 mb-8"
+        className="rounded-2xl border border-border/50 bg-gradient-to-br from-primary/10 to-primary/5 p-5 mb-6"
         data-testid="points-engine"
       >
         <div className="flex items-center gap-3 mb-3">
@@ -69,7 +69,7 @@ export default function PulseRewardsPage() {
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1, duration: 0.4 }}
-        className="mb-8"
+        className="mb-6"
       >
         <div className="flex items-center gap-2 mb-4">
           <Trophy className="h-4 w-4 text-primary" />

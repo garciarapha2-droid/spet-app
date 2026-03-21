@@ -75,7 +75,7 @@ export default function CampaignPerformance() {
         </div>
       </div>
 
-      <div className="space-y-3">
+      <div className="space-y-4">
         {filtered.map((c, i) => (
           <motion.div key={c.id} {...fadeUp} transition={{ ...fadeUp.transition, delay: 0.25 + i * 0.04 }}
             className="rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-5 hover:border-[hsl(var(--primary)_/_0.3)] hover:shadow-sm transition-all"

@@ -81,7 +81,7 @@ export default function LoyaltyCampaigns() {
       </motion.div>
 
       {/* Campaign List */}
-      <div className="space-y-3">
+      <div className="space-y-4">
         {filtered.map((c, i) => {
           const Icon = typeIcons[c.type] || Target;
           return (

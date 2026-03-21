@@ -218,7 +218,7 @@ export default function OwnerLayout() {
           </div>
           {currentPage.subtitle && <span className="text-[12px] text-muted-foreground">{currentPage.subtitle}</span>}
         </header>
-        <main className="flex-1 overflow-y-auto p-8" data-testid="owner-content">
+        <main className="flex-1 overflow-y-auto p-6" data-testid="owner-content">
           <Outlet />
         </main>
       </div>

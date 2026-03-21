@@ -162,7 +162,7 @@ export default function ProfitAnalysis() {
           {/* Staff Cost Ratio */}
           <div className="mt-6">
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Staff Cost Ratio</p>
-            <div className="space-y-3">
+            <div className="space-y-2">
               {staffCostByVenue.map((s, i) => (
                 <div key={s.venue} className="flex items-center gap-3">
                   <span className="text-sm font-medium text-foreground w-20">{s.venue}</span>

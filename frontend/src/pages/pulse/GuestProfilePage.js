@@ -136,7 +136,7 @@ export const GuestProfilePage = () => {
         )}
 
         {/* Profile Header */}
-        <div className="grid grid-cols-12 gap-8 mb-10">
+        <div className="grid grid-cols-12 gap-6 mb-6">
           {/* Photo + Info */}
           <div className="col-span-8 flex gap-6">
             {profile.photo ? (

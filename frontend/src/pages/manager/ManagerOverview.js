@@ -201,7 +201,7 @@ export default function ManagerOverview() {
         {/* Table Insights */}
         <motion.div {...fadeUp} transition={{ ...fadeUp.transition, delay: 0.3 }} className="rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-4">
           <p className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground mb-3">Table Insights</p>
-          <div className="space-y-3">
+          <div className="space-y-2">
             {tableInsights.map((t, i) => (
               <div key={t.label}>
                 <div className="flex items-center justify-between mb-1">

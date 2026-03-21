@@ -43,7 +43,7 @@ export default function SmartInsights() {
       </div>
 
       {/* Insight Cards */}
-      <div className="space-y-3">
+      <div className="space-y-4">
         {filtered.map((ins, i) => {
           const cfg = catConfig[ins.category];
           const Icon = cfg.icon;
