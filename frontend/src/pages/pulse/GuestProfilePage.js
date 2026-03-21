@@ -5,7 +5,7 @@ import { pulseAPI, rewardsAPI } from '../../services/api';
 import { toast } from 'sonner';
 import { Button } from '../../components/ui/button';
 import {
-  ArrowLeft, Users, Clock, DollarSign, Calendar, Star,
+  ArrowLeft, Users, Clock, DollarSign, Calendar, Star, ChevronRight,
   LogIn, LogOut as LogOutIcon, ShieldAlert, Award, Ban, ShieldCheck,
   AlertTriangle
 } from 'lucide-react';
@@ -100,9 +100,14 @@ export const GuestProfilePage = () => {
       <PulseHeader />
       <main className="w-full max-w-[1200px] mx-auto px-8 py-8">
         {/* Back */}
-        <Button variant="ghost" onClick={() => navigate(-1)} className="mb-6" data-testid="back-btn">
-          <ArrowLeft className="h-4 w-4 mr-2" /> Back
-        </Button>
+        <div className="flex items-center justify-between mb-6">
+          <Button variant="ghost" onClick={() => navigate(-1)} data-testid="back-btn">
+            <ArrowLeft className="h-4 w-4 mr-2" /> Back
+          </Button>
+          <Button variant="outline" onClick={() => navigate(`/owner/customers/${guestId}`)} data-testid="view-full-history-btn">
+            View Full History <ChevronRight className="h-4 w-4 ml-2" />
+          </Button>
+        </div>
 
         {/* Wristband Blocked Alert */}
         {profile.wristband_blocked && (

@@ -1,15 +1,16 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, ChevronRight, Brain, Star, Send, MessageSquare, Clock, MapPin, Heart, CreditCard, Award, TrendingUp, TrendingDown, ArrowUpRight, AlertTriangle, Calendar, Tag, Gift, History } from 'lucide-react';
+import { X, ChevronRight, ChevronLeft, Brain, Star, Send, MessageSquare, Clock, MapPin, Heart, CreditCard, Award, TrendingUp, TrendingDown, ArrowUpRight, AlertTriangle, Calendar, Tag, Gift, History, DollarSign, Zap, Activity } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { venueColors, guestPurchaseHistory, guestEventAttendance, guestLoyaltyActivity, guestVenueBreakdown, guestCategoryBreakdown } from '../../data/ownerData';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, Legend } from 'recharts';
+import { venueColors, guestPurchaseHistory, guestEventAttendance, guestLoyaltyActivity, guestVenueBreakdown, guestCategoryBreakdown, guestVisitTimeline } from '../../data/ownerData';
 
 const tierBadge = {
-  VIP: 'bg-[hsl(var(--primary)_/_0.12)] text-[hsl(var(--primary))] border border-[hsl(var(--primary)_/_0.2)]',
-  Platinum: 'bg-purple-500/10 text-purple-400 border border-purple-500/20',
-  Gold: 'bg-[hsl(var(--warning)_/_0.12)] text-[hsl(var(--warning))] border border-[hsl(var(--warning)_/_0.2)]',
-  Silver: 'bg-[hsl(var(--muted)_/_0.8)] text-muted-foreground border border-[hsl(var(--border))]',
-  Bronze: 'bg-[hsl(var(--muted)_/_0.8)] text-muted-foreground border border-[hsl(var(--border))]',
+  VIP: 'bg-[hsl(var(--primary)_/_0.12)] text-[hsl(var(--primary))] border border-[hsl(var(--primary)_/_0.25)]',
+  Platinum: 'bg-purple-500/10 text-purple-500 border border-purple-500/20',
+  Gold: 'bg-[hsl(var(--warning)_/_0.12)] text-[hsl(var(--warning))] border border-[hsl(var(--warning)_/_0.25)]',
+  Silver: 'bg-[hsl(var(--muted))] text-muted-foreground border border-[hsl(var(--border))]',
+  Bronze: 'bg-[hsl(var(--muted))] text-muted-foreground border border-[hsl(var(--border))]',
 };
 
 const segmentBadge = {
@@ -43,40 +44,39 @@ export function CustomerProfileModal({ guest, onClose }) {
           <X className="h-4 w-4 text-muted-foreground" />
         </button>
 
-        <div className="p-5 space-y-4">
+        <div className="p-6 space-y-5">
           {/* Header */}
-          <div className="flex items-start gap-3">
-            <div className="h-11 w-11 rounded-full bg-[hsl(var(--primary)_/_0.12)] flex items-center justify-center text-sm font-bold text-[hsl(var(--primary))]">
+          <div className="flex items-start gap-4">
+            <div className="h-12 w-12 rounded-full bg-[hsl(var(--primary)_/_0.12)] flex items-center justify-center text-sm font-bold text-[hsl(var(--primary))] shrink-0">
               {guest.name.split(' ').map(n => n[0]).join('')}
             </div>
             <div className="flex-1 min-w-0">
-              <h3 className="text-sm font-semibold text-foreground">{guest.name}</h3>
+              <h3 className="text-base font-bold text-foreground">{guest.name}</h3>
               <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-                <span className={`text-[10px] px-1.5 py-px rounded-full font-semibold ${tierBadge[guest.tier] || ''}`}>{guest.tier}</span>
-                <span className={`text-[10px] px-1.5 py-px rounded-full font-semibold capitalize ${segmentBadge[guest.segment] || ''}`}>{guest.segment?.replace('_', ' ')}</span>
-                {guest.returningRisk && <span className="text-[10px] px-1.5 py-px rounded-full font-semibold bg-[hsl(var(--danger)_/_0.1)] text-[hsl(var(--danger))]">At Risk</span>}
+                <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${tierBadge[guest.tier] || ''}`}>{guest.tier}</span>
+                <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold capitalize ${segmentBadge[guest.segment] || ''}`}>{guest.segment?.replace('_', ' ')}</span>
               </div>
-              <p className="text-[11px] text-muted-foreground mt-1">{guest.email}</p>
+              <p className="text-xs text-muted-foreground mt-1.5">{guest.email}</p>
             </div>
           </div>
 
           {/* KPIs */}
-          <div className="grid grid-cols-4 gap-2">
+          <div className="grid grid-cols-4 gap-2.5">
             {[
               { label: 'Total Spent', value: `$${guest.totalSpent?.toLocaleString()}` },
               { label: 'Visits', value: guest.visits },
               { label: 'Avg Spend', value: `$${guest.avgSpend}` },
               { label: 'Score', value: `${guest.score}/100` },
             ].map(k => (
-              <div key={k.label} className="rounded-lg bg-[hsl(var(--muted)_/_0.5)] p-2 text-center">
+              <div key={k.label} className="rounded-xl bg-[hsl(var(--muted)_/_0.4)] p-3 text-center">
                 <p className="text-[9px] uppercase tracking-widest font-semibold text-muted-foreground">{k.label}</p>
-                <p className="text-sm font-bold text-foreground tabular-nums mt-0.5">{k.value}</p>
+                <p className="text-base font-bold text-foreground tabular-nums mt-0.5">{k.value}</p>
               </div>
             ))}
           </div>
 
           {/* Details */}
-          <div className="rounded-lg border border-[hsl(var(--border))] p-3 space-y-1.5">
+          <div className="rounded-xl border border-[hsl(var(--border))] p-4 space-y-2">
             {[
               { label: 'Frequency', value: guest.frequency },
               { label: 'Favorite', value: guest.favoriteCategory },
@@ -85,23 +85,23 @@ export function CustomerProfileModal({ guest, onClose }) {
               { label: 'Loyalty', value: guest.loyaltyEnrolled ? 'Enrolled' : 'Not enrolled' },
             ].map(d => (
               <div key={d.label} className="flex items-center justify-between">
-                <span className="text-[11px] text-muted-foreground">{d.label}</span>
-                <span className="text-[11px] font-medium text-foreground">{d.value}</span>
+                <span className="text-xs text-muted-foreground">{d.label}</span>
+                <span className="text-xs font-medium text-foreground">{d.value}</span>
               </div>
             ))}
           </div>
 
           {/* Actions */}
-          <div className="flex gap-2">
-            <button className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] text-xs font-semibold hover:opacity-90 transition-opacity" data-testid="send-reward-btn">
-              <Send className="h-3 w-3" /> Send Reward
+          <div className="flex gap-3">
+            <button className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-foreground text-background text-xs font-semibold hover:opacity-90 transition-opacity" data-testid="send-reward-btn">
+              <Send className="h-3.5 w-3.5" /> Send Reward
             </button>
             <button
               onClick={() => { onClose(); navigate(`/owner/customers/${guest.id}`); }}
-              className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border border-[hsl(var(--border))] text-foreground text-xs font-semibold hover:bg-[hsl(var(--muted)_/_0.5)] transition-colors"
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border border-[hsl(var(--border))] text-foreground text-xs font-semibold hover:bg-[hsl(var(--muted)_/_0.5)] transition-colors"
               data-testid="view-full-history-btn"
             >
-              View Full History <ChevronRight className="h-3 w-3" />
+              View Full History <ChevronRight className="h-3.5 w-3.5" />
             </button>
           </div>
         </div>
@@ -120,258 +120,354 @@ export default function GuestFullHistory({ guest, onBack }) {
   const loyalty = guestLoyaltyActivity[guest.id];
   const venueBreak = guestVenueBreakdown[guest.id] || [];
   const catBreak = guestCategoryBreakdown[guest.id] || [];
-  const maxVenueSpent = Math.max(...venueBreak.map(v => v.spent), 1);
+  const visitTimeline = guestVisitTimeline?.[guest.id] || [];
+  const totalVenueSpent = venueBreak.reduce((s, v) => s + v.spent, 0) || 1;
   const maxCatAmount = Math.max(...catBreak.map(c => c.amount), 1);
+  const totalCatAmount = catBreak.reduce((s, c) => s + c.amount, 0) || 1;
 
-  const spendColor = guest.spendTrend === 'up' ? 'text-[hsl(var(--success))]' : guest.spendTrend === 'down' ? 'text-[hsl(var(--danger))]' : 'text-muted-foreground';
   const handleBack = () => { if (onBack) onBack(); else navigate(-1); };
 
+  const isHealthy = guest.riskSignal === 'none' || !guest.riskSignal;
+  const spendTrendLabel = guest.spendTrend === 'up' ? 'Increasing' : guest.spendTrend === 'down' ? 'Declining' : 'Stable';
+  const riskLabel = isHealthy ? 'Healthy' : guest.riskSignal;
+
   return (
-    <div className="space-y-5" data-testid="guest-full-history">
+    <div className="space-y-6" data-testid="guest-full-history">
       {/* ── Back ── */}
       <motion.button {...fadeUp} onClick={handleBack} className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors" data-testid="guest-back-btn">
-        <ChevronRight className="h-3.5 w-3.5 rotate-180" /> Back
+        <ChevronLeft className="h-4 w-4" /> Back
       </motion.button>
 
       {/* ── 1. HEADER ── */}
-      <motion.div {...fadeUp} transition={{ ...fadeUp.transition, delay: 0.04 }} className="rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] px-5 py-4">
-        <div className="flex items-center gap-4">
+      <motion.div {...fadeUp} transition={{ ...fadeUp.transition, delay: 0.04 }} className="rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] px-6 py-5">
+        <div className="flex items-center gap-5">
           {/* Avatar */}
-          <div className="h-12 w-12 rounded-full bg-[hsl(var(--primary)_/_0.12)] flex items-center justify-center text-base font-bold text-[hsl(var(--primary))] shrink-0">
+          <div className="h-14 w-14 rounded-full bg-[hsl(var(--primary)_/_0.12)] flex items-center justify-center text-lg font-bold text-[hsl(var(--primary))] shrink-0">
             {guest.name.split(' ').map(n => n[0]).join('')}
           </div>
 
           {/* Name + Tags */}
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 flex-wrap">
-              <h2 className="text-base font-bold text-foreground">{guest.name}</h2>
-              <span className={`text-[10px] px-1.5 py-px rounded-full font-semibold ${tierBadge[guest.tier] || ''}`}>{guest.tier}</span>
-              <span className={`text-[10px] px-1.5 py-px rounded-full font-semibold capitalize ${segmentBadge[guest.segment] || ''}`}>{guest.segment?.replace('_', ' ')}</span>
-              {guest.returningRisk && <span className="text-[10px] px-1.5 py-px rounded-full font-semibold bg-[hsl(var(--danger)_/_0.1)] text-[hsl(var(--danger))]">At Risk</span>}
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <h2 className="text-xl font-bold text-foreground">{guest.name.split(' ')[0]} {guest.name.split(' ')[1]?.[0]}.</h2>
+              <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${tierBadge[guest.tier] || ''}`}>{guest.tier}</span>
+              <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold capitalize ${segmentBadge[guest.segment] || ''}`}>{guest.segment?.replace('_', ' ')}</span>
             </div>
-            <p className="text-[11px] text-muted-foreground mt-0.5">{guest.email} &middot; Last visit: {guest.lastVisit} &middot; {guest.frequency}</p>
+            <p className="text-xs text-muted-foreground mt-1">{guest.email} &middot; Last visit {guest.lastVisit} ({guest.lastVisitDaysAgo}d ago)</p>
           </div>
 
           {/* Actions */}
-          <div className="flex gap-2 shrink-0">
-            <button className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] text-xs font-semibold hover:opacity-90 transition-opacity" data-testid="profile-send-reward">
-              <Send className="h-3 w-3" /> Send Reward
+          <div className="flex gap-2.5 shrink-0">
+            <button className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-foreground text-background text-xs font-semibold hover:opacity-90 transition-opacity" data-testid="profile-send-reward">
+              <Send className="h-3.5 w-3.5" /> Send Reward
             </button>
-            <button className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-[hsl(var(--border))] text-foreground text-xs font-semibold hover:bg-[hsl(var(--muted)_/_0.5)] transition-colors">
-              <MessageSquare className="h-3 w-3" /> Message
+            <button className="flex items-center gap-2 px-5 py-2.5 rounded-lg border border-[hsl(var(--border))] text-foreground text-xs font-semibold hover:bg-[hsl(var(--muted)_/_0.5)] transition-colors">
+              <MessageSquare className="h-3.5 w-3.5" /> Message
             </button>
           </div>
         </div>
       </motion.div>
 
       {/* ── 2. BEHAVIOR SUMMARY ── */}
-      <motion.div {...fadeUp} transition={{ ...fadeUp.transition, delay: 0.08 }} className="rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] px-5 py-4">
-        <div className="flex items-center gap-2.5 mb-3">
-          <div className="h-8 w-8 rounded-lg bg-[hsl(var(--primary)_/_0.1)] flex items-center justify-center"><Brain className="h-4 w-4 text-[hsl(var(--primary))]" /></div>
+      <motion.div {...fadeUp} transition={{ ...fadeUp.transition, delay: 0.08 }} className="rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] px-6 py-5">
+        <div className="flex items-center gap-3 mb-5">
+          <div className="h-10 w-10 rounded-xl bg-[hsl(var(--primary)_/_0.1)] flex items-center justify-center"><Brain className="h-5 w-5 text-[hsl(var(--primary))]" /></div>
           <div>
-            <p className="text-sm font-semibold text-foreground">Behavior Summary</p>
-            <p className="text-[11px] text-muted-foreground">AI-generated profile insights</p>
+            <p className="text-base font-bold text-foreground">Behavior Summary</p>
+            <p className="text-xs text-muted-foreground">AI-generated profile insights</p>
           </div>
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 mb-3">
+
+        {/* 4 Stat Boxes */}
+        <div className="grid grid-cols-4 gap-3 mb-4">
           {[
             { label: 'Preferred Venue', value: guest.preferredVenue, dot: venueColors[guest.preferredVenue]?.dot },
             { label: 'Top Event', value: guest.topEvent },
-            { label: 'Spend Trend', value: guest.spendTrend, color: spendColor },
-            { label: 'Risk Signal', value: guest.riskSignal === 'none' ? 'Low risk' : guest.riskSignal, color: guest.riskSignal === 'none' ? 'text-[hsl(var(--success))]' : 'text-[hsl(var(--danger))]' },
+            { label: 'Spend Trend', value: spendTrendLabel, color: guest.spendTrend === 'up' ? 'text-[hsl(var(--success))]' : guest.spendTrend === 'down' ? 'text-[hsl(var(--danger))]' : 'text-muted-foreground', icon: guest.spendTrend === 'up' ? ArrowUpRight : guest.spendTrend === 'down' ? TrendingDown : null },
+            { label: 'Risk Signal', value: riskLabel, color: isHealthy ? 'text-[hsl(var(--success))]' : 'text-[hsl(var(--danger))]' },
           ].map(item => (
-            <div key={item.label} className="rounded-lg bg-[hsl(var(--muted)_/_0.4)] p-2.5">
-              <p className="text-[9px] uppercase tracking-widest font-semibold text-muted-foreground mb-1">{item.label}</p>
+            <div key={item.label} className="rounded-xl bg-[hsl(var(--muted)_/_0.35)] p-4">
+              <p className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground mb-2">{item.label}</p>
               <div className="flex items-center gap-1.5">
-                {item.dot && <span className={`w-2 h-2 rounded-full ${item.dot}`} />}
+                {item.dot && <span className={`w-2.5 h-2.5 rounded-full ${item.dot}`} />}
+                {item.icon && <item.icon className={`h-3.5 w-3.5 ${item.color}`} />}
                 <span className={`text-sm font-semibold ${item.color || 'text-foreground'}`}>{item.value}</span>
               </div>
             </div>
           ))}
         </div>
-        <div className={`rounded-lg border p-2.5 ${guest.riskSignal === 'none' ? 'border-[hsl(var(--success)_/_0.25)] bg-[hsl(var(--success)_/_0.03)]' : 'border-[hsl(var(--danger)_/_0.25)] bg-[hsl(var(--danger)_/_0.03)]'}`}>
-          <p className="text-[11px] text-muted-foreground">
-            {guest.name.split(' ')[0]} is a {guest.frequency.toLowerCase()} visitor who prefers {guest.preferredVenue} and typically attends {guest.topEvent}.
-            {guest.riskSignal !== 'none' ? ` Warning: ${guest.riskSignal}.` : ' Engagement is healthy.'}
+
+        {/* Insight Bar */}
+        <div className={`rounded-xl px-4 py-3 ${isHealthy ? 'bg-[hsl(var(--success)_/_0.08)]' : 'bg-[hsl(var(--danger)_/_0.08)]'}`}>
+          <p className={`text-xs font-medium ${isHealthy ? 'text-[hsl(var(--success))]' : 'text-[hsl(var(--danger))]'}`}>
+            <Zap className="h-3.5 w-3.5 inline mr-1.5" />
+            {isHealthy
+              ? `No risk signals detected · Guest favors ${guest.preferredVenue} (${venueBreak.length > 0 ? Math.round((venueBreak.find(v => v.venue === guest.preferredVenue)?.spent || 0) / totalVenueSpent * 100) : 50}% of spend)`
+              : `${guest.riskSignal} · Last visit ${guest.lastVisitDaysAgo} days ago`
+            }
           </p>
         </div>
       </motion.div>
 
-      {/* ── 3. KPI CARDS ROW ── */}
-      <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
+      {/* ── 3. KPI CARDS ROW (icon top, value large, label bottom) ── */}
+      <div className="grid grid-cols-6 gap-4">
         {[
-          { label: 'Total Spent', value: `$${guest.totalSpent.toLocaleString()}` },
-          { label: 'Visits', value: guest.visits },
-          { label: 'Avg Spend', value: `$${guest.avgSpend}` },
-          { label: 'Score', value: `${guest.score}/100` },
-          { label: 'Fav Category', value: guest.favoriteCategory },
-          { label: 'Frequency', value: guest.frequency },
+          { icon: DollarSign, value: `$${guest.totalSpent.toLocaleString()}`, label: 'Total Spent' },
+          { icon: Calendar, value: guest.visits, label: 'Visits' },
+          { icon: CreditCard, value: `$${guest.avgSpend}`, label: 'Avg Spend' },
+          { icon: Activity, value: `${guest.score}/100`, label: 'Score' },
+          { icon: Heart, value: guest.favoriteCategory, label: 'Favorite' },
+          { icon: Clock, value: guest.frequency, label: 'Frequency' },
         ].map((kpi, i) => (
-          <motion.div key={kpi.label} {...fadeUp} transition={{ ...fadeUp.transition, delay: 0.12 + i * 0.03 }} className="rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] px-3 py-3">
-            <p className="text-[9px] uppercase tracking-widest font-semibold text-muted-foreground mb-0.5">{kpi.label}</p>
-            <p className="text-lg font-bold text-foreground tabular-nums">{kpi.value}</p>
+          <motion.div key={kpi.label} {...fadeUp} transition={{ ...fadeUp.transition, delay: 0.12 + i * 0.03 }} className="rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] px-4 py-4">
+            <kpi.icon className="h-4 w-4 text-muted-foreground mb-2" />
+            <p className="text-xl font-bold text-foreground tabular-nums">{kpi.value}</p>
+            <p className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground mt-1">{kpi.label}</p>
           </motion.div>
         ))}
       </div>
 
-      {/* ── Retention Risk Alert ── */}
-      {guest.riskSignal !== 'none' && (
-        <motion.div {...fadeUp} transition={{ ...fadeUp.transition, delay: 0.22 }} className={`rounded-xl border-2 px-4 py-3 flex items-center gap-2.5 ${guest.riskSignal.includes('inactive') || guest.riskSignal.includes('churn') ? 'border-[hsl(var(--danger)_/_0.3)] bg-[hsl(var(--danger)_/_0.04)]' : 'border-[hsl(var(--warning)_/_0.3)] bg-[hsl(var(--warning)_/_0.04)]'}`} data-testid="retention-risk-alert">
-          <AlertTriangle className={`h-4 w-4 shrink-0 ${guest.riskSignal.includes('inactive') || guest.riskSignal.includes('churn') ? 'text-[hsl(var(--danger))]' : 'text-[hsl(var(--warning))]'}`} />
-          <div>
-            <p className="text-sm font-semibold text-foreground capitalize">{guest.riskSignal}</p>
-            <p className="text-[11px] text-muted-foreground">Last visit {guest.lastVisit} &middot; {guest.lastVisitDaysAgo} days ago</p>
-          </div>
-        </motion.div>
-      )}
-
-      {/* ── 4. VENUE BREAKDOWN + 5. CATEGORY BREAKDOWN ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <motion.div {...fadeUp} transition={{ ...fadeUp.transition, delay: 0.26 }} className="rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] px-5 py-4">
-          <div className="flex items-center gap-2 mb-3">
-            <MapPin className="h-3.5 w-3.5 text-muted-foreground" />
-            <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Venue Breakdown</p>
-          </div>
-          <div className="space-y-3">
-            {venueBreak.length > 0 ? venueBreak.map((v, i) => (
-              <div key={v.venue}>
-                <div className="flex items-center justify-between mb-1">
-                  <div className="flex items-center gap-2">
-                    <span className={`w-2 h-2 rounded-full ${venueColors[v.venue]?.dot || 'bg-muted-foreground'}`} />
-                    <span className="text-sm font-medium text-foreground">{v.venue}</span>
-                  </div>
-                  <span className="text-[11px] text-muted-foreground tabular-nums">${v.spent.toLocaleString()} &middot; {v.visits} visits</span>
-                </div>
-                <div className="h-1.5 rounded-full bg-[hsl(var(--muted))] overflow-hidden">
-                  <motion.div className="h-full rounded-full" style={{ background: venueColors[v.venue]?.hex || '#888' }} initial={{ width: 0 }} animate={{ width: `${(v.spent / maxVenueSpent) * 100}%` }} transition={{ duration: 0.7, delay: 0.3 + i * 0.08 }} />
-                </div>
-              </div>
-            )) : <p className="text-[11px] text-muted-foreground italic">No venue data</p>}
-          </div>
-        </motion.div>
-
-        <motion.div {...fadeUp} transition={{ ...fadeUp.transition, delay: 0.3 }} className="rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] px-5 py-4">
-          <div className="flex items-center gap-2 mb-3">
-            <Tag className="h-3.5 w-3.5 text-muted-foreground" />
-            <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Category Breakdown</p>
-          </div>
-          <div className="space-y-3">
-            {catBreak.length > 0 ? catBreak.map((c, i) => (
-              <div key={c.category}>
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-sm font-medium text-foreground">{c.category}</span>
-                  <span className="text-[11px] text-muted-foreground tabular-nums">${c.amount.toLocaleString()}</span>
-                </div>
-                <div className="h-1.5 rounded-full bg-[hsl(var(--muted))] overflow-hidden">
-                  <motion.div className="h-full rounded-full bg-[hsl(var(--primary))]" initial={{ width: 0 }} animate={{ width: `${(c.amount / maxCatAmount) * 100}%` }} transition={{ duration: 0.7, delay: 0.35 + i * 0.08 }} />
-                </div>
-              </div>
-            )) : <p className="text-[11px] text-muted-foreground italic">No category data</p>}
-          </div>
-        </motion.div>
-      </div>
-
-      {/* ── 6. EVENTS ATTENDED + 7. PURCHASE HISTORY ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <motion.div {...fadeUp} transition={{ ...fadeUp.transition, delay: 0.34 }} className="rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] px-5 py-4">
-          <div className="flex items-center gap-2 mb-3">
-            <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
-            <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Events Attended</p>
-          </div>
-          <div className="space-y-1.5">
-            {events.length > 0 ? events.map((ev, i) => (
-              <div key={i} className="flex items-center gap-3 p-2 rounded-lg hover:bg-[hsl(var(--muted)_/_0.3)] transition-colors cursor-pointer group">
-                <span className={`w-2 h-2 rounded-full shrink-0 ${venueColors[ev.venue]?.dot || 'bg-muted-foreground'}`} />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-foreground">{ev.event}</p>
-                  <p className="text-[11px] text-muted-foreground">{ev.venue} &middot; {ev.attended}x attended</p>
-                </div>
-                <div className="text-right shrink-0">
-                  <p className="text-sm font-semibold text-foreground tabular-nums">${ev.totalSpent.toLocaleString()}</p>
-                  <p className="text-[10px] text-muted-foreground tabular-nums">avg ${ev.avgSpend}</p>
-                </div>
-              </div>
-            )) : <p className="text-[11px] text-muted-foreground italic py-2">No event data</p>}
-          </div>
-        </motion.div>
-
-        <motion.div {...fadeUp} transition={{ ...fadeUp.transition, delay: 0.38 }} className="rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] px-5 py-4">
-          <div className="flex items-center gap-2 mb-3">
-            <CreditCard className="h-3.5 w-3.5 text-muted-foreground" />
-            <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Purchase History</p>
-          </div>
-          <div className="space-y-1.5">
-            {purchases.length > 0 ? purchases.map(p => (
-              <div key={p.id} className="flex items-start gap-3 p-2 rounded-lg">
-                <span className={`w-2 h-2 mt-1.5 rounded-full shrink-0 ${venueColors[p.venue]?.dot || 'bg-muted-foreground'}`} />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm text-foreground">{p.items}</p>
-                  <p className="text-[11px] text-muted-foreground">{p.date} &middot; {p.event} &middot; {p.venue}</p>
-                </div>
-                <span className="text-sm font-semibold text-foreground tabular-nums shrink-0">${p.total}</span>
-              </div>
-            )) : <p className="text-[11px] text-muted-foreground italic py-2">No purchase data</p>}
-          </div>
-        </motion.div>
-      </div>
-
-      {/* ── 8. LOYALTY ACTIVITY ── */}
-      <motion.div {...fadeUp} transition={{ ...fadeUp.transition, delay: 0.42 }} className="rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] px-5 py-4">
-        <div className="flex items-center gap-2 mb-3">
-          <Award className="h-3.5 w-3.5 text-muted-foreground" />
-          <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Loyalty Activity</p>
-        </div>
-        {loyalty ? (
-          <div className="space-y-0">
-            {loyalty.map((l, i) => (
-              <div key={i} className="flex items-start gap-3">
-                <div className="flex flex-col items-center pt-0.5">
-                  <span className={`w-2 h-2 rounded-full shrink-0 ${l.type === 'earned' ? 'bg-[hsl(var(--success))]' : l.type === 'redeemed' ? 'bg-[hsl(var(--primary))]' : 'bg-[hsl(var(--warning))]'}`} />
-                  {i < loyalty.length - 1 && <div className="w-px h-7 bg-[hsl(var(--border))]" />}
-                </div>
-                <div className="flex-1 pb-3">
-                  <p className="text-sm text-foreground">{l.detail}</p>
-                  <p className="text-[11px] text-muted-foreground">{l.date}</p>
-                </div>
-                {l.points !== 0 && <span className={`text-sm font-semibold tabular-nums ${l.points > 0 ? 'text-[hsl(var(--success))]' : 'text-[hsl(var(--primary))]'}`}>{l.points > 0 ? '+' : ''}{l.points}</span>}
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-6">
-            <Gift className="h-5 w-5 text-muted-foreground mx-auto mb-2" />
-            <p className="text-sm text-muted-foreground mb-3">Not enrolled in loyalty program</p>
-            <button className="px-4 py-2 rounded-lg bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] text-xs font-semibold hover:opacity-90 transition-opacity" data-testid="enroll-guest-btn">
-              Enroll Guest
-            </button>
-          </div>
-        )}
+      {/* ── HEALTH STATUS BANNER ── */}
+      <motion.div {...fadeUp} transition={{ ...fadeUp.transition, delay: 0.22 }} className={`rounded-2xl px-5 py-4 ${isHealthy ? 'bg-[hsl(var(--success)_/_0.08)]' : 'bg-[hsl(var(--danger)_/_0.08)]'}`} data-testid="health-status-banner">
+        <p className={`text-sm font-bold ${isHealthy ? 'text-[hsl(var(--success))]' : 'text-[hsl(var(--danger))]'}`}>
+          {isHealthy ? '\u2705 HEALTHY' : '\u26a0\ufe0f AT RISK'}
+        </p>
+        <p className="text-xs text-muted-foreground mt-0.5">
+          {isHealthy
+            ? `Active and healthy. Last visit ${guest.lastVisitDaysAgo} day(s) ago — within expected frequency.`
+            : `${guest.riskSignal}. Last visit ${guest.lastVisitDaysAgo} day(s) ago.`
+          }
+        </p>
       </motion.div>
 
-      {/* ── 9. VISIT TIMELINE ── */}
-      <motion.div {...fadeUp} transition={{ ...fadeUp.transition, delay: 0.46 }} className="rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] px-5 py-4">
-        <div className="flex items-center gap-2 mb-3">
-          <History className="h-3.5 w-3.5 text-muted-foreground" />
-          <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Visit Timeline</p>
+      {/* ── 4+5. VENUE BREAKDOWN + CATEGORY BREAKDOWN ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        {/* Venue Breakdown */}
+        <motion.div {...fadeUp} transition={{ ...fadeUp.transition, delay: 0.26 }} className="rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] px-6 py-5">
+          <div className="flex items-center gap-3 mb-5">
+            <div className="h-10 w-10 rounded-xl bg-[hsl(var(--muted)_/_0.5)] flex items-center justify-center"><MapPin className="h-5 w-5 text-muted-foreground" /></div>
+            <div>
+              <p className="text-base font-bold text-foreground">Venue Breakdown</p>
+              <p className="text-xs text-muted-foreground">Where they spend</p>
+            </div>
+          </div>
+          <div className="space-y-4">
+            {venueBreak.map((v, i) => {
+              const pct = Math.round((v.spent / totalVenueSpent) * 100);
+              const barPct = Math.max(pct, 15);
+              return (
+                <div key={v.venue} className="flex items-center gap-3">
+                  <div className="flex items-center gap-2 w-20 shrink-0">
+                    <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${venueColors[v.venue]?.dot || 'bg-muted-foreground'}`} />
+                    <span className="text-sm text-foreground font-medium truncate">{v.venue}</span>
+                  </div>
+                  <div className="flex-1 relative">
+                    <div className="h-7 rounded-lg bg-[hsl(var(--muted)_/_0.3)] overflow-hidden">
+                      <motion.div
+                        className="h-full rounded-lg flex items-center px-2.5"
+                        style={{ background: venueColors[v.venue]?.hex || '#888' }}
+                        initial={{ width: 0 }}
+                        animate={{ width: `${barPct}%` }}
+                        transition={{ duration: 0.7, delay: 0.3 + i * 0.1 }}
+                      >
+                        <span className="text-[11px] font-semibold text-white whitespace-nowrap">${v.spent.toLocaleString()} &middot; {v.visits} visits</span>
+                      </motion.div>
+                    </div>
+                  </div>
+                  <span className="text-sm text-muted-foreground tabular-nums w-10 text-right shrink-0">{pct}%</span>
+                </div>
+              );
+            })}
+          </div>
+        </motion.div>
+
+        {/* Category Breakdown */}
+        <motion.div {...fadeUp} transition={{ ...fadeUp.transition, delay: 0.3 }} className="rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] px-6 py-5">
+          <div className="flex items-center gap-3 mb-5">
+            <div className="h-10 w-10 rounded-xl bg-[hsl(var(--muted)_/_0.5)] flex items-center justify-center"><Tag className="h-5 w-5 text-muted-foreground" /></div>
+            <div>
+              <p className="text-base font-bold text-foreground">Category Breakdown</p>
+              <p className="text-xs text-muted-foreground">What they buy</p>
+            </div>
+          </div>
+          <div className="space-y-4">
+            {catBreak.map((c, i) => {
+              const pct = Math.round((c.amount / totalCatAmount) * 100);
+              const barPct = Math.max((c.amount / maxCatAmount) * 100, 15);
+              return (
+                <div key={c.category} className="flex items-center gap-3">
+                  <span className="text-sm text-foreground font-medium w-20 shrink-0 truncate">{c.category}</span>
+                  <div className="flex-1 relative">
+                    <div className="h-7 rounded-lg bg-[hsl(var(--muted)_/_0.3)] overflow-hidden">
+                      <motion.div
+                        className="h-full rounded-lg flex items-center px-2.5 bg-[hsl(var(--success))]"
+                        initial={{ width: 0 }}
+                        animate={{ width: `${barPct}%` }}
+                        transition={{ duration: 0.7, delay: 0.35 + i * 0.1 }}
+                      >
+                        <span className="text-[11px] font-semibold text-white whitespace-nowrap">${c.amount.toLocaleString()}</span>
+                      </motion.div>
+                    </div>
+                  </div>
+                  <span className="text-sm text-muted-foreground tabular-nums w-10 text-right shrink-0">{pct}%</span>
+                </div>
+              );
+            })}
+          </div>
+        </motion.div>
+      </div>
+
+      {/* ── 6+7. EVENTS ATTENDED + EVENT TIMELINE ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        {/* Events Attended */}
+        <motion.div {...fadeUp} transition={{ ...fadeUp.transition, delay: 0.34 }} className="rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] px-6 py-5">
+          <div className="flex items-center gap-3 mb-5">
+            <div className="h-10 w-10 rounded-xl bg-[hsl(var(--muted)_/_0.5)] flex items-center justify-center"><Star className="h-5 w-5 text-muted-foreground" /></div>
+            <div>
+              <p className="text-base font-bold text-foreground">Events Attended</p>
+              <p className="text-xs text-muted-foreground">Click to view event detail</p>
+            </div>
+          </div>
+          <div className="space-y-0">
+            {events.length > 0 ? events.map((ev, i) => (
+              <div key={i} className={`flex items-center gap-3 py-3.5 cursor-pointer hover:bg-[hsl(var(--muted)_/_0.2)] -mx-2 px-2 rounded-lg transition-colors ${i < events.length - 1 ? 'border-b border-[hsl(var(--border)_/_0.5)]' : ''}`}>
+                <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${venueColors[ev.venue]?.dot || 'bg-muted-foreground'}`} />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-foreground">{ev.event}</p>
+                  <p className="text-xs text-muted-foreground">{ev.venue} &middot; {ev.attended} times</p>
+                </div>
+                <div className="text-right shrink-0">
+                  <p className="text-sm font-bold text-foreground tabular-nums">${ev.totalSpent.toLocaleString()}</p>
+                  <p className="text-[11px] text-muted-foreground tabular-nums">Avg ${ev.avgSpend}</p>
+                </div>
+              </div>
+            )) : <p className="text-xs text-muted-foreground italic py-4">No event data</p>}
+          </div>
+        </motion.div>
+
+        {/* Visit Timeline (Stacked Bar Chart) */}
+        <motion.div {...fadeUp} transition={{ ...fadeUp.transition, delay: 0.38 }} className="rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] px-6 py-5">
+          <div className="flex items-center gap-3 mb-5">
+            <div className="h-10 w-10 rounded-xl bg-[hsl(var(--muted)_/_0.5)] flex items-center justify-center"><Activity className="h-5 w-5 text-muted-foreground" /></div>
+            <div>
+              <p className="text-base font-bold text-foreground">Visit Timeline</p>
+              <p className="text-xs text-muted-foreground">Monthly behavior</p>
+            </div>
+          </div>
+
+          {/* Insight bar */}
+          <div className="rounded-lg bg-[hsl(var(--primary)_/_0.06)] px-3 py-2 mb-4">
+            <p className="text-[11px] text-[hsl(var(--primary))] font-medium">
+              <Zap className="h-3 w-3 inline mr-1" />
+              Guest favors {guest.preferredVenue} ({venueBreak.length > 0 ? Math.round((venueBreak.find(v => v.venue === guest.preferredVenue)?.spent || 0) / totalVenueSpent * 100) : 50}% of spend)
+            </p>
+          </div>
+
+          {visitTimeline.length > 0 ? (
+            <div>
+              <div className="h-52" data-testid="visit-timeline-chart">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={visitTimeline} margin={{ top: 20, right: 5, left: -10, bottom: 5 }}>
+                    <XAxis dataKey="month" tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} tickLine={false} axisLine={false} />
+                    <YAxis hide />
+                    <Tooltip
+                      contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '8px', fontSize: '11px' }}
+                      formatter={(v, name) => [`${v} visits`, name]}
+                    />
+                    {Object.keys(venueColors).map(vName => (
+                      <Bar key={vName} dataKey={vName} stackId="visits" radius={[0, 0, 0, 0]} fill={venueColors[vName]?.hex || '#888'} />
+                    ))}
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+              {/* Labels below bars */}
+              <div className="flex justify-around mt-1">
+                {visitTimeline.map(m => {
+                  const total = Object.keys(venueColors).reduce((s, vn) => s + (m[vn] || 0), 0);
+                  const totalSpent = m.totalSpent || 0;
+                  return (
+                    <div key={m.month} className="text-center">
+                      <p className="text-xs text-muted-foreground tabular-nums">${totalSpent.toLocaleString()}</p>
+                    </div>
+                  );
+                })}
+              </div>
+              {/* Legend */}
+              <div className="flex items-center gap-4 mt-3 justify-center">
+                {Object.entries(venueColors).map(([name, vc]) => (
+                  <div key={name} className="flex items-center gap-1.5">
+                    <span className={`w-2.5 h-2.5 rounded-full ${vc.dot}`} />
+                    <span className="text-[11px] text-muted-foreground">{name}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <p className="text-xs text-muted-foreground italic py-4">No visit timeline data</p>
+          )}
+        </motion.div>
+      </div>
+
+      {/* ── 8+9. LOYALTY ACTIVITY + (Visit Timeline alternate) ── */}
+      <div className="grid grid-cols-1 gap-5">
+        {/* Loyalty Activity */}
+        <motion.div {...fadeUp} transition={{ ...fadeUp.transition, delay: 0.42 }} className="rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] px-6 py-5">
+          <div className="flex items-center gap-3 mb-5">
+            <div className="h-10 w-10 rounded-xl bg-[hsl(var(--primary)_/_0.1)] flex items-center justify-center"><Award className="h-5 w-5 text-[hsl(var(--primary))]" /></div>
+            <div>
+              <p className="text-base font-bold text-foreground">Loyalty Activity</p>
+              <p className="text-xs text-muted-foreground">{guest.loyaltyEnrolled ? 'Enrolled' : 'Not enrolled'}</p>
+            </div>
+          </div>
+          {loyalty ? (
+            <div className="space-y-0">
+              {loyalty.map((l, i) => (
+                <div key={i} className={`flex items-center gap-4 py-3.5 ${i < loyalty.length - 1 ? 'border-b border-[hsl(var(--border)_/_0.5)]' : ''}`}>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-foreground">{l.detail.split('\n')[0] || l.detail}</p>
+                    <p className="text-xs text-muted-foreground">{l.detail.includes('\n') ? l.detail.split('\n')[1] : `${l.type === 'earned' ? '+' : ''}${l.points} pts from ${l.type}`}</p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className="text-xs text-muted-foreground">{l.date}</p>
+                  </div>
+                  <div className="text-right shrink-0 min-w-[70px]">
+                    <p className="text-sm font-bold text-foreground tabular-nums">{l.balance.toLocaleString()} pts</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <Gift className="h-6 w-6 text-muted-foreground mx-auto mb-3" />
+              <p className="text-sm text-muted-foreground mb-4">Not enrolled in loyalty program</p>
+              <button className="px-5 py-2.5 rounded-lg bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] text-xs font-semibold hover:opacity-90 transition-opacity" data-testid="enroll-guest-btn">
+                Enroll Guest
+              </button>
+            </div>
+          )}
+        </motion.div>
+      </div>
+
+      {/* ── 10. PURCHASE HISTORY (full width) ── */}
+      <motion.div {...fadeUp} transition={{ ...fadeUp.transition, delay: 0.46 }} className="rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] px-6 py-5">
+        <div className="flex items-center gap-3 mb-5">
+          <div className="h-10 w-10 rounded-xl bg-[hsl(var(--muted)_/_0.5)] flex items-center justify-center"><CreditCard className="h-5 w-5 text-muted-foreground" /></div>
+          <div>
+            <p className="text-base font-bold text-foreground">Purchase History</p>
+            <p className="text-xs text-muted-foreground">Recent orders</p>
+          </div>
         </div>
         <div className="space-y-0">
           {purchases.length > 0 ? purchases.map((p, i) => (
-            <div key={p.id} className="flex items-start gap-3">
-              <div className="flex flex-col items-center pt-0.5">
-                <span className={`w-2 h-2 rounded-full shrink-0 ${venueColors[p.venue]?.dot || 'bg-muted-foreground'}`} />
-                {i < purchases.length - 1 && <div className="w-px h-8 bg-[hsl(var(--border))]" />}
+            <div key={p.id} className={`flex items-start gap-3 py-4 ${i < purchases.length - 1 ? 'border-b border-[hsl(var(--border)_/_0.4)]' : ''}`}>
+              <span className={`w-2.5 h-2.5 mt-1.5 rounded-full shrink-0 ${venueColors[p.venue]?.dot || 'bg-muted-foreground'}`} />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-foreground">{p.items}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">{p.date} &middot; {p.event} &middot; {p.venue}</p>
               </div>
-              <div className="flex-1 pb-3">
-                <div className="flex items-center justify-between">
-                  <p className="text-sm font-medium text-foreground">{p.event}</p>
-                  <span className="text-sm font-semibold text-foreground tabular-nums">${p.total}</span>
-                </div>
-                <p className="text-[11px] text-muted-foreground">{p.date} &middot; {p.venue} &middot; {p.items}</p>
-              </div>
+              <span className="text-base font-bold text-foreground tabular-nums shrink-0">${p.total}</span>
             </div>
-          )) : (
-            <p className="text-[11px] text-muted-foreground italic py-2">No visit timeline data</p>
-          )}
+          )) : <p className="text-xs text-muted-foreground italic py-4">No purchase data</p>}
         </div>
       </motion.div>
     </div>

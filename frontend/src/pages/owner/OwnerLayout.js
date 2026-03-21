@@ -132,7 +132,7 @@ export default function OwnerLayout() {
           {!collapsed && (
             <div className="flex items-center gap-1.5 flex-1">
               <img src={SPET_ICON_URL} alt="SPET" className="h-6 w-6" />
-              <span className="text-sm font-bold tracking-tight" style={{ fontFamily: "'Space Grotesk', sans-serif", color: 'hsl(var(--foreground))' }}>spet.</span>
+              <span className="text-sm font-bold tracking-tight" style={{ fontFamily: "'Space Grotesk', sans-serif", color: 'hsl(var(--sidebar-foreground))' }}>spet.</span>
             </div>
           )}
           <button onClick={() => setTheme(t => t === 'dark' ? 'light' : 'dark')} className="flex items-center justify-center h-7 w-7 rounded-lg transition-colors hover:opacity-80" style={{ color: 'hsl(var(--sidebar-foreground))' }} data-testid="owner-theme-toggle">
@@ -183,11 +183,10 @@ export default function OwnerLayout() {
                             group.type === 'expandable' && !collapsed ? 'text-[12px] px-2 py-1.5' : 'text-[13px] px-2.5 py-2'
                           } ${
                             isActive
-                              ? 'text-[hsl(var(--sidebar-accent-foreground))]'
-                              : group.type === 'expandable' ? 'text-[hsl(var(--sidebar-foreground)_/_0.7)] hover:text-[hsl(var(--sidebar-foreground))]' : 'text-[hsl(var(--sidebar-foreground))] hover:bg-[hsl(var(--sidebar-accent)_/_0.5)]'
+                              ? 'text-[hsl(var(--sidebar-primary))] bg-[hsl(var(--sidebar-accent))]'
+                              : group.type === 'expandable' ? 'text-[hsl(var(--sidebar-foreground)_/_0.6)] hover:text-[hsl(var(--sidebar-foreground))]' : 'text-[hsl(var(--sidebar-foreground))] hover:bg-[hsl(var(--sidebar-accent))]'
                           }`
                         }
-                        style={({ isActive }) => isActive ? { background: 'hsl(var(--sidebar-accent))' } : {}}
                         data-testid={`owner-nav-${item.label.toLowerCase().replace(/[^a-z]/g, '-')}`}
                       >
                         <item.icon className={`shrink-0 ${group.type === 'expandable' && !collapsed ? 'h-3.5 w-3.5' : 'h-4 w-4'}`} />

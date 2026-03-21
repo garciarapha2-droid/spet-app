@@ -93,7 +93,7 @@ export default function ManagerLayout() {
           {!collapsed && (
             <div className="flex items-center gap-1.5 flex-1">
               <img src={SPET_ICON_URL} alt="SPET" className="h-6 w-6" />
-              <span className="text-sm font-bold tracking-tight" style={{ fontFamily: "'Space Grotesk', sans-serif", color: 'hsl(var(--sidebar-primary-foreground))' }}>
+              <span className="text-sm font-bold tracking-tight" style={{ fontFamily: "'Space Grotesk', sans-serif", color: 'hsl(var(--sidebar-foreground))' }}>
                 spet.
               </span>
             </div>

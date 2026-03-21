@@ -242,10 +242,10 @@ export const guestEventAttendance = {
 // Guest loyalty activity (for profile)
 export const guestLoyaltyActivity = {
   og1: [
-    { date: 'Feb 21', type: 'earned', detail: '+120 points (purchase)', points: 120 },
-    { date: 'Feb 15', type: 'redeemed', detail: 'Free drink reward (-200 pts)', points: -200 },
-    { date: 'Feb 8', type: 'earned', detail: '+85 points (purchase)', points: 85 },
-    { date: 'Jan 28', type: 'upgrade', detail: 'Upgraded to VIP tier', points: 0 },
+    { date: 'Feb 21', type: 'earned', detail: 'Points earned\n+245 pts from purchase', points: 120, balance: 1245 },
+    { date: 'Feb 15', type: 'redeemed', detail: 'Reward redeemed\nFree cocktail (-200 pts)', points: -200, balance: 1125 },
+    { date: 'Feb 8', type: 'upgrade', detail: 'Tier upgrade\nPromoted to VIP tier', points: 0, balance: 1325 },
+    { date: 'Jan 28', type: 'earned', detail: 'Bonus points\n+100 pts campaign bonus', points: 100, balance: 1325 },
   ],
   og6: null, // not enrolled
 };
@@ -286,3 +286,18 @@ export const venueCostDetails = {
     recommendations: [{ title: 'Critical: Reduce overtime hours', detail: 'Overtime accounts for 22% of labor cost', impact: '$3,600/mo savings' }, { title: 'Review security staffing', detail: 'Consider shared security with nearby venue', impact: '$1,400/mo savings' }],
   },
 };
+
+// Guest visit timeline (stacked bar chart: visits by venue per month)
+export const guestVisitTimeline = {
+  og1: [
+    { month: 'Jan', Downtown: 6, Midtown: 2, Uptown: 1, totalSpent: 1200 },
+    { month: 'Feb', Downtown: 8, Midtown: 3, Uptown: 1, totalSpent: 1800 },
+    { month: 'Mar', Downtown: 10, Midtown: 2, Uptown: 2, totalSpent: 2400 },
+  ],
+  og2: [
+    { month: 'Jan', Downtown: 2, Midtown: 6, Uptown: 0, totalSpent: 900 },
+    { month: 'Feb', Downtown: 1, Midtown: 8, Uptown: 0, totalSpent: 1400 },
+    { month: 'Mar', Downtown: 2, Midtown: 7, Uptown: 1, totalSpent: 1600 },
+  ],
+};
+
