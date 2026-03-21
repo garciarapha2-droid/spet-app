@@ -30,8 +30,26 @@ import { GuestProfilePage } from './pages/pulse/GuestProfilePage';
 import { TapPage } from './pages/TapPage';
 import { TablePage } from './pages/TablePage';
 import { KitchenPage } from './pages/KitchenPage';
-import { ManagerPage } from './pages/ManagerPage';
 import { OwnerPage } from './pages/OwnerPage';
+
+// Manager Dashboard Module
+import ManagerLayout from './pages/manager/ManagerLayout';
+import ManagerOverview from './pages/manager/ManagerOverview';
+import StaffRoles from './pages/manager/StaffRoles';
+import TablesByServer from './pages/manager/TablesByServer';
+import MenuProducts from './pages/manager/MenuProducts';
+import ShiftOperations from './pages/manager/ShiftOperations';
+import Tips from './pages/manager/Tips';
+import NfcGuests from './pages/manager/NfcGuests';
+import ReportsFinance from './pages/manager/ReportsFinance';
+import ManagerSettings from './pages/manager/ManagerSettings';
+import LoyaltyRewards from './pages/manager/loyalty/LoyaltyRewards';
+import LoyaltyGuests from './pages/manager/loyalty/LoyaltyGuests';
+import LoyaltyGuestProfile from './pages/manager/loyalty/LoyaltyGuestProfile';
+import LoyaltyTiers from './pages/manager/loyalty/LoyaltyTiers';
+import LoyaltyCampaigns from './pages/manager/loyalty/LoyaltyCampaigns';
+import LoyaltyRewardsPage from './pages/manager/loyalty/LoyaltyRewardsPage';
+import LoyaltyInsights from './pages/manager/loyalty/LoyaltyInsights';
 import CeoPage from './pages/CeoPage';
 import { useAuth } from './contexts/AuthContext';
 const CEOPage = CeoPage;
@@ -76,7 +94,25 @@ function App() {
               <Route path="/pulse/rewards" element={<ProtectedRoute><PulseRewardsPage /></ProtectedRoute>} />
               <Route path="/pulse/guest/:guestId" element={<ProtectedRoute><GuestProfilePage /></ProtectedRoute>} />
               <Route path="/tap" element={<ProtectedRoute><TapPage /></ProtectedRoute>} />
-              <Route path="/manager" element={<ProtectedRoute><ManagerPage /></ProtectedRoute>} />
+              {/* Manager Dashboard Module */}
+              <Route path="/manager" element={<ProtectedRoute><ManagerLayout /></ProtectedRoute>}>
+                <Route index element={<ManagerOverview />} />
+                <Route path="staff" element={<StaffRoles />} />
+                <Route path="tables" element={<TablesByServer />} />
+                <Route path="menu" element={<MenuProducts />} />
+                <Route path="shift" element={<ShiftOperations />} />
+                <Route path="tips" element={<Tips />} />
+                <Route path="guests" element={<NfcGuests />} />
+                <Route path="reports" element={<ReportsFinance />} />
+                <Route path="settings" element={<ManagerSettings />} />
+                <Route path="loyalty" element={<LoyaltyRewards />} />
+                <Route path="loyalty/guests" element={<LoyaltyGuests />} />
+                <Route path="loyalty/guests/:id" element={<LoyaltyGuestProfile />} />
+                <Route path="loyalty/tiers" element={<LoyaltyTiers />} />
+                <Route path="loyalty/campaigns" element={<LoyaltyCampaigns />} />
+                <Route path="loyalty/rewards" element={<LoyaltyRewardsPage />} />
+                <Route path="loyalty/insights" element={<LoyaltyInsights />} />
+              </Route>
               <Route path="/table" element={<ProtectedRoute><TablePage /></ProtectedRoute>} />
               <Route path="/kitchen" element={<ProtectedRoute><KitchenPage /></ProtectedRoute>} />
               <Route path="/owner" element={<ProtectedRoute><OwnerPage /></ProtectedRoute>} />
