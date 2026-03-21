@@ -115,7 +115,7 @@ function SmartInsightsHero() {
 
 export default function ManagerOverview() {
   return (
-    <div className="space-y-6" data-testid="manager-overview">
+    <div className="flex flex-col gap-6" data-testid="manager-overview">
       <SmartInsightsHero />
 
       {/* Quick Stats */}
@@ -141,7 +141,7 @@ export default function ManagerOverview() {
         {/* Top Selling */}
         <motion.div {...fadeUp} transition={{ ...fadeUp.transition, delay: 0.15 }} className="rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-4">
           <p className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground mb-3">Top Performance</p>
-          <div className="space-y-2">
+          <div className="flex flex-col gap-2">
             {topSellingItems.map((item, i) => (
               <div key={item.rank} className="flex items-center gap-3">
                 <span className={`w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold ${
@@ -177,7 +177,7 @@ export default function ManagerOverview() {
         {/* Staff Insights */}
         <motion.div {...fadeUp} transition={{ ...fadeUp.transition, delay: 0.25 }} className="rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-4">
           <p className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground mb-3">Staff Insights</p>
-          <div className="space-y-2.5">
+          <div className="flex flex-col gap-2.5">
             {staffPerformance.map((s, i) => (
               <div key={s.name} className="flex items-center gap-3">
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${
@@ -201,7 +201,7 @@ export default function ManagerOverview() {
         {/* Table Insights */}
         <motion.div {...fadeUp} transition={{ ...fadeUp.transition, delay: 0.3 }} className="rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-4">
           <p className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground mb-3">Table Insights</p>
-          <div className="space-y-2">
+          <div className="flex flex-col gap-2">
             {tableInsights.map((t, i) => (
               <div key={t.label}>
                 <div className="flex items-center justify-between mb-1">
@@ -228,7 +228,7 @@ export default function ManagerOverview() {
         {/* Risk Alerts */}
         <motion.div {...fadeUp} transition={{ ...fadeUp.transition, delay: 0.3 }} className="rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-4">
           <p className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground mb-3">Risk Alerts</p>
-          <div className="space-y-2">
+          <div className="flex flex-col gap-2">
             {riskAlerts.map((a, i) => (
               <motion.div
                 key={i}
@@ -257,7 +257,7 @@ export default function ManagerOverview() {
         {/* Suggestions */}
         <motion.div {...fadeUp} transition={{ ...fadeUp.transition, delay: 0.35 }} className="rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-4">
           <p className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground mb-3">Suggestions</p>
-          <div className="space-y-2">
+          <div className="flex flex-col gap-2">
             {suggestions.map((s, i) => (
               <motion.div
                 key={i}

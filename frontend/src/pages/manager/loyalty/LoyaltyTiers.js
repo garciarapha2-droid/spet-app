@@ -34,7 +34,7 @@ const automationRules = [
 
 export default function LoyaltyTiers() {
   return (
-    <div className="space-y-6" data-testid="loyalty-tiers-page">
+    <div className="flex flex-col gap-6" data-testid="loyalty-tiers-page">
       {/* Point Rules Summary */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
@@ -78,7 +78,7 @@ export default function LoyaltyTiers() {
               <p className="text-xs text-muted-foreground mb-1">{tier.pointsRequired.toLocaleString()} points required</p>
               {tier.discount > 0 && <p className="text-sm font-semibold text-foreground mb-3">{tier.discount}% discount</p>}
 
-              <div className="space-y-1.5 mt-3">
+              <div className="flex flex-col gap-1.5 mt-3">
                 {tier.benefits.map((b, bi) => (
                   <div key={bi} className="flex items-start gap-1.5">
                     <CheckCircle className="h-3 w-3 mt-0.5 shrink-0" style={{ color }} />
@@ -98,7 +98,7 @@ export default function LoyaltyTiers() {
       {/* Automation Rules */}
       <motion.div {...fadeUp} transition={{ ...fadeUp.transition, delay: 0.35 }} className="rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-5">
         <p className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground mb-4">Automation Rules</p>
-        <div className="space-y-2">
+        <div className="flex flex-col gap-2">
           {automationRules.map((rule, i) => (
             <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-[hsl(var(--muted)_/_0.3)]">
               <span className="text-sm text-foreground">{rule.label}</span>

@@ -39,7 +39,7 @@ export default function LoyaltyCampaigns() {
   const filtered = filter === 'all' ? campaigns : campaigns.filter(c => c.status === filter);
 
   return (
-    <div className="space-y-6" data-testid="loyalty-campaigns-page">
+    <div className="flex flex-col gap-6" data-testid="loyalty-campaigns-page">
       {/* KPIs */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
@@ -81,7 +81,7 @@ export default function LoyaltyCampaigns() {
       </motion.div>
 
       {/* Campaign List */}
-      <div className="space-y-4">
+      <div className="flex flex-col gap-4">
         {filtered.map((c, i) => {
           const Icon = typeIcons[c.type] || Target;
           return (
@@ -166,7 +166,7 @@ function CreateCampaignModal({ onClose }) {
 
         <h3 className="text-lg font-bold text-foreground mb-6">Create Campaign</h3>
 
-        <div className="space-y-4">
+        <div className="flex flex-col gap-4">
           <div>
             <label className="block text-xs font-medium text-muted-foreground mb-1.5">Campaign Name</label>
             <input type="text" placeholder="e.g. Double Points Friday" className="w-full px-3 py-2 rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--background))] text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-[hsl(var(--primary))]" data-testid="campaign-name-input" />

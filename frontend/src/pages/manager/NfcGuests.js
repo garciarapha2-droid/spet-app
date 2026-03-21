@@ -59,7 +59,7 @@ export default function NfcGuests() {
   );
 
   return (
-    <div className="space-y-4" data-testid="nfc-guests-page">
+    <div className="flex flex-col gap-4" data-testid="nfc-guests-page">
       {/* Search */}
       <motion.div {...fadeUp} className="relative max-w-sm">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -142,7 +142,7 @@ function GuestProfileModal({ guest, onClose }) {
           <X className="h-5 w-5 text-muted-foreground" />
         </button>
 
-        <div className="p-5 space-y-4">
+        <div className="p-5 flex flex-col gap-4">
           {/* Header */}
           <div className="flex items-start gap-4">
             <div className="h-14 w-14 rounded-2xl bg-[hsl(var(--primary)_/_0.15)] flex items-center justify-center text-lg font-bold text-[hsl(var(--primary))]">
@@ -200,7 +200,7 @@ function GuestProfileModal({ guest, onClose }) {
 
           {/* Behavior + Spending */}
           <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
+            <div className="flex flex-col gap-2">
               <p className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground">Behavior</p>
               {[
                 { icon: Clock, label: 'Last Visit', value: guest.lastVisit },
@@ -214,7 +214,7 @@ function GuestProfileModal({ guest, onClose }) {
                 </div>
               ))}
             </div>
-            <div className="space-y-2 border-l border-[hsl(var(--border))] pl-4">
+            <div className="flex flex-col gap-2 border-l border-[hsl(var(--border))] pl-4">
               <p className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground">Spending</p>
               {[
                 { icon: CreditCard, label: 'Highest', value: `$${guest.highestSpend}` },
@@ -233,7 +233,7 @@ function GuestProfileModal({ guest, onClose }) {
           {/* Journey Timeline */}
           <div>
             <p className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground mb-3">Guest Journey</p>
-            <div className="space-y-3">
+            <div className="flex flex-col gap-3">
               {guest.journey.map((j, i) => (
                 <div key={i} className="flex items-start gap-3">
                   <div className="flex flex-col items-center">

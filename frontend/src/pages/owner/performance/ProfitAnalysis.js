@@ -32,7 +32,7 @@ export default function ProfitAnalysis() {
   const [period, setPeriod] = useState('Monthly');
 
   return (
-    <div className="space-y-6" data-testid="profit-analysis">
+    <div className="flex flex-col gap-6" data-testid="profit-analysis">
       {/* Period Filter */}
       <div className="flex justify-end">
         <div className="flex items-center border border-[hsl(var(--border)_/_0.6)] bg-[hsl(var(--card)_/_0.8)] backdrop-blur-sm p-[3px] rounded-full shadow-[0_1px_3px_0_hsl(var(--foreground)_/_0.04)]">
@@ -113,7 +113,7 @@ export default function ProfitAnalysis() {
             </ResponsiveContainer>
           </div>
           {/* Cost Table */}
-          <div className="mt-4 space-y-2">
+          <div className="mt-4 flex flex-col gap-2">
             {costBreakdown.map((c, i) => (
               <div key={c.name} className="flex items-center gap-3 p-2 rounded-lg hover:bg-[hsl(var(--muted)_/_0.3)] transition-colors">
                 <span className="w-2 h-2 rounded-full shrink-0" style={{ background: costColors[i] }} />
@@ -130,7 +130,7 @@ export default function ProfitAnalysis() {
         <motion.div {...fadeUp} transition={{ ...fadeUp.transition, delay: 0.25 }} className="rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-5">
           <p className="text-base font-semibold text-foreground mb-1">Margin by Venue</p>
           <p className="text-xs text-muted-foreground mb-4">Profitability comparison</p>
-          <div className="space-y-4">
+          <div className="flex flex-col gap-4">
             {ownerVenues.map((v, i) => {
               const vc = venueColors[v.name];
               return (
@@ -162,7 +162,7 @@ export default function ProfitAnalysis() {
           {/* Staff Cost Ratio */}
           <div className="mt-6">
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Staff Cost Ratio</p>
-            <div className="space-y-2">
+            <div className="flex flex-col gap-2">
               {staffCostByVenue.map((s, i) => (
                 <div key={s.venue} className="flex items-center gap-3">
                   <span className="text-sm font-medium text-foreground w-20">{s.venue}</span>

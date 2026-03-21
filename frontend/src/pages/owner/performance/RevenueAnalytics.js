@@ -33,7 +33,7 @@ export default function RevenueAnalytics() {
   const [period, setPeriod] = useState('Monthly');
 
   return (
-    <div className="space-y-6" data-testid="revenue-analytics">
+    <div className="flex flex-col gap-6" data-testid="revenue-analytics">
       {/* Period Filter */}
       <div className="flex justify-end">
         <div className="flex items-center border border-[hsl(var(--border)_/_0.6)] bg-[hsl(var(--card)_/_0.8)] backdrop-blur-sm p-[3px] rounded-full shadow-[0_1px_3px_0_hsl(var(--foreground)_/_0.04)]">
@@ -117,7 +117,7 @@ export default function RevenueAnalytics() {
             </ResponsiveContainer>
           </div>
           {/* Category Table */}
-          <div className="mt-4 space-y-2">
+          <div className="mt-4 flex flex-col gap-2">
             {revenueByCategory.map((c, i) => {
               const change = ((c.revenue - c.prevRevenue) / c.prevRevenue * 100).toFixed(1);
               const up = c.revenue >= c.prevRevenue;
@@ -138,7 +138,7 @@ export default function RevenueAnalytics() {
         <motion.div {...fadeUp} transition={{ ...fadeUp.transition, delay: 0.25 }} className="rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-5">
           <p className="text-base font-semibold text-foreground mb-1">Revenue by Venue</p>
           <p className="text-xs text-muted-foreground mb-4">Ranked by revenue</p>
-          <div className="space-y-4">
+          <div className="flex flex-col gap-4">
             {ownerVenues.map((v, i) => {
               const vc = venueColors[v.name];
               const pct = (v.revenue / totalRevenue * 100).toFixed(1);

@@ -20,7 +20,7 @@ const avgMemberSpend = Math.round(totalLoyaltyRevenue / totalLoyaltyMembers);
 
 export default function LoyaltyPerformance() {
   return (
-    <div className="space-y-6" data-testid="loyalty-performance">
+    <div className="flex flex-col gap-6" data-testid="loyalty-performance">
       {/* KPIs */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[

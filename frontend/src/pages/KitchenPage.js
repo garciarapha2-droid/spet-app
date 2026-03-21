@@ -259,7 +259,7 @@ const TicketCard = ({ ticket, onStatusChange, onSetTime, isDelayed, onViewDetail
         </div>
 
         {/* Items */}
-        <div className="space-y-1 mb-2">
+        <div className="flex flex-col gap-1 mb-2">
           {ticket.items.map((item, i) => (
             <div key={item.id || i}>
               <div className="flex items-start gap-2">
@@ -421,7 +421,7 @@ const DelayedModal = ({ ticket, onMarkReady, onDismiss }) => {
             </div>
             <LiveTimer startTime={ticket.started_at} estimatedMinutes={ticket.estimated_minutes} isDelayed />
           </div>
-          <div className="space-y-1 mt-2">
+          <div className="flex flex-col gap-1 mt-2">
             {ticket.items.map((item, i) => (
               <div key={i} className="text-sm font-medium">{item.qty}x {item.name}</div>
             ))}
@@ -509,7 +509,7 @@ const OrderDetailModal = ({ ticket, onClose }) => {
         </div>
 
         {/* Info rows */}
-        <div className="space-y-2 mb-4">
+        <div className="flex flex-col gap-2 mb-4">
           <div className="flex items-center justify-between text-sm">
             <span className="text-muted-foreground">Guest</span>
             <span className="font-semibold">{ticket.guest_name || 'Guest'}</span>
@@ -539,7 +539,7 @@ const OrderDetailModal = ({ ticket, onClose }) => {
         {/* Items */}
         <div className="border-t border-border pt-4">
           <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-3">Items</p>
-          <div className="space-y-2">
+          <div className="flex flex-col gap-2">
             {ticket.items.map((item, i) => (
               <div key={item.id || i}>
                 <div className="flex items-start gap-2">

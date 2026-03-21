@@ -280,7 +280,7 @@ export default function PulseInsidePage() {
               </div>
 
               {/* Scrollable content */}
-              <div className="flex-1 overflow-y-auto p-6 space-y-6">
+              <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-6">
 
                 {/* ── 2. Current Session ── */}
                 <div data-testid="drawer-session">

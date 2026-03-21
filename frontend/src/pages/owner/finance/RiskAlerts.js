@@ -17,7 +17,7 @@ const infoCount = riskAlerts.filter(a => a.severity === 'info').length;
 
 export default function RiskAlerts() {
   return (
-    <div className="space-y-6" data-testid="risk-alerts">
+    <div className="flex flex-col gap-6" data-testid="risk-alerts">
       {/* KPIs */}
       <div className="grid grid-cols-3 gap-4">
         {[
@@ -33,7 +33,7 @@ export default function RiskAlerts() {
       </div>
 
       {/* Alert List */}
-      <div className="space-y-4">
+      <div className="flex flex-col gap-4">
         {riskAlerts.map((alert, i) => {
           const cfg = severityConfig[alert.severity];
           const Icon = cfg.icon;

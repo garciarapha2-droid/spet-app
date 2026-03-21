@@ -79,7 +79,7 @@ export default function PulseExitPage() {
               </p>
             </div>
           ) : (
-            <div className="space-y-2" data-testid="exit-guest-list">
+            <div className="flex flex-col gap-2" data-testid="exit-guest-list">
               {filteredGuests.map((guest, i) => (
                 <motion.div
                   key={guest.id}
@@ -169,7 +169,7 @@ export default function PulseExitPage() {
               No exits today
             </p>
           ) : (
-            <div className="space-y-2 max-h-[calc(100vh-20rem)] overflow-y-auto" data-testid="exits-today">
+            <div className="flex flex-col gap-2 max-h-[calc(100vh-20rem)] overflow-y-auto" data-testid="exits-today">
               {exitedGuests.map((guest, i) => (
                 <motion.div
                   key={guest.id}

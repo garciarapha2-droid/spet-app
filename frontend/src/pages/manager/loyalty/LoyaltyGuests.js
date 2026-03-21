@@ -56,7 +56,7 @@ export default function LoyaltyGuests() {
   );
 
   return (
-    <div className="space-y-4" data-testid="loyalty-guests-page">
+    <div className="flex flex-col gap-4" data-testid="loyalty-guests-page">
       {/* KPIs */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[

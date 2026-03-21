@@ -26,7 +26,7 @@ export default function VenueCostDetail() {
   const vc = venueColors[venueName];
 
   return (
-    <div className="space-y-6" data-testid="venue-cost-detail">
+    <div className="flex flex-col gap-6" data-testid="venue-cost-detail">
       <motion.button {...fadeUp} onClick={() => navigate(-1)} className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors" data-testid="cost-back-btn">
         <ChevronRight className="h-4 w-4 rotate-180" /> Back
       </motion.button>
@@ -81,7 +81,7 @@ export default function VenueCostDetail() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <motion.div {...fadeUp} transition={{ ...fadeUp.transition, delay: 0.15 }} className="rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-5">
           <p className="text-base font-semibold text-foreground mb-4">Cost Breakdown</p>
-          <div className="space-y-2">
+          <div className="flex flex-col gap-2">
             {data.breakdown.map((c, i) => (
               <div key={c.name} className="flex items-center gap-3">
                 <span className="w-2 h-2 rounded-full shrink-0" style={{ background: costColors[i % costColors.length] }} />
@@ -94,7 +94,7 @@ export default function VenueCostDetail() {
 
         <motion.div {...fadeUp} transition={{ ...fadeUp.transition, delay: 0.2 }} className="rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-5">
           <p className="text-base font-semibold text-foreground mb-4">Staff Breakdown</p>
-          <div className="space-y-2">
+          <div className="flex flex-col gap-2">
             {data.staffBreakdown.map((s, i) => (
               <div key={s.role} className="flex items-center gap-3">
                 <Users className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
@@ -114,7 +114,7 @@ export default function VenueCostDetail() {
             <div className="h-9 w-9 rounded-lg bg-[hsl(var(--primary)_/_0.1)] flex items-center justify-center"><AlertTriangle className="h-[18px] w-[18px] text-[hsl(var(--primary))]" /></div>
             <p className="text-base font-semibold text-foreground">Recommendations</p>
           </div>
-          <div className="space-y-4">
+          <div className="flex flex-col gap-4">
             {data.recommendations.map((r, i) => (
               <div key={i} className="p-3 rounded-lg border border-[hsl(var(--border))] hover:bg-[hsl(var(--muted)_/_0.3)] transition-colors">
                 <p className="text-sm font-medium text-foreground">{r.title}</p>

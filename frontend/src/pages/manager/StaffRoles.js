@@ -28,14 +28,14 @@ const statusColors = {
 
 export default function StaffRoles() {
   return (
-    <div className="space-y-6" data-testid="staff-roles-page">
+    <div className="flex flex-col gap-6" data-testid="staff-roles-page">
       {/* System Users */}
       <motion.div {...fadeUp} className="rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-5">
         <div className="flex items-center gap-2 mb-4">
           <Shield className="h-4 w-4 text-muted-foreground" />
           <p className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground">System Users</p>
         </div>
-        <div className="space-y-2">
+        <div className="flex flex-col gap-2">
           {systemUsers.map((u, i) => (
             <motion.div
               key={u.id}
@@ -67,7 +67,7 @@ export default function StaffRoles() {
             <Plus className="h-4 w-4" /> Add Staff
           </button>
         </div>
-        <div className="space-y-1">
+        <div className="flex flex-col gap-1">
           {operationalStaff.map((s, i) => (
             <motion.div
               key={s.id}

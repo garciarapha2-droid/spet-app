@@ -165,7 +165,7 @@ export const GuestProfilePage = () => {
           </div>
 
           {/* Stats cards */}
-          <div className="col-span-4 space-y-3">
+          <div className="col-span-4 flex flex-col gap-3">
             <div className="grid grid-cols-2 gap-3">
               <div className="bg-card border border-border rounded-xl p-4 text-center">
                 <LogIn className="h-5 w-5 text-green-500 mx-auto mb-1" />
@@ -223,7 +223,7 @@ export const GuestProfilePage = () => {
 
         {/* Tab Content */}
         {activeTab === 'history' && (
-          <div className="space-y-2" data-testid="history-tab">
+          <div className="flex flex-col gap-2" data-testid="history-tab">
             {profile.history.length === 0 ? (
               <p className="text-muted-foreground text-center py-10">No history yet</p>
             ) : profile.history.map((evt, i) => (
@@ -300,7 +300,7 @@ export const GuestProfilePage = () => {
         )}
 
         {activeTab === 'events' && (
-          <div className="space-y-3" data-testid="events-tab">
+          <div className="flex flex-col gap-3" data-testid="events-tab">
             {profile.events_attended.length === 0 ? (
               <p className="text-muted-foreground text-center py-10">No events attended yet</p>
             ) : profile.events_attended.map((evt, i) => (
@@ -339,7 +339,7 @@ export const GuestProfilePage = () => {
             {points?.transactions?.length > 0 && (
               <div>
                 <h4 className="font-semibold mb-3">Recent Transactions</h4>
-                <div className="space-y-2">
+                <div className="flex flex-col gap-2">
                   {points.transactions.map((t, i) => (
                     <div key={i} className="flex items-center gap-3 p-3 rounded-lg bg-card border border-border">
                       <span className={`text-sm font-bold ${t.points > 0 ? 'text-green-500' : 'text-destructive'}`}>

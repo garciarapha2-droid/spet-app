@@ -19,7 +19,7 @@ export default function ReportsFinance() {
   );
 
   return (
-    <div className="space-y-6" data-testid="reports-finance-page">
+    <div className="flex flex-col gap-6" data-testid="reports-finance-page">
       {/* Period Filters */}
       <motion.div {...fadeUp} className="flex items-center gap-1.5">
         {['Today', 'Week', 'Month'].map(p => (

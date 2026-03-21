@@ -34,7 +34,7 @@ export default function MenuProducts() {
   }, [filtered]);
 
   return (
-    <div className="space-y-4" data-testid="menu-products-page">
+    <div className="flex flex-col gap-4" data-testid="menu-products-page">
       {/* Controls */}
       <motion.div {...fadeUp} className="flex flex-wrap items-center gap-3">
         <div className="relative flex-1 min-w-[200px] max-w-sm">
@@ -122,7 +122,7 @@ export default function MenuProducts() {
 
       {/* Grid View */}
       {view === 'grid' && (
-        <div className="space-y-6">
+        <div className="flex flex-col gap-6">
           {Object.entries(grouped).map(([cat, items], ci) => (
             <motion.div key={cat} {...fadeUp} transition={{ ...fadeUp.transition, delay: 0.1 + ci * 0.05 }}>
               <p className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground mb-2">{cat}</p>

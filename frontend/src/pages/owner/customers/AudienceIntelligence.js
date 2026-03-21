@@ -24,7 +24,7 @@ export default function AudienceIntelligence() {
   const [metric, setMetric] = useState('guests');
 
   return (
-    <div className="space-y-6" data-testid="audience-intelligence">
+    <div className="flex flex-col gap-6" data-testid="audience-intelligence">
       {/* KPIs */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[

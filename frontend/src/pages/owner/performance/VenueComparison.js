@@ -43,7 +43,7 @@ export default function VenueComparison() {
   };
 
   return (
-    <div className="space-y-6" data-testid="venue-comparison">
+    <div className="flex flex-col gap-6" data-testid="venue-comparison">
       {/* Metric Selector */}
       <div className="flex justify-end">
         <div className="flex items-center border border-[hsl(var(--border)_/_0.6)] bg-[hsl(var(--card)_/_0.8)] backdrop-blur-sm p-[3px] rounded-full shadow-[0_1px_3px_0_hsl(var(--foreground)_/_0.04)]">

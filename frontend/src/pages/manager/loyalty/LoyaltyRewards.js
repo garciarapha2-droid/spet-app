@@ -51,7 +51,7 @@ export default function LoyaltyRewards() {
   const topInsights = loyaltyInsightsData.slice(0, 4);
 
   return (
-    <div className="space-y-6" data-testid="loyalty-overview-page">
+    <div className="flex flex-col gap-6" data-testid="loyalty-overview-page">
       {/* Hero */}
       <motion.div {...fadeUp} className="rounded-2xl border border-[hsl(var(--primary)_/_0.2)] bg-[hsl(var(--primary)_/_0.05)] p-6 relative overflow-hidden">
         <div className="absolute top-0 right-0 w-48 h-48 bg-gradient-to-bl from-[hsl(var(--primary)_/_0.1)] rounded-bl-full" />
@@ -117,7 +117,7 @@ export default function LoyaltyRewards() {
         {/* Top Insights */}
         <motion.div {...fadeUp} transition={{ ...fadeUp.transition, delay: 0.3 }} className="rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-4">
           <p className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground mb-3">Top Insights</p>
-          <div className="space-y-2">
+          <div className="flex flex-col gap-2">
             {topInsights.map((ins, i) => {
               const cfg = insightTypeConfig[ins.type];
               const Icon = cfg.icon;
@@ -151,7 +151,7 @@ export default function LoyaltyRewards() {
                 <Tooltip />
               </PieChart>
             </ResponsiveContainer>
-            <div className="flex-1 space-y-2">
+            <div className="flex-1 flex flex-col gap-2">
               {loyaltyTiers.map(t => {
                 const count = guestProfiles.filter(g => g.tier === t.name).length;
                 const pct = Math.round((count / guestProfiles.length) * 100);

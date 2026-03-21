@@ -27,7 +27,7 @@ export default function TablesByServer() {
   }));
 
   return (
-    <div className="space-y-4" data-testid="tables-by-server-page">
+    <div className="flex flex-col gap-4" data-testid="tables-by-server-page">
       {/* Unassigned Alert */}
       {unassigned.length > 0 && (
         <motion.div
@@ -59,7 +59,7 @@ export default function TablesByServer() {
               </span>
             </div>
           </div>
-          <div className="border-2 border-t-0 border-[hsl(var(--border)_/_0.8)] bg-[hsl(var(--card)_/_0.5)] shadow-sm rounded-b-xl p-2 min-h-[120px] space-y-2">
+          <div className="border-2 border-t-0 border-[hsl(var(--border)_/_0.8)] bg-[hsl(var(--card)_/_0.5)] shadow-sm rounded-b-xl p-2 min-h-[120px] flex flex-col gap-2">
             {openTables.map((t, i) => (
               <TableCard key={t.id} table={t} delay={i * 0.03} />
             ))}
@@ -85,7 +85,7 @@ export default function TablesByServer() {
                 </div>
               </div>
             </div>
-            <div className="border-2 border-t-0 border-[hsl(var(--border)_/_0.8)] bg-[hsl(var(--card)_/_0.5)] shadow-sm rounded-b-xl p-2 min-h-[120px] space-y-2">
+            <div className="border-2 border-t-0 border-[hsl(var(--border)_/_0.8)] bg-[hsl(var(--card)_/_0.5)] shadow-sm rounded-b-xl p-2 min-h-[120px] flex flex-col gap-2">
               {col.tables.map((t, i) => (
                 <TableCard key={t.id} table={t} delay={0.15 + i * 0.03} />
               ))}

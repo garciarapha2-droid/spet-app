@@ -25,7 +25,7 @@ export default function LoyaltyInsights() {
   const vipCount = guestProfiles.filter(g => g.status === 'vip').length;
 
   return (
-    <div className="space-y-6" data-testid="loyalty-insights-page">
+    <div className="flex flex-col gap-6" data-testid="loyalty-insights-page">
       {/* KPIs */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
@@ -47,7 +47,7 @@ export default function LoyaltyInsights() {
           <Flame className="h-4 w-4 text-[hsl(var(--primary))]" />
           <p className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground">All Insights</p>
         </div>
-        <div className="space-y-2">
+        <div className="flex flex-col gap-2">
           {loyaltyInsightsData.map((ins, i) => {
             const cfg = typeConfig[ins.type];
             const Icon = cfg.icon;
@@ -87,7 +87,7 @@ export default function LoyaltyInsights() {
             <AlertTriangle className="h-4 w-4 text-[hsl(var(--danger))]" />
             <p className="text-[10px] uppercase tracking-widest font-semibold text-[hsl(var(--danger))]">Churn Risk</p>
           </div>
-          <div className="space-y-2">
+          <div className="flex flex-col gap-2">
             {churnRiskGuests.map(g => (
               <div key={g.id} className="flex items-center gap-3 p-2 rounded-lg bg-[hsl(var(--card)_/_0.6)]">
                 <div className="w-8 h-8 rounded-full bg-[hsl(var(--muted))] flex items-center justify-center text-xs font-bold text-muted-foreground">
@@ -111,7 +111,7 @@ export default function LoyaltyInsights() {
             <TrendingUp className="h-4 w-4 text-[hsl(var(--warning))]" />
             <p className="text-[10px] uppercase tracking-widest font-semibold text-[hsl(var(--warning))]">Near Upgrade</p>
           </div>
-          <div className="space-y-2">
+          <div className="flex flex-col gap-2">
             {nearUpgradeGuests.map(g => (
               <div key={g.id} className="flex items-center gap-3 p-2 rounded-lg bg-[hsl(var(--card)_/_0.6)]">
                 <div className="w-8 h-8 rounded-full bg-[hsl(var(--muted))] flex items-center justify-center text-xs font-bold text-muted-foreground">

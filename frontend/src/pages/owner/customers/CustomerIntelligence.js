@@ -30,7 +30,7 @@ export default function CustomerIntelligence() {
     .sort((a, b) => b[sortBy] - a[sortBy]);
 
   return (
-    <div className="space-y-6" data-testid="customer-intelligence">
+    <div className="flex flex-col gap-6" data-testid="customer-intelligence">
       {/* KPIs */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[

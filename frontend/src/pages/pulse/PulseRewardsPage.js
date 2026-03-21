@@ -125,7 +125,7 @@ export default function PulseRewardsPage() {
           <Gift className="h-4 w-4 text-primary" />
           <h3 className="text-sm font-bold text-foreground">Available Rewards</h3>
         </div>
-        <div className="space-y-2" data-testid="rewards-list">
+        <div className="flex flex-col gap-2" data-testid="rewards-list">
           {availableRewards.map((reward, i) => (
             <motion.div
               key={reward.id}

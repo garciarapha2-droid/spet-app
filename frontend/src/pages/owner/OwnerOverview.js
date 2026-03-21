@@ -37,7 +37,7 @@ export default function OwnerOverview() {
   const [selectedGuest, setSelectedGuest] = useState(null);
 
   return (
-    <div className="space-y-6" data-testid="owner-overview">
+    <div className="flex flex-col gap-6" data-testid="owner-overview">
       {/* Period Filter placeholder (top-right) */}
       <div className="flex justify-end">
         <div className="flex items-center border border-[hsl(var(--border)_/_0.6)] bg-[hsl(var(--card)_/_0.8)] backdrop-blur-sm p-[3px] rounded-full shadow-[0_1px_3px_0_hsl(var(--foreground)_/_0.04)]">
@@ -80,7 +80,7 @@ export default function OwnerOverview() {
             <div className="h-9 w-9 rounded-lg bg-[hsl(var(--primary)_/_0.1)] flex items-center justify-center"><Building2 className="h-[18px] w-[18px] text-[hsl(var(--primary))]" /></div>
             <div><p className="text-base font-semibold text-foreground">Venue Performance</p><p className="text-xs text-muted-foreground">Ranked by revenue</p></div>
           </div>
-          <div className="space-y-2">
+          <div className="flex flex-col gap-2">
             {ownerVenues.map((v, i) => {
               const st = statusLabel[v.status];
               const vc = venueColors[v.name];
@@ -129,7 +129,7 @@ export default function OwnerOverview() {
               <p className="text-xl font-bold tabular-nums text-[hsl(var(--danger))]">{churnRiskCount}</p>
             </div>
           </div>
-          <div className="space-y-2">
+          <div className="flex flex-col gap-2">
             <p className="text-xs text-muted-foreground">Loyalty members spend 2.4x more than non-members</p>
             <p className="text-xs text-muted-foreground">34% of guests are not yet enrolled in loyalty</p>
             <p className="text-xs text-muted-foreground">Week 2 is the biggest churn drop-off point (28% loss)</p>
@@ -144,7 +144,7 @@ export default function OwnerOverview() {
           <p className="text-[10px] uppercase tracking-widest font-semibold text-[hsl(var(--primary))]">Business Overview</p>
         </div>
         <p className="text-sm font-semibold text-foreground leading-snug mb-3">Your business generated $170K this month with a 38.5% margin. Downtown leads, but Uptown needs immediate attention on costs.</p>
-        <div className="space-y-1 mb-4">
+        <div className="flex flex-col gap-1 mb-4">
           <p className="text-xs text-muted-foreground flex items-center gap-2"><span className="w-1 h-1 rounded-full bg-muted-foreground" /> Churn increased 18% — 23 high-value guests at risk</p>
           <p className="text-xs text-muted-foreground flex items-center gap-2"><span className="w-1 h-1 rounded-full bg-muted-foreground" /> Uptown labor ratio at 42%, well above the 35% target</p>
           <p className="text-xs text-muted-foreground flex items-center gap-2"><span className="w-1 h-1 rounded-full bg-muted-foreground" /> Referral program ROI of 410% — scale opportunity</p>
@@ -168,7 +168,7 @@ export default function OwnerOverview() {
             <div className="h-9 w-9 rounded-lg bg-[hsl(var(--primary)_/_0.1)] flex items-center justify-center"><Crown className="h-[18px] w-[18px] text-[hsl(var(--primary))]" /></div>
             <p className="text-base font-semibold text-foreground">Top Customers</p>
           </div>
-          <div className="space-y-1">
+          <div className="flex flex-col gap-1">
             {topGuests.map((g, i) => (
               <motion.div key={g.id} {...fadeUp} transition={{ ...fadeUp.transition, delay: 0.35 + i * 0.03 }}
                 onClick={() => setSelectedGuest(g)}
@@ -199,7 +199,7 @@ export default function OwnerOverview() {
             <div className="h-9 w-9 rounded-lg bg-[hsl(var(--primary)_/_0.1)] flex items-center justify-center"><Sparkles className="h-[18px] w-[18px] text-[hsl(var(--primary))]" /></div>
             <div><p className="text-base font-semibold text-foreground">Smart Insights</p><p className="text-xs text-muted-foreground">Opportunities & risks</p></div>
           </div>
-          <div className="space-y-2">
+          <div className="flex flex-col gap-2">
             {smartInsights.map((ins, i) => (
               <motion.div key={ins.id} {...fadeUp} transition={{ ...fadeUp.transition, delay: 0.35 + i * 0.03 }} className="flex items-start gap-3 p-2.5 rounded-lg hover:bg-[hsl(var(--muted)_/_0.3)] transition-colors group">
                 <span className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${catDot[ins.category] || 'bg-muted-foreground'}`} />
@@ -221,7 +221,7 @@ export default function OwnerOverview() {
             <div className="h-9 w-9 rounded-lg bg-[hsl(var(--primary)_/_0.1)] flex items-center justify-center"><AlertCircle className="h-[18px] w-[18px] text-[hsl(var(--primary))]" /></div>
             <div><p className="text-base font-semibold text-foreground">Attention Points</p><p className="text-xs text-muted-foreground">Issues requiring immediate action</p></div>
           </div>
-          <div className="space-y-2">
+          <div className="flex flex-col gap-2">
             {criticalInsights.map((ins, i) => (
               <div key={ins.id} className="flex items-start gap-3 p-3 rounded-lg hover:bg-[hsl(var(--muted)_/_0.3)] transition-colors group">
                 <AlertTriangle className="h-4 w-4 text-[hsl(var(--danger))] mt-0.5 shrink-0" />
@@ -243,7 +243,7 @@ export default function OwnerOverview() {
           <div className="h-9 w-9 rounded-lg bg-[hsl(var(--primary)_/_0.1)] flex items-center justify-center"><Target className="h-[18px] w-[18px] text-[hsl(var(--primary))]" /></div>
           <div><p className="text-base font-semibold text-foreground">What should I do today?</p><p className="text-xs text-muted-foreground">Prioritized by impact</p></div>
         </div>
-        <div className="space-y-2">
+        <div className="flex flex-col gap-2">
           {topActions.map((a, i) => (
             <motion.div key={a.id} {...fadeUp} transition={{ ...fadeUp.transition, delay: 0.45 + i * 0.03 }}
               onClick={() => navigate('/owner/insights/actions')}

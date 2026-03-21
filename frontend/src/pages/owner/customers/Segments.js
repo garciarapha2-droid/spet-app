@@ -17,7 +17,7 @@ export default function Segments() {
   const navigate = useNavigate();
 
   return (
-    <div className="space-y-6" data-testid="segments-page">
+    <div className="flex flex-col gap-6" data-testid="segments-page">
       {/* Donut Chart + Stats */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <motion.div {...fadeUp} transition={{ ...fadeUp.transition, delay: 0.1 }} className="rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-5">
@@ -37,7 +37,7 @@ export default function Segments() {
 
         <motion.div {...fadeUp} transition={{ ...fadeUp.transition, delay: 0.15 }} className="rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-5">
           <p className="text-base font-semibold text-foreground mb-4">Segment Breakdown</p>
-          <div className="space-y-4">
+          <div className="flex flex-col gap-4">
             {guestSegments.map((seg, i) => (
               <motion.div key={seg.name} {...fadeUp} transition={{ ...fadeUp.transition, delay: 0.2 + i * 0.04 }} className="p-3 rounded-lg border border-[hsl(var(--border))] hover:border-[hsl(var(--primary)_/_0.3)] cursor-pointer transition-all" onClick={() => navigate(`/owner/customers/intelligence`)} data-testid={`segment-${seg.name.toLowerCase().replace(/\s/g, '-')}`}>
                 <div className="flex items-center gap-2 mb-2">

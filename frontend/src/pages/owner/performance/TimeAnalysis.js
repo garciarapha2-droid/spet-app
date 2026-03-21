@@ -29,7 +29,7 @@ export default function TimeAnalysis() {
   const [view, setView] = useState('hourly');
 
   return (
-    <div className="space-y-6" data-testid="time-analysis">
+    <div className="flex flex-col gap-6" data-testid="time-analysis">
       {/* View Toggle */}
       <div className="flex justify-end">
         <div className="flex items-center border border-[hsl(var(--border)_/_0.6)] bg-[hsl(var(--card)_/_0.8)] backdrop-blur-sm p-[3px] rounded-full shadow-[0_1px_3px_0_hsl(var(--foreground)_/_0.04)]">
@@ -110,7 +110,7 @@ export default function TimeAnalysis() {
         <motion.div {...fadeUp} transition={{ ...fadeUp.transition, delay: 0.25 }} className="rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-5">
           <p className="text-base font-semibold text-foreground mb-1">Weekday vs Weekend</p>
           <p className="text-xs text-muted-foreground mb-4">Performance comparison</p>
-          <div className="space-y-4">
+          <div className="flex flex-col gap-4">
             <div className="rounded-lg border border-[hsl(var(--border))] p-4">
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
@@ -146,7 +146,7 @@ export default function TimeAnalysis() {
           {/* Time Slot Summary */}
           <div className="mt-6">
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Time Slot Summary</p>
-            <div className="space-y-2">
+            <div className="flex flex-col gap-2">
               {[
                 { slot: 'Morning (11AM-2PM)', hours: hourlyRevenue.slice(0, 4), color: 'text-[hsl(var(--warning))]' },
                 { slot: 'Afternoon (3PM-6PM)', hours: hourlyRevenue.slice(4, 7), color: 'text-muted-foreground' },

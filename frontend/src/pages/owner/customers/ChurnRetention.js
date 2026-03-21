@@ -23,7 +23,7 @@ export default function ChurnRetention() {
   const navigate = useNavigate();
 
   return (
-    <div className="space-y-6" data-testid="churn-retention">
+    <div className="flex flex-col gap-6" data-testid="churn-retention">
       {/* KPIs */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
@@ -97,7 +97,7 @@ export default function ChurnRetention() {
           <div className="h-9 w-9 rounded-lg bg-[hsl(var(--danger)_/_0.1)] flex items-center justify-center"><AlertTriangle className="h-[18px] w-[18px] text-[hsl(var(--danger))]" /></div>
           <div><p className="text-base font-semibold text-foreground">At-Risk & Lost Guests</p><p className="text-xs text-muted-foreground">Guests needing re-engagement</p></div>
         </div>
-        <div className="space-y-2">
+        <div className="flex flex-col gap-2">
           {[...atRiskGuests, ...lostGuests].filter((g, i, arr) => arr.findIndex(x => x.id === g.id) === i).map((g, i) => (
             <motion.div key={g.id} {...fadeUp} transition={{ ...fadeUp.transition, delay: 0.3 + i * 0.03 }}
               onClick={() => navigate(`/owner/customers/${g.id}`)}

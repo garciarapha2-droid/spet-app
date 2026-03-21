@@ -19,7 +19,7 @@ export default function VenueDetail() {
   const venueEvents = ownerEvents.filter(e => e.venueId === venueId);
 
   return (
-    <div className="space-y-6" data-testid="venue-detail">
+    <div className="flex flex-col gap-6" data-testid="venue-detail">
       <motion.button {...fadeUp} onClick={() => navigate(-1)} className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors" data-testid="venue-detail-back-btn">
         <ChevronRight className="h-4 w-4 rotate-180" /> Back
       </motion.button>
@@ -75,7 +75,7 @@ export default function VenueDetail() {
       {/* Events */}
       <motion.div {...fadeUp} transition={{ ...fadeUp.transition, delay: 0.25 }} className="rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-5">
         <p className="text-base font-semibold text-foreground mb-4">Events / Nights</p>
-        <div className="space-y-2">
+        <div className="flex flex-col gap-2">
           {venueEvents.length > 0 ? venueEvents.map((ev, i) => (
             <motion.div key={ev.id} {...fadeUp} transition={{ ...fadeUp.transition, delay: 0.3 + i * 0.03 }}
               onClick={() => navigate(`/owner/system/venues/${venueId}/events/${ev.id}`)}

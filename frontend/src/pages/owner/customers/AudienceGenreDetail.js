@@ -14,7 +14,7 @@ export default function AudienceGenreDetail() {
   if (!genre) return <div className="flex items-center justify-center h-64"><p className="text-muted-foreground">Genre not found</p></div>;
 
   return (
-    <div className="space-y-6" data-testid="genre-detail">
+    <div className="flex flex-col gap-6" data-testid="genre-detail">
       <motion.button {...fadeUp} onClick={() => navigate(-1)} className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors" data-testid="genre-back-btn">
         <ChevronRight className="h-4 w-4 rotate-180" /> Back
       </motion.button>

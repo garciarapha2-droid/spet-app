@@ -92,7 +92,7 @@ export default function VenueManagement() {
           VENUES VIEW
          ══════════════════════════════════════════ */}
       {view === 'venues' && (
-        <div className="space-y-4" data-testid="venues-list-view">
+        <div className="flex flex-col gap-4" data-testid="venues-list-view">
           {ownerVenues.map((v, i) => {
             const vs = venueStyle[v.name] || venueStyle.Downtown;
             const st = statusBadge[v.status];
@@ -155,7 +155,7 @@ export default function VenueManagement() {
           NIGHTS / EVENTS VIEW
          ══════════════════════════════════════════ */}
       {view === 'nights' && (
-        <div className="space-y-6" data-testid="nights-list-view">
+        <div className="flex flex-col gap-6" data-testid="nights-list-view">
           {groupedEvents.map((group, gi) => {
             const vs = venueStyle[group.venue.name] || venueStyle.Downtown;
             return (
@@ -168,7 +168,7 @@ export default function VenueManagement() {
                 </div>
 
                 {/* Event Cards */}
-                <div className="space-y-4">
+                <div className="flex flex-col gap-4">
                   {group.events.map((ev, ei) => {
                     const hl = healthBadge[ev.health];
                     return (

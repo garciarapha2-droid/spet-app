@@ -44,7 +44,7 @@ export function CustomerProfileModal({ guest, onClose }) {
           <X className="h-4 w-4 text-muted-foreground" />
         </button>
 
-        <div className="p-5 space-y-4">
+        <div className="p-5 flex flex-col gap-4">
           {/* Header */}
           <div className="flex items-start gap-4">
             <div className="h-12 w-12 rounded-full bg-[hsl(var(--primary)_/_0.12)] flex items-center justify-center text-sm font-bold text-[hsl(var(--primary))] shrink-0">
@@ -76,7 +76,7 @@ export function CustomerProfileModal({ guest, onClose }) {
           </div>
 
           {/* Details */}
-          <div className="rounded-xl border border-[hsl(var(--border))] p-4 space-y-2">
+          <div className="rounded-xl border border-[hsl(var(--border))] p-4 flex flex-col gap-2">
             {[
               { label: 'Frequency', value: guest.frequency },
               { label: 'Favorite', value: guest.favoriteCategory },
@@ -132,7 +132,7 @@ export default function GuestFullHistory({ guest, onBack }) {
   const riskLabel = isHealthy ? 'Healthy' : guest.riskSignal;
 
   return (
-    <div className="space-y-6" data-testid="guest-full-history">
+    <div className="flex flex-col gap-6" data-testid="guest-full-history">
       {/* ── Back ── */}
       <motion.button {...fadeUp} onClick={handleBack} className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors" data-testid="guest-back-btn">
         <ChevronLeft className="h-4 w-4" /> Back
@@ -251,7 +251,7 @@ export default function GuestFullHistory({ guest, onBack }) {
               <p className="text-xs text-muted-foreground">Where they spend</p>
             </div>
           </div>
-          <div className="space-y-4">
+          <div className="flex flex-col gap-4">
             {venueBreak.map((v, i) => {
               const pct = Math.round((v.spent / totalVenueSpent) * 100);
               const barPct = Math.max(pct, 15);
@@ -290,7 +290,7 @@ export default function GuestFullHistory({ guest, onBack }) {
               <p className="text-xs text-muted-foreground">What they buy</p>
             </div>
           </div>
-          <div className="space-y-4">
+          <div className="flex flex-col gap-4">
             {catBreak.map((c, i) => {
               const pct = Math.round((c.amount / totalCatAmount) * 100);
               const barPct = Math.max((c.amount / maxCatAmount) * 100, 15);

@@ -12,7 +12,7 @@ const fadeUp = {
 
 export default function ShiftOperations() {
   return (
-    <div className="space-y-6" data-testid="shift-operations-page">
+    <div className="flex flex-col gap-6" data-testid="shift-operations-page">
       {/* KPI Row */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         {shiftKpis.map((kpi, i) => (

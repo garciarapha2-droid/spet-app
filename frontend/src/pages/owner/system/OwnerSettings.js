@@ -14,8 +14,8 @@ const settingSections = [
 
 export default function OwnerSettings() {
   return (
-    <div className="space-y-6" data-testid="owner-settings">
-      <div className="space-y-4">
+    <div className="flex flex-col gap-6" data-testid="owner-settings">
+      <div className="flex flex-col gap-4">
         {settingSections.map((section, i) => (
           <motion.div key={section.label} {...fadeUp} transition={{ ...fadeUp.transition, delay: 0.1 + i * 0.05 }}
             className="rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-5 hover:border-[hsl(var(--primary)_/_0.3)] hover:shadow-sm transition-all cursor-pointer"

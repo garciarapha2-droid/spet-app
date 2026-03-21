@@ -68,7 +68,7 @@ export default function LoyaltyGuestProfile() {
   const isChurnRisk = guest.status === 'churn_risk' || guest.status === 'lost';
 
   return (
-    <div className="space-y-6" data-testid="loyalty-guest-profile-page">
+    <div className="flex flex-col gap-6" data-testid="loyalty-guest-profile-page">
       {/* Back Button */}
       <motion.button
         {...fadeUp}
@@ -139,7 +139,7 @@ export default function LoyaltyGuestProfile() {
         {/* Behavior */}
         <motion.div {...fadeUp} transition={{ ...fadeUp.transition, delay: 0.25 }} className="rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-4">
           <p className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground mb-3">Behavior</p>
-          <div className="space-y-2.5">
+          <div className="flex flex-col gap-2.5">
             {[
               { icon: Clock, label: 'Last Visit', value: guest.lastVisit },
               { icon: MapPin, label: 'Frequency', value: guest.visitFrequency },
@@ -157,7 +157,7 @@ export default function LoyaltyGuestProfile() {
         {/* Spending */}
         <motion.div {...fadeUp} transition={{ ...fadeUp.transition, delay: 0.3 }} className="rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-4">
           <p className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground mb-3">Spending</p>
-          <div className="space-y-2.5">
+          <div className="flex flex-col gap-2.5">
             {[
               { icon: CreditCard, label: 'Highest', value: `$${guest.highestSpend}` },
               { icon: Award, label: 'Tips Given', value: `$${guest.tipsGiven}` },
@@ -178,7 +178,7 @@ export default function LoyaltyGuestProfile() {
         {/* Journey Timeline */}
         <motion.div {...fadeUp} transition={{ ...fadeUp.transition, delay: 0.35 }} className="lg:col-span-2 rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-4">
           <p className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground mb-3">Guest Journey</p>
-          <div className="space-y-3">
+          <div className="flex flex-col gap-3">
             {guest.journey.map((j, i) => (
               <div key={i} className="flex items-start gap-3">
                 <div className="flex flex-col items-center">
@@ -197,7 +197,7 @@ export default function LoyaltyGuestProfile() {
         {/* Smart Actions */}
         <motion.div {...fadeUp} transition={{ ...fadeUp.transition, delay: 0.4 }} className="rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-4">
           <p className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground mb-3">Smart Actions</p>
-          <div className="space-y-2">
+          <div className="flex flex-col gap-2">
             {actions.map(a => (
               <button key={a} className="w-full text-left px-3 py-2 rounded-lg text-xs font-semibold bg-[hsl(var(--primary)_/_0.1)] text-[hsl(var(--primary))] hover:bg-[hsl(var(--primary)_/_0.2)] transition-colors" data-testid={`action-${a.toLowerCase().replace(/\s+/g, '-')}`}>
                 {a}

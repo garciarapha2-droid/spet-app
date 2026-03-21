@@ -26,7 +26,7 @@ export default function FinancialOverview() {
   const [period, setPeriod] = useState('Monthly');
 
   return (
-    <div className="space-y-6" data-testid="financial-overview">
+    <div className="flex flex-col gap-6" data-testid="financial-overview">
       <div className="flex justify-end">
         <div className="flex items-center border border-[hsl(var(--border)_/_0.6)] bg-[hsl(var(--card)_/_0.8)] backdrop-blur-sm p-[3px] rounded-full shadow-[0_1px_3px_0_hsl(var(--foreground)_/_0.04)]">
           {['Today', 'Weekly', 'Monthly', 'Yearly'].map(p => (

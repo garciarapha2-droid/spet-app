@@ -22,7 +22,7 @@ export default function ActionCenter() {
   });
 
   return (
-    <div className="space-y-6" data-testid="action-center">
+    <div className="flex flex-col gap-6" data-testid="action-center">
       {/* KPIs */}
       <div className="grid grid-cols-3 gap-4">
         {[
@@ -45,7 +45,7 @@ export default function ActionCenter() {
       </div>
 
       {/* Action Cards */}
-      <div className="space-y-4">
+      <div className="flex flex-col gap-4">
         {filtered.map((a, i) => {
           const StatusIcon = statusIcon[a.status];
           return (

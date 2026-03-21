@@ -281,7 +281,7 @@ export const PulseEntryPage = () => {
               <h3 className="text-xl font-semibold">Guest History</h3>
             </div>
             {guestHistory && (
-              <div className="space-y-6">
+              <div className="flex flex-col gap-6">
                 <div className="flex items-center gap-4">
                   {guestHistory.guest_photo ? (
                     <img src={guestHistory.guest_photo} alt="" className="w-16 h-16 rounded-full object-cover border-2 border-border" />
@@ -301,7 +301,7 @@ export const PulseEntryPage = () => {
                 </div>
                 <div className="border-t border-border pt-4">
                   <p className="text-sm font-medium text-muted-foreground mb-3">{guestHistory.total} event{guestHistory.total !== 1 ? 's' : ''}</p>
-                  <div className="space-y-2">
+                  <div className="flex flex-col gap-2">
                     {guestHistory.history.map((evt, i) => (
                       <div key={evt.entry_id} className="flex items-center gap-3 p-3 rounded-lg bg-muted/30">
                         <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
@@ -342,21 +342,21 @@ export const PulseEntryPage = () => {
       <main className="w-full px-16 py-12">
         {/* KPI Cards */}
         <div className="grid grid-cols-3 gap-6 mb-6">
-          <div className="space-y-3">
+          <div className="flex flex-col gap-3">
             <div className="flex items-center gap-3 text-sm font-medium text-muted-foreground uppercase tracking-wider">
               <Users className="h-5 w-5 text-primary" />
               <span>Guests Inside</span>
             </div>
             <div className="text-7xl font-semibold tracking-tight" data-testid="kpi-inside">{stats.inside}</div>
           </div>
-          <div className="space-y-3">
+          <div className="flex flex-col gap-3">
             <div className="flex items-center gap-3 text-sm font-medium text-muted-foreground uppercase tracking-wider">
               <Activity className="h-5 w-5 text-primary" />
               <span>Total Entries</span>
             </div>
             <div className="text-7xl font-semibold tracking-tight" data-testid="kpi-visits">{stats.visits}</div>
           </div>
-          <div className="space-y-3">
+          <div className="flex flex-col gap-3">
             <div className="flex items-center gap-3 text-sm font-medium text-muted-foreground uppercase tracking-wider">
               <Zap className="h-5 w-5 text-primary" />
               <span>Denied</span>
@@ -419,7 +419,7 @@ export const PulseEntryPage = () => {
                   No guests registered yet
                 </div>
               ) : (
-                <div className="space-y-2">
+                <div className="flex flex-col gap-2">
                   {(() => {
                     // Dedupe: one row per guest, latest action only
                     const unique = {};
