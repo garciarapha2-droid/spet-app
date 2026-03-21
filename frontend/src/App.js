@@ -16,6 +16,7 @@ import { PaymentSuccessPage } from './pages/PaymentSuccessPage';
 
 // Onboarding
 import OnboardingPage from './pages/onboarding/OnboardingPage';
+import OnboardingWizard from './pages/onboarding/OnboardingWizard';
 
 // Protected pages
 import { VenueSelectPage } from './pages/venue/VenueHomePage';
@@ -60,7 +61,8 @@ function App() {
               <Route path="/payment/success" element={<AuthOnly><PaymentSuccessPage /></AuthOnly>} />
 
               {/* Onboarding (require auth + active) */}
-              <Route path="/onboarding" element={<ActiveOnly><OnboardingPage /></ActiveOnly>} />
+              <Route path="/onboarding" element={<ActiveOnly><OnboardingWizard /></ActiveOnly>} />
+              <Route path="/onboarding/legacy" element={<ActiveOnly><OnboardingPage /></ActiveOnly>} />
 
               {/* Protected routes (require auth + active + onboarded) */}
               <Route path="/venue/home" element={<ProtectedRoute><VenueSelectPage /></ProtectedRoute>} />

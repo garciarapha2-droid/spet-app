@@ -249,5 +249,7 @@ export const onboardingAPI = {
   passwordReset: (new_password) => api.post('/onboarding/password-reset', { new_password }),
   modulesSetup: (modules) => api.post('/onboarding/modules-setup', { modules }),
   teamSetup: (data) => api.post('/onboarding/team-setup', data || {}),
-  complete: () => api.post('/onboarding/complete'),
+  complete: (data) => api.post('/onboarding/complete', data || {}),
+  saveConfig: (data) => api.post('/onboarding/save-config', data),
+  skip: () => api.post('/onboarding/skip', {}),
 };

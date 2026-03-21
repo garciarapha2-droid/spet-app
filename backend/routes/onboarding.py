@@ -352,15 +352,191 @@ async def onboarding_team_setup(request: Request, user: dict = Depends(require_a
 
 
 @router.post("/complete")
-async def onboarding_complete(user: dict = Depends(require_auth)):
-    """Mark onboarding as completed."""
+async def onboarding_complete(request: Request, user: dict = Depends(require_auth)):
+    """Mark onboarding as completed and persist config."""
+    pool = get_postgres_pool()
+    db = get_mongo_db()
+    now = datetime.now(timezone.utc)
+
+    # Try to get config body (may be empty)
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+
+    async with pool.acquire() as conn:
+        # Get venue_id
+        access = await conn.fetchrow(
+            "SELECT id, venue_id FROM user_access WHERE user_id = $1::uuid LIMIT 1",
+            user["sub"],
+        )
+        venue_id = str(access["venue_id"]) if access and access.get("venue_id") else None
+
+        # If config body provided, save modules + settings
+        if body and venue_id:
+            enabled_modules = body.get("enabledModules", ["pulse"])
+            payment_flow = body.get("paymentFlow", {})
+            venue_name = body.get("venueName", "")
+            venue_type = body.get("venueType", [])
+
+            # Update venue_configs
+            await db.venue_configs.update_one(
+                {"venue_id": venue_id},
+                {"$set": {
+                    "modules": enabled_modules,
+                    "payment_flow": payment_flow,
+                    "venue_name": venue_name,
+                    "venue_type": venue_type,
+                    "updated_at": now.isoformat(),
+                }},
+                upsert=True,
+            )
+
+            # Save rewards config if pulse enabled
+            if "pulse" in enabled_modules and body.get("pulseRewards"):
+                rewards_data = body["pulseRewards"]
+                await db.rewards_config.update_one(
+                    {"venue_id": venue_id},
+                    {"$set": {
+                        "venue_id": venue_id,
+                        "tiers": rewards_data.get("tiers", []),
+                        "rewards": rewards_data.get("rewards", []),
+                        "points_per_dollar": rewards_data.get("pointsPerDollar", "2"),
+                        "daily_limit": rewards_data.get("dailyLimit", "500"),
+                        "max_per_visit": rewards_data.get("maxPerVisit", "200"),
+                        "diamond_min_points": rewards_data.get("diamondMinPoints", "10000"),
+                        "vip_manual_only": rewards_data.get("vipManualOnly", True),
+                        "automation_rules": rewards_data.get("automationRules", {}),
+                        "updated_at": now.isoformat(),
+                    }},
+                    upsert=True,
+                )
+
+            # Save reservation settings
+            if body.get("reservationSettings"):
+                await db.reservation_settings.update_one(
+                    {"venue_id": venue_id},
+                    {"$set": {
+                        "venue_id": venue_id,
+                        **body["reservationSettings"],
+                        "updated_at": now.isoformat(),
+                    }},
+                    upsert=True,
+                )
+
+            # Save menu items
+            if body.get("pulseMenu") and body["pulseMenu"].get("items"):
+                for item in body["pulseMenu"]["items"]:
+                    await db.venue_catalog.update_one(
+                        {"venue_id": venue_id, "onboarding_id": item.get("id")},
+                        {"$set": {
+                            "venue_id": venue_id,
+                            "onboarding_id": item.get("id"),
+                            "name": item.get("name", ""),
+                            "price": item.get("price", "0"),
+                            "category": item.get("category", ""),
+                            "description": item.get("description", ""),
+                            "extras": item.get("extras", []),
+                            "created_at": now.isoformat(),
+                        }},
+                        upsert=True,
+                    )
+
+            # Update permissions
+            if access:
+                permissions = {m: True for m in enabled_modules}
+                permissions["HOST_COLLECT_DOB"] = True
+                await conn.execute(
+                    "UPDATE user_access SET permissions = $1::jsonb WHERE id = $2",
+                    json.dumps(permissions), access["id"],
+                )
+
+        # Mark onboarding as completed
+        await conn.execute(
+            "UPDATE users SET onboarding_completed = TRUE, onboarding_step = 10, updated_at = $1 WHERE id = $2::uuid",
+            now, user["sub"],
+        )
+
+    # Save onboarding state
+    await db.onboarding_state.update_one(
+        {"user_id": user["sub"]},
+        {"$set": {
+            "user_id": user["sub"],
+            "venue_id": venue_id,
+            "state": "completed",
+            "updated_at": now.isoformat(),
+        }},
+        upsert=True,
+    )
+
+    return {"completed": True, "step": 10}
+
+
+@router.post("/save-config")
+async def save_onboarding_config(request: Request, user: dict = Depends(require_auth)):
+    """Save the full onboarding configuration to MongoDB (work in progress)."""
+    body = await request.json()
+    db = get_mongo_db()
     pool = get_postgres_pool()
     now = datetime.now(timezone.utc)
 
     async with pool.acquire() as conn:
+        access = await conn.fetchrow(
+            "SELECT venue_id FROM user_access WHERE user_id = $1::uuid LIMIT 1",
+            user["sub"],
+        )
+        venue_id = str(access["venue_id"]) if access and access.get("venue_id") else None
+
+    config = {
+        "user_id": user["sub"],
+        "venue_id": venue_id,
+        "data": body,
+        "updated_at": now.isoformat(),
+    }
+
+    await db.onboarding_configs.update_one(
+        {"user_id": user["sub"]},
+        {"$set": config, "$setOnInsert": {"created_at": now.isoformat()}},
+        upsert=True,
+    )
+
+    # Update onboarding state to in_progress
+    await db.onboarding_state.update_one(
+        {"user_id": user["sub"]},
+        {"$set": {
+            "user_id": user["sub"],
+            "state": "in_progress",
+            "updated_at": now.isoformat(),
+        }},
+        upsert=True,
+    )
+
+    return {"saved": True}
+
+
+@router.post("/skip")
+async def skip_onboarding(request: Request, user: dict = Depends(require_auth)):
+    """Skip onboarding - mark as skipped but allow completing later."""
+    pool = get_postgres_pool()
+    db = get_mongo_db()
+    now = datetime.now(timezone.utc)
+
+    async with pool.acquire() as conn:
+        # Mark onboarding as completed (so the system doesn't loop back)
+        # but track the actual state as 'skipped' in MongoDB
         await conn.execute(
-            "UPDATE users SET onboarding_completed = TRUE, onboarding_step = 6, updated_at = $1 WHERE id = $2::uuid",
+            "UPDATE users SET onboarding_completed = TRUE, onboarding_step = 0, updated_at = $1 WHERE id = $2::uuid",
             now, user["sub"],
         )
 
-    return {"completed": True, "step": 6}
+    await db.onboarding_state.update_one(
+        {"user_id": user["sub"]},
+        {"$set": {
+            "user_id": user["sub"],
+            "state": "skipped",
+            "updated_at": now.isoformat(),
+        }},
+        upsert=True,
+    )
+
+    return {"skipped": True}
