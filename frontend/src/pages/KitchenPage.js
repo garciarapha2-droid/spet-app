@@ -6,62 +6,41 @@ import { Button } from '../components/ui/button';
 import { ThemeToggle } from '../components/ThemeToggle';
 import SpetLogo from '../components/SpetLogo';
 import {
-  UtensilsCrossed, Beer, Clock, ChefHat, CheckCircle,
+  UtensilsCrossed, Beer, Clock, ChefHat, CheckCircle, CheckCircle2,
   Timer, LogOut, Home, AlertTriangle, X, PackageCheck, Zap,
-  ChevronRight, Eye
+  ChevronRight, Eye, Flame
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 
 /* ═══════════════════════════════════════════════════════
    DATA TYPES & CONSTANTS
    ═══════════════════════════════════════════════════════ */
-
-/** @typedef {'kitchen' | 'bar'} KitchenStation */
-/** @typedef {'pending' | 'preparing' | 'ready' | 'delivered' | 'delayed'} TicketStatus */
-
-/**
- * @typedef {Object} TicketItem
- * @property {string} id
- * @property {string} name
- * @property {number} qty
- * @property {{ removed?: string[], extras?: (string|{name:string,price:number})[] }} [modifiers]
- * @property {string} [notes]
- */
-
-/**
- * @typedef {Object} KitchenTicket
- * @property {string} id
- * @property {TicketStatus} status
- * @property {string} [guest_name]
- * @property {number} [table_number]
- * @property {TicketItem[]} items
- * @property {string} created_at
- * @property {string} [started_at]
- * @property {number} [estimated_minutes]
- * @property {string} destination
- */
 
 const VENUE_ID = () => localStorage.getItem('active_venue_id') || '40a24e04-75b6-435d-bfff-ab0d469ce543';
 const VENUE_NAME = () => localStorage.getItem('active_venue_name') || 'Downtown';
 
 /* Beer auto-ready regex */
 const BEER_REGEX = /\b(beer|cerveja|chopp?|draft|lager|pils(ner)?|ipa|stout|ale|wheat|porter|pilsen|helles|weiss|bock)\b/i;
-
 const isBeerItem = (item) => BEER_REGEX.test(item.name);
 const isAllBeer = (items) => items.length > 0 && items.every(isBeerItem);
 
-/* Status config */
+/* Modification prefix detection */
+const REMOVAL_REGEX = /^(no |remove |without |hold )/i;
+const isRemoval = (text) => REMOVAL_REGEX.test(text);
+
+/* ── Status config ── */
 const STATUS_CONFIG = {
-  pending:   { dot: 'bg-amber-500',   headerBg: 'bg-amber-500/8 border-b border-amber-500/15', text: 'text-amber-600 dark:text-amber-400', badge: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400', ring: 'ring-amber-500/20' },
-  preparing: { dot: 'bg-blue-500',    headerBg: 'bg-blue-500/8 border-b border-blue-500/15',   text: 'text-blue-600 dark:text-blue-400',   badge: 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400',   ring: 'ring-blue-500/20' },
-  ready:     { dot: 'bg-emerald-500', headerBg: 'bg-emerald-500/8 border-b border-emerald-500/15', text: 'text-emerald-600 dark:text-emerald-400', badge: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400', ring: 'ring-emerald-500/20' },
-  delivered: { dot: 'bg-gray-400',    headerBg: 'bg-gray-500/5 border-b border-gray-500/10', text: 'text-gray-500', badge: 'bg-gray-100 text-gray-600 dark:bg-gray-500/10 dark:text-gray-400', ring: 'ring-gray-500/10' },
-  delayed:   { dot: 'bg-red-500',     headerBg: 'bg-red-500/8 border-b border-red-500/20',   text: 'text-red-600 dark:text-red-400',   badge: 'bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-400', ring: 'ring-red-500/20' },
+  pending:   { headerBg: 'bg-amber-500',   dot: 'bg-amber-400/70',   border: 'border-amber-500/25',  btnBg: 'bg-amber-500 hover:bg-amber-600' },
+  preparing: { headerBg: 'bg-sky-500',      dot: 'bg-sky-400/70',     border: 'border-sky-500/25',    btnBg: 'bg-sky-500 hover:bg-sky-600' },
+  ready:     { headerBg: 'bg-emerald-500',  dot: 'bg-emerald-400/70', border: 'border-emerald-500/25', btnBg: 'bg-emerald-500 hover:bg-emerald-600' },
+  delivered: { headerBg: 'bg-slate-500',    dot: 'bg-slate-400/70',   border: 'border-slate-500/20',  btnBg: 'bg-slate-500 hover:bg-slate-600' },
+  delayed:   { headerBg: 'bg-red-500',      dot: 'bg-red-400/70',     border: 'border-red-500/30',    btnBg: 'bg-red-500 hover:bg-red-600' },
 };
 
 const NEXT_STATUS = { pending: 'preparing', preparing: 'ready', ready: 'delivered', delayed: 'ready' };
 const ACTION_LABELS = { pending: 'Start', preparing: 'Ready', ready: 'Deliver', delayed: 'Ready' };
-const STATUS_LABELS = { pending: 'NEW', preparing: 'PREP', ready: 'READY', delivered: 'DONE', delayed: 'LATE' };
+const ACTION_ICONS = { pending: ChefHat, preparing: CheckCircle, ready: PackageCheck, delayed: PackageCheck };
 const COLUMN_ORDER = ['Pending', 'Preparing', 'Ready', 'Delivered', 'Delayed'];
 const COLUMN_STATUS_MAP = { 'Pending': 'pending', 'Preparing': 'preparing', 'Ready': 'ready', 'Delivered': 'delivered', 'Delayed': 'delayed' };
 
@@ -72,7 +51,7 @@ const shortOrderNum = (id) => {
 };
 
 /* ═══════════════════════════════════════════════════════
-   MOCK DATA (when API returns empty)
+   MOCK DATA
    ═══════════════════════════════════════════════════════ */
 const MOCK_TICKETS = [
   {
@@ -111,12 +90,10 @@ const MOCK_TICKETS = [
     ],
   },
   {
-    id: 'kds-mock-005', status: 'ready', guest_name: 'João P.', table_number: 9,
+    id: 'kds-mock-005', status: 'ready', guest_name: 'Joao P.', table_number: 9,
     destination: 'kitchen', created_at: new Date(Date.now() - 22 * 60000).toISOString(),
     started_at: new Date(Date.now() - 15 * 60000).toISOString(), estimated_minutes: 12,
-    items: [
-      { id: 'i10', name: 'Fish & Chips', qty: 2 },
-    ],
+    items: [{ id: 'i10', name: 'Fish & Chips', qty: 2 }],
   },
   {
     id: 'kds-mock-006', status: 'delivered', guest_name: 'Carlos M.', table_number: 1,
@@ -160,69 +137,65 @@ const MOCK_TICKETS = [
 const useElapsed = (startTime) => {
   const [now, setNow] = useState(Date.now());
   useEffect(() => { const iv = setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(iv); }, []);
-  if (!startTime) return { minutes: 0, seconds: 0, total: 0, progress: 0 };
+  if (!startTime) return { minutes: 0, seconds: 0, total: 0 };
   const diff = Math.max(0, Math.floor((now - new Date(startTime).getTime()) / 1000));
-  return { minutes: Math.floor(diff / 60), seconds: diff % 60, total: diff, progress: 0 };
+  return { minutes: Math.floor(diff / 60), seconds: diff % 60, total: diff };
 };
 
-const LiveTimer = ({ startTime, estimatedMinutes, isDelayed }) => {
+const LiveTimer = ({ startTime, estimatedMinutes, isDelayed, white }) => {
   const { minutes, seconds, total } = useElapsed(startTime);
   const remaining = estimatedMinutes ? (estimatedMinutes * 60) - total : null;
   const isOvertime = remaining !== null && remaining < 0;
   const overtime = isOvertime ? Math.abs(remaining) : 0;
-
   const display = isOvertime
     ? `+${Math.floor(overtime / 60)}:${String(overtime % 60).padStart(2, '0')}`
     : estimatedMinutes && !isOvertime
       ? `${Math.floor(remaining / 60)}:${String(remaining % 60).padStart(2, '0')}`
       : `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-
   return (
-    <span className={`font-mono font-bold text-xs tabular-nums ${isOvertime || isDelayed ? 'text-red-500' : 'text-muted-foreground'}`}>
+    <span className={`font-mono font-bold text-xs tabular-nums ${white ? 'text-white/80' : isOvertime || isDelayed ? 'text-red-500' : 'text-muted-foreground'}`}>
       {display}
     </span>
   );
 };
 
 /* ═══════════════════════════════════════════════════════
-   PROGRESS BAR
+   PROGRESS BAR — preparing only
+   h-1, bg-border/50, full width at base of card
+   normal: bg-foreground/15
+   overtime: bg-red-400/60
    ═══════════════════════════════════════════════════════ */
 const ProgressBar = ({ startTime, estimatedMinutes }) => {
   const { total } = useElapsed(startTime);
   if (!estimatedMinutes || !startTime) return null;
-
-  const totalSeconds = estimatedMinutes * 60;
-  const pct = Math.min(100, (total / totalSeconds) * 100);
-  const isOvertime = total > totalSeconds;
-
-  const barColor = isOvertime
-    ? 'bg-red-500'
-    : pct > 75
-      ? 'bg-amber-500'
-      : 'bg-emerald-500';
-
+  const totalSec = estimatedMinutes * 60;
+  const pct = Math.min(100, (total / totalSec) * 100);
+  const isOvertime = total > totalSec;
   return (
-    <div className="h-1 w-full bg-border/40 rounded-full overflow-hidden" data-testid="progress-bar">
-      <div
-        className={`h-full rounded-full transition-all duration-1000 ease-linear ${barColor}`}
-        style={{ width: `${Math.min(pct, 100)}%` }}
+    <div className="h-1 w-full bg-border/50" data-testid="progress-bar">
+      <motion.div
+        className={`h-full rounded-r-full ${isOvertime ? 'bg-red-400/60' : 'bg-foreground/15'}`}
+        initial={{ width: 0 }}
+        animate={{ width: `${Math.min(pct, 100)}%` }}
+        transition={{ duration: 1, ease: 'linear' }}
       />
     </div>
   );
 };
 
 /* ═══════════════════════════════════════════════════════
-   TICKET CARD — exact spec spacing
-   Card gap: 8px (space-y-2)
+   TICKET CARD
    Card radius: 16px (rounded-2xl)
+   Border: status color at 25% opacity
+   Shadow: shadow-lg, hover:shadow-xl
    ═══════════════════════════════════════════════════════ */
 const TicketCard = ({ ticket, onStatusChange, onSetTime, isDelayed, onViewDetail }) => {
   const status = isDelayed ? 'delayed' : ticket.status;
   const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.pending;
   const elapsed = ticket.created_at ? Math.floor((Date.now() - new Date(ticket.created_at).getTime()) / 60000) : 0;
   const orderType = ticket.table_number ? 'DINE IN' : 'TAB';
-  const hasBeer = ticket.items.some(isBeerItem);
   const allBeer = isAllBeer(ticket.items);
+  const ActionIcon = ACTION_ICONS[status] || ChefHat;
 
   const handleDragStart = (e) => {
     e.dataTransfer.setData('ticket_id', ticket.id);
@@ -233,117 +206,133 @@ const TicketCard = ({ ticket, onStatusChange, onSetTime, isDelayed, onViewDetail
 
   return (
     <div
-      className={`rounded-2xl border border-border bg-card overflow-hidden transition-all duration-200 cursor-grab active:cursor-grabbing active:scale-[0.98] ${isDelayed ? 'ring-2 ring-red-500/30 animate-pulse' : 'hover:shadow-md'}`}
+      className={`rounded-2xl border ${cfg.border} bg-card shadow-lg hover:shadow-xl overflow-hidden transition-all duration-200 cursor-grab active:cursor-grabbing active:scale-[0.98]`}
       draggable="true"
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
       data-testid={`ticket-${ticket.id}`}
     >
-      {/* Header band */}
-      <div className={`px-3 py-2.5 ${cfg.headerBg}`}>
-        <div className="flex items-center justify-between mb-1">
+      {/* ── HEADER COLORIDO — 100% width, cor sólida do status ── */}
+      <div className={`${cfg.headerBg} px-4 py-2.5`}>
+        <div className="flex items-center justify-between">
           <div className="flex items-center gap-1.5">
-            <span className={`text-base font-extrabold tracking-tight ${cfg.text}`} data-testid={`ticket-num-${ticket.id}`}>
+            <span className="text-base font-black text-white" data-testid={`ticket-num-${ticket.id}`}>
               {shortOrderNum(ticket.id)}
             </span>
-            <span className="text-xs font-semibold truncate max-w-[100px]">
+            <span className="text-sm font-semibold text-white/90 truncate max-w-[100px]">
               {ticket.guest_name || (ticket.table_number ? `Table ${ticket.table_number}` : 'Guest')}
             </span>
           </div>
           <div className="flex items-center gap-1">
-            <Clock className="h-3 w-3 text-muted-foreground" />
+            <Clock className="h-3 w-3 text-white/80" />
             {ticket.status === 'preparing' || isDelayed ? (
-              <LiveTimer startTime={ticket.started_at || ticket.created_at} estimatedMinutes={ticket.estimated_minutes} isDelayed={isDelayed} />
+              <LiveTimer startTime={ticket.started_at || ticket.created_at} estimatedMinutes={ticket.estimated_minutes} isDelayed={isDelayed} white />
             ) : (
-              <span className="text-[11px] text-muted-foreground font-mono tabular-nums">{elapsed}m</span>
+              <span className="text-xs text-white/80 font-mono tabular-nums">{elapsed}m</span>
             )}
           </div>
         </div>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1.5">
-            <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">{orderType}</span>
-            {hasBeer && (
-              <span className="flex items-center gap-0.5 text-[9px] font-bold text-amber-600 dark:text-amber-400">
-                <Beer className="h-3 w-3" />
-                {allBeer ? 'AUTO' : ''}
-              </span>
-            )}
-          </div>
-          <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider ${cfg.badge}`}>
-            {STATUS_LABELS[status]}
-          </span>
-        </div>
+        {/* Delayed badge only in header */}
+        {isDelayed && (
+          <span className="inline-block mt-1 px-1.5 py-0.5 rounded bg-white/20 text-white text-[10px] font-bold uppercase">LATE</span>
+        )}
       </div>
 
-      {/* Items */}
+      {/* ── BODY ── */}
       <div className="px-3 py-2.5">
-        <div className="space-y-1.5 mb-2">
+        {/* Type + table — NO status badge in body */}
+        <div className="flex items-center gap-1 mb-2">
+          <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">{orderType}</span>
+          {ticket.table_number && (
+            <span className="text-[11px] font-medium text-muted-foreground">&middot; T{ticket.table_number}</span>
+          )}
+          {ticket.rush && (
+            <span className="ml-auto flex items-center gap-0.5 text-[10px] font-bold uppercase text-orange-500">
+              <Flame className="h-3 w-3" /> RUSH
+            </span>
+          )}
+          {allBeer && status === 'pending' && (
+            <span className="ml-auto flex items-center gap-0.5 text-[10px] font-bold uppercase text-amber-500">
+              <Beer className="h-3 w-3" /> AUTO
+            </span>
+          )}
+        </div>
+
+        {/* Items */}
+        <div className="space-y-1 mb-2">
           {ticket.items.map((item, i) => (
             <div key={item.id || i}>
               <div className="flex items-start gap-2">
-                <span className="text-sm font-bold text-foreground/60 w-4 text-right flex-shrink-0">{item.qty}</span>
-                <span className={`text-sm font-semibold ${isBeerItem(item) ? 'text-amber-600 dark:text-amber-400' : ''}`}>{item.name}</span>
+                <span className="text-sm font-medium text-foreground w-4 text-right flex-shrink-0">{item.qty}</span>
+                <span className={`text-sm font-medium ${item.fulfilled ? 'text-muted-foreground line-through' : 'text-foreground'} ${isBeerItem(item) ? 'text-amber-500' : ''}`}>
+                  {item.fulfilled && <CheckCircle2 className="h-3 w-3 inline mr-1" />}
+                  {item.name}
+                </span>
               </div>
+              {/* Modifications — ⊘ red for removed, + green for added */}
               {item.modifiers?.removed?.map((r, ri) => (
-                <div key={`r-${ri}`} className="ml-6 text-[11px] text-red-500 font-medium">NO {r}</div>
+                <div key={`r-${ri}`} className="ml-5 mt-0.5 text-[11px] font-semibold text-red-400">{'\u2298'} {r}</div>
               ))}
               {item.modifiers?.extras?.map((e, ei) => {
                 const name = typeof e === 'string' ? e : e.name;
                 const price = typeof e === 'object' ? e.price : 0;
-                return (
-                  <div key={`e-${ei}`} className="ml-6 text-[11px] text-emerald-500 font-medium">+ {name}{price > 0 && ` (+$${price.toFixed(2)})`}</div>
-                );
+                const modText = `${name}${price > 0 ? ` (+$${price.toFixed(2)})` : ''}`;
+                if (isRemoval(name)) {
+                  return <div key={`e-${ei}`} className="ml-5 mt-0.5 text-[11px] font-semibold text-red-400">{'\u2298'} {modText}</div>;
+                }
+                return <div key={`e-${ei}`} className="ml-5 mt-0.5 text-[11px] font-semibold text-emerald-400">+ {modText}</div>;
               })}
-              {item.notes && <div className="ml-6 text-[11px] text-muted-foreground italic">{item.notes}</div>}
+              {item.notes && <div className="ml-5 mt-0.5 text-[11px] text-muted-foreground italic">{item.notes}</div>}
             </div>
           ))}
         </div>
 
-        {/* Progress bar for preparing tickets */}
-        {(status === 'preparing' || isDelayed) && ticket.estimated_minutes && (
-          <div className="mb-2">
-            <ProgressBar startTime={ticket.started_at || ticket.created_at} estimatedMinutes={ticket.estimated_minutes} />
-          </div>
-        )}
-
-        {/* Actions */}
-        <div className="flex gap-1.5 pt-2 border-t border-border/40">
+        {/* Actions — px-3 pb-3 flex items-center gap-1.5 */}
+        <div className="flex items-center gap-1.5 pt-2 border-t border-border/30">
+          {/* Main action button — text-black on colored bg */}
           {NEXT_STATUS[status] && (
-            <Button size="sm" className={`flex-1 h-8 text-[11px] font-bold uppercase tracking-wide ${
-              isDelayed ? 'bg-red-500 hover:bg-red-600 text-white' :
-              status === 'preparing' ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : ''
-            }`}
+            <button
+              className={`flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-bold text-black ${cfg.btnBg} transition-colors`}
               onClick={() => onStatusChange(ticket.id, NEXT_STATUS[status])}
-              data-testid={`ticket-action-${ticket.id}`}>
-              {status === 'pending' && <ChefHat className="h-3 w-3 mr-1" />}
-              {status === 'preparing' && <CheckCircle className="h-3 w-3 mr-1" />}
-              {(status === 'ready' || status === 'delayed') && <PackageCheck className="h-3 w-3 mr-1" />}
+              data-testid={`ticket-action-${ticket.id}`}
+            >
+              <ActionIcon className="h-3 w-3" />
               {ACTION_LABELS[status]}
-            </Button>
+            </button>
           )}
-          {status === 'pending' && (
-            <Button size="sm" variant="outline" className="h-8 px-2" onClick={() => onSetTime(ticket.id)} data-testid={`set-time-${ticket.id}`} title="Set timer">
-              <Timer className="h-3 w-3" />
-            </Button>
+          {/* Auxiliary buttons — h-8 w-8 rounded-lg */}
+          {status === 'pending' && !allBeer && (
+            <button className="h-8 w-8 rounded-lg border border-border flex items-center justify-center text-muted-foreground hover:bg-muted/50 transition-colors" onClick={() => onSetTime(ticket.id)} data-testid={`set-time-${ticket.id}`} title="Set timer">
+              <Timer className="h-3.5 w-3.5" />
+            </button>
           )}
-          {(status === 'preparing' || status === 'pending') && (
-            <Button size="sm" variant="outline" className="h-8 px-2" title="Rush" onClick={() => toast.info('Rush notification sent')}>
-              <Zap className="h-3 w-3" />
-            </Button>
+          {(status === 'preparing' || (status === 'pending' && !allBeer)) && (
+            <button className="h-8 w-8 rounded-lg border border-border flex items-center justify-center text-muted-foreground hover:bg-muted/50 transition-colors" title="Rush" onClick={() => toast.info('Rush notification sent')}>
+              <Zap className="h-3.5 w-3.5" />
+            </button>
           )}
-          <Button size="sm" variant="ghost" className="h-8 px-2" title="View detail" onClick={() => onViewDetail(ticket)}>
-            <Eye className="h-3 w-3" />
-          </Button>
+          <button className="h-8 w-8 rounded-lg border border-border flex items-center justify-center text-muted-foreground hover:bg-muted/50 transition-colors ml-auto" title="View detail" onClick={() => onViewDetail(ticket)} data-testid={`detail-${ticket.id}`}>
+            <Eye className="h-3.5 w-3.5" />
+          </button>
         </div>
       </div>
+
+      {/* ── PROGRESS BAR — base of card, preparing only ── */}
+      {status === 'preparing' && ticket.estimated_minutes && ticket.started_at && (
+        <ProgressBar startTime={ticket.started_at} estimatedMinutes={ticket.estimated_minutes} />
+      )}
     </div>
   );
 };
 
 /* ═══════════════════════════════════════════════════════
    KANBAN COLUMN
-   Drop zones: rounded-2xl (16px)
-   Header to cards: 12px (mb-3)
+   Container: rounded-2xl, border border/40, bg-background/50, p-2
+   Header to cards: mb-3
+   Cards gap: space-y-2 (8px)
+   Min-height: 200px
+   Drop zone: border-primary/50, bg-primary/5
+   Empty: "Empty" centered
    ═══════════════════════════════════════════════════════ */
 const KanbanColumn = ({ title, tickets, status, onStatusChange, onSetTime, isDelayed, onDrop, onViewDetail }) => {
   const [dragOver, setDragOver] = useState(false);
@@ -358,36 +347,44 @@ const KanbanColumn = ({ title, tickets, status, onStatusChange, onSetTime, isDel
   };
 
   return (
-    <div
-      onDragOver={handleDragOver}
-      onDragLeave={handleDragLeave}
-      onDrop={handleDrop}
-      className={`flex-shrink-0 w-[280px] transition-all rounded-2xl p-2 ${dragOver ? 'bg-foreground/[0.04] ring-2 ring-foreground/10' : ''}`}
-      data-testid={`column-${status}`}
-    >
-      {/* Column header — mb-3 (12px) */}
+    <div className="flex-1 min-w-[240px] flex flex-col" data-testid={`column-${status}`}>
+      {/* Column header — dot + label + count, mb-3 */}
       <div className="flex items-center gap-2 mb-3 px-1">
-        <span className={`w-2 h-2 rounded-full ${cfg.dot}`} />
-        <h2 className="text-xs font-bold tracking-tight uppercase">{title}</h2>
-        <span className="text-[11px] text-muted-foreground font-medium">({tickets.length})</span>
+        <span className={`h-2.5 w-2.5 rounded-full ${cfg.dot}`} />
+        <h2 className="text-sm font-bold text-foreground">{title}</h2>
+        <span className="text-xs font-medium text-muted-foreground">({tickets.length})</span>
       </div>
 
-      {/* Cards — space-y-2 (8px) */}
-      <div className="space-y-2 min-h-[160px]">
+      {/* Column container — rounded-2xl, border, bg, p-2, min-h */}
+      <div
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+        className={`flex-1 rounded-2xl border p-2 min-h-[200px] transition-all ${
+          dragOver
+            ? 'border-primary/50 bg-primary/5'
+            : 'border-border/40 bg-background/50'
+        }`}
+        data-testid={`dropzone-${status}`}
+      >
         {tickets.length === 0 ? (
-          <div className="border-2 border-dashed border-border/40 rounded-2xl p-6 text-center text-muted-foreground/30 text-xs font-medium" data-testid={`empty-${status}`}>
-            Drop here
+          <div className="flex items-center justify-center h-full min-h-[160px]">
+            <span className="text-sm font-medium text-muted-foreground/40" data-testid={`empty-${status}`}>Empty</span>
           </div>
-        ) : tickets.map(t => (
-          <TicketCard
-            key={t.id}
-            ticket={t}
-            onStatusChange={onStatusChange}
-            onSetTime={onSetTime}
-            isDelayed={isDelayed}
-            onViewDetail={onViewDetail}
-          />
-        ))}
+        ) : (
+          <div className="space-y-2">
+            {tickets.map(t => (
+              <TicketCard
+                key={t.id}
+                ticket={t}
+                onStatusChange={onStatusChange}
+                onSetTime={onSetTime}
+                isDelayed={isDelayed}
+                onViewDetail={onViewDetail}
+              />
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -402,7 +399,12 @@ const DelayedModal = ({ ticket, onMarkReady, onDismiss }) => {
   if (!ticket) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={(e) => { if (e.target === e.currentTarget) onDismiss(); }} data-testid="delayed-popup">
-      <div className="bg-card border-2 border-red-500 rounded-3xl p-6 max-w-md w-full mx-4 shadow-2xl animate-in zoom-in-95 duration-200">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.95 }}
+        className="bg-card border-2 border-red-500 rounded-3xl p-6 max-w-md w-full mx-4 shadow-2xl"
+      >
         <div className="flex items-center gap-3 mb-4">
           <div className="h-10 w-10 rounded-2xl bg-red-500/10 flex items-center justify-center">
             <AlertTriangle className="h-5 w-5 text-red-500 animate-pulse" />
@@ -435,7 +437,7 @@ const DelayedModal = ({ ticket, onMarkReady, onDismiss }) => {
             Dismiss
           </Button>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 };
@@ -446,7 +448,12 @@ const EstimatedTimeModal = ({ ticketId, onConfirm, onCancel }) => {
   if (!ticketId) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" data-testid="eta-modal">
-      <div className="bg-card border border-border rounded-3xl p-6 max-w-sm w-full mx-4 shadow-2xl animate-in zoom-in-95 duration-200">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.95 }}
+        className="bg-card border border-border rounded-3xl p-6 max-w-sm w-full mx-4 shadow-2xl"
+      >
         <h2 className="text-lg font-bold mb-1">Estimated Time</h2>
         <p className="text-sm text-muted-foreground mb-4">Set prep time before starting</p>
         <div className="flex items-center gap-3 mb-4">
@@ -454,7 +461,7 @@ const EstimatedTimeModal = ({ ticketId, onConfirm, onCancel }) => {
             type="number" min="1" max="120" autoFocus value={value}
             onChange={e => setValue(e.target.value)}
             placeholder="0"
-            className="flex-1 h-14 text-center text-2xl font-bold rounded-2xl border-2 border-border bg-background focus:border-blue-500 focus:outline-none transition-colors"
+            className="flex-1 h-14 text-center text-2xl font-bold rounded-2xl border-2 border-border bg-background focus:border-primary focus:outline-none transition-colors"
             data-testid="eta-minutes-input"
           />
           <span className="text-lg text-muted-foreground font-medium">min</span>
@@ -470,7 +477,7 @@ const EstimatedTimeModal = ({ ticketId, onConfirm, onCancel }) => {
             <X className="h-4 w-4" />
           </Button>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 };
@@ -481,23 +488,29 @@ const OrderDetailModal = ({ ticket, onClose }) => {
   const status = ticket.status;
   const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.pending;
   const elapsed = ticket.created_at ? Math.floor((Date.now() - new Date(ticket.created_at).getTime()) / 60000) : 0;
-  const hasBeer = ticket.items.some(isBeerItem);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }} data-testid="order-detail-modal">
-      <div className="bg-card border border-border rounded-3xl p-6 max-w-md w-full mx-4 shadow-2xl animate-in zoom-in-95 duration-200">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <span className={`text-xl font-extrabold ${cfg.text}`}>{shortOrderNum(ticket.id)}</span>
-            <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${cfg.badge}`}>{STATUS_LABELS[status]}</span>
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.95 }}
+        className="bg-card border border-border rounded-3xl p-6 max-w-md w-full mx-4 shadow-2xl"
+      >
+        {/* Colored header bar matching status */}
+        <div className={`${cfg.headerBg} -mx-6 -mt-6 px-5 py-4 rounded-t-3xl mb-4`}>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="text-xl font-black text-white">{shortOrderNum(ticket.id)}</span>
+              <span className="text-sm font-semibold text-white/90">{ticket.guest_name || 'Guest'}</span>
+            </div>
+            <button className="h-7 w-7 rounded-lg bg-white/20 flex items-center justify-center text-white hover:bg-white/30 transition-colors" onClick={onClose}>
+              <X className="h-3.5 w-3.5" />
+            </button>
           </div>
-          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onClose}>
-            <X className="h-4 w-4" />
-          </Button>
         </div>
 
-        {/* Info */}
+        {/* Info rows */}
         <div className="space-y-2 mb-4">
           <div className="flex items-center justify-between text-sm">
             <span className="text-muted-foreground">Guest</span>
@@ -523,44 +536,33 @@ const OrderDetailModal = ({ ticket, onClose }) => {
               <span className="font-mono font-semibold">{ticket.estimated_minutes}m</span>
             </div>
           )}
-          {hasBeer && (
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Beer auto-ready</span>
-              <span className="font-semibold text-amber-600 dark:text-amber-400">
-                <Beer className="h-3.5 w-3.5 inline mr-1" />
-                {isAllBeer(ticket.items) ? 'All beer — auto ready' : 'Contains beer'}
-              </span>
-            </div>
-          )}
         </div>
 
         {/* Items */}
         <div className="border-t border-border pt-4">
-          <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3">Items</p>
+          <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-3">Items</p>
           <div className="space-y-2">
             {ticket.items.map((item, i) => (
-              <div key={item.id || i} className="flex items-start gap-2">
-                <span className="text-sm font-bold text-foreground/60 w-4 text-right flex-shrink-0">{item.qty}</span>
-                <div className="flex-1">
-                  <span className={`text-sm font-semibold ${isBeerItem(item) ? 'text-amber-600 dark:text-amber-400' : ''}`}>{item.name}</span>
-                  {item.modifiers?.removed?.map((r, ri) => (
-                    <div key={`r-${ri}`} className="text-[11px] text-red-500 font-medium">NO {r}</div>
-                  ))}
-                  {item.modifiers?.extras?.map((e, ei) => {
-                    const name = typeof e === 'string' ? e : e.name;
-                    const price = typeof e === 'object' ? e.price : 0;
-                    return (
-                      <div key={`e-${ei}`} className="text-[11px] text-emerald-500 font-medium">+ {name}{price > 0 && ` (+$${price.toFixed(2)})`}</div>
-                    );
-                  })}
-                  {item.notes && <div className="text-[11px] text-muted-foreground italic">{item.notes}</div>}
+              <div key={item.id || i}>
+                <div className="flex items-start gap-2">
+                  <span className="text-sm font-medium text-foreground w-4 text-right flex-shrink-0">{item.qty}</span>
+                  <span className={`text-sm font-medium ${isBeerItem(item) ? 'text-amber-500' : 'text-foreground'}`}>{item.name}</span>
                 </div>
+                {item.modifiers?.removed?.map((r, ri) => (
+                  <div key={`r-${ri}`} className="ml-5 mt-0.5 text-[11px] font-semibold text-red-400">{'\u2298'} {r}</div>
+                ))}
+                {item.modifiers?.extras?.map((e, ei) => {
+                  const name = typeof e === 'string' ? e : e.name;
+                  const price = typeof e === 'object' ? e.price : 0;
+                  return <div key={`e-${ei}`} className="ml-5 mt-0.5 text-[11px] font-semibold text-emerald-400">+ {name}{price > 0 && ` (+$${price.toFixed(2)})`}</div>;
+                })}
+                {item.notes && <div className="ml-5 mt-0.5 text-[11px] text-muted-foreground italic">{item.notes}</div>}
               </div>
             ))}
           </div>
         </div>
 
-        {/* Progress */}
+        {/* Progress bar */}
         {ticket.estimated_minutes && ticket.started_at && (
           <div className="mt-4">
             <ProgressBar startTime={ticket.started_at} estimatedMinutes={ticket.estimated_minutes} />
@@ -568,9 +570,9 @@ const OrderDetailModal = ({ ticket, onClose }) => {
         )}
 
         <div className="mt-4">
-          <Button variant="outline" className="w-full h-10" onClick={onClose}>Close</Button>
+          <Button variant="outline" className="w-full h-10 rounded-xl" onClick={onClose}>Close</Button>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 };
@@ -578,9 +580,8 @@ const OrderDetailModal = ({ ticket, onClose }) => {
 /* ═══════════════════════════════════════════════════════
    MAIN KDS PAGE
    Layout: flex-col, min-h-screen, bg-background
-   Sticky navbar (top), kanban board = flex-1
-   Board padding: 16px (p-4)
-   Column gap: 12px (gap-3)
+   Navbar: sticky top, h-14, bg-card/80 backdrop-blur-xl
+   Board: flex-1, flex, gap-3, p-4, overflow-x-auto
    ═══════════════════════════════════════════════════════ */
 export const KitchenPage = () => {
   const navigate = useNavigate();
@@ -594,7 +595,7 @@ export const KitchenPage = () => {
   const [detailModal, setDetailModal] = useState(null);
   const boardRef = useRef(null);
 
-  /* Load tickets from API, fall back to mock */
+  /* Load tickets */
   const loadTickets = useCallback(async () => {
     try {
       const res = await kdsAPI.getTickets(VENUE_ID(), station);
@@ -613,14 +614,14 @@ export const KitchenPage = () => {
   useEffect(() => { setLoading(true); loadTickets(); }, [loadTickets]);
   useEffect(() => { const iv = setInterval(loadTickets, 10000); return () => clearInterval(iv); }, [loadTickets]);
 
-  /* Beer auto-ready: when a pending ticket has ALL beer items, auto-advance */
+  /* Beer auto-ready */
+  const autoReadiedRef = useRef(new Set());
   useEffect(() => {
-    const pendingBeerTickets = tickets.filter(t => t.status === 'pending' && isAllBeer(t.items));
-    pendingBeerTickets.forEach(t => {
-      if (!t._autoReadied) {
-        toast.success(`${shortOrderNum(t.id)} — All beer, auto-ready!`, { icon: '🍺' });
-        handleStatusChange(t.id, 'ready');
-      }
+    const pendingBeer = tickets.filter(t => t.status === 'pending' && isAllBeer(t.items) && !autoReadiedRef.current.has(t.id));
+    pendingBeer.forEach(t => {
+      autoReadiedRef.current.add(t.id);
+      toast.success(`${shortOrderNum(t.id)} — All beer, auto-ready!`);
+      handleStatusChange(t.id, 'ready');
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tickets]);
@@ -643,9 +644,8 @@ export const KitchenPage = () => {
     return () => clearInterval(iv);
   }, [tickets, delayedPopup, dismissedIds]);
 
-  /* Status change handler */
+  /* Status change */
   const handleStatusChange = async (ticketId, newStatus, etaMinutes) => {
-    /* Optimistic update for mock tickets */
     setTickets(prev => prev.map(t => {
       if (t.id !== ticketId) return t;
       const updated = { ...t, status: newStatus };
@@ -655,7 +655,6 @@ export const KitchenPage = () => {
       }
       return updated;
     }));
-
     try {
       const fd = new FormData();
       fd.append('status', newStatus);
@@ -663,9 +662,7 @@ export const KitchenPage = () => {
       await kdsAPI.updateStatus(ticketId, fd);
       if (delayedPopup?.id === ticketId) setDelayedPopup(null);
       setDismissedIds(prev => { const next = new Set(prev); next.delete(ticketId); return next; });
-    } catch {
-      /* Mock mode — already updated optimistically */
-    }
+    } catch { /* mock mode */ }
   };
 
   const handleRequestStatusChange = (ticketId, newStatus) => {
@@ -682,16 +679,12 @@ export const KitchenPage = () => {
     setEtaModal(null);
   };
 
-  const handleSetTime = (ticketId) => {
-    setEtaModal(ticketId);
-  };
-
   const handleDrop = (ticketId, newStatus) => {
     if (!ticketId || !newStatus) return;
     handleRequestStatusChange(ticketId, newStatus);
   };
 
-  /* Filter tickets into columns */
+  /* Filter tickets */
   const now = Date.now();
   const isTimeDelayed = (t) => {
     if (t.status === 'delayed') return true;
@@ -717,43 +710,66 @@ export const KitchenPage = () => {
   return (
     <div className="flex flex-col min-h-screen bg-background" data-testid="kds-page">
       {/* ═══ MODALS ═══ */}
-      <DelayedModal
-        ticket={delayedPopup}
-        onMarkReady={(id) => { handleStatusChange(id, 'ready'); setDelayedPopup(null); }}
-        onDismiss={() => { if (delayedPopup) { setDismissedIds(prev => new Set(prev).add(delayedPopup.id)); setDelayedPopup(null); } }}
-      />
-      <EstimatedTimeModal
-        ticketId={etaModal}
-        onConfirm={handleConfirmEta}
-        onCancel={() => setEtaModal(null)}
-      />
-      <OrderDetailModal
-        ticket={detailModal}
-        onClose={() => setDetailModal(null)}
-      />
+      <AnimatePresence>
+        {delayedPopup && (
+          <DelayedModal
+            key="delayed"
+            ticket={delayedPopup}
+            onMarkReady={(id) => { handleStatusChange(id, 'ready'); setDelayedPopup(null); }}
+            onDismiss={() => { if (delayedPopup) { setDismissedIds(prev => new Set(prev).add(delayedPopup.id)); setDelayedPopup(null); } }}
+          />
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {etaModal && (
+          <EstimatedTimeModal
+            key="eta"
+            ticketId={etaModal}
+            onConfirm={handleConfirmEta}
+            onCancel={() => setEtaModal(null)}
+          />
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {detailModal && (
+          <OrderDetailModal
+            key="detail"
+            ticket={detailModal}
+            onClose={() => setDetailModal(null)}
+          />
+        )}
+      </AnimatePresence>
 
-      {/* ═══ NAVBAR — sticky top ═══ */}
-      <header className="sticky top-0 z-50 h-12 border-b border-border bg-card px-4 flex items-center" data-testid="kds-navbar">
-        {/* Left: BrandLogo + separator + venue name */}
+      {/* ═══ NAVBAR — h-14, sticky top, bg-card/80 backdrop-blur-xl ═══ */}
+      <header className="sticky top-0 z-50 h-14 border-b border-border/50 bg-card/80 backdrop-blur-xl px-5 flex items-center" data-testid="kds-navbar">
+        {/* Left: Logo + divider + venue name */}
         <div className="flex items-center gap-3 flex-shrink-0">
           <SpetLogo size="default" />
           <div className="h-5 w-px bg-border" />
           <span className="text-xs font-semibold text-muted-foreground">{VENUE_NAME()}</span>
         </div>
 
-        {/* Center: station toggle */}
+        {/* Center: station toggle — bg-muted/50 rounded-xl p-1 */}
         <div className="flex-1 flex justify-center">
-          <div className="flex rounded-lg border border-border overflow-hidden" data-testid="station-toggle">
+          <div className="bg-muted/50 rounded-xl p-1 flex relative" data-testid="station-toggle">
             <button
               onClick={() => setStation('kitchen')}
-              className={`px-3 py-1.5 text-xs font-semibold transition-all flex items-center gap-1.5 ${station === 'kitchen' ? 'bg-foreground text-background' : 'text-muted-foreground hover:bg-muted'}`}
+              className={`relative px-4 py-2 rounded-lg text-sm font-bold transition-all flex items-center gap-1.5 ${
+                station === 'kitchen'
+                  ? 'bg-gradient-to-r from-primary to-primary/80 text-primary-foreground shadow-lg shadow-primary/20'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
               data-testid="filter-kitchen"
             >
               <UtensilsCrossed className="h-3.5 w-3.5" /> Kitchen
             </button>
             <button
               onClick={() => setStation('bar')}
-              className={`px-3 py-1.5 text-xs font-semibold transition-all flex items-center gap-1.5 ${station === 'bar' ? 'bg-foreground text-background' : 'text-muted-foreground hover:bg-muted'}`}
+              className={`relative px-4 py-2 rounded-lg text-sm font-bold transition-all flex items-center gap-1.5 ${
+                station === 'bar'
+                  ? 'bg-gradient-to-r from-primary to-primary/80 text-primary-foreground shadow-lg shadow-primary/20'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
               data-testid="filter-bar"
             >
               <Beer className="h-3.5 w-3.5" /> Bar
@@ -768,8 +784,11 @@ export const KitchenPage = () => {
               {lateCount} late
             </span>
           )}
-          <span className="text-xs text-muted-foreground flex items-center gap-1" data-testid="kds-breadcrumb">
-            KDS <ChevronRight className="h-3 w-3" /> <span className="font-semibold text-foreground">{station === 'kitchen' ? 'Kitchen' : 'Bar'}</span>
+          {/* Breadcrumb — KDS > Kitchen/Bar */}
+          <span className="flex items-center gap-1" data-testid="kds-breadcrumb">
+            <span className="text-[10px] uppercase tracking-wider text-muted-foreground">KDS</span>
+            <span className="text-muted-foreground/40">&rsaquo;</span>
+            <span className="text-xs font-semibold text-primary">{station === 'kitchen' ? 'Kitchen' : 'Bar'}</span>
           </span>
           <div className="h-4 w-px bg-border" />
           <ThemeToggle />
@@ -782,31 +801,29 @@ export const KitchenPage = () => {
         </div>
       </header>
 
-      {/* ═══ KANBAN BOARD — flex-1, horizontal scroll, p-4, gap-3 ═══ */}
-      <main className="flex-1 p-4 overflow-hidden" data-testid="kds-board">
+      {/* ═══ KANBAN BOARD — flex-1, flex, gap-3, p-4, overflow-x-auto ═══ */}
+      <main className="flex-1 flex gap-3 p-4 overflow-x-auto" ref={boardRef} data-testid="kds-board">
         {loading ? (
-          <div className="flex items-center justify-center h-full">
+          <div className="flex-1 flex items-center justify-center">
             <div className="animate-spin h-6 w-6 border-2 border-foreground/20 border-t-foreground rounded-full" />
           </div>
         ) : (
-          <div ref={boardRef} className="flex gap-3 h-full overflow-x-auto pb-2" data-testid="kanban-columns">
-            {COLUMN_ORDER.map(col => {
-              const { tickets: colTickets, status, isDelayed: colDelayed } = columnData[col];
-              return (
-                <KanbanColumn
-                  key={col}
-                  title={col}
-                  tickets={colTickets}
-                  status={status}
-                  onStatusChange={handleRequestStatusChange}
-                  onSetTime={handleSetTime}
-                  isDelayed={colDelayed}
-                  onDrop={handleDrop}
-                  onViewDetail={setDetailModal}
-                />
-              );
-            })}
-          </div>
+          COLUMN_ORDER.map(col => {
+            const { tickets: colTickets, status, isDelayed: colDelayed } = columnData[col];
+            return (
+              <KanbanColumn
+                key={col}
+                title={col}
+                tickets={colTickets}
+                status={status}
+                onStatusChange={handleRequestStatusChange}
+                onSetTime={(id) => setEtaModal(id)}
+                isDelayed={colDelayed}
+                onDrop={handleDrop}
+                onViewDetail={setDetailModal}
+              />
+            );
+          })
         )}
       </main>
     </div>
