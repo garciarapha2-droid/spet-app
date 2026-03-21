@@ -83,7 +83,7 @@ export default function VenueManagement() {
 
       {/* VENUES VIEW — Stacked List */}
       {view === 'venues' && (
-        <div className="space-y-8" data-testid="venues-list-view">
+        <div className="space-y-10" data-testid="venues-list-view">
           {ownerVenues.map((v, i) => {
             const vc = venueColors[v.name];
             const st = statusLabel[v.status];
