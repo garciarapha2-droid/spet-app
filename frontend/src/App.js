@@ -30,7 +30,32 @@ import { GuestProfilePage } from './pages/pulse/GuestProfilePage';
 import { TapPage } from './pages/TapPage';
 import { TablePage } from './pages/TablePage';
 import { KitchenPage } from './pages/KitchenPage';
-import { OwnerPage } from './pages/OwnerPage';
+
+// Owner Command Center Module
+import OwnerLayout from './pages/owner/OwnerLayout';
+import OwnerOverview from './pages/owner/OwnerOverview';
+import RevenueAnalytics from './pages/owner/performance/RevenueAnalytics';
+import ProfitAnalysis from './pages/owner/performance/ProfitAnalysis';
+import VenueComparison from './pages/owner/performance/VenueComparison';
+import TimeAnalysis from './pages/owner/performance/TimeAnalysis';
+import CustomerIntelligence from './pages/owner/customers/CustomerIntelligence';
+import AudienceIntelligence from './pages/owner/customers/AudienceIntelligence';
+import Segments from './pages/owner/customers/Segments';
+import ChurnRetention from './pages/owner/customers/ChurnRetention';
+import CustomerProfile from './pages/owner/customers/CustomerProfile';
+import AudienceGenreDetail from './pages/owner/customers/AudienceGenreDetail';
+import LoyaltyPerformance from './pages/owner/growth/LoyaltyPerformance';
+import CampaignPerformance from './pages/owner/growth/CampaignPerformance';
+import FinancialOverview from './pages/owner/finance/FinancialOverview';
+import CostAnalysis from './pages/owner/finance/CostAnalysis';
+import VenueCostDetail from './pages/owner/finance/VenueCostDetail';
+import RiskAlerts from './pages/owner/finance/RiskAlerts';
+import SmartInsights from './pages/owner/insights/SmartInsights';
+import ActionCenter from './pages/owner/insights/ActionCenter';
+import VenueManagement from './pages/owner/system/VenueManagement';
+import VenueDetail from './pages/owner/system/VenueDetail';
+import EventDetail from './pages/owner/system/EventDetail';
+import OwnerSettings from './pages/owner/system/OwnerSettings';
 
 // Manager Dashboard Module
 import ManagerLayout from './pages/manager/ManagerLayout';
@@ -115,7 +140,32 @@ function App() {
               </Route>
               <Route path="/table" element={<ProtectedRoute><TablePage /></ProtectedRoute>} />
               <Route path="/kitchen" element={<ProtectedRoute><KitchenPage /></ProtectedRoute>} />
-              <Route path="/owner" element={<ProtectedRoute><OwnerPage /></ProtectedRoute>} />
+              {/* Owner Command Center Module */}
+              <Route path="/owner" element={<ProtectedRoute><OwnerLayout /></ProtectedRoute>}>
+                <Route index element={<OwnerOverview />} />
+                <Route path="performance/revenue" element={<RevenueAnalytics />} />
+                <Route path="performance/profit" element={<ProfitAnalysis />} />
+                <Route path="performance/venues" element={<VenueComparison />} />
+                <Route path="performance/time" element={<TimeAnalysis />} />
+                <Route path="customers/intelligence" element={<CustomerIntelligence />} />
+                <Route path="customers/audience" element={<AudienceIntelligence />} />
+                <Route path="customers/audience/:genreSlug" element={<AudienceGenreDetail />} />
+                <Route path="customers/segments" element={<Segments />} />
+                <Route path="customers/churn" element={<ChurnRetention />} />
+                <Route path="customers/:guestId" element={<CustomerProfile />} />
+                <Route path="growth/loyalty" element={<LoyaltyPerformance />} />
+                <Route path="growth/campaigns" element={<CampaignPerformance />} />
+                <Route path="finance/overview" element={<FinancialOverview />} />
+                <Route path="finance/costs" element={<CostAnalysis />} />
+                <Route path="finance/costs/:venueName" element={<VenueCostDetail />} />
+                <Route path="finance/risk" element={<RiskAlerts />} />
+                <Route path="insights/smart" element={<SmartInsights />} />
+                <Route path="insights/actions" element={<ActionCenter />} />
+                <Route path="system/venues" element={<VenueManagement />} />
+                <Route path="system/venues/:venueId" element={<VenueDetail />} />
+                <Route path="system/venues/:venueId/events/:eventId" element={<EventDetail />} />
+                <Route path="system/settings" element={<OwnerSettings />} />
+              </Route>
               <Route path="/ceo" element={<CEORoute><CEOPage /></CEORoute>} />
 
               {/* /app route — redirects based on user role */}

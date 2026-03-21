@@ -1,0 +1,172 @@
+{
+  "summary": "Comprehensive frontend testing of Owner Command Center Module (24+ pages). All pages load correctly with proper navigation, sidebar groups, theme toggle, and drill-down functionality. The module uses mock data from ownerData.js. Minor console warnings for Recharts dimensions and HTML nesting in tables (same issue as Manager Dashboard).",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {
+        "screen": "Multiple pages with tables (VenueComparison, FinancialOverview, CustomerIntelligence)",
+        "issues": ["Console warnings about HTML nesting: <th>/<td>/<tr> cannot be child of <span>. This is caused by framer-motion wrapping table elements. Not blocking but should be fixed for cleaner HTML."]
+      },
+      {
+        "screen": "ChurnRetention page",
+        "issues": ["Duplicate key warning for 'og11' - Ryan Foster appears twice in the at-risk/lost guest list. This is a data issue in ownerData.js where the same guest ID is used twice."]
+      },
+      {
+        "screen": "All pages with Recharts",
+        "issues": ["Console warnings about chart dimensions being -1. This is a Recharts issue when charts render before container has dimensions. Not blocking functionality."]
+      }
+    ]
+  },
+  "test_report_links": [
+    "/app/test_reports/iteration_74.json"
+  ],
+  "action_items": [
+    "OPTIONAL: Fix motion.tr/motion.td HTML nesting warnings in table components - consider using CSS animations instead of framer-motion for table rows",
+    "FIX: Remove duplicate guest 'og11' (Ryan Foster) from ownerData.js at-risk/lost list to fix duplicate key warning"
+  ],
+  "critical_code_review_comments": [
+    "All 24+ Owner pages render correctly with proper data-testid attributes",
+    "Sidebar navigation works with all 6 expandable groups (Performance, Customers, Growth & Loyalty, Finance & Risk, AI Insights) + System section",
+    "Theme toggle persists to localStorage('spet-theme')",
+    "Sidebar collapse/expand toggle works correctly",
+    "Back button navigates to home (/) correctly",
+    "CustomerProfileModal opens from Overview (Top Customers) and Customer Intelligence page",
+    "View Full History button navigates to full Customer Profile page (/owner/customers/:guestId)",
+    "Period filter pills are visible and clickable on Overview, Revenue, Profit, Financial pages",
+    "All drill-down pages work: Venue Detail, Event Detail, Venue Cost Detail, Customer Profile, Audience Genre Detail",
+    "GuestFullHistory canonical component renders correctly with all sections (Behavior Summary, KPIs, Venue/Category Breakdown, Events, Purchase History, Loyalty Activity)"
+  ],
+  "updated_files": [],
+  "success_rate": {
+    "backend": "N/A - frontend only testing",
+    "frontend": "100%"
+  },
+  "test_credentials": "teste@teste.com / 12345",
+  "seed_data_creation": "All data is mock/static from ownerData.js",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Owner Command Center Module fully tested. All 24+ pages working: OwnerOverview, RevenueAnalytics, ProfitAnalysis, VenueComparison, TimeAnalysis, CustomerIntelligence, AudienceIntelligence, AudienceGenreDetail, Segments, ChurnRetention, CustomerProfile, LoyaltyPerformance, CampaignPerformance, FinancialOverview, CostAnalysis, VenueCostDetail, RiskAlerts, SmartInsights, ActionCenter, VenueManagement, VenueDetail, EventDetail, OwnerSettings. Guest IDs og1-og12 available for profile testing. At-risk guests: og5 (David Kim), og6 (Emma Wilson), og11 (Ryan Foster), og12 (Anna Wright). Lost guest: og11 (Ryan Foster).",
+  "features_tested": {
+    "1_owner_overview": {
+      "status": "PASS",
+      "details": "KPIs (Revenue, Profit, Margin, Rev/Guest), Venue Performance, Retention & Loyalty, AI Business Overview, Top Customers, Smart Insights, Attention Points, Action Center all present"
+    },
+    "2_sidebar_navigation": {
+      "status": "PASS",
+      "details": "All 6 expandable groups (Performance, Customers, Growth & Loyalty, Finance & Risk, AI Insights) + System section with Venues and Settings"
+    },
+    "3_sidebar_collapse": {
+      "status": "PASS",
+      "details": "Collapse/expand toggle works correctly"
+    },
+    "4_theme_toggle": {
+      "status": "PASS",
+      "details": "Light/dark toggle works and persists to localStorage"
+    },
+    "5_back_button": {
+      "status": "PASS",
+      "details": "Navigates to / correctly"
+    },
+    "6_revenue_analytics": {
+      "status": "PASS",
+      "details": "KPIs, 30-day trend chart, category chart, venue revenue, hourly + DOW charts all present"
+    },
+    "7_profit_analysis": {
+      "status": "PASS",
+      "details": "KPIs, monthly P&L chart, cost breakdown, margin by venue, staff cost ratio present"
+    },
+    "8_venue_comparison": {
+      "status": "PASS",
+      "details": "Metric selector toggle, comparison bar chart, venue cards, full comparison table present"
+    },
+    "9_time_analysis": {
+      "status": "PASS",
+      "details": "Hourly/daily toggle, peak/dead KPIs, hourly chart, DOW chart, weekday vs weekend comparison present"
+    },
+    "10_customer_intelligence": {
+      "status": "PASS",
+      "details": "Search, segment filter, sort, full guest table with clickable rows opening CustomerProfileModal"
+    },
+    "11_audience_intelligence": {
+      "status": "PASS",
+      "details": "Genre cards and metric toggle chart present"
+    },
+    "12_segments": {
+      "status": "PASS",
+      "details": "Donut chart and segment breakdown present"
+    },
+    "13_churn_retention": {
+      "status": "PASS",
+      "details": "Retention curve, monthly trend, at-risk guest list present"
+    },
+    "14_customer_profile": {
+      "status": "PASS",
+      "details": "GuestFullHistory canonical component with all sections working"
+    },
+    "15_audience_genre_detail": {
+      "status": "PASS",
+      "details": "Genre detail page with demographics and metrics"
+    },
+    "16_loyalty_performance": {
+      "status": "PASS",
+      "details": "Tier chart and tier cards present"
+    },
+    "17_campaign_performance": {
+      "status": "PASS",
+      "details": "ROI chart and campaign cards present"
+    },
+    "18_financial_overview": {
+      "status": "PASS",
+      "details": "P&L chart and monthly breakdown table present"
+    },
+    "19_cost_analysis": {
+      "status": "PASS",
+      "details": "Breakdown chart and venue cost drill-down links present"
+    },
+    "20_venue_cost_detail": {
+      "status": "PASS",
+      "details": "Venue cost detail drill-down page with cost breakdown, staff breakdown, recommendations"
+    },
+    "21_risk_alerts": {
+      "status": "PASS",
+      "details": "Severity-colored alert cards (Critical, Warning, Info) present"
+    },
+    "22_smart_insights": {
+      "status": "PASS",
+      "details": "Category filter and insight cards present"
+    },
+    "23_action_center": {
+      "status": "PASS",
+      "details": "Status filter (All, Todo, In Progress, Done) and action cards with impact badges present"
+    },
+    "24_venue_management": {
+      "status": "PASS",
+      "details": "Venue cards linking to detail present"
+    },
+    "25_venue_detail": {
+      "status": "PASS",
+      "details": "Venue detail with KPIs, details, events list present"
+    },
+    "26_event_detail": {
+      "status": "PASS",
+      "details": "Event detail with hourly chart, cost breakdown, staff list present"
+    },
+    "27_owner_settings": {
+      "status": "PASS",
+      "details": "Setting sections (Venue Configuration, Security & Access, Notifications, Data & Reports, Appearance) present"
+    },
+    "28_customer_profile_modal": {
+      "status": "PASS",
+      "details": "Modal opens from Overview and Customer Intelligence, shows KPIs and View Full History button"
+    },
+    "29_period_filters": {
+      "status": "PASS",
+      "details": "Period filter pills (Today, Weekly, Monthly, Yearly) visible and clickable on Overview, Revenue, Profit, Financial pages"
+    }
+  }
+}
