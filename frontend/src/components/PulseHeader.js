@@ -31,7 +31,7 @@ const PULSE_TABS = [
 export const PulseHeader = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { logout } = useAuth();
+  const { logout, isCEO } = useAuth();
   const [showModuleMenu, setShowModuleMenu] = useState(false);
   const [modules, setModules] = useState([]);
   const [userEmail, setUserEmail] = useState('');
@@ -100,31 +100,30 @@ export const PulseHeader = () => {
 
               <div className="h-px bg-border my-1" />
 
-              {MODULES.map((mod) => {
+              {MODULES
+                .filter(mod => mod.key !== 'ceo' || isCEO)
+                .map((mod) => {
                 const moduleData = modules.find(m => m.key === mod.key);
                 const enabled = moduleData?.enabled !== false;
+                if (!enabled) return null;
                 const Icon = mod.icon;
                 const isActive = location.pathname.startsWith(mod.path.split('/').slice(0, 2).join('/'));
                 return (
                   <button key={mod.key}
                     onClick={() => {
-                      if (enabled) {
-                        navigate(mod.path);
-                        setShowModuleMenu(false);
-                      }
+                      navigate(mod.path);
+                      setShowModuleMenu(false);
                     }}
                     className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-colors ${
-                      !enabled ? 'opacity-40 cursor-not-allowed' :
                       isActive ? 'bg-primary/5 text-primary font-medium' :
                       'hover:bg-muted'
                     }`}
                     data-testid={`menu-${mod.key}`}>
                     <Icon className="h-4 w-4" />
                     <span className="flex-1 text-left">{mod.name}</span>
-                    {!enabled && <span className="text-[10px] text-muted-foreground">Locked</span>}
                   </button>
                 );
-              })}
+              }).filter(Boolean)}
             </div>
           )}
         </div>
