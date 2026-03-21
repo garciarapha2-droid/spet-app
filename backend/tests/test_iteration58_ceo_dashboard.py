@@ -6,7 +6,7 @@ import pytest
 import requests
 import os
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://guest-verification.preview.emergentagent.com')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://manager-module.preview.emergentagent.com')
 
 # Test credentials
 CEO_EMAIL = "garcia.rapha2@gmail.com"
