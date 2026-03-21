@@ -28,16 +28,16 @@ const venueChartData = ownerVenues.map(v => ({
 }));
 
 const nightData = [
-  { id: 'n1', name: 'Friday Night Live', venue: 'Downtown', revenue: 8400, profit: 3800, guests: 320, retention: 72, margin: 45, growth: 14 },
-  { id: 'n2', name: 'Saturday Bash', venue: 'Downtown', revenue: 9200, profit: 4100, guests: 380, retention: 68, margin: 44, growth: 8 },
-  { id: 'n3', name: 'Thirsty Thursday', venue: 'Downtown', revenue: 5600, profit: 2400, guests: 210, retention: 58, margin: 43, growth: 6 },
-  { id: 'n4', name: 'Weekend Vibes', venue: 'Midtown', revenue: 6800, profit: 2800, guests: 260, retention: 54, margin: 41, growth: -2 },
-  { id: 'n5', name: 'Ladies Night', venue: 'Midtown', revenue: 4200, profit: 1600, guests: 180, retention: 48, margin: 38, growth: -5 },
-  { id: 'n6', name: 'Late Night Sessions', venue: 'Midtown', revenue: 3800, profit: 1400, guests: 160, retention: 42, margin: 37, growth: 3 },
+  { id: 'n1', name: 'Fri Mar 14', venue: 'Downtown', venueId: 'v1', eventId: 'e1', revenue: 8600, profit: 3900, guests: 112, avgTicket: 77, margin: 45 },
+  { id: 'n2', name: 'Sat Mar 15', venue: 'Downtown', venueId: 'v1', eventId: 'e2', revenue: 9800, profit: 4600, guests: 128, avgTicket: 77, margin: 47 },
+  { id: 'n3', name: 'Fri Mar 7', venue: 'Downtown', venueId: 'v1', eventId: 'e1', revenue: 8900, profit: 4000, guests: 108, avgTicket: 82, margin: 45 },
+  { id: 'n4', name: 'Sat Mar 8', venue: 'Midtown', venueId: 'v2', eventId: 'e3', revenue: 9400, profit: 4300, guests: 120, avgTicket: 78, margin: 46 },
+  { id: 'n5', name: 'Thu Mar 13', venue: 'Midtown', venueId: 'v2', eventId: 'e4', revenue: 5800, profit: 2400, guests: 74, avgTicket: 78, margin: 41 },
+  { id: 'n6', name: 'Fri Mar 14', venue: 'Midtown', venueId: 'v2', eventId: 'e3', revenue: 6200, profit: 2800, guests: 82, avgTicket: 76, margin: 45 },
 ];
 
 const nightChartData = nightData.map(n => ({
-  name: n.name.length > 14 ? n.name.slice(0, 14) + '…' : n.name, revenue: n.revenue, profit: n.profit,
+  name: n.name + ' ' + n.venue.charAt(0), revenue: n.revenue, profit: n.profit,
 }));
 
 const periods = ['Today', 'Weekly', 'Monthly', 'Yearly', 'Custom'];
@@ -201,13 +201,14 @@ export default function VenueComparison() {
           </motion.div>
 
           {/* Night Cards */}
-          <div className="flex flex-col gap-3">
+          <div className="space-y-3">
             {nightData.map((n, i) => (
               <motion.div
                 key={n.id}
                 {...fadeUp}
                 transition={{ ...fadeUp.transition, delay: 0.1 + i * 0.04 }}
-                className="rounded-xl border border-border bg-[hsl(var(--card))] p-4"
+                onClick={() => navigate(`/owner/system/venues/${n.venueId}/events/${n.eventId}`)}
+                className="rounded-xl border border-border bg-[hsl(var(--card))] p-4 cursor-pointer hover:border-[hsl(var(--primary)_/_0.3)] hover:shadow-sm transition-all group"
                 data-testid={`night-card-${n.id}`}
               >
                 <div className="flex items-center justify-between mb-2">
@@ -216,14 +217,13 @@ export default function VenueComparison() {
                     <span className="text-sm font-semibold text-foreground">{n.name}</span>
                     <span className="text-[10px] px-2 py-0.5 rounded-full bg-[hsl(var(--muted))] text-muted-foreground font-semibold">{n.venue}</span>
                   </div>
-                  <span className="text-sm font-bold text-foreground tabular-nums">${(n.revenue / 1000).toFixed(1)}K</span>
+                  <span className="text-sm font-bold text-foreground tabular-nums">${n.revenue.toLocaleString()}</span>
                 </div>
-                <div className="flex gap-5 text-xs text-muted-foreground">
-                  <span>Profit <span className="font-semibold text-foreground">${(n.profit / 1000).toFixed(1)}K</span></span>
+                <div className="flex items-center gap-5 text-xs text-muted-foreground">
+                  <span>Profit <span className="font-semibold text-foreground">${n.profit.toLocaleString()}</span></span>
                   <span>Guests <span className="font-semibold text-foreground">{n.guests}</span></span>
+                  <span>Avg Ticket <span className="font-semibold text-foreground">${n.avgTicket}</span></span>
                   <span>Margin <span className="font-semibold text-foreground">{n.margin}%</span></span>
-                  <span>Retention <span className="font-semibold text-foreground">{n.retention}%</span></span>
-                  <span>Growth <span className={`font-semibold ${n.growth >= 0 ? 'text-[hsl(var(--success))]' : 'text-[hsl(var(--danger))]'}`}>{n.growth > 0 ? '+' : ''}{n.growth}%</span></span>
                 </div>
               </motion.div>
             ))}
