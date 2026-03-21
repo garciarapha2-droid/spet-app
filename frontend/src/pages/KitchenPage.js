@@ -355,35 +355,33 @@ const KanbanColumn = ({ title, tickets, status, onStatusChange, onSetTime, isDel
         <span className="text-xs font-medium text-muted-foreground">({tickets.length})</span>
       </div>
 
-      {/* Column container — rounded-2xl, border, bg, p-2, min-h */}
+      {/* Column container — rounded-2xl, border, bg, p-2, min-h, flex col gap-2 */}
       <div
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
-        className={`flex-1 rounded-2xl border p-2 min-h-[200px] transition-all ${
+        className={`flex-1 rounded-2xl border p-2 min-h-[200px] transition-all flex flex-col ${
           dragOver
             ? 'border-primary/50 bg-primary/5'
             : 'border-border/40 bg-background/50'
-        }`}
+        } ${tickets.length > 0 ? 'gap-2' : ''}`}
         data-testid={`dropzone-${status}`}
       >
         {tickets.length === 0 ? (
-          <div className="flex items-center justify-center h-full min-h-[160px]">
+          <div className="flex items-center justify-center flex-1">
             <span className="text-sm font-medium text-muted-foreground/40" data-testid={`empty-${status}`}>Empty</span>
           </div>
         ) : (
-          <div className="space-y-2">
-            {tickets.map(t => (
-              <TicketCard
-                key={t.id}
-                ticket={t}
-                onStatusChange={onStatusChange}
-                onSetTime={onSetTime}
-                isDelayed={isDelayed}
-                onViewDetail={onViewDetail}
-              />
-            ))}
-          </div>
+          tickets.map(t => (
+            <TicketCard
+              key={t.id}
+              ticket={t}
+              onStatusChange={onStatusChange}
+              onSetTime={onSetTime}
+              isDelayed={isDelayed}
+              onViewDetail={onViewDetail}
+            />
+          ))
         )}
       </div>
     </div>
