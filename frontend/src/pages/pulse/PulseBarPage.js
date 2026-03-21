@@ -193,7 +193,7 @@ export default function PulseBarPage() {
                       <Plus className="h-3 w-3" />
                     </button>
                   </div>
-                  <div className="flex flex-col gap-2">
+                  <div className="flex flex-col gap-1.5">
                     {filteredGuests.map(guest => (
                       <button
                         key={guest.id}
