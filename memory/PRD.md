@@ -1,66 +1,84 @@
-# SPET CEO Operational Intelligence Platform — PRD
+# SPET — Owner Command Center & Pulse Module
 
 ## Original Problem Statement
-Build a comprehensive CEO/Owner operational intelligence platform for venue management with modules for Pulse (real-time ops), TAP (point-of-sale), TABLE (reservations), KDS (kitchen), Manager Dashboard, and Owner Command Center. Strict spec-driven development with mock-data-first approach.
+Build a multi-page "Owner Command Center" and "Pulse" POS module with pixel-perfect design specifications provided by the user. The application is a nightlife management dashboard with multiple modules: Pulse (POS), TAP, Table, KDS, Manager, and Owner.
 
-## Core Architecture
-- **Frontend**: React 18 + Tailwind CSS + Shadcn/UI + Framer Motion + Recharts
-- **Backend**: FastAPI + MongoDB
-- **Auth**: JWT-based with role-based access (CEO, Owner, Manager, Staff)
-- **CRITICAL**: Use `flex flex-col gap-*` instead of `space-y-*` for vertical lists
+## Architecture
+- **Frontend**: React + Tailwind CSS + Shadcn UI + Recharts + Framer Motion
+- **Backend**: FastAPI + MongoDB (not yet connected — all data is MOCKED)
+- **Auth**: JWT-based (teste@teste.com / 12345)
+- **Data**: All mock data from `/data/ownerData.js` and `/data/pulseData.js`
 
-## Modules Implemented
-1. Onboarding Wizard (10 steps) — COMPLETE
-2. Pulse Module — COMPLETE (mock data)
-3. TAP Module — COMPLETE (mock data)
-4. TABLE Module — COMPLETE (mock data)
-5. KDS Module — COMPLETE (mock data, rewritten twice to spec)
-6. CEO Dashboard — COMPLETE (mock data)
-7. Manager Dashboard (16 pages) — COMPLETE (mock data)
-8. Owner Command Center (24+ pages) — PHASES 1+2 COMPLETE (mock data)
+## Core Modules
+### Owner Module (`/owner/*`)
+Dashboard for venue owners with analytics, customer intelligence, and system management.
 
-## Pixel-Perfect Page Rewrites (Current Session)
-- **LoyaltyPerformance.js** — 4 KPIs, Tier Distribution chart, Revenue by Tier, Tier Detail panel, Growth Opportunity (iteration_76: 11/11 pass)
-- **AudienceIntelligence.js** — KPIs, horizontal chart with toggles, Genre Breakdown, Age/Gender, Segments, Radar, Insights (iteration_77: 13/13 pass)
-- **CustomerProfile.js** — Standalone: Header/badges, AI Behavior Summary, 6 KPIs, Risk Alert variants, Venue/Category Breakdowns, Timelines, Loyalty, Purchase History (iteration_78: 19/19 pass)
-- **AudienceGenreDetail.js** — Dynamic template for 6 genres: Consumption/Brand Drill-down, Audience Behavior/Composition, Products, Insights, Actions (iteration_79: 17/17 pass)
-- **OwnerLayout.js** — Dynamic genre title: "{GenreName} — Genre Intelligence"
-- **TimeAnalysis.js** — Period filter pills, 4 KPIs, Revenue by Hour (blue)/Day (amber) charts, Peak vs Dead Hours (iteration_80: 15/15 pass)
-- **VenueComparison.js** — Venue/Night mode toggle, Period filter, Revenue+Profit grouped chart, Venue cards with badges, Night cards list (iteration_81: 17/17 pass)
+### Pulse Module (`/pulse/*`)
+Real-time operations: Entry (check-in), Inside (guest tracking), Bar (POS), Exit, Rewards.
 
-## Key Routes
-- `/owner` — Owner Command Center
-- `/owner/performance/revenue|profit|venues|time`
-- `/owner/customers/intelligence|audience|segments|churn`
-- `/owner/customers/:guestId` — Customer Profile
-- `/owner/customers/audience/:genreSlug` — Genre Detail (6 genres)
-- `/owner/growth/loyalty|campaigns`
-- `/owner/finance/overview|costs|risk`
-- `/owner/insights/smart|actions`
-- `/owner/system/venues|settings`
+### Shared Navbar (`PulseLayout`)
+Global navbar used across all modules: Pulse, TAP, Table, KDS, Manager, Owner.
 
-## Test Credentials
-- Owner: teste@teste.com / 12345
+---
 
-## Prioritized Backlog
+## What's Been Implemented
 
-### P0 — Next (user mentioned specs incoming)
-- Revenue Analytics spec
-- Profit Analysis spec
-- Financial Overview spec
-- Segments spec
-- Churn & Retention spec
-- Customer Intelligence spec
+### Pages — Owner Module
+| Page | Route | Status |
+|---|---|---|
+| Loyalty Performance | `/owner/growth/loyalty` | ✅ Complete |
+| Audience Intelligence | `/owner/customers/audience` | ✅ Complete |
+| Customer Profile | `/owner/customers/CustomerProfile` | ✅ Complete |
+| Audience Genre Detail | `/owner/customers/audience/:genreSlug` | ✅ Complete |
+| Time Analysis | `/owner/performance/time` | ✅ Complete |
+| Venue Comparison | `/owner/performance/venues` | ✅ Complete |
+| Event Detail | `/owner/system/venues/:venueId/events/:eventId` | ✅ Complete |
+| Venue Detail | `/owner/system/venues/:venueId` | ✅ Complete |
+| Revenue Analytics | `/owner/performance/revenue` | ✅ Complete (with Scope Selector) |
 
-### P1
-- Phase 5: GuestFullHistory integration in Manager module
-- Content for remaining placeholder pages
-- API Integration: Connect to real backend
+### Pages — Pulse Module
+| Page | Route | Status |
+|---|---|---|
+| Pulse Bar (POS) | `/pulse/bar` | ✅ Complete |
 
-### P2
-- CEO Dashboard endpoints
-- Subscription/team invite APIs
+### Components
+| Component | Status |
+|---|---|
+| PulseLayout (Global Navbar) | ✅ Complete — v2 spec implemented |
+| OwnerLayout | ✅ Complete |
+| Calendar Popover (Venue Management) | ✅ Complete |
 
-### P3
-- Refactor LandingPage.js
-- Remove ManagerPage.legacy.js
+### Revenue Analytics — Scope Selector
+- **Company** scope: Aggregated KPIs, trend, hourly & venue charts
+- **Venue** scope: Per-venue pills (Downtown/Midtown/Uptown), filtered KPIs, Revenue by Night chart
+- **Night/Event** scope: Dual sub-selector (venue + event pills), event-specific KPIs, Night Comparison chart
+- Period filter works in combination with scope
+
+---
+
+## P0 — In Progress / Next
+- Awaiting user specs for: Profit Analysis, Venue Cost Detail, Pulse Inside, Pulse Entry
+
+## P1 — Upcoming
+- Revenue Analytics enhancements per user feedback
+- GuestFullHistory.js integration into Manager & Pulse modules
+- Backend API integration (replace mock data)
+
+## P2 — Backlog
+- CEO Dashboard endpoints (crm-reports, startup-kpis, mrr-retention)
+- Subscription & team invite APIs
+- Financial Overview, Segments, Churn & Retention pages
+
+## P3 — Future
+- Refactor LandingPage.js, remove ManagerPage.legacy.js
+- Split ownerData.js by domain (guestData, venueData, eventData)
+- Centralize inline mock data
+
+---
+
+## Credentials
+- **Owner/Manager User**: `teste@teste.com` / `12345`
+
+## Known Issues
+- Pricing Cards on landing page (user verification pending, recurrence: 3)
+- KDS dropdown has duplicate `/kitchen` path for Kitchen and Bar items

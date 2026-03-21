@@ -43,11 +43,7 @@ const breadcrumbMap = {
   "/pulse/bar": { module: "PULSE", page: "Bar" },
   "/pulse/exit": { module: "PULSE", page: "Exit" },
   "/pulse/rewards": { module: "PULSE", page: "Rewards" },
-  "/tap": { module: "TAP", page: "Orders" },
-  "/table": { module: "TABLE", page: "Orders" },
   "/kitchen": { module: "KDS", page: "Kitchen" },
-  "/manager": { module: "MANAGER", page: "Dashboard" },
-  "/owner": { module: "OWNER", page: "Overview" },
 };
 
 function DropdownModule({ mod, isActive, currentPath }) {
@@ -64,7 +60,7 @@ function DropdownModule({ mod, isActive, currentPath }) {
   return (
     <div className="relative" onMouseEnter={handleEnter} onMouseLeave={handleLeave} data-testid={`nav-module-${mod.key}`}>
       <button className={cn(
-        "flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
+        "flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200",
         isActive ? "text-primary" : "text-muted-foreground hover:text-foreground"
       )}>
         <Icon className="h-4 w-4" />
@@ -88,7 +84,7 @@ function DropdownModule({ mod, isActive, currentPath }) {
                   key={item.path}
                   onClick={() => { navigate(item.path); setOpen(false); }}
                   className={cn(
-                    "w-full flex items-center gap-2.5 px-4 py-2.5 text-sm font-medium transition-colors",
+                    "w-full flex items-center gap-2.5 px-4 py-2.5 text-sm font-medium transition-all duration-150",
                     itemActive ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-foreground hover:bg-muted/30"
                   )}
                   data-testid={`nav-item-${item.label.toLowerCase()}`}
@@ -125,10 +121,7 @@ export function PulseLayout({ children }) {
 
   const crumb = breadcrumbMap[currentPath] ||
     (currentPath.startsWith("/pulse/guest/") ? { module: "PULSE", page: "Guest" } :
-    (currentPath.startsWith("/pulse") ? { module: "PULSE", page: "" } :
-    (currentPath.startsWith("/manager") ? { module: "MANAGER", page: "" } :
-    (currentPath.startsWith("/owner") ? { module: "OWNER", page: "" } :
-    { module: "", page: "" }))));
+    null);
 
   return (
     <div className="pulse-scope min-h-screen bg-background text-foreground">
@@ -140,22 +133,19 @@ export function PulseLayout({ children }) {
 
         {/* Zone Left — Branding */}
         <div className="flex items-center shrink-0">
-          {/* SPET Icon */}
-          <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-purple-600 to-violet-500 flex items-center justify-center" data-testid="spet-icon">
-            <span className="text-white text-sm font-bold">S</span>
+          {/* SPET Logo + Text */}
+          <div className="flex items-center gap-1.5">
+            <div className="h-6 w-6 rounded-md bg-gradient-to-br from-purple-600 to-violet-500 flex items-center justify-center" data-testid="spet-icon">
+              <span className="text-white text-[10px] font-bold">S</span>
+            </div>
+            <span className="text-[16px] font-bold" style={{ fontFamily: "'Space Grotesk', sans-serif" }} data-testid="spet-text">spet.</span>
           </div>
 
           {/* Separator */}
           <div className="w-px h-6 bg-border/40 mx-3" />
 
-          {/* Venue Selector */}
-          <button className="flex items-center gap-2 hover:opacity-80 transition-opacity" data-testid="venue-selector">
-            <div className="h-7 w-7 rounded-full bg-primary/15 flex items-center justify-center">
-              <span className="text-xs font-bold text-primary">DC</span>
-            </div>
-            <span className="text-sm font-semibold text-foreground">Demo Club</span>
-            <ChevronDown className="h-3.5 w-3.5 text-muted-foreground ml-1" />
-          </button>
+          {/* Venue Name (static text, not clickable) */}
+          <span className="text-sm font-medium text-muted-foreground" data-testid="venue-name">Demo Club</span>
         </div>
 
         {/* Zone Center — Module Navigation */}
@@ -171,7 +161,7 @@ export function PulseLayout({ children }) {
                 key={mod.key}
                 onClick={() => navigate(mod.path)}
                 className={cn(
-                  "flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
+                  "flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200",
                   active ? "text-primary" : "text-muted-foreground hover:text-foreground"
                 )}
                 data-testid={`nav-module-${mod.key}`}
@@ -185,16 +175,12 @@ export function PulseLayout({ children }) {
 
         {/* Zone Right — Breadcrumb + Actions */}
         <div className="flex items-center gap-1 shrink-0">
-          {/* Breadcrumb */}
-          {crumb.module && (
+          {/* Breadcrumb — only for sub-pages */}
+          {crumb && crumb.page && (
             <div className="flex items-center gap-1.5 mr-4" data-testid="breadcrumb">
               <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">{crumb.module}</span>
-              {crumb.page && (
-                <>
-                  <span className="text-muted-foreground/40">&#8250;</span>
-                  <span className="text-xs font-semibold text-primary">{crumb.page}</span>
-                </>
-              )}
+              <span className="text-muted-foreground/40">&#8250;</span>
+              <span className="text-xs font-semibold text-primary">{crumb.page}</span>
             </div>
           )}
 
