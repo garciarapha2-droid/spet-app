@@ -29,7 +29,7 @@ import os
 
 BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', '').rstrip('/')
 if not BASE_URL:
-    BASE_URL = "https://growth-metrics-43.preview.emergentagent.com"
+    BASE_URL = "https://owner-dashboard-pro-3.preview.emergentagent.com"
 
 # Test credentials
 CEO_EMAIL = "garcia.rapha2@gmail.com"

@@ -11,7 +11,7 @@ import pytest
 import requests
 import os
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://growth-metrics-43.preview.emergentagent.com')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://owner-dashboard-pro-3.preview.emergentagent.com')
 
 VENUE_ID = "40a24e04-75b6-435d-bfff-ab0d469ce543"
 
@@ -157,7 +157,7 @@ class TestOnboardingCheckoutAPI:
         checkout_payload = {
             "plan_id": "growth",
             "lead_id": lead_id,
-            "origin_url": "https://growth-metrics-43.preview.emergentagent.com"
+            "origin_url": "https://owner-dashboard-pro-3.preview.emergentagent.com"
         }
         response = api_client.post(f"{BASE_URL}/api/onboarding/checkout", json=checkout_payload)
         assert response.status_code == 200, f"Expected 200, got {response.status_code}: {response.text}"

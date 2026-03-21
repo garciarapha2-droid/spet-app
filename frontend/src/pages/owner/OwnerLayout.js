@@ -64,7 +64,7 @@ const navGroups = [
 
 const pageTitles = {
   '/owner': { title: 'Overview', subtitle: 'Business Command Center' },
-  '/owner/performance/revenue': { title: 'Revenue Analytics', subtitle: 'Revenue deep dive' },
+  '/owner/performance/revenue': { title: 'Revenue Analytics', subtitle: 'Performance' },
   '/owner/performance/profit': { title: 'Profit Analysis', subtitle: 'Margin intelligence' },
   '/owner/performance/venues': { title: 'Comparison', subtitle: 'Venue benchmarking' },
   '/owner/performance/time': { title: 'Time Analysis', subtitle: 'Peak & dead hours' },
