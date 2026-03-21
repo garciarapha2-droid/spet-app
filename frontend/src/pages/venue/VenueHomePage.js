@@ -695,7 +695,6 @@ export const VenueSelectPage = () => {
   const [events, setEvents] = useState([]);
   const [eventDates, setEventDates] = useState([]);
   const [showCreate, setShowCreate] = useState(false);
-  const [showModulesMenu, setShowModulesMenu] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [barmen, setBarmen] = useState([]);
 
@@ -833,57 +832,6 @@ export const VenueSelectPage = () => {
 
         {/* Right group */}
         <div className="flex items-center gap-3">
-          {/* Modules dropdown */}
-          {data?.modules && (
-            <div className="relative">
-              <button
-                onClick={() => setShowModulesMenu(!showModulesMenu)}
-                className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-[14px] font-medium transition-colors duration-150 ${
-                  showModulesMenu ? 'border-primary/20 bg-muted' : 'border-border hover:bg-muted'
-                }`}
-                data-testid="modules-dropdown"
-              >
-                <LayoutGrid className="h-4 w-4" strokeWidth={1.5} />
-                <span className="hidden sm:inline">Modules</span>
-                <ChevronDown className="h-3.5 w-3.5" strokeWidth={2} />
-              </button>
-
-              {showModulesMenu && (
-                <>
-                  <div className="fixed inset-0 z-40" onClick={() => setShowModulesMenu(false)} />
-                  <div
-                    className="absolute top-full right-0 mt-2 bg-background border border-border rounded-xl p-4 z-50"
-                    style={{ boxShadow: theme === 'dark' ? '0 4px 24px rgba(0,0,0,0.4)' : '0 4px 24px rgba(0,0,0,0.08)' }}
-                    data-testid="modules-menu"
-                  >
-                    <div className="flex gap-2">
-                      {data.modules
-                        .filter(m => m.enabled)
-                        .filter(m => m.key !== 'ceo' || isCEO)
-                        .map(mod => {
-                          const Icon = MODULE_ICONS[mod.key] || Sparkles;
-                          return (
-                            <button
-                              key={mod.key}
-                              onClick={() => { handleModuleClick(mod); setShowModulesMenu(false); }}
-                              className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-muted transition-colors duration-150 min-w-[56px]"
-                              data-testid={`module-item-${mod.key}`}
-                            >
-                              <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ background: 'hsl(var(--primary) / 0.08)' }}>
-                                <Icon className="h-[18px] w-[18px] text-primary" strokeWidth={1.5} />
-                              </div>
-                              <span className="text-[12px] font-medium text-foreground">{mod.name}</span>
-                            </button>
-                          );
-                        })}
-                    </div>
-                  </div>
-                </>
-              )}
-            </div>
-          )}
-
-          <div className="h-5 w-px bg-border mx-1" />
           <span className="text-[14px] hidden md:inline" style={{ color: 'hsl(var(--muted-foreground))' }}>{data?.user_email}</span>
           <button
             onClick={toggleTheme}
