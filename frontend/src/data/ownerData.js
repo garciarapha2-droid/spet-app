@@ -26,6 +26,12 @@ export const ownerGuests = [
   { id: 'og10', name: 'Lisa Park', email: 'lisa@email.com', totalSpent: 1200, visits: 4, tier: 'Bronze', lastVisit: '1 day ago', lastVisitDaysAgo: 1, returningRisk: false, avgSpend: 300, frequency: 'New', segment: 'new', score: 60, favoriteCategory: 'Wine', loyaltyEnrolled: false, preferredVenue: 'Midtown', topEvent: 'Wine Tasting', spendTrend: 'up', riskSignal: 'none' },
   { id: 'og11', name: 'Ryan Foster', email: 'ryan@email.com', totalSpent: 2100, visits: 8, tier: 'Bronze', lastVisit: '35 days ago', lastVisitDaysAgo: 35, returningRisk: true, avgSpend: 262, frequency: 'Monthly', segment: 'lost', score: 30, favoriteCategory: 'Beer', loyaltyEnrolled: true, preferredVenue: 'Uptown', topEvent: 'Game Night', spendTrend: 'down', riskSignal: 'inactive 30+ days' },
   { id: 'og12', name: 'Anna Wright', email: 'anna@email.com', totalSpent: 1800, visits: 7, tier: 'Silver', lastVisit: '25 days ago', lastVisitDaysAgo: 25, returningRisk: true, avgSpend: 257, frequency: 'Monthly', segment: 'at_risk', score: 42, favoriteCategory: 'Food', loyaltyEnrolled: true, preferredVenue: 'Downtown', topEvent: 'Brunch Party', spendTrend: 'down', riskSignal: 'declining frequency' },
+  // Pulse Entry guests (pg1-pg5)
+  { id: 'pg1', name: 'Sofia Cardoso', email: 'sofia@email.com', totalSpent: 4200, visits: 18, tier: 'Gold', lastVisit: '1 day ago', lastVisitDaysAgo: 1, returningRisk: false, avgSpend: 233, frequency: 'Bi-weekly', segment: 'vip', score: 87, favoriteCategory: 'Cocktails', loyaltyEnrolled: true, preferredVenue: 'Downtown', topEvent: 'Friday Night Live', spendTrend: 'up', riskSignal: 'none' },
+  { id: 'pg2', name: 'Lucas Oliveira', email: 'lucas@email.com', totalSpent: 2800, visits: 12, tier: 'Silver', lastVisit: '3 days ago', lastVisitDaysAgo: 3, returningRisk: false, avgSpend: 233, frequency: 'Bi-weekly', segment: 'active', score: 72, favoriteCategory: 'Beer', loyaltyEnrolled: true, preferredVenue: 'Downtown', topEvent: 'Saturday Bash', spendTrend: 'stable', riskSignal: 'none' },
+  { id: 'pg3', name: 'John Smith', email: 'john@email.com', totalSpent: 1600, visits: 7, tier: 'Bronze', lastVisit: '5 days ago', lastVisitDaysAgo: 5, returningRisk: false, avgSpend: 228, frequency: 'Monthly', segment: 'active', score: 58, favoriteCategory: 'Spirits', loyaltyEnrolled: false, preferredVenue: 'Midtown', topEvent: 'DJ Night', spendTrend: 'up', riskSignal: 'none' },
+  { id: 'pg4', name: 'Maria Santos', email: 'maria.s@email.com', totalSpent: 6800, visits: 24, tier: 'Platinum', lastVisit: '2 days ago', lastVisitDaysAgo: 2, returningRisk: false, avgSpend: 283, frequency: 'Weekly', segment: 'vip', score: 91, favoriteCategory: 'Wine', loyaltyEnrolled: true, preferredVenue: 'Midtown', topEvent: 'Jazz Night', spendTrend: 'up', riskSignal: 'none' },
+  { id: 'pg5', name: 'Pedro Almeida', email: 'pedro@email.com', totalSpent: 1200, visits: 5, tier: 'Bronze', lastVisit: '8 days ago', lastVisitDaysAgo: 8, returningRisk: false, avgSpend: 240, frequency: 'Monthly', segment: 'new', score: 52, favoriteCategory: 'Beer', loyaltyEnrolled: false, preferredVenue: 'Downtown', topEvent: 'Open Mic', spendTrend: 'stable', riskSignal: 'none' },
 ];
 
 export const ownerCampaigns = [
@@ -224,6 +230,18 @@ export const guestPurchaseHistory = [
   { id: 'p3', guestId: 'og1', date: 'Feb 8', event: 'Friday Night Live', venue: 'Downtown', items: 'Old Fashioned x3, Wings', total: 85 },
   { id: 'p4', guestId: 'og2', date: 'Feb 21', event: 'Jazz Night', venue: 'Midtown', items: 'Wine Flight, Tapas', total: 95 },
   { id: 'p5', guestId: 'og2', date: 'Feb 14', event: 'Jazz Night', venue: 'Midtown', items: 'Champagne x2, Dessert', total: 180 },
+  { id: 'p6', guestId: 'pg1', date: 'Mar 20', event: 'Friday Night Live', venue: 'Downtown', items: 'Espresso Martini x2, Bruschetta', total: 78 },
+  { id: 'p7', guestId: 'pg1', date: 'Mar 14', event: 'Saturday Bash', venue: 'Downtown', items: 'Negroni, Gin & Tonic, Nachos', total: 62 },
+  { id: 'p8', guestId: 'pg1', date: 'Mar 7', event: 'Friday Night Live', venue: 'Downtown', items: 'Cosmopolitan x2, Cheese Board', total: 88 },
+  { id: 'p9', guestId: 'pg2', date: 'Mar 20', event: 'Saturday Bash', venue: 'Downtown', items: 'IPA Draft x3, Wings', total: 48 },
+  { id: 'p10', guestId: 'pg2', date: 'Mar 8', event: 'DJ Night', venue: 'Midtown', items: 'Craft Beer Flight, Sliders', total: 56 },
+  { id: 'p11', guestId: 'pg3', date: 'Mar 20', event: 'DJ Night', venue: 'Midtown', items: 'Whiskey Sour x2, Fries', total: 44 },
+  { id: 'p12', guestId: 'pg3', date: 'Mar 13', event: 'Trivia Night', venue: 'Midtown', items: 'Jack & Coke, Nachos', total: 32 },
+  { id: 'p13', guestId: 'pg4', date: 'Mar 20', event: 'Jazz Night', venue: 'Midtown', items: 'Pinot Noir Bottle, Cheese Board, Dessert', total: 145 },
+  { id: 'p14', guestId: 'pg4', date: 'Mar 15', event: 'VIP Lounge', venue: 'Uptown', items: 'Champagne Bottle, Sushi Platter', total: 220 },
+  { id: 'p15', guestId: 'pg4', date: 'Mar 8', event: 'Jazz Night', venue: 'Midtown', items: 'Sauvignon Blanc, Tapas', total: 85 },
+  { id: 'p16', guestId: 'pg5', date: 'Mar 20', event: 'Open Mic', venue: 'Downtown', items: 'Pale Ale x2, Burger', total: 38 },
+  { id: 'p17', guestId: 'pg5', date: 'Mar 6', event: 'Happy Hour', venue: 'Uptown', items: 'Lager x3, Wings', total: 34 },
 ];
 
 // Guest event attendance (for profile)
@@ -237,6 +255,30 @@ export const guestEventAttendance = {
     { event: 'Jazz Night', venue: 'Midtown', attended: 20, totalSpent: 5400, avgSpend: 270 },
     { event: 'Wine Tasting', venue: 'Midtown', attended: 8, totalSpent: 2400, avgSpend: 300 },
   ],
+  pg1: [
+    { event: 'Friday Night Live', venue: 'Downtown', attended: 8, totalSpent: 1860, avgSpend: 233 },
+    { event: 'Saturday Bash', venue: 'Downtown', attended: 6, totalSpent: 1440, avgSpend: 240 },
+    { event: 'Open Mic', venue: 'Downtown', attended: 4, totalSpent: 900, avgSpend: 225 },
+  ],
+  pg2: [
+    { event: 'Saturday Bash', venue: 'Downtown', attended: 5, totalSpent: 1200, avgSpend: 240 },
+    { event: 'Friday Night Live', venue: 'Downtown', attended: 4, totalSpent: 880, avgSpend: 220 },
+    { event: 'DJ Night', venue: 'Midtown', attended: 3, totalSpent: 720, avgSpend: 240 },
+  ],
+  pg3: [
+    { event: 'DJ Night', venue: 'Midtown', attended: 3, totalSpent: 720, avgSpend: 240 },
+    { event: 'Trivia Night', venue: 'Midtown', attended: 2, totalSpent: 440, avgSpend: 220 },
+    { event: 'Saturday Bash', venue: 'Downtown', attended: 2, totalSpent: 440, avgSpend: 220 },
+  ],
+  pg4: [
+    { event: 'Jazz Night', venue: 'Midtown', attended: 12, totalSpent: 3400, avgSpend: 283 },
+    { event: 'Wine Tasting', venue: 'Midtown', attended: 6, totalSpent: 1700, avgSpend: 283 },
+    { event: 'VIP Lounge', venue: 'Uptown', attended: 6, totalSpent: 1700, avgSpend: 283 },
+  ],
+  pg5: [
+    { event: 'Open Mic', venue: 'Downtown', attended: 3, totalSpent: 720, avgSpend: 240 },
+    { event: 'Happy Hour', venue: 'Uptown', attended: 2, totalSpent: 480, avgSpend: 240 },
+  ],
 };
 
 // Guest loyalty activity (for profile)
@@ -247,19 +289,45 @@ export const guestLoyaltyActivity = {
     { date: 'Feb 8', type: 'upgrade', detail: 'Tier upgrade\nPromoted to VIP tier', points: 0, balance: 1325 },
     { date: 'Jan 28', type: 'earned', detail: 'Bonus points\n+100 pts campaign bonus', points: 100, balance: 1325 },
   ],
-  og6: null, // not enrolled
+  og6: null,
+  pg1: [
+    { date: 'Mar 20', type: 'earned', detail: 'Points earned\n+156 pts from purchase', points: 156, balance: 890 },
+    { date: 'Mar 14', type: 'earned', detail: 'Points earned\n+124 pts from purchase', points: 124, balance: 734 },
+    { date: 'Mar 7', type: 'redeemed', detail: 'Reward redeemed\nFree appetizer (-150 pts)', points: -150, balance: 610 },
+    { date: 'Feb 28', type: 'upgrade', detail: 'Tier upgrade\nPromoted to Gold tier', points: 0, balance: 760 },
+  ],
+  pg2: [
+    { date: 'Mar 20', type: 'earned', detail: 'Points earned\n+96 pts from purchase', points: 96, balance: 420 },
+    { date: 'Mar 8', type: 'earned', detail: 'Points earned\n+112 pts from purchase', points: 112, balance: 324 },
+  ],
+  pg4: [
+    { date: 'Mar 20', type: 'earned', detail: 'Points earned\n+290 pts from purchase', points: 290, balance: 1680 },
+    { date: 'Mar 15', type: 'redeemed', detail: 'Reward redeemed\nVIP upgrade (-500 pts)', points: -500, balance: 1390 },
+    { date: 'Mar 8', type: 'earned', detail: 'Points earned\n+170 pts from purchase', points: 170, balance: 1890 },
+    { date: 'Feb 20', type: 'upgrade', detail: 'Tier upgrade\nPromoted to Platinum tier', points: 0, balance: 1720 },
+  ],
 };
 
 // Guest venue breakdown (for profile)
 export const guestVenueBreakdown = {
   og1: [{ venue: 'Downtown', spent: 9800, visits: 36 }, { venue: 'Midtown', spent: 1800, visits: 8 }, { venue: 'Uptown', spent: 800, visits: 4 }],
   og2: [{ venue: 'Midtown', spent: 7800, visits: 28 }, { venue: 'Downtown', spent: 2000, visits: 8 }],
+  pg1: [{ venue: 'Downtown', spent: 3800, visits: 16 }, { venue: 'Midtown', spent: 400, visits: 2 }],
+  pg2: [{ venue: 'Downtown', spent: 2000, visits: 9 }, { venue: 'Midtown', spent: 800, visits: 3 }],
+  pg3: [{ venue: 'Midtown', spent: 1100, visits: 5 }, { venue: 'Downtown', spent: 500, visits: 2 }],
+  pg4: [{ venue: 'Midtown', spent: 5100, visits: 18 }, { venue: 'Uptown', spent: 1700, visits: 6 }],
+  pg5: [{ venue: 'Downtown', spent: 720, visits: 3 }, { venue: 'Uptown', spent: 480, visits: 2 }],
 };
 
 // Guest category breakdown (for profile)
 export const guestCategoryBreakdown = {
   og1: [{ category: 'Cocktails', amount: 5200 }, { category: 'Spirits', amount: 3800 }, { category: 'Food', amount: 2400 }, { category: 'Wine', amount: 1000 }],
   og2: [{ category: 'Wine', amount: 4200 }, { category: 'Champagne', amount: 3000 }, { category: 'Food', amount: 1800 }, { category: 'Cocktails', amount: 800 }],
+  pg1: [{ category: 'Cocktails', amount: 1800 }, { category: 'Spirits', amount: 1200 }, { category: 'Food', amount: 800 }, { category: 'Wine', amount: 400 }],
+  pg2: [{ category: 'Beer', amount: 1400 }, { category: 'Spirits', amount: 700 }, { category: 'Food', amount: 500 }, { category: 'Cocktails', amount: 200 }],
+  pg3: [{ category: 'Spirits', amount: 800 }, { category: 'Beer', amount: 500 }, { category: 'Food', amount: 300 }],
+  pg4: [{ category: 'Wine', amount: 3200 }, { category: 'Champagne', amount: 2000 }, { category: 'Food', amount: 1000 }, { category: 'Cocktails', amount: 600 }],
+  pg5: [{ category: 'Beer', amount: 600 }, { category: 'Food', amount: 400 }, { category: 'Spirits', amount: 200 }],
 };
 
 // Venue cost detail (for drill-down)
@@ -298,6 +366,21 @@ export const guestVisitTimeline = {
     { month: 'Jan', Downtown: 2, Midtown: 6, Uptown: 0, totalSpent: 900 },
     { month: 'Feb', Downtown: 1, Midtown: 8, Uptown: 0, totalSpent: 1400 },
     { month: 'Mar', Downtown: 2, Midtown: 7, Uptown: 1, totalSpent: 1600 },
+  ],
+  pg1: [
+    { month: 'Jan', Downtown: 4, Midtown: 1, Uptown: 0, totalSpent: 1100 },
+    { month: 'Feb', Downtown: 6, Midtown: 1, Uptown: 0, totalSpent: 1500 },
+    { month: 'Mar', Downtown: 6, Midtown: 0, Uptown: 0, totalSpent: 1600 },
+  ],
+  pg2: [
+    { month: 'Jan', Downtown: 3, Midtown: 1, Uptown: 0, totalSpent: 800 },
+    { month: 'Feb', Downtown: 4, Midtown: 1, Uptown: 0, totalSpent: 1000 },
+    { month: 'Mar', Downtown: 2, Midtown: 1, Uptown: 0, totalSpent: 1000 },
+  ],
+  pg4: [
+    { month: 'Jan', Downtown: 0, Midtown: 6, Uptown: 2, totalSpent: 1800 },
+    { month: 'Feb', Downtown: 0, Midtown: 8, Uptown: 2, totalSpent: 2400 },
+    { month: 'Mar', Downtown: 0, Midtown: 6, Uptown: 2, totalSpent: 2600 },
   ],
 };
 
