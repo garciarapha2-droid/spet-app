@@ -31,18 +31,16 @@ Build a comprehensive CEO/Owner operational intelligence platform for venue mana
   - **System** (4 pages): Venue Management (list + nights toggle), Venue Detail, Event Detail, Owner Settings
   - Tested: iteration_74.json — 100% pass (29/29 features)
 
-### Spec Alignment Fixes Applied (Phase 1+2 Polishing)
-  - **Venues page**: Rewrote to LIST layout (stacked horizontal rows), added top controls (Venues / Nights toggle + Period selector), building icon in purple circle, ACTIVE badge, proper metric labels
-  - **Nights/Events view**: Events grouped by venue header, ordered by date, calendar icon per event
-  - **Guest Full History (canonical)**: Rewrote with exact spec structure: Header (avatar, name, badges, Send Reward black btn, Message outline btn), Behavior Summary (4 stat boxes, insight bar), KPI cards (icon top, value large, label BOTTOM), HEALTHY banner, Venue Breakdown (colored pills ON bars), Category Breakdown (colored pills ON bars), Events Attended (click subtitle), Visit Timeline (STACKED BAR CHART with venue colors), Loyalty Activity (table rows with date right, balance far right), Purchase History (full width, generous spacing)
-  - **Sidebar light theme**: Fixed CSS variables so sidebar is LIGHT when content is LIGHT (both Owner and Manager)
-  - **Pulse integration**: Added "View Full History" button in Pulse GuestProfilePage linking to canonical GuestFullHistory
+### 9. Global Design System & Spacing Standard — COMPLETE
+  - Created `/app/design-system.md` with full spacing rules
+  - Applied across Owner (24 pages), Manager (17 pages), Pulse (7 pages), shared components
+  - Standard: Card→Card 16px (space-y-4), Sections 24px (mb-6), Card padding 20px (p-5), Internal items 8px (space-y-2), Columns 24px (gap-6), Page padding 24px (p-6)
+  - Tested: iteration_75.json — 100% pass (18/18 features)
 
 ## Canonical Guest Full History Component
 **Location**: `/app/frontend/src/components/shared/GuestFullHistory.js`
 **Exports**: `default` (full page), `CustomerProfileModal` (modal preview)
 **Used in**: Owner customers, Pulse guest profile (via "View Full History" link)
-**Sections**: Header, Behavior Summary, KPI Cards, Health Banner, Venue Breakdown, Category Breakdown, Events Attended, Visit Timeline (chart), Loyalty Activity, Purchase History
 
 ## Key Routes
 - `/owner` — Owner Command Center
@@ -63,12 +61,17 @@ Build a comprehensive CEO/Owner operational intelligence platform for venue mana
 - Owner: teste@teste.com / 12345
 - Onboarding: teste1@teste.com / 12345
 
+## Design System Reference
+- `/app/design-system.md` — Full spacing rules, tokens, typography, components
+
 ## Prioritized Backlog
 
 ### P0 — Next
+- Spec do Smart Insights page (user request pending details)
 - Phase 5: System-wide Guest Profile integration (Manager Loyalty → Guests uses GuestFullHistory)
 
 ### P1
+- Content implementation for placeholder pages (Phases 3 & 4)
 - API Integration: Connect all modules to real backend APIs
 - CEO Dashboard endpoint: `/api/ceo/conversion-rates`
 - Pixel-perfect Signup Page
