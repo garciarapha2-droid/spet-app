@@ -3,114 +3,129 @@
 ## Original Problem Statement
 Nightlife management SaaS with modules: Owner, Manager, Pulse, CEO OS.
 The CEO OS module includes a full CRM with Pipeline, Customer Base, and executive dashboards.
+The platform is being prepared for native mobile app (React Native) with real NFC support.
 
 ## Architecture
 ```
 /app
-├── frontend/         React (CRA) + Tailwind + Shadcn UI
-│   ├── src/
-│   │   ├── components/ceo/
-│   │   │   ├── CrmDetailDialog.js    # Reutilizable: deal + customer mode
-│   │   │   ├── CustomerDetailDialog.js # Legacy (migrated to crmService)
-│   │   │   ├── ChartCard.js / KpiCard.js / PeriodFilter.js / DrillDownSheet.js
-│   │   ├── hooks/
-│   │   │   └── useCrmData.js         # useDeals, useDeal, useCustomers
-│   │   ├── services/
-│   │   │   ├── crmService.js         # REAL API — deals, customers, analytics, targets
-│   │   │   └── ceoService.js         # Legacy mock (only used by CeoOverview/Revenue)
-│   │   ├── pages/ceo/
-│   │   │   ├── CeoLayout.js          # Sidebar + revenue targets (REAL API)
-│   │   │   ├── CeoOverview.js        # Active Customers KPI real, rest mock
-│   │   │   ├── CeoRevenue.js         # Still uses ceoData.js mock
-│   │   │   ├── CeoUsers.js           # ✅ REAL API — useCustomers hook
-│   │   │   ├── CeoSecurity.js        # ✅ REAL API — security analytics
-│   │   │   ├── CeoPipeline.js        # ✅ REAL API — kanban + deal dialog
-│   │   │   ├── CeoReports.js         # ✅ REAL API — reports analytics
-│   │   │   └── CustomerBase.js       # ✅ REAL API — customer table + dialog
-│   │   └── App.js
-├── backend/          FastAPI + PostgreSQL + MongoDB
+├── backend/         FastAPI + PostgreSQL + MongoDB
 │   ├── routes/
-│   │   ├── crm.py                    # CRUD: deals, customers, activities
-│   │   ├── ceo_analytics.py          # ✅ NEW: security, reports, revenue-targets
-│   │   └── ceo.py                    # Legacy CEO routes
-│   └── migrations/
-│       └── crm_migration.py          # Creates tables + seed data
+│   │   ├── nfc.py              # NFC tag register/scan/unlink/list
+│   │   ├── crm.py              # CRM CRUD (deals, customers, activities)
+│   │   ├── ceo_analytics.py    # Security, Reports, Revenue analytics
+│   │   ├── pulse.py            # Guest intake, entry, search
+│   │   ├── tap.py              # Tabs, catalog, items
+│   │   ├── venue.py            # Venue home, module access
+│   │   └── auth.py             # Login, signup, refresh, logout
+│   ├── migrations/
+│   │   ├── crm_migration.py
+│   │   └── nfc_migration.py    # nfc_tags table
+│   └── ws_manager.py           # WebSocket real-time
+└── frontend/        React (CRA) + Tailwind + Shadcn UI
+    └── src/
+        ├── services/crmService.js    # Real API layer
+        ├── hooks/useCrmData.js       # React hooks for CRM
+        └── pages/ceo/               # All CEO pages on real API
 ```
 
-## Database (PostgreSQL)
-### Tables
-- `deals`: id, contact_name, contact_email, contact_phone, company_name, address, plan_id, stage, deal_value, notes, created_at, updated_at, closed_at
-- `deal_activities`: id, deal_id, type, description, created_at, updated_at
-- `customers`: id, company_name, contact_name, contact_email, contact_phone, address, plan_id, status, mrr, modules_enabled, payment_method, signup_date, deal_id, notes, created_at, updated_at
+## Database Schema
 
-### Stages: lead, qualified, proposal, negotiation, closed_won, closed_lost
-### Plans: core ($149), flow ($299), sync ($499), os ($724)
+### PostgreSQL Tables
+- **nfc_tags**: id, tag_uid (UNIQUE per venue), guest_id, venue_id, status, label, assigned_by, created_at, last_scanned
+- **deals**: id, contact_name, contact_email, company_name, plan_id, stage, deal_value, notes, ...
+- **deal_activities**: id, deal_id, type, description, created_at
+- **customers**: id, company_name, contact_name, plan_id, status, mrr, modules_enabled, ...
+- **tap_sessions**: venue_id, guest_id, session_type, status, total, meta, ...
+- **entry_events**: venue_id, guest_id, decision, entry_type, cover_amount, ...
+- **global_persons**: id, email_hash, phone_hash (cross-venue dedupe)
 
-## Real API Endpoints
-### CRM CRUD (/api/crm/*)
+### MongoDB Collections
+- **venue_guests**: PII (name, email, phone, photo, flags, tags, spend_total, visits)
+- **venue_configs**: Venue settings, module configs
+- **venue_catalog**: Menu/products
+- **refresh_tokens**: JWT refresh tokens
+
+## API Endpoints Summary
+
+### NFC (/api/nfc/*)
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | /deals | List all deals (filter by stage) |
-| GET | /deals/:id | Get deal with activities |
-| POST | /deals | Create deal |
-| PUT | /deals/:id | Update deal fields |
-| POST | /deals/:id/won | Close as won + create customer |
-| POST | /deals/:id/lost | Close as lost |
-| POST | /deals/:id/activities | Add activity |
-| PUT | /activities/:id | Update activity |
-| DELETE | /activities/:id | Delete activity |
-| GET | /customers | List customers (filter by status, plan, search) |
-| GET | /customers/:id | Get single customer |
-| PUT | /customers/:id | Update customer |
+| POST | /nfc/register | Bind NFC tag to guest |
+| POST | /nfc/scan | Scan tag → return guest + context |
+| POST | /nfc/unlink | Deactivate tag binding |
+| GET | /nfc/tags | List venue tags |
 
-### Analytics (/api/crm/analytics/*)
+### CRM (/api/crm/*)
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | /analytics/security | Alerts, risk score, module usage from customers |
-| GET | /analytics/reports | Pipeline funnel, loss reasons, history, metrics |
-| GET | /analytics/revenue-targets | Weekly/monthly/annual targets from real MRR |
+| GET | /crm/deals | List deals |
+| GET | /crm/customers | List customers |
+| GET | /crm/customers/{id} | Single customer |
+| PUT | /crm/customers/{id} | Update customer |
+| GET | /crm/analytics/security | Security alerts |
+| GET | /crm/analytics/reports | Pipeline funnel |
+| GET | /crm/analytics/revenue-targets | Revenue targets |
 
-## Testing
-- iteration_84: 14/14 (initial CEO pages)
-- iteration_85: 100% (v2 rebuild — Users, Security, Pipeline, Reports + theme)
-- iteration_86: 24/24 backend + 100% frontend (CRM real persistence)
-- iteration_87: 28/28 backend + 100% frontend (CEO analytics migration)
+### Pulse (/api/pulse/*)
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | /pulse/guest/intake | Register new guest |
+| GET | /pulse/guest/{id} | Decision card |
+| POST | /pulse/entry/decision | Allow/deny entry |
+| GET | /pulse/entries/today | Today's entries |
+
+### TAP (/api/tap/*)
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | /tap/stats | Real-time stats |
+| GET | /tap/sessions | Open/closed tabs |
+| POST | /tap/session/{id}/item | Add item to tab |
+| POST | /tap/session/{id}/close | Close tab |
+
+## Testing History
+- iteration_87: 28/28 (CEO analytics migration)
+- iteration_88: 27/27 (NFC backend + regression tests)
+
+## What's Complete
+- [x] Full CRM backend (deals, customers, activities)
+- [x] CEO OS pages on real API (Security, Reports, Users, Layout)
+- [x] NFC backend: nfc_tags table + register/scan/unlink/list endpoints
+- [x] CORS configured for mobile (Expo/React Native)
+- [x] Mobile API documentation (/app/docs/MOBILE_API_HANDOFF.md)
+- [x] WebSocket real-time events (guest_entered, nfc_scanned, tab_updated)
+
+## Prioritized Backlog
+
+### P0 — DONE
+- ~~NFC backend infrastructure~~
+- ~~CORS for mobile~~
+- ~~API documentation for Mobile Agent~~
+
+### P1 — Mobile App (React Native)
+- Auth screen + SecureStorage
+- Venue selection screen
+- NFC scan screen (react-native-nfc-manager)
+- Entry decision screen
+- Guest lookup (manual fallback)
+- Pulse/Tab flow
+- WebSocket real-time
+
+### P1 — Web Improvements
+- Migrate CeoOverview/CeoRevenue from ceoData.js to real API
+- Drag-and-drop Pipeline Kanban
+- Global CEO navigation link
+
+### P2
+- Push notifications (FCM + APNs)
+- Offline mode / sync
+- Owner/Manager backend migration
+
+### P3
+- Landing page Pricing Cards fix (3x recurrence)
+- Biometric auth
+- Deep linking
 
 ## User Accounts
 - CEO: garcia.rapha2@gmail.com / 12345
 - Regular: teste@teste.com / 12345
-
-## What's Complete
-- [x] Pipeline kanban with real Postgres data
-- [x] Deal detail dialog — all fields editable, persisted
-- [x] Mark as Won → creates customer automatically
-- [x] Activity log CRUD (add, edit, delete)
-- [x] Customer Base page with real data, search, filters
-- [x] Customer detail dialog — status, modules, plan editable
-- [x] Overview Active Customers KPI → navigates to /ceo/customers
-- [x] Theme toggle (dark/light) with localStorage
-- [x] All legacy pages preserved (zero regression)
-- [x] CEO Users page → real PostgreSQL data via useCustomers hook
-- [x] CEO Security page → real analytics from /api/crm/analytics/security
-- [x] CEO Reports page → real funnel/loss/history from /api/crm/analytics/reports
-- [x] CeoLayout sidebar → real revenue targets from /api/crm/analytics/revenue-targets
-- [x] CustomerDetailDialog migrated from ceoService to crmService
-- [x] ZERO imports of ceoService.js in Security, Reports, Users, Layout
-
-## Prioritized Backlog
-### P0 — DONE
-- ~~Migrate Security, Reports, Users pages from mock to real API~~
-- ~~Connect CeoReports to real deals data for funnel/pipeline charts~~
-
-### P1
-- Migrate CeoOverview from ceoData.js mock to real API
-- Migrate CeoRevenue from ceoData.js mock to real API
-- Add CEO link in global navigation
-- Drag-and-drop deal cards between pipeline columns
-
-### P2
-- Owner/Manager/Pulse backend API integration
-- Mobile responsiveness audit
-
-### P3
-- Landing page Pricing Cards fix (3x recurrence)
+- Test venue: 40a24e04-75b6-435d-bfff-ab0d469ce543
