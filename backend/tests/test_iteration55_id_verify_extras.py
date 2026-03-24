@@ -14,7 +14,7 @@ import os
 import uuid
 import json
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://ceo-data-migration.preview.emergentagent.com').rstrip('/')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://expo-sdk-upgrade-2.preview.emergentagent.com').rstrip('/')
 VENUE_ID = "40a24e04-75b6-435d-bfff-ab0d469ce543"
 
 

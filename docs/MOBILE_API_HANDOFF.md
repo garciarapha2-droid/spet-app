@@ -2,7 +2,7 @@
 
 ## Base URL
 ```
-https://ceo-data-migration.preview.emergentagent.com
+https://expo-sdk-upgrade-2.preview.emergentagent.com
 ```
 
 All API endpoints are prefixed with `/api`.

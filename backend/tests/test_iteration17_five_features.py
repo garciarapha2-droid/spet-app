@@ -11,7 +11,7 @@ import pytest
 import requests
 import os
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://ceo-data-migration.preview.emergentagent.com')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://expo-sdk-upgrade-2.preview.emergentagent.com')
 
 # Test credentials
 TEST_EMAIL = "teste@teste.com"

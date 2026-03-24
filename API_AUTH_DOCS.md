@@ -1,5 +1,5 @@
 # SPET API — Authentication + Handoff Documentation
-# Base URL: https://ceo-data-migration.preview.emergentagent.com
+# Base URL: https://expo-sdk-upgrade-2.preview.emergentagent.com
 # Production: https://spetapp.com (when deployed)
 
 ---
@@ -13,13 +13,13 @@ Two methods are available. Use whichever fits best:
 After login/signup on Lovable, redirect directly with the JWT:
 
 ```
-https://ceo-data-migration.preview.emergentagent.com/auth/handoff?token=<JWT>
+https://expo-sdk-upgrade-2.preview.emergentagent.com/auth/handoff?token=<JWT>
 ```
 
 **Lovable code example:**
 ```javascript
 // After successful login
-const res = await fetch("https://ceo-data-migration.preview.emergentagent.com/api/auth/login", {
+const res = await fetch("https://expo-sdk-upgrade-2.preview.emergentagent.com/api/auth/login", {
   method: "POST",
   headers: { "Content-Type": "application/json" },
   body: JSON.stringify({ email, password }),
@@ -27,7 +27,7 @@ const res = await fetch("https://ceo-data-migration.preview.emergentagent.com/ap
 const data = await res.json();
 
 // Redirect to Emergent app — user lands directly on dashboard
-window.location.href = `https://ceo-data-migration.preview.emergentagent.com/auth/handoff?token=${data.access_token}`;
+window.location.href = `https://expo-sdk-upgrade-2.preview.emergentagent.com/auth/handoff?token=${data.access_token}`;
 ```
 
 ### Method 2: One-Time Code (More Secure)
@@ -36,7 +36,7 @@ Uses a short-lived one-time code exchange (code expires in 60 seconds):
 
 ```javascript
 // Step 1: Login
-const loginRes = await fetch("https://ceo-data-migration.preview.emergentagent.com/api/auth/login", {
+const loginRes = await fetch("https://expo-sdk-upgrade-2.preview.emergentagent.com/api/auth/login", {
   method: "POST",
   headers: { "Content-Type": "application/json" },
   body: JSON.stringify({ email, password }),
@@ -44,14 +44,14 @@ const loginRes = await fetch("https://ceo-data-migration.preview.emergentagent.c
 const { access_token } = await loginRes.json();
 
 // Step 2: Create handoff code
-const handoffRes = await fetch("https://ceo-data-migration.preview.emergentagent.com/api/auth/handoff/create", {
+const handoffRes = await fetch("https://expo-sdk-upgrade-2.preview.emergentagent.com/api/auth/handoff/create", {
   method: "POST",
   headers: { "Authorization": `Bearer ${access_token}` },
 });
 const { code } = await handoffRes.json();
 
 // Step 3: Redirect — user lands directly on dashboard
-window.location.href = `https://ceo-data-migration.preview.emergentagent.com/auth/handoff?code=${code}`;
+window.location.href = `https://expo-sdk-upgrade-2.preview.emergentagent.com/auth/handoff?code=${code}`;
 ```
 
 ---
@@ -193,11 +193,11 @@ Exchanges a one-time code for a JWT. **No auth required.**
 
 | Purpose           | URL                                                                    |
 |-------------------|------------------------------------------------------------------------|
-| API base          | `https://ceo-data-migration.preview.emergentagent.com/api`               |
-| App (frontend)    | `https://ceo-data-migration.preview.emergentagent.com`                   |
-| Token handoff     | `https://ceo-data-migration.preview.emergentagent.com/auth/handoff?token=<JWT>` |
-| Code handoff      | `https://ceo-data-migration.preview.emergentagent.com/auth/handoff?code=<CODE>` |
-| Dashboard         | `https://ceo-data-migration.preview.emergentagent.com/venue/home`        |
+| API base          | `https://expo-sdk-upgrade-2.preview.emergentagent.com/api`               |
+| App (frontend)    | `https://expo-sdk-upgrade-2.preview.emergentagent.com`                   |
+| Token handoff     | `https://expo-sdk-upgrade-2.preview.emergentagent.com/auth/handoff?token=<JWT>` |
+| Code handoff      | `https://expo-sdk-upgrade-2.preview.emergentagent.com/auth/handoff?code=<CODE>` |
+| Dashboard         | `https://expo-sdk-upgrade-2.preview.emergentagent.com/venue/home`        |
 
 ## CORS
 Allowed origins: `spetapp.com`, `www.spetapp.com`, preview domain

@@ -1,12 +1,12 @@
 /**
  * NFC Register Screen — bind a physical NFC tag to a guest.
- * Reads real tag via react-native-nfc-manager, calls POST /api/nfc/register.
+ * Safe for Expo Go: shows fallback when NFC is unavailable.
  */
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, Alert, Platform } from 'react-native';
+import { View, Text, Alert } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import NfcManager, { NfcTech } from 'react-native-nfc-manager';
-import { colors, spacing, fontSize, radius } from '../../theme/colors';
+import { NfcManager, NfcTech, nfcAvailable, isExpoGo } from '../../services/nfcBridge';
+import { colors, spacing, fontSize } from '../../theme/colors';
 import { Button, Input, LoadingOverlay } from '../../components/ui';
 import { useVenue } from '../../hooks/useVenue';
 import * as nfcService from '../../services/nfcService';
@@ -24,6 +24,10 @@ export default function NfcRegisterScreen() {
   const [nfcSupported, setNfcSupported] = useState<boolean | null>(null);
 
   useEffect(() => {
+    if (isExpoGo) {
+      setNfcSupported(false);
+      return;
+    }
     (async () => {
       try {
         const supported = await NfcManager.isSupported();
@@ -34,7 +38,9 @@ export default function NfcRegisterScreen() {
       }
     })();
     return () => {
-      NfcManager.cancelTechnologyRequest().catch(() => {});
+      if (nfcAvailable) {
+        NfcManager.cancelTechnologyRequest().catch(() => {});
+      }
     };
   }, []);
 
@@ -55,41 +61,34 @@ export default function NfcRegisterScreen() {
       Alert.alert(
         'NFC Registered',
         `Tag ${tagUid} bound to ${guestName}.\n${result.message}`,
-        [
-          {
-            text: 'Continue to Entry',
-            onPress: () => {
-              navigation.navigate('EntryDecision', {
-                guest: {
-                  id: guestId,
-                  name: guestName,
-                  visits: 0,
-                  spend_total: 0,
-                  flags: [],
-                  tags: [],
-                  risk_chips: [],
-                  value_chips: [],
-                },
-                tab: { number: null, total: 0, has_open_tab: false },
-                source: 'nfc_register',
-              });
-            },
+        [{
+          text: 'Continue to Entry',
+          onPress: () => {
+            navigation.navigate('EntryDecision', {
+              guest: {
+                id: guestId, name: guestName,
+                visits: 0, spend_total: 0,
+                flags: [], tags: [],
+                risk_chips: [], value_chips: [],
+              },
+              tab: { number: null, total: 0, has_open_tab: false },
+              source: 'nfc_register',
+            });
           },
-        ],
+        }],
       );
       setState('idle');
     } catch (err: any) {
-      await NfcManager.cancelTechnologyRequest().catch(() => {});
-
+      if (nfcAvailable) {
+        await NfcManager.cancelTechnologyRequest().catch(() => {});
+      }
       if (err.message?.includes('cancelled') || err.message?.includes('canceled')) {
         setState('idle');
         return;
       }
-
       const msg = err.status === 409
         ? 'This tag is already assigned to another guest. Unlink it first.'
         : err.message || 'Registration failed';
-
       Alert.alert('Error', msg);
       setState('idle');
     }
@@ -97,16 +96,16 @@ export default function NfcRegisterScreen() {
 
   if (nfcSupported === false) {
     return (
-      <View style={{ flex: 1, backgroundColor: colors.bg, justifyContent: 'center', padding: spacing.xxl }}>
+      <View style={{ flex: 1, backgroundColor: colors.bg, justifyContent: 'center', padding: spacing.xxl, alignItems: 'center' }}>
         <Text style={{ fontSize: fontSize.xl, fontWeight: '700', color: colors.text, textAlign: 'center' }}>
           NFC Not Available
         </Text>
-        <Button
-          title="Skip NFC Registration"
-          variant="ghost"
-          onPress={() => navigation.goBack()}
-          style={{ marginTop: spacing.xxl }}
-        />
+        <Text style={{ fontSize: fontSize.md, color: colors.textSecondary, textAlign: 'center', marginTop: spacing.md }}>
+          {isExpoGo
+            ? 'NFC requires a Development Build.'
+            : 'This device does not support NFC.'}
+        </Text>
+        <Button title="Go Back" variant="ghost" onPress={() => navigation.goBack()} style={{ marginTop: spacing.xxl, width: '100%' }} />
       </View>
     );
   }
@@ -118,20 +117,15 @@ export default function NfcRegisterScreen() {
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
         <View
           style={{
-            width: 120,
-            height: 120,
-            borderRadius: 60,
+            width: 120, height: 120, borderRadius: 60,
             backgroundColor: state === 'scanning' ? colors.infoBg : colors.primaryBg,
-            justifyContent: 'center',
-            alignItems: 'center',
-            marginBottom: spacing.xxl,
-            borderWidth: 2,
+            justifyContent: 'center', alignItems: 'center',
+            marginBottom: spacing.xxl, borderWidth: 2,
             borderColor: state === 'scanning' ? colors.info : colors.primary,
           }}
         >
           <Text style={{ fontSize: 48 }}>{'\u{1F4F6}'}</Text>
         </View>
-
         <Text style={{ fontSize: fontSize.xl, fontWeight: '700', color: colors.text, textAlign: 'center' }}>
           {state === 'scanning' ? 'Tap Wristband...' : 'Register NFC Tag'}
         </Text>
@@ -141,25 +135,15 @@ export default function NfcRegisterScreen() {
 
         {state === 'idle' && (
           <View style={{ width: '100%', marginTop: spacing.xxxl, gap: spacing.lg }}>
-            <Input
-              placeholder="Label (e.g. Wristband Blue 001)"
-              value={label}
-              onChangeText={setLabel}
-              autoCapitalize="sentences"
-            />
+            <Input placeholder="Label (e.g. Wristband Blue 001)" value={label} onChangeText={setLabel} autoCapitalize="sentences" />
             <Button title="Scan & Register" onPress={startScan} />
-            <Button
-              title="Skip"
-              variant="ghost"
-              onPress={() => navigation.goBack()}
-            />
+            <Button title="Skip" variant="ghost" onPress={() => navigation.goBack()} />
           </View>
         )}
 
         {state === 'scanning' && (
           <Button
-            title="Cancel"
-            variant="ghost"
+            title="Cancel" variant="ghost"
             onPress={async () => {
               await NfcManager.cancelTechnologyRequest().catch(() => {});
               setState('idle');

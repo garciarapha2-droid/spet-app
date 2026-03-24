@@ -146,7 +146,7 @@ class TestSignupFlow:
                 "email": unique_email,
                 "password": "testpass123",
                 "plan_id": "starter",
-                "origin_url": "https://ceo-data-migration.preview.emergentagent.com"
+                "origin_url": "https://expo-sdk-upgrade-2.preview.emergentagent.com"
             }
         )
         assert response.status_code == 200
@@ -181,7 +181,7 @@ class TestSignupFlow:
                 "email": unique_email,
                 "password": "testpass123",
                 "plan_id": "starter",
-                "origin_url": "https://ceo-data-migration.preview.emergentagent.com"
+                "origin_url": "https://expo-sdk-upgrade-2.preview.emergentagent.com"
             }
         )
         
@@ -193,7 +193,7 @@ class TestSignupFlow:
                 "email": unique_email,
                 "password": "testpass456",
                 "plan_id": "growth",
-                "origin_url": "https://ceo-data-migration.preview.emergentagent.com"
+                "origin_url": "https://expo-sdk-upgrade-2.preview.emergentagent.com"
             }
         )
         assert response.status_code == 400
@@ -209,7 +209,7 @@ class TestSignupFlow:
                 "email": unique_email,
                 "password": "testpass123",
                 "plan_id": "starter",
-                "origin_url": "https://ceo-data-migration.preview.emergentagent.com"
+                "origin_url": "https://expo-sdk-upgrade-2.preview.emergentagent.com"
             }
         )
         assert signup_response.status_code == 200
@@ -272,7 +272,7 @@ class TestOnboardingSteps:
                 "email": unique_email,
                 "password": "testpass123",
                 "plan_id": "starter",
-                "origin_url": "https://ceo-data-migration.preview.emergentagent.com"
+                "origin_url": "https://expo-sdk-upgrade-2.preview.emergentagent.com"
             }
         )
         data = response.json()
@@ -412,7 +412,7 @@ class TestCreateCheckout:
                 "email": unique_email,
                 "password": "testpass123",
                 "plan_id": "starter",
-                "origin_url": "https://ceo-data-migration.preview.emergentagent.com"
+                "origin_url": "https://expo-sdk-upgrade-2.preview.emergentagent.com"
             }
         )
         data = response.json()
@@ -433,7 +433,7 @@ class TestCreateCheckout:
         response = requests.post(
             f"{BASE_URL}/api/onboarding/create-checkout",
             headers={"Authorization": f"Bearer {token}"},
-            json={"origin_url": "https://ceo-data-migration.preview.emergentagent.com"}
+            json={"origin_url": "https://expo-sdk-upgrade-2.preview.emergentagent.com"}
         )
         assert response.status_code == 200
         
@@ -466,7 +466,7 @@ class TestDeleteUser:
                 "email": unique_email,
                 "password": "testpass123",
                 "plan_id": "starter",
-                "origin_url": "https://ceo-data-migration.preview.emergentagent.com"
+                "origin_url": "https://expo-sdk-upgrade-2.preview.emergentagent.com"
             }
         )
         user_id = signup_response.json()["user"]["id"]
