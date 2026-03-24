@@ -77,9 +77,11 @@ import LoyaltyTiers from './pages/manager/loyalty/LoyaltyTiers';
 import LoyaltyCampaigns from './pages/manager/loyalty/LoyaltyCampaigns';
 import LoyaltyRewardsPage from './pages/manager/loyalty/LoyaltyRewardsPage';
 import LoyaltyInsights from './pages/manager/loyalty/LoyaltyInsights';
-import CeoPage from './pages/CeoPage';
+import CeoLayout from './pages/ceo/CeoLayout';
+import CeoOverview from './pages/ceo/CeoOverview';
+import CeoRevenue from './pages/ceo/CeoRevenue';
+import CeoUsers from './pages/ceo/CeoUsers';
 import { useAuth } from './contexts/AuthContext';
-const CEOPage = CeoPage;
 
 const AppEntryRedirect = () => {
   const { user } = useAuth();
@@ -170,7 +172,12 @@ function App() {
                 <Route path="system/venues/:venueId/events/:eventId" element={<EventDetail />} />
                 <Route path="system/settings" element={<OwnerSettings />} />
               </Route>
-              <Route path="/ceo" element={<CEORoute><CEOPage /></CEORoute>} />
+              <Route path="/ceo" element={<CEORoute><CeoLayout /></CEORoute>}>
+                <Route index element={<Navigate to="/ceo/overview" replace />} />
+                <Route path="overview" element={<CeoOverview />} />
+                <Route path="revenue" element={<CeoRevenue />} />
+                <Route path="users" element={<CeoUsers />} />
+              </Route>
 
               {/* /app route — redirects based on user role */}
               <Route path="/app" element={
