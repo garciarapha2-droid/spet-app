@@ -1,0 +1,37 @@
+{
+  "expo": {
+    "name": "SPET",
+    "slug": "spet-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "backgroundColor": "#0A0A0F"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.spetapp.mobile",
+      "infoPlist": {
+        "NFCReaderUsageDescription": "SPET uses NFC to scan guest wristbands for fast venue entry."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#0A0A0F"
+      },
+      "package": "com.spetapp.mobile",
+      "permissions": ["android.permission.NFC"]
+    },
+    "plugins": [
+      [
+        "react-native-nfc-manager",
+        {
+          "nfcPermission": "SPET uses NFC to scan guest wristbands for fast venue entry.",
+          "selectIdentifiers": [],
+          "systemCodes": []
+        }
+      ]
+    ]
+  }
+}

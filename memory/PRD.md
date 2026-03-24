@@ -2,130 +2,100 @@
 
 ## Original Problem Statement
 Nightlife management SaaS with modules: Owner, Manager, Pulse, CEO OS.
-The CEO OS module includes a full CRM with Pipeline, Customer Base, and executive dashboards.
-The platform is being prepared for native mobile app (React Native) with real NFC support.
+The platform includes a web app (React) and a native mobile app (React Native/Expo) for venue operations.
 
-## Architecture
+## Architecture Overview
 ```
 /app
-├── backend/         FastAPI + PostgreSQL + MongoDB
+├── backend/          FastAPI + PostgreSQL + MongoDB
 │   ├── routes/
 │   │   ├── nfc.py              # NFC tag register/scan/unlink/list
-│   │   ├── crm.py              # CRM CRUD (deals, customers, activities)
-│   │   ├── ceo_analytics.py    # Security, Reports, Revenue analytics
+│   │   ├── crm.py              # CRM CRUD (deals, customers)
+│   │   ├── ceo_analytics.py    # Security, Reports, Revenue
 │   │   ├── pulse.py            # Guest intake, entry, search
 │   │   ├── tap.py              # Tabs, catalog, items
-│   │   ├── venue.py            # Venue home, module access
-│   │   └── auth.py             # Login, signup, refresh, logout
+│   │   ├── venue.py            # Venue home, modules
+│   │   └── auth.py             # Login, signup, refresh
 │   ├── migrations/
 │   │   ├── crm_migration.py
-│   │   └── nfc_migration.py    # nfc_tags table
+│   │   └── nfc_migration.py
 │   └── ws_manager.py           # WebSocket real-time
-└── frontend/        React (CRA) + Tailwind + Shadcn UI
+├── frontend/         React (CRA) + Tailwind + Shadcn UI (Web)
+└── mobile/           React Native + Expo (Native App)
+    ├── App.tsx
     └── src/
-        ├── services/crmService.js    # Real API layer
-        ├── hooks/useCrmData.js       # React hooks for CRM
-        └── pages/ceo/               # All CEO pages on real API
+        ├── services/  (6 services — api, auth, venue, nfc, pulse, tap)
+        ├── hooks/     (3 hooks — useAuth, useVenue, useWebSocket)
+        ├── screens/   (11 screens across auth, venue, entry, pulse)
+        ├── navigation/ (RootNavigator with Auth/Venue/MainTabs)
+        ├── components/ (shared UI components)
+        └── theme/     (dark theme, spacing, typography)
 ```
 
 ## Database Schema
 
-### PostgreSQL Tables
-- **nfc_tags**: id, tag_uid (UNIQUE per venue), guest_id, venue_id, status, label, assigned_by, created_at, last_scanned
-- **deals**: id, contact_name, contact_email, company_name, plan_id, stage, deal_value, notes, ...
-- **deal_activities**: id, deal_id, type, description, created_at
+### PostgreSQL
+- **nfc_tags**: id, tag_uid, guest_id, venue_id, status, label, assigned_by, created_at, last_scanned
+- **deals**: id, company_name, contact_name, plan_id, stage, deal_value, notes, ...
 - **customers**: id, company_name, contact_name, plan_id, status, mrr, modules_enabled, ...
-- **tap_sessions**: venue_id, guest_id, session_type, status, total, meta, ...
-- **entry_events**: venue_id, guest_id, decision, entry_type, cover_amount, ...
-- **global_persons**: id, email_hash, phone_hash (cross-venue dedupe)
+- **tap_sessions**: id, venue_id, guest_id, status, total, meta, opened_at, ...
+- **entry_events**: id, venue_id, guest_id, decision, entry_type, ...
 
-### MongoDB Collections
+### MongoDB
 - **venue_guests**: PII (name, email, phone, photo, flags, tags, spend_total, visits)
-- **venue_configs**: Venue settings, module configs
+- **venue_configs**: Venue settings
 - **venue_catalog**: Menu/products
-- **refresh_tokens**: JWT refresh tokens
-
-## API Endpoints Summary
-
-### NFC (/api/nfc/*)
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | /nfc/register | Bind NFC tag to guest |
-| POST | /nfc/scan | Scan tag → return guest + context |
-| POST | /nfc/unlink | Deactivate tag binding |
-| GET | /nfc/tags | List venue tags |
-
-### CRM (/api/crm/*)
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | /crm/deals | List deals |
-| GET | /crm/customers | List customers |
-| GET | /crm/customers/{id} | Single customer |
-| PUT | /crm/customers/{id} | Update customer |
-| GET | /crm/analytics/security | Security alerts |
-| GET | /crm/analytics/reports | Pipeline funnel |
-| GET | /crm/analytics/revenue-targets | Revenue targets |
-
-### Pulse (/api/pulse/*)
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | /pulse/guest/intake | Register new guest |
-| GET | /pulse/guest/{id} | Decision card |
-| POST | /pulse/entry/decision | Allow/deny entry |
-| GET | /pulse/entries/today | Today's entries |
-
-### TAP (/api/tap/*)
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | /tap/stats | Real-time stats |
-| GET | /tap/sessions | Open/closed tabs |
-| POST | /tap/session/{id}/item | Add item to tab |
-| POST | /tap/session/{id}/close | Close tab |
 
 ## Testing History
 - iteration_87: 28/28 (CEO analytics migration)
-- iteration_88: 27/27 (NFC backend + regression tests)
+- iteration_88: 27/27 (NFC backend + regression)
 
 ## What's Complete
-- [x] Full CRM backend (deals, customers, activities)
-- [x] CEO OS pages on real API (Security, Reports, Users, Layout)
-- [x] NFC backend: nfc_tags table + register/scan/unlink/list endpoints
-- [x] CORS configured for mobile (Expo/React Native)
-- [x] Mobile API documentation (/app/docs/MOBILE_API_HANDOFF.md)
-- [x] WebSocket real-time events (guest_entered, nfc_scanned, tab_updated)
+
+### Web App
+- [x] Full CRM backend + frontend (Pipeline, Customers, Analytics)
+- [x] CEO OS pages on real API (Security, Reports, Users, Overview partial)
+- [x] Theme toggle (dark/light)
+- [x] All legacy pages preserved
+
+### Backend for Mobile
+- [x] NFC infrastructure (nfc_tags table + 4 endpoints)
+- [x] CORS configured for mobile (Expo + React Native)
+- [x] JWT auth mobile-ready (SecureStore compatible)
+- [x] API documentation (/app/docs/MOBILE_API_HANDOFF.md)
+
+### Mobile App (React Native / Expo)
+- [x] Project structure (24 TypeScript files)
+- [x] Auth flow (Login → SecureStore → auto-refresh)
+- [x] Venue selection (auto-select single venue)
+- [x] Entry Home (NFC Scan + Search + New Guest)
+- [x] NFC Scan (react-native-nfc-manager integration)
+- [x] Guest Search (debounced, results with VIP/tab badges)
+- [x] Entry Decision (allow/deny with risk/value chips)
+- [x] Guest Intake (create new guest + optional NFC binding)
+- [x] NFC Register (bind tag to guest)
+- [x] Pulse/Tabs (stats, open tabs, items, add item, close tab)
+- [x] WebSocket real-time (auto-reconnect)
+- [x] Dark theme + premium aesthetic
+- [x] Touch targets >= 44px
 
 ## Prioritized Backlog
 
-### P0 — DONE
-- ~~NFC backend infrastructure~~
-- ~~CORS for mobile~~
-- ~~API documentation for Mobile Agent~~
-
-### P1 — Mobile App (React Native)
-- Auth screen + SecureStorage
-- Venue selection screen
-- NFC scan screen (react-native-nfc-manager)
-- Entry decision screen
-- Guest lookup (manual fallback)
-- Pulse/Tab flow
-- WebSocket real-time
-
-### P1 — Web Improvements
-- Migrate CeoOverview/CeoRevenue from ceoData.js to real API
-- Drag-and-drop Pipeline Kanban
-- Global CEO navigation link
+### P1
+- Test mobile app on physical device (iPhone + Android)
+- CeoOverview/CeoRevenue migration to real API (web)
+- Drag-and-drop Pipeline Kanban (web)
 
 ### P2
 - Push notifications (FCM + APNs)
 - Offline mode / sync
-- Owner/Manager backend migration
+- Biometric auth (Face ID / fingerprint)
 
 ### P3
-- Landing page Pricing Cards fix (3x recurrence)
-- Biometric auth
-- Deep linking
+- Landing page Pricing Cards fix
+- Deep linking / universal links
+- Batch NFC register
 
-## User Accounts
+## Credentials
 - CEO: garcia.rapha2@gmail.com / 12345
-- Regular: teste@teste.com / 12345
-- Test venue: 40a24e04-75b6-435d-bfff-ab0d469ce543
+- Venue: 40a24e04-75b6-435d-bfff-ab0d469ce543 (Demo Club)

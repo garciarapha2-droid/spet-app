@@ -1,0 +1,206 @@
+/**
+ * Entry Decision Screen — Allow or Deny guest entry.
+ * Shows guest profile, risk chips, value chips, tab status.
+ */
+import React, { useState } from 'react';
+import { View, Text, ScrollView, Alert } from 'react-native';
+import { useNavigation, useRoute } from '@react-navigation/native';
+import { colors, spacing, fontSize, radius } from '../../theme/colors';
+import { Button, Card, Chip, LoadingOverlay } from '../../components/ui';
+import { useVenue } from '../../hooks/useVenue';
+import * as pulseService from '../../services/pulseService';
+import type { ScanGuest } from '../../services/nfcService';
+
+export default function EntryDecisionScreen() {
+  const navigation = useNavigation<any>();
+  const route = useRoute<any>();
+  const { venueId } = useVenue();
+  const [loading, setLoading] = useState(false);
+
+  const guest: ScanGuest = route.params?.guest;
+  const tab = route.params?.tab;
+  const source: string = route.params?.source || 'search';
+
+  if (!guest) {
+    return (
+      <View style={{ flex: 1, backgroundColor: colors.bg, justifyContent: 'center', alignItems: 'center' }}>
+        <Text style={{ color: colors.textSecondary }}>No guest data</Text>
+      </View>
+    );
+  }
+
+  const isBlocked = guest.flags?.includes('blocked');
+  const isFlagged = guest.flags?.includes('flagged');
+
+  const handleDecision = async (decision: 'allowed' | 'denied') => {
+    setLoading(true);
+    try {
+      const result = await pulseService.recordEntryDecision({
+        guest_id: guest.id,
+        venue_id: venueId,
+        decision,
+        entry_type: guest.tags?.includes('vip') ? 'vip' : 'consumption_only',
+      });
+
+      if (decision === 'allowed') {
+        Alert.alert(
+          'Entry Allowed',
+          `${guest.name} is in.${result.tab_number ? ` Tab #${result.tab_number}` : ''}`,
+          [{ text: 'OK', onPress: () => navigation.popToTop() }],
+        );
+      } else {
+        Alert.alert('Entry Denied', `${guest.name} was denied entry.`, [
+          { text: 'OK', onPress: () => navigation.popToTop() },
+        ]);
+      }
+    } catch (err: any) {
+      Alert.alert('Error', err.message || 'Failed to record decision');
+    }
+    setLoading(false);
+  };
+
+  return (
+    <View style={{ flex: 1, backgroundColor: colors.bg }}>
+      <LoadingOverlay visible={loading} />
+
+      <ScrollView contentContainerStyle={{ padding: spacing.xxl, paddingBottom: 120 }}>
+        {/* Guest Header */}
+        <View style={{ alignItems: 'center', marginBottom: spacing.xxl }}>
+          <View
+            style={{
+              width: 80,
+              height: 80,
+              borderRadius: 40,
+              backgroundColor: colors.bgElevated,
+              justifyContent: 'center',
+              alignItems: 'center',
+              marginBottom: spacing.lg,
+              borderWidth: 2,
+              borderColor: isBlocked ? colors.danger : isFlagged ? colors.warning : colors.border,
+            }}
+          >
+            <Text style={{ fontSize: 32, color: colors.text, fontWeight: '700' }}>
+              {guest.name?.charAt(0).toUpperCase() || '?'}
+            </Text>
+          </View>
+          <Text style={{ fontSize: fontSize.xxl, fontWeight: '700', color: colors.text }}>
+            {guest.name}
+          </Text>
+          {guest.phone && (
+            <Text style={{ fontSize: fontSize.sm, color: colors.textSecondary, marginTop: spacing.xs }}>
+              {guest.phone}
+            </Text>
+          )}
+        </View>
+
+        {/* Chips Row */}
+        {(guest.risk_chips?.length > 0 || guest.value_chips?.length > 0) && (
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginBottom: spacing.xl, justifyContent: 'center' }}>
+            {guest.risk_chips?.map((chip, i) => (
+              <Chip
+                key={`risk-${i}`}
+                label={chip.label}
+                color={chip.severity === 'critical' ? colors.danger : colors.warning}
+                bgColor={chip.severity === 'critical' ? colors.dangerBg : colors.warningBg}
+              />
+            ))}
+            {guest.value_chips?.map((chip, i) => (
+              <Chip
+                key={`val-${i}`}
+                label={chip.label}
+                color={chip.type === 'vip' ? colors.vip : colors.primary}
+                bgColor={chip.type === 'vip' ? colors.warningBg : colors.primaryBg}
+              />
+            ))}
+          </View>
+        )}
+
+        {/* Stats */}
+        <View style={{ flexDirection: 'row', gap: spacing.md, marginBottom: spacing.xl }}>
+          <Card style={{ flex: 1, alignItems: 'center' }}>
+            <Text style={{ fontSize: fontSize.xxl, fontWeight: '700', color: colors.text, fontVariant: ['tabular-nums'] }}>
+              {guest.visits}
+            </Text>
+            <Text style={{ fontSize: fontSize.xs, color: colors.textSecondary, marginTop: 2 }}>Visits</Text>
+          </Card>
+          <Card style={{ flex: 1, alignItems: 'center' }}>
+            <Text style={{ fontSize: fontSize.xxl, fontWeight: '700', color: colors.success, fontVariant: ['tabular-nums'] }}>
+              ${guest.spend_total}
+            </Text>
+            <Text style={{ fontSize: fontSize.xs, color: colors.textSecondary, marginTop: 2 }}>Spent</Text>
+          </Card>
+        </View>
+
+        {/* Tab Status */}
+        {tab?.has_open_tab && (
+          <Card style={{ marginBottom: spacing.xl, borderColor: colors.info, borderWidth: 1 }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+              <View>
+                <Text style={{ fontSize: fontSize.sm, color: colors.info, fontWeight: '600' }}>Open Tab</Text>
+                <Text style={{ fontSize: fontSize.xxl, fontWeight: '700', color: colors.text, marginTop: 2, fontVariant: ['tabular-nums'] }}>
+                  #{tab.number}
+                </Text>
+              </View>
+              <Text style={{ fontSize: fontSize.xl, fontWeight: '600', color: colors.text, fontVariant: ['tabular-nums'] }}>
+                ${tab.total.toFixed(2)}
+              </Text>
+            </View>
+          </Card>
+        )}
+
+        {/* Source indicator */}
+        <View style={{ alignItems: 'center', marginBottom: spacing.lg }}>
+          <Text style={{ fontSize: fontSize.xs, color: colors.textMuted }}>
+            Identified via {source === 'nfc' ? 'NFC wristband' : 'manual search'}
+          </Text>
+        </View>
+      </ScrollView>
+
+      {/* Action Buttons — fixed at bottom */}
+      <View
+        style={{
+          position: 'absolute',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          padding: spacing.xxl,
+          paddingBottom: spacing.xxxl,
+          backgroundColor: colors.bg,
+          borderTopWidth: 1,
+          borderColor: colors.border,
+          gap: spacing.md,
+        }}
+      >
+        {isBlocked ? (
+          <>
+            <Card style={{ backgroundColor: colors.dangerBg, borderColor: colors.danger, alignItems: 'center' }}>
+              <Text style={{ fontSize: fontSize.md, fontWeight: '600', color: colors.danger }}>
+                This guest is BLOCKED
+              </Text>
+            </Card>
+            <Button
+              title="Deny Entry"
+              variant="danger"
+              onPress={() => handleDecision('denied')}
+            />
+          </>
+        ) : (
+          <View style={{ flexDirection: 'row', gap: spacing.md }}>
+            <Button
+              title="Deny"
+              variant="danger"
+              onPress={() => handleDecision('denied')}
+              style={{ flex: 1 }}
+            />
+            <Button
+              title="Allow Entry"
+              variant="success"
+              onPress={() => handleDecision('allowed')}
+              style={{ flex: 2 }}
+            />
+          </View>
+        )}
+      </View>
+    </View>
+  );
+}
