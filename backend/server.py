@@ -27,12 +27,15 @@ from ws_manager import ws_manager
 app = FastAPI(title="SPETAP API", version="1.0.0")
 settings = get_settings()
 
-# CORS — flexible for Lovable + localhost
+# CORS — flexible for web + mobile apps
 cors_origins = [o.strip() for o in settings.cors_origins.split(",") if o.strip()]
 cors_origins.extend([
     "http://localhost:3000",
     "http://localhost:5173",
     "http://localhost:8080",
+    "http://localhost:19006",
+    "exp://localhost:19000",
+    "exp://localhost:8081",
 ])
 
 # Response standardization middleware (inner — wraps JSON responses)
@@ -43,7 +46,7 @@ app.add_middleware(StandardResponseMiddleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=cors_origins,
-    allow_origin_regex=r"https://.*\.lovable\.(app|dev)",
+    allow_origin_regex=r"https://.*\.(lovable\.(app|dev)|preview\.emergentagent\.com|exp\.host)",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -61,7 +64,7 @@ logger = logging.getLogger(__name__)
 api_router = APIRouter(prefix="/api")
 
 # Import route modules
-from routes import auth, billing, pulse, tap, table, kds, manager, owner, ceo, venue, rewards, barmen, onboarding, leads, crm, ceo_analytics
+from routes import auth, billing, pulse, tap, table, kds, manager, owner, ceo, venue, rewards, barmen, onboarding, leads, crm, ceo_analytics, nfc
 
 # Include routers
 api_router.include_router(auth.router, prefix="/auth", tags=["auth"])
@@ -80,6 +83,7 @@ api_router.include_router(rewards.router, prefix="/rewards", tags=["rewards"])
 api_router.include_router(barmen.router, prefix="/staff", tags=["staff"])
 api_router.include_router(onboarding.router, prefix="/onboarding", tags=["onboarding"])
 api_router.include_router(leads.router, prefix="/leads", tags=["leads"])
+api_router.include_router(nfc.router, prefix="/nfc", tags=["nfc"])
 
 # Health check
 @api_router.get("/health")
