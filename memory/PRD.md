@@ -13,17 +13,31 @@ Build a nightlife management SaaS application with multiple modules:
 ├── frontend/         React (CRA) + Tailwind + Shadcn UI
 │   ├── src/
 │   │   ├── components/
-│   │   │   ├── ceo/          # CEO components (new + legacy dashboards)
-│   │   │   ├── shared/       # GlobalNavbar (Owner/Manager/Pulse)
-│   │   │   └── ui/           # Shadcn UI components
-│   │   ├── data/             # Mock data files
+│   │   │   ├── ceo/               # CEO reusable components
+│   │   │   │   ├── ChartCard.js
+│   │   │   │   ├── CustomerDetailDialog.js  # Editable plan/status/modules
+│   │   │   │   ├── DrillDownSheet.js
+│   │   │   │   ├── KpiCard.js
+│   │   │   │   └── PeriodFilter.js
+│   │   │   ├── shared/            # GlobalNavbar (Owner/Manager/Pulse)
+│   │   │   └── ui/                # Shadcn UI components
+│   │   ├── data/                  # Legacy mock data
+│   │   ├── services/
+│   │   │   └── ceoService.js      # Centralized CEO data layer (mock → API ready)
 │   │   ├── pages/
-│   │   │   ├── ceo/          # CEO OS module (isolated layout + new pages)
-│   │   │   ├── owner/        # Owner Command Center
-│   │   │   ├── manager/      # Manager Dashboard
-│   │   │   ├── pulse/        # Pulse Guest Management
-│   │   │   └── landing/      # Landing page
-│   │   └── App.js            # Routes
+│   │   │   ├── ceo/               # CEO OS module (isolated layout)
+│   │   │   │   ├── CeoLayout.js   # Dedicated layout with theme toggle
+│   │   │   │   ├── CeoOverview.js
+│   │   │   │   ├── CeoRevenue.js
+│   │   │   │   ├── CeoUsers.js       # v2 rebuild: table + dialog
+│   │   │   │   ├── CeoSecurity.js    # v2 rebuild: computed alerts + charts
+│   │   │   │   ├── CeoPipeline.js    # v2 rebuild: kanban + deal details
+│   │   │   │   └── CeoReports.js     # v2 rebuild: funnel + charts
+│   │   │   ├── owner/
+│   │   │   ├── manager/
+│   │   │   ├── pulse/
+│   │   │   └── landing/
+│   │   └── App.js
 │   └── package.json
 ├── backend/          FastAPI + MongoDB
 │   └── server.py
@@ -35,14 +49,16 @@ Build a nightlife management SaaS application with multiple modules:
 - **CEO**: garcia.rapha2@gmail.com / 12345 (role: CEO, redirects to /ceo)
 - **Regular**: teste@teste.com / 12345 (Owner/Manager/Pulse access)
 
-## CEO OS Module — Complete Route Map
-All routes use the new isolated CeoLayout with fixed sidebar + navbar:
-| Route | Component | Type |
+## CEO OS Module — Complete Route Map (v2)
+| Route | Component | Status |
 |---|---|---|
-| /ceo | redirect → /ceo/overview | - |
-| /ceo/overview | CeoOverview (new) | New page |
-| /ceo/revenue | CeoRevenue (new) | New page |
-| /ceo/users | CeoUsers (new) | New page |
+| /ceo | redirect → /ceo/overview | Done |
+| /ceo/overview | CeoOverview | Done |
+| /ceo/revenue | CeoRevenue | Done |
+| /ceo/users | CeoUsers (v2 rebuild) | Done ✅ |
+| /ceo/security | CeoSecurity (v2 rebuild) | Done ✅ |
+| /ceo/pipeline | CeoPipeline (v2 rebuild) | Done ✅ |
+| /ceo/reports | CeoReports (v2 rebuild) | Done ✅ |
 | /ceo/customer-lifecycle | CustomerLifecycleDashboard | Legacy |
 | /ceo/mrr-retention | MrrRetentionDashboard | Legacy |
 | /ceo/cac | CacDashboard | Legacy |
@@ -51,48 +67,63 @@ All routes use the new isolated CeoLayout with fixed sidebar + navbar:
 | /ceo/cash-flow | CashFlowMrrDashboard | Legacy |
 | /ceo/conversion | ConversionRateDashboard | Legacy |
 | /ceo/executive | ExecutiveDashboard | Legacy |
-| /ceo/security | RiskDashboard | Legacy |
 | /ceo/startup | StartupKpisDashboard | Legacy |
-| /ceo/pipeline | CrmPipelineDashboard | Legacy |
-| /ceo/reports | CrmReportsDashboard | Legacy |
 
-## What's Been Implemented
+## v2 Rebuild Features (Completed)
+### Users & Subscribers
+- Table: 8 customers, sortable columns, search, export button
+- CustomerDetailDialog: editable plan dropdown (Core/Flow/Sync/OS), editable status dropdown, 8 module toggles, toast feedback
 
-### CEO OS Module
-- **CeoLayout.js** — Dedicated isolated layout with fixed sidebar (200px) + navbar (64px)
-- **3 New pages**: CeoOverview, CeoRevenue, CeoUsers — spec-driven, premium design
-- **13 Legacy pages**: All original dashboard components integrated into new layout
-- **Reusable components**: KpiCard, PeriodFilter, ChartCard, ListCard, DrillDownSheet
-- **Mock data**: ceoData.js (39 customers, revenue targets, KPIs, chart data, events)
-- **Testing**: 14/14 tests passed (iteration_84)
+### Security & Monitoring
+- 4 KPI cards (Risk Score, Total Alerts, Critical, Venues At Risk) — all clickable with drill-downs
+- Risk Assessment gauge (RadialBarChart), Alert Breakdown donut, Module Usage horizontal bar
+- Computed alerts from real customer data (low usage, past due, underutilized plan, churn risk, no revenue)
+- Alert cards with severity styling + "View Venue" opens customer dialog
 
-### Owner Command Center (COMPLETE)
-- All pages: Overview, Revenue, Profit, Venue Comparison, Time, Shift Ops, Staff
-- Customers, Audience, Segments, Churn, Loyalty, Campaigns
-- Finance, Costs, Risk, Insights, Actions, Venues, Settings
+### Pipeline (CRM)
+- Kanban board: 6 columns (New, Qualification, Presentation, Negotiation, Evaluation, Won)
+- 10 seed deals with full contact details (name, email, phone, company, location)
+- Deal detail dialog: contact info, deal details, notes, activity log
+- Actions: "Move to Next Stage", "Mark as Lost" with reason selection
+- Search by deal title, company, or contact
 
-### Manager Dashboard (COMPLETE)
-- All pages including full Loyalty module
+### CRM Reports
+- 3 KPI cards: Active Opportunities → navigates to pipeline, Won → pipeline, Conv Rate → drill-down
+- Pipeline Funnel: clickable rows showing stage, count, value → navigate to pipeline
+- Loss Reasons: horizontal percentage bars (Price 34%, Competitor 22%, Budget 18%, Timing 14%, Other 12%)
+- Pipeline Value Over Time: AreaChart with 6 months of data
 
-### Pulse Module (COMPLETE)
-- Guest Management full flow
+### Theme Toggle Fix
+- Uses ThemeContext with localStorage persistence (key: 'spetap-theme')
+- Correctly toggles data-theme attribute for Tailwind dark mode
+- Works globally across CEO layout and all pages
+
+## Data Architecture
+- **ceoService.js**: Centralized service layer with async functions (getCustomers, updateCustomerPlan, getDeals, moveDealToStage, etc.)
+- Currently uses in-memory mock store that simulates API behavior
+- To connect to real backend: replace function bodies with fetch/axios calls — no component changes needed
+
+## Testing Status
+- iteration_84: 14/14 passed (initial CEO pages)
+- iteration_85: 100% frontend pass (v2 rebuild — Users, Security, Pipeline, Reports + theme toggle + legacy pages + access control)
 
 ## Prioritized Backlog
 
-### P0 — CEO Module Enhancement
-- Progressively rebuild legacy dashboard pages to match new spec quality (CeoOverview/Revenue/Users style)
+### P0 — Remaining Legacy Pages Rebuild
+- Rebuild remaining legacy dashboard pages to v2 spec quality
 
 ### P1
 - Add CEO link in global navigation (role-gated)
 - Global period filter synchronization across all CEO pages
 
 ### P2
-- Backend API integration (replace all mock data with live APIs)
+- Backend API integration (replace ceoService.js mock store with real API calls)
 - Refactor ownerData.js into domain-specific files
 
 ### P3
 - Landing page Pricing Cards fix (recurring issue, 3x)
 - GuestFullHistory integration
+- Performance optimization, mobile audit
 
 ## Tech Stack
 - React (CRA) + Tailwind CSS + Shadcn UI
@@ -103,5 +134,7 @@ All routes use the new isolated CeoLayout with fixed sidebar + navbar:
 ## Key Design Rules
 - Currency: USD ($)
 - Visual: Premium, clean, executive aesthetic
-- CEO layout is COMPLETELY isolated from Owner/Manager/Pulse
-- Mock data architecture prepared for backend swap
+- CEO layout COMPLETELY isolated from Owner/Manager/Pulse
+- Data service layer prepared for backend swap
+- All data-testid attributes on interactive elements
+- Theme: dark by default, toggle persists to localStorage
