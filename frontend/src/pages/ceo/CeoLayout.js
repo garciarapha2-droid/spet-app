@@ -6,7 +6,8 @@ import {
   BarChart3, TrendingUp, Percent, PieChart, Shield, ClipboardList,
   Layers, FileBarChart
 } from 'lucide-react';
-import { revenueTargets } from '../../data/ceoData';
+import { useTheme } from '../../contexts/ThemeContext';
+import { getRevenueTargets } from '../../services/ceoService';
 
 const navSections = [
   {
@@ -64,16 +65,15 @@ const ProgressBar = ({ current, target, label, percentage }) => (
 export default function CeoLayout() {
   const location = useLocation();
   const navigate = useNavigate();
-  const [isDark, setIsDark] = useState(() => document.documentElement.classList.contains('dark'));
+  const { theme, toggleTheme } = useTheme();
+  const isDark = theme === 'dark';
+  const [targets, setTargets] = useState({ weekly: { current: 0, target: 0 }, monthly: { current: 0, target: 0 }, annual: { current: 0, target: 0 } });
 
-  const toggleTheme = () => {
-    document.documentElement.classList.toggle('dark');
-    setIsDark(prev => !prev);
-  };
+  useEffect(() => {
+    getRevenueTargets().then(setTargets);
+  }, []);
 
-  const dateStr = new Date(2026, 2, 24).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
-
-  const targets = revenueTargets;
+  const dateStr = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
   const monthlyPct = targets.monthly.target > 0 ? Math.round((targets.monthly.current / targets.monthly.target) * 1000) / 10 : 0;
   const weeklyPct = targets.weekly.target > 0 ? Math.round((targets.weekly.current / targets.weekly.target) * 1000) / 10 : 0;
   const annualPct = targets.annual.target > 0 ? Math.round((targets.annual.current / targets.annual.target) * 1000) / 10 : 0;
