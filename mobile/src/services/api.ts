@@ -44,6 +44,8 @@ export class ApiError extends Error {
   }
 }
 
+const REQUEST_TIMEOUT_MS = 15_000;
+
 // Core request function
 async function request<T = any>(
   path: string,
@@ -69,7 +71,22 @@ async function request<T = any>(
     headers['Content-Type'] = 'application/json';
   }
 
-  const response = await fetch(url, { ...options, headers });
+  // Abort controller for timeout
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
+  let response: Response;
+  try {
+    response = await fetch(url, { ...options, headers, signal: controller.signal });
+  } catch (err: any) {
+    clearTimeout(timeoutId);
+    if (err.name === 'AbortError') {
+      throw new ApiError('Request timed out. Check your connection.', 'TIMEOUT', 0);
+    }
+    throw new ApiError('Network error. Check your connection.', 'NETWORK_ERROR', 0);
+  } finally {
+    clearTimeout(timeoutId);
+  }
 
   // Handle non-JSON responses
   const contentType = response.headers.get('content-type');

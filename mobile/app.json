@@ -6,7 +6,16 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
+    "scheme": "spet",
     "newArchEnabled": false,
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/spet-mobile",
+      "fallbackToCacheTimeout": 5000
+    },
+    "assetBundlePatterns": ["**/*"],
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
@@ -15,6 +24,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.spetapp.mobile",
+      "buildNumber": "1",
       "infoPlist": {
         "NFCReaderUsageDescription": "SPET uses NFC to scan guest wristbands for fast venue entry.",
         "com.apple.developer.nfc.readersession.iso7816.select-identifiers": [],
@@ -27,6 +37,7 @@
         "backgroundColor": "#0A0A0F"
       },
       "package": "com.spetapp.mobile",
+      "versionCode": 1,
       "permissions": ["android.permission.NFC"]
     },
     "plugins": [
@@ -38,6 +49,13 @@
           "systemCodes": []
         }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "YOUR_EAS_PROJECT_ID"
+      },
+      "privacyPolicyUrl": "https://spetapp.com/privacy",
+      "supportUrl": "https://spetapp.com/support"
+    }
   }
 }
