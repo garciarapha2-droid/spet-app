@@ -1,7 +1,8 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useMemo } from 'react';
 import { Search, Download, ChevronDown, ChevronUp, ExternalLink } from 'lucide-react';
-import { getCustomers, getPlanName, PLANS } from '../../services/ceoService';
-import { CustomerDetailDialog } from '../../components/ceo/CustomerDetailDialog';
+import { useCustomers } from '../../hooks/useCrmData';
+import { CrmDetailDialog } from '../../components/ceo/CrmDetailDialog';
+import { getPlanName } from '../../services/crmService';
 
 const planBadge = {
   os: 'bg-primary/15 text-primary',
@@ -12,49 +13,38 @@ const planBadge = {
 
 const statusDot = {
   active: 'bg-[#1FAA6B]',
-  trial: 'bg-[#F59F00]',
-  past_due: 'bg-[#E03131]',
-  churned: 'bg-muted-foreground',
+  paused: 'bg-[#F59F00]',
+  churned: 'bg-[#E03131]',
 };
 
 const statusLabel = {
   active: 'Active',
-  trial: 'Trial',
-  past_due: 'Past Due',
+  paused: 'Paused',
   churned: 'Churned',
 };
 
 const statusColor = {
   active: 'text-[#1FAA6B]',
-  trial: 'text-[#F59F00]',
-  past_due: 'text-[#E03131]',
-  churned: 'text-muted-foreground',
+  paused: 'text-[#F59F00]',
+  churned: 'text-[#E03131]',
 };
 
 export default function CeoUsers() {
-  const [customers, setCustomers] = useState([]);
   const [search, setSearch] = useState('');
   const [sortField, setSortField] = useState('mrr');
   const [sortDir, setSortDir] = useState('desc');
   const [selectedCustomer, setSelectedCustomer] = useState(null);
 
-  const loadCustomers = useCallback(async () => {
-    const data = await getCustomers();
-    setCustomers(data);
-  }, []);
+  const apiFilters = useMemo(() => {
+    const f = {};
+    if (search.length >= 2) f.search = search;
+    return f;
+  }, [search]);
 
-  useEffect(() => { loadCustomers(); }, [loadCustomers]);
+  const { customers, loading, refetch } = useCustomers(apiFilters);
 
   const filtered = useMemo(() => {
     let list = [...customers];
-    if (search) {
-      const q = search.toLowerCase();
-      list = list.filter(c =>
-        c.company.toLowerCase().includes(q) ||
-        c.name.toLowerCase().includes(q) ||
-        c.email.toLowerCase().includes(q)
-      );
-    }
     list.sort((a, b) => {
       let aVal = a[sortField];
       let bVal = b[sortField];
@@ -64,7 +54,7 @@ export default function CeoUsers() {
       return 0;
     });
     return list;
-  }, [customers, search, sortField, sortDir]);
+  }, [customers, sortField, sortDir]);
 
   const toggleSort = (field) => {
     if (sortField === field) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
@@ -76,19 +66,14 @@ export default function CeoUsers() {
     return sortDir === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />;
   };
 
-  const handleCustomerUpdate = (updated) => {
-    setCustomers(prev => prev.map(c => c.id === updated.id ? updated : c));
-    setSelectedCustomer(updated);
-  };
-
   const columns = [
-    { key: 'company', label: 'Company' },
-    { key: 'name', label: 'Contact' },
-    { key: 'plan', label: 'Plan' },
+    { key: 'company_name', label: 'Company' },
+    { key: 'contact_name', label: 'Contact' },
+    { key: 'plan_id', label: 'Plan' },
     { key: 'mrr', label: 'MRR' },
     { key: 'status', label: 'Status' },
-    { key: 'modules', label: 'Modules', sortKey: 'modules' },
-    { key: 'signup', label: 'Signup' },
+    { key: 'modules_enabled', label: 'Modules' },
+    { key: 'signup_date', label: 'Signup' },
   ];
 
   return (
@@ -102,8 +87,8 @@ export default function CeoUsers() {
       {/* Table Card */}
       <div className="bg-card border border-border rounded-xl" style={{ boxShadow: '0 1px 2px rgba(0,0,0,0.03)' }} data-testid="users-table-card">
         {/* Toolbar */}
-        <div className="px-5 py-4 border-b border-border flex items-center justify-between gap-4">
-          <div className="relative flex-1 max-w-[320px]">
+        <div className="px-5 py-4 border-b border-border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div className="relative flex-1 w-full sm:max-w-[320px]">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <input
               type="text"
@@ -125,18 +110,18 @@ export default function CeoUsers() {
 
         {/* Table */}
         <div className="overflow-x-auto">
-          <table className="w-full" data-testid="users-data-table">
+          <table className="w-full min-w-[700px]" data-testid="users-data-table">
             <thead>
               <tr className="border-b border-border">
                 {columns.map(col => (
                   <th
                     key={col.key}
-                    onClick={() => toggleSort(col.sortKey || col.key)}
+                    onClick={() => toggleSort(col.key)}
                     className="text-left px-4 py-3 text-[11px] font-semibold tracking-wider uppercase text-muted-foreground cursor-pointer hover:text-foreground transition-colors select-none"
                   >
                     <span className="inline-flex items-center gap-1">
                       {col.label}
-                      <SortIcon field={col.sortKey || col.key} />
+                      <SortIcon field={col.key} />
                     </span>
                   </th>
                 ))}
@@ -144,7 +129,9 @@ export default function CeoUsers() {
               </tr>
             </thead>
             <tbody className="divide-y divide-border/50">
-              {filtered.map(customer => (
+              {loading ? (
+                <tr><td colSpan={columns.length + 1} className="py-12 text-center text-[13px] text-muted-foreground">Loading...</td></tr>
+              ) : filtered.map(customer => (
                 <tr
                   key={customer.id}
                   className="group h-12 hover:bg-muted/30 transition-colors cursor-pointer"
@@ -152,13 +139,13 @@ export default function CeoUsers() {
                   data-testid={`user-row-${customer.id}`}
                 >
                   <td className="px-4 py-2.5">
-                    <p className="text-[14px] font-medium text-foreground leading-tight">{customer.company}</p>
-                    <p className="text-[12px] text-muted-foreground">{customer.email}</p>
+                    <p className="text-[14px] font-medium text-foreground leading-tight">{customer.company_name}</p>
+                    <p className="text-[12px] text-muted-foreground">{customer.contact_email}</p>
                   </td>
-                  <td className="px-4 py-2.5 text-[13px] text-foreground">{customer.name}</td>
+                  <td className="px-4 py-2.5 text-[13px] text-foreground">{customer.contact_name}</td>
                   <td className="px-4 py-2.5">
-                    <span className={`text-[11px] font-medium rounded-md px-2 py-0.5 ${planBadge[customer.plan] || 'bg-muted text-muted-foreground'}`}>
-                      {getPlanName(customer.plan)}
+                    <span className={`text-[11px] font-medium rounded-md px-2 py-0.5 ${planBadge[customer.plan_id] || 'bg-muted text-muted-foreground'}`}>
+                      {getPlanName(customer.plan_id)}
                     </span>
                   </td>
                   <td className="px-4 py-2.5 text-[13px] font-medium text-foreground tabular-nums">
@@ -166,16 +153,18 @@ export default function CeoUsers() {
                   </td>
                   <td className="px-4 py-2.5">
                     <span className="inline-flex items-center gap-1.5">
-                      <span className={`w-1.5 h-1.5 rounded-full ${statusDot[customer.status]}`} />
-                      <span className={`text-[12px] font-medium ${statusColor[customer.status]}`}>
+                      <span className={`w-1.5 h-1.5 rounded-full ${statusDot[customer.status] || 'bg-muted-foreground'}`} />
+                      <span className={`text-[12px] font-medium ${statusColor[customer.status] || 'text-muted-foreground'}`}>
                         {statusLabel[customer.status] || customer.status}
                       </span>
                     </span>
                   </td>
                   <td className="px-4 py-2.5 text-[13px] text-muted-foreground tabular-nums">
-                    {customer.modules.length} / 8
+                    {(customer.modules_enabled || []).length} / 8
                   </td>
-                  <td className="px-4 py-2.5 text-[13px] text-muted-foreground">{customer.signup}</td>
+                  <td className="px-4 py-2.5 text-[13px] text-muted-foreground">
+                    {customer.signup_date ? new Date(customer.signup_date).toLocaleDateString() : '—'}
+                  </td>
                   <td className="px-4 py-2.5">
                     <ExternalLink className="w-3.5 h-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
                   </td>
@@ -185,19 +174,20 @@ export default function CeoUsers() {
           </table>
         </div>
 
-        {filtered.length === 0 && (
+        {!loading && filtered.length === 0 && (
           <div className="py-12 text-center">
             <p className="text-[13px] text-muted-foreground">No users match your search</p>
           </div>
         )}
       </div>
 
-      {/* Detail Dialog */}
-      <CustomerDetailDialog
-        customer={selectedCustomer}
+      {/* Detail Dialog — CrmDetailDialog in customer mode */}
+      <CrmDetailDialog
+        item={selectedCustomer}
+        mode="customer"
         open={!!selectedCustomer}
         onClose={() => setSelectedCustomer(null)}
-        onUpdate={handleCustomerUpdate}
+        onRefresh={() => { setSelectedCustomer(null); refetch(); }}
       />
     </div>
   );

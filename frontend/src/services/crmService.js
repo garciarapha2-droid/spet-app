@@ -136,6 +136,45 @@ export async function getCustomers(filters) {
   return data.customers;
 }
 
+export async function getCustomerById(id) {
+  return request(`/customers/${id}`);
+}
+
 export async function updateCustomer(id, updates) {
   return request(`/customers/${id}`, { method: 'PUT', body: JSON.stringify(updates) });
 }
+
+// ─── Analytics ───
+
+export async function getSecurityAnalytics() {
+  return request('/analytics/security');
+}
+
+export async function getReportsAnalytics() {
+  return request('/analytics/reports');
+}
+
+export async function getRevenueTargets() {
+  return request('/analytics/revenue-targets');
+}
+
+// ─── Customer operations (plan, status, modules) ───
+
+export async function updateCustomerPlan(customerId, planId) {
+  const plan = PLANS.find(p => p.id === planId);
+  if (!plan) throw new Error('Invalid plan');
+  return updateCustomer(customerId, { plan_id: planId, mrr: plan.price });
+}
+
+export async function updateCustomerStatus(customerId, status) {
+  return updateCustomer(customerId, { status });
+}
+
+export async function toggleCustomerModule(customerId, moduleKey, enabled, currentModules) {
+  const modules = enabled
+    ? [...currentModules, moduleKey]
+    : currentModules.filter(m => m !== moduleKey);
+  return updateCustomer(customerId, { modules_enabled: modules });
+}
+
+export const CUSTOMER_STATUSES = ['active', 'paused', 'churned'];

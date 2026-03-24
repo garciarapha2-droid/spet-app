@@ -7,7 +7,7 @@ import {
   Layers, FileBarChart, Building2
 } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
-import { getRevenueTargets } from '../../services/ceoService';
+import { getRevenueTargets } from '../../services/crmService';
 
 const navSections = [
   {

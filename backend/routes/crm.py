@@ -257,6 +257,18 @@ async def list_customers(
     return {"customers": [_row_to_dict(r) for r in rows]}
 
 
+@router.get("/customers/{customer_id}")
+async def get_customer(customer_id: str, user: dict = Depends(require_auth)):
+    pool = get_postgres_pool()
+    async with pool.acquire() as conn:
+        row = await conn.fetchrow("SELECT * FROM customers WHERE id=$1::uuid", customer_id)
+        if not row:
+            raise HTTPException(404, "Customer not found")
+    return _row_to_dict(row)
+
+
+
+
 class CustomerUpdate(BaseModel):
     company_name: Optional[str] = None
     contact_name: Optional[str] = None

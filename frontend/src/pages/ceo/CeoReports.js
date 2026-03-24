@@ -1,83 +1,70 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
-import { Target, Trophy, Percent, ExternalLink } from 'lucide-react';
-import { ResponsiveContainer, AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as ReTooltip } from 'recharts';
+import { useState, useEffect, useCallback } from 'react';
+import { Target, Trophy, Percent } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as ReTooltip } from 'recharts';
 import { KpiCard } from '../../components/ceo/KpiCard';
 import { ChartCard } from '../../components/ceo/ChartCard';
 import { DrillDownSheet } from '../../components/ceo/DrillDownSheet';
-import { getDeals, getPipelineHistory, getLossReasons, PIPELINE_STAGES } from '../../services/ceoService';
+import { getReportsAnalytics, DEAL_STAGES } from '../../services/crmService';
 
 export default function CeoReports() {
   const navigate = useNavigate();
-  const [deals, setDeals] = useState([]);
-  const [pipelineHistory, setPipelineHistory] = useState([]);
-  const [lossReasons, setLossReasons] = useState([]);
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [drill, setDrill] = useState(null);
 
   const loadData = useCallback(async () => {
-    const [d, ph, lr] = await Promise.all([getDeals(), getPipelineHistory(), getLossReasons()]);
-    setDeals(d);
-    setPipelineHistory(ph);
-    setLossReasons(lr);
+    try {
+      const result = await getReportsAnalytics();
+      setData(result);
+    } catch (e) {
+      console.error('Failed to load reports', e);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => { loadData(); }, [loadData]);
 
-  const activeDeals = deals.filter(d => !['won', 'lost'].includes(d.stage));
-  const wonDeals = deals.filter(d => d.stage === 'won');
-  const totalForConversion = deals.filter(d => d.stage !== 'lost').length;
-  const convRate = totalForConversion > 0 ? ((wonDeals.length / totalForConversion) * 100).toFixed(1) : '0';
+  if (loading || !data) {
+    return (
+      <div className="flex items-center justify-center py-20" data-testid="ceo-reports">
+        <p className="text-[13px] text-muted-foreground">Loading reports...</p>
+      </div>
+    );
+  }
 
-  // Funnel data
-  const funnelStages = PIPELINE_STAGES.filter(s => s.key !== 'lost');
-  const funnel = useMemo(() =>
-    funnelStages.map(stage => {
-      const stDeals = deals.filter(d => d.stage === stage.key);
-      return {
-        stage: stage.label,
-        key: stage.key,
-        color: stage.color,
-        count: stDeals.length,
-        value: stDeals.reduce((sum, d) => sum + d.value, 0),
-      };
-    }),
-    [deals, funnelStages]
-  );
+  const { funnel, loss_reasons, pipeline_history, metrics } = data;
+  const convRate = metrics.conversion_rate;
 
-  const totalPipelineValue = activeDeals.reduce((sum, d) => sum + d.value, 0);
+  // Filter funnel to exclude closed_lost for display
+  const funnelDisplay = funnel.filter(f => f.key !== 'closed_lost');
 
   const kpis = [
-    { key: 'active', icon: 'Target', color: '#7C3AED', value: String(activeDeals.length), label: 'Active Opportunities', description: 'In pipeline' },
-    { key: 'won', icon: 'Trophy', color: '#1FAA6B', value: String(wonDeals.length), label: 'Won Opportunities', description: 'This month' },
+    { key: 'active', icon: 'Target', color: '#7C3AED', value: String(metrics.active_deals), label: 'Active Opportunities', description: 'In pipeline' },
+    { key: 'won', icon: 'Trophy', color: '#1FAA6B', value: String(metrics.won_deals), label: 'Won Opportunities', description: 'Closed won' },
     { key: 'convRate', icon: 'Percent', color: '#3B82F6', value: `${convRate}%`, label: 'Conversion Rate', description: 'Won / Total' },
   ];
 
   const handleKpiClick = (key) => {
-    switch (key) {
-      case 'active': navigate('/ceo/pipeline'); break;
-      case 'won': navigate('/ceo/pipeline'); break;
-      case 'convRate': setDrill('convRate'); break;
-      default: break;
-    }
-  };
-
-  const handleFunnelClick = (stageKey) => {
-    navigate('/ceo/pipeline');
+    if (key === 'active' || key === 'won') navigate('/ceo/pipeline');
+    else if (key === 'convRate') setDrill('convRate');
   };
 
   const drillContent = () => {
     if (drill === 'convRate') {
+      const stages = funnelDisplay.filter(f => f.key !== 'closed_won');
       return (
         <DrillDownSheet open title="Conversion Rate Breakdown" subtitle="Stage-to-stage conversion" onClose={() => setDrill(null)}>
           <div className="space-y-3">
-            {funnelStages.slice(0, -1).map((stage, i) => {
-              const nextStage = funnelStages[i + 1];
-              const currentCount = deals.filter(d => d.stage === stage.key).length || 1;
-              const nextCount = deals.filter(d => d.stage === nextStage.key).length;
-              const pct = Math.round((nextCount / currentCount) * 100);
+            {stages.map((stage, i) => {
+              const nextStage = funnelDisplay[i + 1];
+              if (!nextStage) return null;
+              const currentCount = stage.count || 1;
+              const pct = Math.round((nextStage.count / currentCount) * 100);
               return (
                 <div key={stage.key} className="flex items-center justify-between py-2 border-b border-border/50 last:border-0">
-                  <span className="text-[13px] text-foreground">{stage.label} → {nextStage.label}</span>
+                  <span className="text-[13px] text-foreground">{stage.stage} &rarr; {nextStage.stage}</span>
                   <span className="text-[13px] font-semibold tabular-nums" style={{ color: stage.color }}>{pct}%</span>
                 </div>
               );
@@ -113,24 +100,24 @@ export default function CeoReports() {
         {/* Pipeline Funnel */}
         <ChartCard title="Pipeline Funnel" subtitle="Deals and value by stage">
           <div className="space-y-0" data-testid="pipeline-funnel">
-            {funnel.map((row) => (
+            {funnelDisplay.map((row) => (
               <div
                 key={row.key}
-                onClick={() => handleFunnelClick(row.key)}
+                onClick={() => navigate('/ceo/pipeline')}
                 className="flex items-center justify-between py-3 px-3 hover:bg-muted/30 rounded-lg cursor-pointer transition-colors"
                 data-testid={`funnel-row-${row.key}`}
               >
                 <div className="flex items-center gap-3">
                   <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: row.color }} />
                   <span className="text-[13px] font-medium text-foreground">{row.stage}</span>
-                  <span className="text-[12px] text-muted-foreground">— {row.count} deals</span>
+                  <span className="text-[12px] text-muted-foreground">&mdash; {row.count} deals</span>
                 </div>
                 <span className="text-[13px] font-medium text-primary tabular-nums">${row.value.toLocaleString()}</span>
               </div>
             ))}
             <div className="border-t border-border mt-2 pt-3 px-3 flex justify-between">
               <span className="text-[13px] font-bold text-foreground">Total Pipeline</span>
-              <span className="text-[14px] font-bold text-primary tabular-nums">${totalPipelineValue.toLocaleString()}</span>
+              <span className="text-[14px] font-bold text-primary tabular-nums">${metrics.total_pipeline_value.toLocaleString()}</span>
             </div>
           </div>
         </ChartCard>
@@ -138,7 +125,9 @@ export default function CeoReports() {
         {/* Loss Reasons */}
         <ChartCard title="Loss Reasons" subtitle="Why deals were lost">
           <div className="space-y-3 px-1" data-testid="loss-reasons">
-            {lossReasons.map((lr) => (
+            {loss_reasons.length === 0 ? (
+              <p className="text-[13px] text-muted-foreground text-center py-8">No lost deals to analyze</p>
+            ) : loss_reasons.map((lr) => (
               <div key={lr.reason} className="space-y-1.5">
                 <div className="flex justify-between text-[13px]">
                   <span className="text-foreground">{lr.reason}</span>
@@ -156,7 +145,7 @@ export default function CeoReports() {
       {/* Pipeline Value Over Time */}
       <ChartCard title="Pipeline Value Over Time" subtitle="Total pipeline value trend">
         <ResponsiveContainer width="100%" height={280}>
-          <AreaChart data={pipelineHistory}>
+          <AreaChart data={pipeline_history}>
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.5} />
             <XAxis dataKey="month" tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} />
             <YAxis tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} tickFormatter={v => `$${(v / 1000).toFixed(0)}k`} />
