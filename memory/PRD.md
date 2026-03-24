@@ -78,11 +78,27 @@ The platform includes a web app (React) and a native mobile app (React Native/Ex
 - [x] WebSocket real-time (auto-reconnect)
 - [x] Dark theme + premium aesthetic
 - [x] Touch targets >= 44px
+- [x] Expo SDK 54 upgrade complete
+- [x] NFC bridge for Expo Go compatibility
+- [x] 0 TypeScript errors
+- [x] API timeout + network error fallback (15s AbortController)
+- [x] WS_BASE_URL derived from API_BASE_URL (single source of truth)
+- [x] EAS project configured (@raphazitto/spet-mobile, ID: 5073c0c3-bea4-43e8-a6f0-c133b29b82ff)
+- [x] app.json production-ready (buildNumber, versionCode, scheme, OTA updates, NFC permissions)
+- [x] eas.json with dev/preview/production profiles + autoIncrement + submit config
+- [x] Build scripts in package.json (build:ios, build:android, build:all, submit:ios, submit:android)
 
 ## Prioritized Backlog
 
+### P0 (Blockers para Store Release)
+- [ ] Criar ícone real do app (1024x1024 PNG) — substituir assets/icon.png e adaptive-icon.png
+- [ ] Criar splash screen real — substituir assets/splash.png
+- [ ] Configurar Apple Developer Account + App Store Connect
+- [ ] Configurar Google Play Console + Service Account Key (play-store-key.json)
+- [ ] Criar Privacy Policy e Support URL reais
+- [ ] Definir API URL de produção em src/config/api.ts
+
 ### P1
-- Test mobile app on physical device (iPhone + Android)
 - CeoOverview/CeoRevenue migration to real API (web)
 - Drag-and-drop Pipeline Kanban (web)
 
@@ -92,7 +108,7 @@ The platform includes a web app (React) and a native mobile app (React Native/Ex
 - Biometric auth (Face ID / fingerprint)
 
 ### P3
-- Landing page Pricing Cards fix
+- Landing page Pricing Cards fix (recorrente x3)
 - Deep linking / universal links
 - Batch NFC register
 

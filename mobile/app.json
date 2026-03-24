@@ -12,10 +12,12 @@
       "policy": "appVersion"
     },
     "updates": {
-      "url": "https://u.expo.dev/spet-mobile",
+      "url": "https://u.expo.dev/5073c0c3-bea4-43e8-a6f0-c133b29b82ff",
       "fallbackToCacheTimeout": 5000
     },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
@@ -38,7 +40,9 @@
       },
       "package": "com.spetapp.mobile",
       "versionCode": 1,
-      "permissions": ["android.permission.NFC"]
+      "permissions": [
+        "android.permission.NFC"
+      ]
     },
     "plugins": [
       [
@@ -51,11 +55,12 @@
       ]
     ],
     "extra": {
-      "eas": {
-        "projectId": "YOUR_EAS_PROJECT_ID"
-      },
       "privacyPolicyUrl": "https://spetapp.com/privacy",
-      "supportUrl": "https://spetapp.com/support"
-    }
+      "supportUrl": "https://spetapp.com/support",
+      "eas": {
+        "projectId": "5073c0c3-bea4-43e8-a6f0-c133b29b82ff"
+      }
+    },
+    "owner": "raphazitto"
   }
 }
