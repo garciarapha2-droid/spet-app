@@ -5,7 +5,7 @@ import { toast } from 'sonner';
 import { Button } from '../../../components/ui/button';
 import { Input } from '../../../components/ui/input';
 import { Label } from '../../../components/ui/label';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../../components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../../../components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select';
 import { staffMembers as initialStaff, ownerSystemUsers, venues } from '../../../data/ownerShiftStaffData';
 
@@ -225,6 +225,7 @@ export default function OwnerStaff() {
         <DialogContent className="max-w-[480px]">
           <DialogHeader>
             <DialogTitle className="text-lg font-bold">{editingId ? 'Edit Staff Member' : 'New Staff Member'}</DialogTitle>
+            <DialogDescription className="text-[13px] text-muted-foreground">{editingId ? 'Update team member details' : 'Add a new team member to your venue'}</DialogDescription>
           </DialogHeader>
           <div className="grid grid-cols-2 gap-3 mt-4">
             <div className="col-span-2">

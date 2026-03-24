@@ -11,15 +11,15 @@ Build a multi-page "Owner Command Center" and "Pulse" module for a nightlife man
 ## Core Requirements
 - Spec-driven, pixel-perfect UI implementation
 - Mock data-driven frontend (no backend APIs yet)
-- Brazilian locale (R$ currency where applicable)
-- Dark/light theme support
+- Brazilian locale (R$ currency, pt-BR formatting)
+- Dark/light theme support via CSS variables
 - Unified GlobalNavbar across all modules
 
 ## Architecture
 - **Frontend**: React + Tailwind CSS + Shadcn UI + Framer Motion + Recharts
 - **Backend**: FastAPI (minimal, auth only currently)
 - **Database**: MongoDB (auth only)
-- **Data**: Mock data files (`ownerData.js`, `pulseData.js`, `managerModuleData.js`)
+- **Data**: Mock data files (`ownerData.js`, `pulseData.js`, `managerModuleData.js`, `ownerShiftStaffData.js`)
 
 ## What's Been Implemented
 
@@ -33,6 +33,8 @@ Build a multi-page "Owner Command Center" and "Pulse" module for a nightlife man
 - [x] Overview dashboard
 - [x] Revenue Analytics (complex multi-level scope selector)
 - [x] Profit Analysis, Comparison, Time Analysis pages
+- [x] **Shift vs Operations** — REBUILT from spec (2026-03-24): Period filter (Today/Yesterday/This Week/Custom+Calendar), 5 KPI cards with tooltips & drill-down modals, Staff Earnings table with footer totals & clickable rows, Day Performance table, Staff Detail modal, R$ currency, reconciliation-guaranteed data
+- [x] **Staff & Roles** — REBUILT from spec (2026-03-24): Search + venue filter, System Users section, Operational Staff with role badges & hover actions, Add/Edit/Delete Staff dialog, avatar colors, R$ hourly rates
 - [x] Customer Intelligence, Audience Intelligence, Segments, Churn & Retention
 - [x] Customer Profile page
 - [x] Loyalty Performance, Campaign Performance
@@ -40,14 +42,10 @@ Build a multi-page "Owner Command Center" and "Pulse" module for a nightlife man
 - [x] Smart Insights, Action Center
 - [x] Venue Management, Venue Detail, Event Detail
 - [x] Settings
-- [x] **Shift vs Operations integrated** at `/owner/performance/shift-operations` (2024-03-24)
-- [x] **Staff integrated** at `/owner/performance/staff` (2024-03-24)
 
 ### Manager Module
 - [x] ManagerLayout.js with sidebar
-- [x] Manager Overview, Staff & Roles, Tables by Server, Menu/Products
-- [x] Shift vs Operations, Tips, NFC Guests, Reports & Finance
-- [x] Settings, Loyalty (full sub-module)
+- [x] All Manager sub-pages (Overview, Staff, Tables, Menu, Shift, Tips, NFC, Reports, Loyalty)
 
 ### Pulse Module
 - [x] PulseLayout with GlobalNavbar
@@ -56,15 +54,9 @@ Build a multi-page "Owner Command Center" and "Pulse" module for a nightlife man
 - [x] PulseInsidePage, PulseExitPage, PulseRewardsPage
 - [x] GuestRegistrationPanel (slide-in form)
 
-### Bug Fixes Applied
-- [x] Currency R$ fix in ShiftOperations (from handoff)
-- [x] KDS dropdown duplicate key resolved (keys use item.label)
-- [x] Hydration warning in PulseBarPage resolved (clean select>option structure)
-- [x] space-y vs flex/gap fix on VenueComparison Night Cards
-
 ## Prioritized Backlog
 
-### P0 - Next Specs (Awaiting User)
+### P0 - Awaiting Next User Spec
 - Pulse Inside (managing guests currently inside)
 - Profit Analysis enhancements
 - Venue Cost Detail enhancements
@@ -80,7 +72,6 @@ Build a multi-page "Owner Command Center" and "Pulse" module for a nightlife man
 
 ### P3
 - Refactor ownerData.js into smaller domain-specific files
-- Refactor managerModuleData.js similarly
 
 ## Test Credentials
 - Owner/Manager/Pulse: `teste@teste.com` / `12345`
@@ -89,3 +80,16 @@ Build a multi-page "Owner Command Center" and "Pulse" module for a nightlife man
 - For animated lists, always use `flex flex-col gap-*` (NOT `space-y-*`)
 - All page headers handled by GlobalNavbar.js
 - User responds in Portuguese; agent must also respond in Portuguese
+- Financial reconciliation rules MUST hold: sum(staffRows.wages)=staffCost KPI, sum(dayRows.revenue)=revenue KPI, etc.
+- Currency format: R$ with pt-BR locale (dot as thousands separator)
+
+## Files of Reference
+- `/app/frontend/src/pages/owner/performance/OwnerShiftOperations.js` — New Shift page
+- `/app/frontend/src/pages/owner/performance/OwnerStaff.js` — New Staff page
+- `/app/frontend/src/data/ownerShiftStaffData.js` — Mock data (reconciliation-guaranteed)
+- `/app/frontend/src/App.js` — Routes
+- `/app/frontend/src/pages/owner/OwnerLayout.js` — Sidebar
+- `/app/frontend/src/components/shared/GlobalNavbar.js` — Breadcrumbs
+
+## Test Reports
+- `/app/test_reports/iteration_83.json` — 15/15 tests passed (100%)
