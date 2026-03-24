@@ -11,26 +11,27 @@ The CEO OS module includes a full CRM with Pipeline, Customer Base, and executiv
 │   ├── src/
 │   │   ├── components/ceo/
 │   │   │   ├── CrmDetailDialog.js    # Reutilizable: deal + customer mode
-│   │   │   ├── CustomerDetailDialog.js # Legacy (old mock)
+│   │   │   ├── CustomerDetailDialog.js # Legacy (migrated to crmService)
 │   │   │   ├── ChartCard.js / KpiCard.js / PeriodFilter.js / DrillDownSheet.js
 │   │   ├── hooks/
 │   │   │   └── useCrmData.js         # useDeals, useDeal, useCustomers
 │   │   ├── services/
-│   │   │   ├── crmService.js         # REAL API calls to /api/crm/*
-│   │   │   └── ceoService.js         # Legacy mock data (Overview/Revenue/etc.)
+│   │   │   ├── crmService.js         # REAL API — deals, customers, analytics, targets
+│   │   │   └── ceoService.js         # Legacy mock (only used by CeoOverview/Revenue)
 │   │   ├── pages/ceo/
-│   │   │   ├── CeoLayout.js          # Isolated layout + theme toggle
-│   │   │   ├── CeoOverview.js        # Active Customers KPI → /ceo/customers
-│   │   │   ├── CeoRevenue.js
-│   │   │   ├── CeoUsers.js           # v2 rebuild (uses old mock)
-│   │   │   ├── CeoSecurity.js        # v2 rebuild (uses old mock)
-│   │   │   ├── CeoPipeline.js        # REAL API — kanban + deal dialog
-│   │   │   ├── CeoReports.js         # v2 rebuild (uses old mock)
-│   │   │   └── CustomerBase.js       # REAL API — customer table + dialog
+│   │   │   ├── CeoLayout.js          # Sidebar + revenue targets (REAL API)
+│   │   │   ├── CeoOverview.js        # Active Customers KPI real, rest mock
+│   │   │   ├── CeoRevenue.js         # Still uses ceoData.js mock
+│   │   │   ├── CeoUsers.js           # ✅ REAL API — useCustomers hook
+│   │   │   ├── CeoSecurity.js        # ✅ REAL API — security analytics
+│   │   │   ├── CeoPipeline.js        # ✅ REAL API — kanban + deal dialog
+│   │   │   ├── CeoReports.js         # ✅ REAL API — reports analytics
+│   │   │   └── CustomerBase.js       # ✅ REAL API — customer table + dialog
 │   │   └── App.js
 ├── backend/          FastAPI + PostgreSQL + MongoDB
 │   ├── routes/
-│   │   ├── crm.py                    # REAL CRUD: deals, customers, activities
+│   │   ├── crm.py                    # CRUD: deals, customers, activities
+│   │   ├── ceo_analytics.py          # ✅ NEW: security, reports, revenue-targets
 │   │   └── ceo.py                    # Legacy CEO routes
 │   └── migrations/
 │       └── crm_migration.py          # Creates tables + seed data
@@ -45,7 +46,8 @@ The CEO OS module includes a full CRM with Pipeline, Customer Base, and executiv
 ### Stages: lead, qualified, proposal, negotiation, closed_won, closed_lost
 ### Plans: core ($149), flow ($299), sync ($499), os ($724)
 
-## Real API Endpoints (/api/crm/*)
+## Real API Endpoints
+### CRM CRUD (/api/crm/*)
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | GET | /deals | List all deals (filter by stage) |
@@ -58,12 +60,21 @@ The CEO OS module includes a full CRM with Pipeline, Customer Base, and executiv
 | PUT | /activities/:id | Update activity |
 | DELETE | /activities/:id | Delete activity |
 | GET | /customers | List customers (filter by status, plan, search) |
+| GET | /customers/:id | Get single customer |
 | PUT | /customers/:id | Update customer |
+
+### Analytics (/api/crm/analytics/*)
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | /analytics/security | Alerts, risk score, module usage from customers |
+| GET | /analytics/reports | Pipeline funnel, loss reasons, history, metrics |
+| GET | /analytics/revenue-targets | Weekly/monthly/annual targets from real MRR |
 
 ## Testing
 - iteration_84: 14/14 (initial CEO pages)
 - iteration_85: 100% (v2 rebuild — Users, Security, Pipeline, Reports + theme)
 - iteration_86: 24/24 backend + 100% frontend (CRM real persistence)
+- iteration_87: 28/28 backend + 100% frontend (CEO analytics migration)
 
 ## User Accounts
 - CEO: garcia.rapha2@gmail.com / 12345
@@ -79,15 +90,22 @@ The CEO OS module includes a full CRM with Pipeline, Customer Base, and executiv
 - [x] Overview Active Customers KPI → navigates to /ceo/customers
 - [x] Theme toggle (dark/light) with localStorage
 - [x] All legacy pages preserved (zero regression)
+- [x] CEO Users page → real PostgreSQL data via useCustomers hook
+- [x] CEO Security page → real analytics from /api/crm/analytics/security
+- [x] CEO Reports page → real funnel/loss/history from /api/crm/analytics/reports
+- [x] CeoLayout sidebar → real revenue targets from /api/crm/analytics/revenue-targets
+- [x] CustomerDetailDialog migrated from ceoService to crmService
+- [x] ZERO imports of ceoService.js in Security, Reports, Users, Layout
 
 ## Prioritized Backlog
-### P0
-- Migrate Security, Reports, Users pages from mock to real API
-- Connect CeoReports to real deals data for funnel/pipeline charts
+### P0 — DONE
+- ~~Migrate Security, Reports, Users pages from mock to real API~~
+- ~~Connect CeoReports to real deals data for funnel/pipeline charts~~
 
 ### P1
+- Migrate CeoOverview from ceoData.js mock to real API
+- Migrate CeoRevenue from ceoData.js mock to real API
 - Add CEO link in global navigation
-- Real-time module usage computed from customers table
 - Drag-and-drop deal cards between pipeline columns
 
 ### P2
