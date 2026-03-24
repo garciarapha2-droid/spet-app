@@ -13,12 +13,12 @@ Build a nightlife management SaaS application with multiple modules:
 ├── frontend/         React (CRA) + Tailwind + Shadcn UI
 │   ├── src/
 │   │   ├── components/
-│   │   │   ├── ceo/          # CEO-specific reusable components
+│   │   │   ├── ceo/          # CEO components (new + legacy dashboards)
 │   │   │   ├── shared/       # GlobalNavbar (Owner/Manager/Pulse)
 │   │   │   └── ui/           # Shadcn UI components
 │   │   ├── data/             # Mock data files
 │   │   ├── pages/
-│   │   │   ├── ceo/          # CEO OS module (isolated layout)
+│   │   │   ├── ceo/          # CEO OS module (isolated layout + new pages)
 │   │   │   ├── owner/        # Owner Command Center
 │   │   │   ├── manager/      # Manager Dashboard
 │   │   │   ├── pulse/        # Pulse Guest Management
@@ -35,61 +35,64 @@ Build a nightlife management SaaS application with multiple modules:
 - **CEO**: garcia.rapha2@gmail.com / 12345 (role: CEO, redirects to /ceo)
 - **Regular**: teste@teste.com / 12345 (Owner/Manager/Pulse access)
 
+## CEO OS Module — Complete Route Map
+All routes use the new isolated CeoLayout with fixed sidebar + navbar:
+| Route | Component | Type |
+|---|---|---|
+| /ceo | redirect → /ceo/overview | - |
+| /ceo/overview | CeoOverview (new) | New page |
+| /ceo/revenue | CeoRevenue (new) | New page |
+| /ceo/users | CeoUsers (new) | New page |
+| /ceo/customer-lifecycle | CustomerLifecycleDashboard | Legacy |
+| /ceo/mrr-retention | MrrRetentionDashboard | Legacy |
+| /ceo/cac | CacDashboard | Legacy |
+| /ceo/lead-breakdown | LeadBreakdownDashboard | Legacy |
+| /ceo/sales-kpis | SalesKpisDashboard | Legacy |
+| /ceo/cash-flow | CashFlowMrrDashboard | Legacy |
+| /ceo/conversion | ConversionRateDashboard | Legacy |
+| /ceo/executive | ExecutiveDashboard | Legacy |
+| /ceo/security | RiskDashboard | Legacy |
+| /ceo/startup | StartupKpisDashboard | Legacy |
+| /ceo/pipeline | CrmPipelineDashboard | Legacy |
+| /ceo/reports | CrmReportsDashboard | Legacy |
+
 ## What's Been Implemented
 
-### CEO OS Module (Phase 1 — COMPLETE)
-- **CeoLayout.js** — Dedicated isolated layout with fixed sidebar (200px) + navbar (64px). NOT using GlobalNavbar from other modules
-- **CeoOverview.js** — Executive Overview: 6 KPI cards, growth banner, MRR Growth chart, Customer Growth chart, Revenue Breakdown pie, Quick Stats list, drill-down modals
-- **CeoRevenue.js** — Revenue: 8 KPI cards (2 rows), Revenue Last 30 Days area chart, MRR Breakdown 12-month bar chart, drill-down modals
-- **CeoUsers.js** — Users & Subscribers: 4 KPI cards, Users by Plan pie, MRR by Plan bar, Status Distribution pie, full customer table with search/filter/sort, customer detail drill-down
-- **Reusable components**: KpiCard, PeriodFilter, ChartCard, ListCard, DrillDownSheet, CompanyListDrillDown, BreakdownDrillDown
-- **Mock data**: ceoData.js with 39 customers, revenue targets, KPIs, chart data, customer events
-- **Routing**: /ceo → /ceo/overview (redirect), /ceo/revenue, /ceo/users — all behind CEORoute
+### CEO OS Module
+- **CeoLayout.js** — Dedicated isolated layout with fixed sidebar (200px) + navbar (64px)
+- **3 New pages**: CeoOverview, CeoRevenue, CeoUsers — spec-driven, premium design
+- **13 Legacy pages**: All original dashboard components integrated into new layout
+- **Reusable components**: KpiCard, PeriodFilter, ChartCard, ListCard, DrillDownSheet
+- **Mock data**: ceoData.js (39 customers, revenue targets, KPIs, chart data, events)
 - **Testing**: 14/14 tests passed (iteration_84)
 
 ### Owner Command Center (COMPLETE)
-- Overview, Revenue Analytics, Profit Analysis, Venue Comparison, Time Analysis
-- Shift Operations, Staff (rebuilt from spec)
-- Customer Intelligence, Audience Intelligence, Segments, Churn/Retention
-- Loyalty Performance, Campaign Performance
-- Financial Overview, Cost Analysis, Risk Alerts
-- Smart Insights, Action Center
-- Venue Management, Settings
+- All pages: Overview, Revenue, Profit, Venue Comparison, Time, Shift Ops, Staff
+- Customers, Audience, Segments, Churn, Loyalty, Campaigns
+- Finance, Costs, Risk, Insights, Actions, Venues, Settings
 
 ### Manager Dashboard (COMPLETE)
-- Overview, Staff/Roles, Tables by Server, Menu/Products
-- Shift Operations, Tips, NFC Guests, Reports/Finance, Settings
-- Full Loyalty module (Rewards, Guests, Profiles, Tiers, Campaigns, Insights)
+- All pages including full Loyalty module
 
 ### Pulse Module (COMPLETE)
-- Guest Management, Inside, Bar, Exit, Rewards, Guest Profiles
-
-### Landing Page (COMPLETE)
-- Known recurring issue: Pricing Cards (3x recurrence, not addressed)
+- Guest Management full flow
 
 ## Prioritized Backlog
 
-### P0 — CEO Module Phase 2
-- CustomerLifecycle page
-- LeadBreakdown page
-- SalesKPIs page
-- CashFlowMRR page
+### P0 — CEO Module Enhancement
+- Progressively rebuild legacy dashboard pages to match new spec quality (CeoOverview/Revenue/Users style)
 
 ### P1
 - Add CEO link in global navigation (role-gated)
-- Implement all drill-down interactivity across CEO pages
-- Global period filter synchronization
-- Remaining CEO pages: MRR Retention, CAC, Conversion Rate, Executive, Security, Startup KPIs, Pipeline, Reports
+- Global period filter synchronization across all CEO pages
 
 ### P2
 - Backend API integration (replace all mock data with live APIs)
 - Refactor ownerData.js into domain-specific files
-- Integrate GuestFullHistory.js into Manager and Pulse modules
 
 ### P3
-- Landing page Pricing Cards fix (recurring issue)
-- Performance optimization
-- Mobile responsiveness audit
+- Landing page Pricing Cards fix (recurring issue, 3x)
+- GuestFullHistory integration
 
 ## Tech Stack
 - React (CRA) + Tailwind CSS + Shadcn UI
@@ -102,4 +105,3 @@ Build a nightlife management SaaS application with multiple modules:
 - Visual: Premium, clean, executive aesthetic
 - CEO layout is COMPLETELY isolated from Owner/Manager/Pulse
 - Mock data architecture prepared for backend swap
-- All data-testid attributes on interactive elements

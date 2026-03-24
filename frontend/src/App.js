@@ -81,6 +81,18 @@ import CeoLayout from './pages/ceo/CeoLayout';
 import CeoOverview from './pages/ceo/CeoOverview';
 import CeoRevenue from './pages/ceo/CeoRevenue';
 import CeoUsers from './pages/ceo/CeoUsers';
+import CustomerLifecycleDashboard from './components/ceo/CustomerLifecycleDashboard';
+import MrrRetentionDashboard from './components/ceo/MrrRetentionDashboard';
+import CacDashboard from './components/ceo/CacDashboard';
+import LeadBreakdownDashboard from './components/ceo/LeadBreakdownDashboard';
+import SalesKpisDashboard from './components/ceo/SalesKpisDashboard';
+import CashFlowMrrDashboard from './components/ceo/CashFlowMrrDashboard';
+import ConversionRateDashboard from './components/ceo/ConversionRateDashboard';
+import ExecutiveDashboard from './components/ceo/ExecutiveDashboard';
+import RiskDashboard from './components/ceo/RiskDashboard';
+import StartupKpisDashboard from './components/ceo/StartupKpisDashboard';
+import CrmPipelineDashboard from './components/ceo/CrmPipelineDashboard';
+import CrmReportsDashboard from './components/ceo/CrmReportsDashboard';
 import { useAuth } from './contexts/AuthContext';
 
 const AppEntryRedirect = () => {
@@ -177,6 +189,18 @@ function App() {
                 <Route path="overview" element={<CeoOverview />} />
                 <Route path="revenue" element={<CeoRevenue />} />
                 <Route path="users" element={<CeoUsers />} />
+                <Route path="customer-lifecycle" element={<CustomerLifecycleDashboard />} />
+                <Route path="mrr-retention" element={<MrrRetentionDashboard />} />
+                <Route path="cac" element={<CacDashboard />} />
+                <Route path="lead-breakdown" element={<LeadBreakdownDashboard />} />
+                <Route path="sales-kpis" element={<SalesKpisDashboard />} />
+                <Route path="cash-flow" element={<CashFlowMrrDashboard />} />
+                <Route path="conversion" element={<ConversionRateDashboard />} />
+                <Route path="executive" element={<ExecutiveDashboard />} />
+                <Route path="security" element={<RiskDashboard />} />
+                <Route path="startup" element={<StartupKpisDashboard />} />
+                <Route path="pipeline" element={<CrmPipelineDashboard />} />
+                <Route path="reports" element={<CrmReportsDashboard />} />
               </Route>
 
               {/* /app route — redirects based on user role */}
