@@ -1,95 +1,105 @@
-# Spet - Nightlife Management Platform
+# SPET — Product Requirements Document
 
 ## Original Problem Statement
-Build a multi-page "Owner Command Center" and "Pulse" module for a nightlife management application. The user provides highly detailed, pixel-perfect design specifications for each page. The workflow: receive spec -> implement -> verify visually -> await next spec.
+Build a nightlife management SaaS application with multiple modules:
+- **Owner Command Center**: Multi-venue analytics, performance, customers, finance, insights
+- **Manager Dashboard**: Staff, tables, menu, shift operations, tips, loyalty program
+- **Pulse Module**: Guest management (entry, inside, bar, exit, rewards, profiles)
+- **CEO OS Module**: Executive-level SaaS metrics dashboard with MRR, revenue, customers, lifecycle, pipeline, etc.
 
-## User Personas
-- **Owner**: Accesses the Owner Command Center for business analytics, staff management, financial overview
-- **Manager**: Accesses the Manager Dashboard for operational management, staff, tables, shift operations
-- **Pulse Operator**: Accesses Pulse module for real-time guest check-in, bar POS, rewards
+## Core Architecture
+```
+/app
+├── frontend/         React (CRA) + Tailwind + Shadcn UI
+│   ├── src/
+│   │   ├── components/
+│   │   │   ├── ceo/          # CEO-specific reusable components
+│   │   │   ├── shared/       # GlobalNavbar (Owner/Manager/Pulse)
+│   │   │   └── ui/           # Shadcn UI components
+│   │   ├── data/             # Mock data files
+│   │   ├── pages/
+│   │   │   ├── ceo/          # CEO OS module (isolated layout)
+│   │   │   ├── owner/        # Owner Command Center
+│   │   │   ├── manager/      # Manager Dashboard
+│   │   │   ├── pulse/        # Pulse Guest Management
+│   │   │   └── landing/      # Landing page
+│   │   └── App.js            # Routes
+│   └── package.json
+├── backend/          FastAPI + MongoDB
+│   └── server.py
+└── memory/
+    └── PRD.md
+```
 
-## Core Requirements
-- Spec-driven, pixel-perfect UI implementation
-- Mock data-driven frontend (no backend APIs yet)
-- Brazilian locale (R$ currency, pt-BR formatting)
-- Dark/light theme support via CSS variables
-- Unified GlobalNavbar across all modules
-
-## Architecture
-- **Frontend**: React + Tailwind CSS + Shadcn UI + Framer Motion + Recharts
-- **Backend**: FastAPI (minimal, auth only currently)
-- **Database**: MongoDB (auth only)
-- **Data**: Mock data files (`ownerData.js`, `pulseData.js`, `managerModuleData.js`, `ownerShiftStaffData.js`)
+## User Accounts
+- **CEO**: garcia.rapha2@gmail.com / 12345 (role: CEO, redirects to /ceo)
+- **Regular**: teste@teste.com / 12345 (Owner/Manager/Pulse access)
 
 ## What's Been Implemented
 
-### Global
-- [x] GlobalNavbar.js - unified navbar for Owner, Manager, Pulse modules
-- [x] Favicon and browser tab title ("Spet - Demo Club")
-- [x] Auth flow (login/signup)
+### CEO OS Module (Phase 1 — COMPLETE)
+- **CeoLayout.js** — Dedicated isolated layout with fixed sidebar (200px) + navbar (64px). NOT using GlobalNavbar from other modules
+- **CeoOverview.js** — Executive Overview: 6 KPI cards, growth banner, MRR Growth chart, Customer Growth chart, Revenue Breakdown pie, Quick Stats list, drill-down modals
+- **CeoRevenue.js** — Revenue: 8 KPI cards (2 rows), Revenue Last 30 Days area chart, MRR Breakdown 12-month bar chart, drill-down modals
+- **CeoUsers.js** — Users & Subscribers: 4 KPI cards, Users by Plan pie, MRR by Plan bar, Status Distribution pie, full customer table with search/filter/sort, customer detail drill-down
+- **Reusable components**: KpiCard, PeriodFilter, ChartCard, ListCard, DrillDownSheet, CompanyListDrillDown, BreakdownDrillDown
+- **Mock data**: ceoData.js with 39 customers, revenue targets, KPIs, chart data, customer events
+- **Routing**: /ceo → /ceo/overview (redirect), /ceo/revenue, /ceo/users — all behind CEORoute
+- **Testing**: 14/14 tests passed (iteration_84)
 
-### Owner Module
-- [x] OwnerLayout.js with collapsible sidebar
-- [x] Overview dashboard
-- [x] Revenue Analytics (complex multi-level scope selector)
-- [x] Profit Analysis, Comparison, Time Analysis pages
-- [x] **Shift vs Operations** — REBUILT from spec (2026-03-24): Period filter (Today/Yesterday/This Week/Custom+Calendar), 5 KPI cards with tooltips & drill-down modals, Staff Earnings table with footer totals & clickable rows, Day Performance table, Staff Detail modal, R$ currency, reconciliation-guaranteed data
-- [x] **Staff & Roles** — REBUILT from spec (2026-03-24): Search + venue filter, System Users section, Operational Staff with role badges & hover actions, Add/Edit/Delete Staff dialog, avatar colors, R$ hourly rates
-- [x] Customer Intelligence, Audience Intelligence, Segments, Churn & Retention
-- [x] Customer Profile page
-- [x] Loyalty Performance, Campaign Performance
-- [x] Financial Overview, Cost Analysis, Venue Cost Detail, Risk & Alerts
-- [x] Smart Insights, Action Center
-- [x] Venue Management, Venue Detail, Event Detail
-- [x] Settings
+### Owner Command Center (COMPLETE)
+- Overview, Revenue Analytics, Profit Analysis, Venue Comparison, Time Analysis
+- Shift Operations, Staff (rebuilt from spec)
+- Customer Intelligence, Audience Intelligence, Segments, Churn/Retention
+- Loyalty Performance, Campaign Performance
+- Financial Overview, Cost Analysis, Risk Alerts
+- Smart Insights, Action Center
+- Venue Management, Settings
 
-### Manager Module
-- [x] ManagerLayout.js with sidebar
-- [x] All Manager sub-pages (Overview, Staff, Tables, Menu, Shift, Tips, NFC, Reports, Loyalty)
+### Manager Dashboard (COMPLETE)
+- Overview, Staff/Roles, Tables by Server, Menu/Products
+- Shift Operations, Tips, NFC Guests, Reports/Finance, Settings
+- Full Loyalty module (Rewards, Guests, Profiles, Tiers, Campaigns, Insights)
 
-### Pulse Module
-- [x] PulseLayout with GlobalNavbar
-- [x] PulseGuest (guest check-in/entry page, v2 redesign)
-- [x] PulseBarPage (3-column POS)
-- [x] PulseInsidePage, PulseExitPage, PulseRewardsPage
-- [x] GuestRegistrationPanel (slide-in form)
+### Pulse Module (COMPLETE)
+- Guest Management, Inside, Bar, Exit, Rewards, Guest Profiles
+
+### Landing Page (COMPLETE)
+- Known recurring issue: Pricing Cards (3x recurrence, not addressed)
 
 ## Prioritized Backlog
 
-### P0 - Awaiting Next User Spec
-- Pulse Inside (managing guests currently inside)
-- Profit Analysis enhancements
-- Venue Cost Detail enhancements
-- Manager module sidebar refinements
+### P0 — CEO Module Phase 2
+- CustomerLifecycle page
+- LeadBreakdown page
+- SalesKPIs page
+- CashFlowMRR page
 
 ### P1
-- CEO Module (navbar link, role-gated)
-- GuestFullHistory.js integration into Manager and Pulse
+- Add CEO link in global navigation (role-gated)
+- Implement all drill-down interactivity across CEO pages
+- Global period filter synchronization
+- Remaining CEO pages: MRR Retention, CAC, Conversion Rate, Executive, Security, Startup KPIs, Pipeline, Reports
 
 ### P2
-- Backend API integration (replace all mock data)
-- CEO Dashboard endpoints (crm-reports, startup-kpis, mrr-retention)
+- Backend API integration (replace all mock data with live APIs)
+- Refactor ownerData.js into domain-specific files
+- Integrate GuestFullHistory.js into Manager and Pulse modules
 
 ### P3
-- Refactor ownerData.js into smaller domain-specific files
+- Landing page Pricing Cards fix (recurring issue)
+- Performance optimization
+- Mobile responsiveness audit
 
-## Test Credentials
-- Owner/Manager/Pulse: `teste@teste.com` / `12345`
+## Tech Stack
+- React (CRA) + Tailwind CSS + Shadcn UI
+- FastAPI + MongoDB
+- Recharts, Framer Motion, Lucide React, Sonner
+- react-router-dom v6 (nested routes)
 
-## Key Technical Notes
-- For animated lists, always use `flex flex-col gap-*` (NOT `space-y-*`)
-- All page headers handled by GlobalNavbar.js
-- User responds in Portuguese; agent must also respond in Portuguese
-- Financial reconciliation rules MUST hold: sum(staffRows.wages)=staffCost KPI, sum(dayRows.revenue)=revenue KPI, etc.
-- Currency format: R$ with pt-BR locale (dot as thousands separator)
-
-## Files of Reference
-- `/app/frontend/src/pages/owner/performance/OwnerShiftOperations.js` — New Shift page
-- `/app/frontend/src/pages/owner/performance/OwnerStaff.js` — New Staff page
-- `/app/frontend/src/data/ownerShiftStaffData.js` — Mock data (reconciliation-guaranteed)
-- `/app/frontend/src/App.js` — Routes
-- `/app/frontend/src/pages/owner/OwnerLayout.js` — Sidebar
-- `/app/frontend/src/components/shared/GlobalNavbar.js` — Breadcrumbs
-
-## Test Reports
-- `/app/test_reports/iteration_83.json` — 15/15 tests passed (100%)
+## Key Design Rules
+- Currency: USD ($)
+- Visual: Premium, clean, executive aesthetic
+- CEO layout is COMPLETELY isolated from Owner/Manager/Pulse
+- Mock data architecture prepared for backend swap
+- All data-testid attributes on interactive elements
