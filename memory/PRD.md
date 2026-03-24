@@ -98,6 +98,18 @@ The platform includes a web app (React) and a native mobile app (React Native/Ex
 - [ ] Criar Privacy Policy e Support URL reais
 - [ ] Definir API URL de produção em src/config/api.ts
 
+### Completed (this session)
+- [x] Privacy Policy page (/privacy) — 8 legal sections, PageNavbar, PageFooter
+- [x] Support page (/support) — contact form, Zod validation, file attachments UI, Resend email integration
+- [x] POST /api/support backend endpoint — Resend SDK, input validation, HTML email to support@spetapp.com
+- [x] Footer links (Privacy Policy + Support) on landing, privacy, and support pages
+- [x] App icons replaced with real SPET icon (1024x1024, no transparency)
+- [x] Splash screen generated with SPET logo
+- [x] Mobile Expo SDK 54 verified — 0 TypeScript errors
+- [x] Mobile API timeout/fallback (15s AbortController)
+- [x] Mobile WS_BASE_URL derived from API_BASE_URL
+- [x] EAS project configured (@raphazitto/spet-mobile, ID: 5073c0c3-bea4-43e8-a6f0-c133b29b82ff)
+
 ### P1
 - CeoOverview/CeoRevenue migration to real API (web)
 - Drag-and-drop Pipeline Kanban (web)
