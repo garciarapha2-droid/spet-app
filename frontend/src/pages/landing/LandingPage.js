@@ -749,12 +749,18 @@ function Footer() {
             spet<span className="gradient-text">.</span> &copy; 2026
           </span>
         </div>
-        <div className="flex items-center gap-5">
+        <div className="flex items-center flex-wrap gap-5">
           {['How it works', 'Benefits', 'Pricing', 'Contact'].map(l => (
             <a key={l} href={`#${l.toLowerCase().replace(/\s/g, '-')}`} className="text-[13px] transition-colors hover:text-foreground" style={{ color: 'hsl(var(--foreground) / 0.5)' }}>
               {l}
             </a>
           ))}
+          <Link to="/privacy" className="text-[13px] transition-colors hover:text-foreground" style={{ color: 'hsl(var(--foreground) / 0.5)' }}>
+            Privacy Policy
+          </Link>
+          <Link to="/support" className="text-[13px] transition-colors hover:text-foreground" style={{ color: 'hsl(var(--foreground) / 0.5)' }}>
+            Support
+          </Link>
         </div>
       </div>
     </footer>

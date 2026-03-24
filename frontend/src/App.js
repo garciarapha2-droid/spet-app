@@ -9,6 +9,8 @@ import { PublicOnly, AuthOnly, ActiveOnly, ProtectedRoute, CEORoute } from './co
 import { LoginPage } from './pages/LoginPage';
 import { SignupPage } from './pages/SignupPage';
 import LandingPage from './pages/landing/LandingPage';
+import PrivacyPolicy from './pages/PrivacyPolicy';
+import Support from './pages/Support';
 
 // Payment pages
 import { PaymentPendingPage } from './pages/PaymentPendingPage';
@@ -111,6 +113,8 @@ function App() {
             <Routes>
               {/* Landing page */}
               <Route path="/" element={<LandingPage />} />
+              <Route path="/privacy" element={<PrivacyPolicy />} />
+              <Route path="/support" element={<Support />} />
 
               {/* Public only routes (redirect if authenticated) */}
               <Route path="/login" element={<PublicOnly><LoginPage /></PublicOnly>} />
