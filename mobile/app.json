@@ -26,8 +26,8 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.spetapp.mobile",
-      "buildNumber": "1",
       "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false,
         "NFCReaderUsageDescription": "SPET uses NFC to scan guest wristbands for fast venue entry.",
         "com.apple.developer.nfc.readersession.iso7816.select-identifiers": [],
         "com.apple.developer.nfc.readersession.felica.systemcodes": []
@@ -45,6 +45,7 @@
       ]
     },
     "plugins": [
+      "expo-updates",
       [
         "react-native-nfc-manager",
         {
