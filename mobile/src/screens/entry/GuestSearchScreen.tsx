@@ -18,7 +18,7 @@ export default function GuestSearchScreen() {
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
 
-  const debounceRef = React.useRef<ReturnType<typeof setTimeout>>();
+  const debounceRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const doSearch = useCallback(
     async (q: string) => {
@@ -43,7 +43,7 @@ export default function GuestSearchScreen() {
 
   const onChangeText = (text: string) => {
     setQuery(text);
-    clearTimeout(debounceRef.current);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => doSearch(text), 400);
   };
 

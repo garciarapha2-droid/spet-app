@@ -14,7 +14,7 @@ interface WsEvent {
 export function useWebSocket(venueId: string, onEvent?: (event: WsEvent) => void) {
   const ws = useRef<WebSocket | null>(null);
   const [connected, setConnected] = useState(false);
-  const reconnectTimeout = useRef<ReturnType<typeof setTimeout>>();
+  const reconnectTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const connect = useCallback(() => {
     if (!venueId) return;
@@ -51,7 +51,7 @@ export function useWebSocket(venueId: string, onEvent?: (event: WsEvent) => void
   useEffect(() => {
     connect();
     return () => {
-      clearTimeout(reconnectTimeout.current);
+      if (reconnectTimeout.current) clearTimeout(reconnectTimeout.current);
       ws.current?.close();
     };
   }, [connect]);
