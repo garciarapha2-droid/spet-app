@@ -1,8 +1,9 @@
 import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Users, TrendingUp, ShieldX, Scan, UserPlus, ChevronRight } from "lucide-react";
+import { Users, TrendingUp, ShieldX, Wifi, UserPlus } from "lucide-react";
 import { PulseLayout } from "../../components/pulse/PulseLayout";
+import GuestRegistrationPanel from "../../components/pulse/GuestRegistrationPanel";
 import { toast } from "sonner";
 
 const fadeUp = (delay = 0) => ({
@@ -12,23 +13,18 @@ const fadeUp = (delay = 0) => ({
 });
 
 const entryGuests = [
-  { id: "pg1", name: "Sofia Cardoso", tabNumber: 106, status: "inside", tier: "Gold", checkedInAt: "2026-03-20T21:15:00" },
-  { id: "pg2", name: "Lucas Oliveira", tabNumber: 107, status: "inside", tier: "Silver", checkedInAt: "2026-03-20T22:00:00" },
-  { id: "pg3", name: "John Smith", tabNumber: 104, status: "inside", tier: "Bronze", checkedInAt: "2026-03-20T22:30:00" },
-  { id: "pg4", name: "Maria Santos", tabNumber: 101, status: "exited", tier: "Platinum", checkedInAt: "2026-03-20T19:00:00" },
-  { id: "pg5", name: "Pedro Almeida", tabNumber: 102, status: "exited", tier: "Bronze", checkedInAt: "2026-03-20T20:00:00" },
+  { id: "pg1", name: "Sofia Cardoso", tabNumber: 106, status: "inside", tier: "Gold", checkedInAt: "2026-03-20T21:15:00", spent: 78, points: 890 },
+  { id: "pg2", name: "Lucas Oliveira", tabNumber: 107, status: "inside", tier: "Silver", checkedInAt: "2026-03-20T22:00:00", spent: 45, points: 420 },
+  { id: "pg3", name: "John Smith", tabNumber: 104, status: "inside", tier: "Bronze", checkedInAt: "2026-03-20T22:30:00", spent: 32, points: 180 },
+  { id: "pg4", name: "Maria Santos", tabNumber: 101, status: "exited", tier: "Platinum", checkedInAt: "2026-03-20T19:00:00", spent: 145, points: 1680 },
+  { id: "pg5", name: "Pedro Almeida", tabNumber: 102, status: "exited", tier: "Bronze", checkedInAt: "2026-03-20T20:00:00", spent: 38, points: 95 },
 ];
 
-const tierColors = {
-  Gold:     { avatar: "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400", badge: "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400" },
-  Silver:   { avatar: "bg-gray-100 dark:bg-gray-800/40 text-gray-700 dark:text-gray-300", badge: "bg-gray-100 dark:bg-gray-800/40 text-gray-700 dark:text-gray-300" },
-  Bronze:   { avatar: "bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400", badge: "bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400" },
-  Platinum: { avatar: "bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-400", badge: "bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-400" },
-};
-
-const statusColors = {
-  inside: "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400",
-  exited: "bg-muted text-muted-foreground",
+const tierStyles = {
+  Gold:     { avatar: "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400", border: "border-l-2 border-l-amber-400" },
+  Silver:   { avatar: "bg-gray-200 dark:bg-gray-700/40 text-gray-600 dark:text-gray-300", border: "border-l-2 border-l-gray-400" },
+  Bronze:   { avatar: "bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400", border: "border-l-2 border-l-orange-400" },
+  Platinum: { avatar: "bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-400", border: "border-l-2 border-l-violet-400" },
 };
 
 function getInitials(name) {
@@ -43,22 +39,23 @@ export default function PulseGuest() {
   const navigate = useNavigate();
   const [scanInput, setScanInput] = useState("");
   const [isFocused, setIsFocused] = useState(false);
+  const [showRegistration, setShowRegistration] = useState(false);
+  const [guests, setGuests] = useState(entryGuests);
   const inputRef = useRef(null);
 
-  const insideCount = entryGuests.filter(g => g.status === "inside").length;
-  const deniedCount = 0;
+  const insideCount = guests.filter(g => g.status === "inside").length;
 
   const kpis = [
-    { label: "GUESTS INSIDE", value: insideCount, icon: Users, color: "bg-primary", iconColor: "text-primary", live: true },
-    { label: "TOTAL ENTRIES", value: entryGuests.length, icon: TrendingUp, color: "bg-emerald-500", iconColor: "text-emerald-500" },
-    { label: "DENIED", value: deniedCount, icon: ShieldX, color: "bg-destructive", iconColor: "text-destructive" },
+    { label: "INSIDE", value: insideCount, icon: Users, bg: "bg-primary/10", iconColor: "text-primary/60" },
+    { label: "ENTRIES", value: guests.length, icon: TrendingUp, bg: "bg-emerald-500/10", iconColor: "text-emerald-500/60" },
+    { label: "DENIED", value: 0, icon: ShieldX, bg: "bg-destructive/10", iconColor: "text-destructive/60" },
   ];
 
   const handleScan = (e) => {
     e.preventDefault();
     if (!scanInput.trim()) return;
     const q = scanInput.trim().toLowerCase();
-    const match = entryGuests.find(g =>
+    const match = guests.find(g =>
       g.name.toLowerCase().includes(q) || g.tabNumber.toString() === q.replace("#", "")
     );
     if (match) {
@@ -74,117 +71,102 @@ export default function PulseGuest() {
     <PulseLayout>
       <div className="flex flex-col gap-0" data-testid="pulse-entry">
 
-        {/* Seção 1 — KPIs */}
+        {/* Seção 1 — KPI Cards */}
         <div className="grid grid-cols-3 gap-6 mb-8" data-testid="entry-kpi-grid">
           {kpis.map((kpi, i) => (
             <motion.div key={kpi.label} {...fadeUp(i * 0.08)}
-              className="flex items-center gap-4 p-5 rounded-xl bg-card border border-border/50"
-              data-testid={`entry-kpi-${kpi.label.toLowerCase().replace(/\s+/g, "-")}`}
+              className={`p-5 rounded-2xl ${kpi.bg}`}
+              data-testid={`entry-kpi-${kpi.label.toLowerCase()}`}
             >
-              <div className={`w-1 h-10 rounded-full ${kpi.color}`} />
-              <div>
-                <div className="flex items-center gap-1.5">
-                  <kpi.icon className={`h-4 w-4 ${kpi.iconColor}`} />
-                  <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">{kpi.label}</span>
-                </div>
-                <div className="flex items-center gap-2 mt-0.5">
-                  <span className="text-3xl font-extrabold text-foreground tabular-nums">{kpi.value}</span>
-                  {kpi.live && <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />}
-                </div>
+              <span className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">{kpi.label}</span>
+              <div className="flex items-end justify-between mt-2">
+                <span className="text-5xl font-extrabold text-foreground tabular-nums">{kpi.value}</span>
+                <kpi.icon className={`h-8 w-8 ${kpi.iconColor}`} />
               </div>
             </motion.div>
           ))}
         </div>
 
-        {/* Seção 2 — Scan NFC + Manual Entry */}
-        <motion.div {...fadeUp(0.25)} className="mb-8" data-testid="scan-section">
-          <div className="flex items-center gap-2 mb-2">
-            <Scan className="h-4 w-4 text-muted-foreground" />
-            <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">SCAN NFC TAG</span>
-          </div>
-
-          <div className="flex items-stretch gap-3">
-            {/* Scan Input */}
-            <form onSubmit={handleScan} className="flex-1 relative">
-              {/* Glow wrapper */}
-              <div className={`absolute -inset-px rounded-2xl blur-sm bg-gradient-to-r from-primary/40 via-primary/10 to-transparent transition-opacity duration-500 pointer-events-none ${isFocused ? "opacity-100" : "opacity-0"}`} />
-              <div className="relative">
-                <Scan className={`absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 transition-colors ${isFocused ? "text-primary" : "text-muted-foreground"}`} />
-                <input
-                  ref={inputRef}
-                  type="text"
-                  value={scanInput}
-                  onChange={e => setScanInput(e.target.value)}
-                  onFocus={() => setIsFocused(true)}
-                  onBlur={() => setIsFocused(false)}
-                  placeholder="Scan NFC or type name..."
-                  autoFocus
-                  className="w-full h-14 pl-12 pr-4 rounded-xl border border-border/50 bg-card text-foreground text-base font-medium placeholder:text-muted-foreground/50 focus:border-primary/40 focus:ring-2 focus:ring-primary/10 focus:outline-none transition-all"
-                  data-testid="nfc-scan-input"
-                />
+        {/* Seção 2 — Scan or Search + Manual Entry */}
+        <motion.div {...fadeUp(0.25)} className="flex items-stretch gap-4 mb-8" data-testid="scan-section">
+          {/* Scan or Search Card */}
+          <form onSubmit={handleScan} className="flex-1 rounded-2xl border border-border/50 bg-card p-5 relative">
+            {/* Glow */}
+            <div className={`absolute -inset-px rounded-2xl blur-sm bg-gradient-to-r from-primary/40 via-primary/10 to-transparent transition-opacity duration-500 pointer-events-none ${isFocused ? "opacity-100" : "opacity-0"}`} />
+            <div className="relative">
+              <div className="flex items-center gap-2 mb-3">
+                <Wifi className="h-4 w-4 text-muted-foreground" />
+                <span className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">SCAN OR SEARCH</span>
               </div>
-              <p className="text-xs text-muted-foreground mt-1.5 pl-1">Place tag on reader or type UID and press Enter</p>
-            </form>
+              <input
+                ref={inputRef}
+                type="text"
+                value={scanInput}
+                onChange={e => setScanInput(e.target.value)}
+                onFocus={() => setIsFocused(true)}
+                onBlur={() => setIsFocused(false)}
+                placeholder="Name, tab number, NFC tag..."
+                autoFocus
+                className="w-full h-12 bg-transparent border-none text-lg text-foreground font-medium placeholder:text-muted-foreground/40 focus:outline-none"
+                data-testid="nfc-scan-input"
+              />
+              <p className="text-xs text-muted-foreground/60 mt-2">&#10022; Place tag on reader or type UID and press Enter</p>
+            </div>
+          </form>
 
-            {/* Manual Entry Button */}
-            <button
-              onClick={() => navigate("/pulse/inside")}
-              className="group flex flex-col items-center justify-center px-6 rounded-xl border border-dashed border-border/60 bg-card cursor-pointer min-w-[140px] hover:border-primary/30 hover:bg-primary/5 transition-all"
-              data-testid="manual-entry-btn"
-            >
-              <UserPlus className="h-5 w-5 text-primary mb-1 group-hover:scale-110 transition-transform" />
-              <span className="text-xs font-semibold text-foreground">Manual Entry</span>
-              <span className="text-[10px] text-muted-foreground">Without NFC</span>
-            </button>
-          </div>
+          {/* Manual Entry Card */}
+          <button
+            onClick={() => setShowRegistration(true)}
+            className="group min-w-[180px] rounded-2xl border border-dashed border-border/60 bg-card flex flex-col items-center justify-center gap-1.5 p-5 cursor-pointer hover:border-primary/30 hover:bg-primary/5 transition-all"
+            data-testid="manual-entry-btn"
+          >
+            <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center mb-1 group-hover:scale-110 transition-transform">
+              <UserPlus className="h-6 w-6 text-primary" />
+            </div>
+            <span className="text-sm font-semibold text-foreground">Manual Entry</span>
+            <span className="text-[11px] text-muted-foreground">No NFC needed</span>
+          </button>
         </motion.div>
 
-        {/* Seção 3 — Guests Today */}
+        {/* Seção 3 — Today's Guests */}
         <motion.div {...fadeUp(0.35)} data-testid="guests-today-section">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-lg font-bold text-foreground">Guests Today</h2>
-            <span className="text-sm font-semibold text-primary tabular-nums">{entryGuests.length} guests</span>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-bold text-foreground">Today&apos;s Guests</h2>
+            <span className="text-sm font-semibold text-primary">{insideCount} active</span>
           </div>
 
-          {entryGuests.length === 0 ? (
-            <div className="rounded-xl border border-border/50 bg-card flex flex-col items-center justify-center py-16" data-testid="guests-empty">
+          {guests.length === 0 ? (
+            <div className="rounded-2xl border border-border/50 bg-card flex flex-col items-center justify-center py-16" data-testid="guests-empty">
               <Users className="h-10 w-10 text-muted-foreground/20 mb-3" />
               <p className="text-sm text-muted-foreground">No guests registered yet</p>
             </div>
           ) : (
-            <div className="rounded-xl border border-border/50 bg-card overflow-hidden" data-testid="guests-list">
-              {entryGuests.map((guest, idx) => {
-                const tc = tierColors[guest.tier] || tierColors.Bronze;
-                const sc = statusColors[guest.status] || statusColors.exited;
+            <div className="rounded-2xl border border-border/50 bg-card overflow-hidden" data-testid="guests-list">
+              {guests.map((guest, idx) => {
+                const ts = tierStyles[guest.tier] || tierStyles.Bronze;
                 return (
                   <div
                     key={guest.id}
                     onClick={() => navigate(`/owner/customers/${guest.id}`)}
-                    className={`flex items-center px-5 py-3.5 hover:bg-muted/20 transition-colors cursor-pointer group ${idx > 0 ? "border-t border-border/30" : ""}`}
+                    className={`flex items-center px-5 py-4 hover:bg-muted/20 transition-colors cursor-pointer group ${ts.border} ${idx > 0 ? "border-t border-border/20" : ""}`}
                     data-testid={`guest-row-${guest.id}`}
                   >
-                    {/* Avatar */}
-                    <div className={`h-9 w-9 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${tc.avatar}`}>
-                      {getInitials(guest.name)}
+                    {/* Avatar + Info */}
+                    <div className="flex items-center gap-3">
+                      <div className={`h-11 w-11 rounded-full flex items-center justify-center text-sm font-bold shrink-0 ${ts.avatar}`}>
+                        {getInitials(guest.name)}
+                      </div>
+                      <div className="leading-tight">
+                        <span className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors block">{guest.name}</span>
+                        <span className="text-xs text-muted-foreground">#{guest.tabNumber} &middot; {guest.tier} &middot; {guest.points} pts</span>
+                      </div>
                     </div>
 
-                    {/* Name + Tab */}
-                    <span className="text-sm font-semibold text-foreground ml-3 group-hover:text-primary transition-colors">{guest.name}</span>
-                    <span className="text-xs font-mono text-muted-foreground ml-2">#{guest.tabNumber}</span>
-
-                    <span className="flex-1" />
-
-                    {/* Time */}
-                    <span className="text-xs text-muted-foreground tabular-nums mr-3">{formatTime(guest.checkedInAt)}</span>
-
-                    {/* Tier Badge */}
-                    <span className={`text-[10px] font-semibold uppercase px-2 py-0.5 rounded-full mr-3 ${tc.badge}`}>{guest.tier}</span>
-
-                    {/* Status Pill */}
-                    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full capitalize ${sc}`}>{guest.status}</span>
-
-                    {/* Chevron */}
-                    <ChevronRight className="h-4 w-4 text-muted-foreground/30 ml-2 group-hover:text-muted-foreground/60 transition-colors" />
+                    {/* Spent + Time */}
+                    <div className="flex flex-col items-end ml-auto">
+                      <span className="text-base font-bold text-foreground tabular-nums">${guest.spent.toFixed(2)}</span>
+                      <span className="text-[11px] text-muted-foreground tabular-nums">{formatTime(guest.checkedInAt)}</span>
+                    </div>
                   </div>
                 );
               })}
@@ -192,6 +174,30 @@ export default function PulseGuest() {
           )}
         </motion.div>
       </div>
+
+      {/* Guest Registration Panel */}
+      <GuestRegistrationPanel
+        open={showRegistration}
+        onClose={() => setShowRegistration(false)}
+        onRegister={(data) => {
+          const newId = `pg${Date.now()}`;
+          const newTab = 100 + guests.length + 1;
+          const newGuest = {
+            id: newId,
+            name: data.name,
+            tabNumber: newTab,
+            status: "inside",
+            tier: "Bronze",
+            checkedInAt: new Date().toISOString(),
+            photo: data.avatar || null,
+            spent: 0,
+            points: 0,
+          };
+          setGuests(prev => [newGuest, ...prev]);
+          setShowRegistration(false);
+          toast.success(`${data.name} registrado com sucesso!`);
+        }}
+      />
     </PulseLayout>
   );
 }

@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard, BarChart3, TrendingUp, DollarSign, Building2, Clock,
   Users, Layers, Heart, Target, Sparkles, AlertTriangle,
-  Settings, ChevronLeft, ChevronRight, ChevronDown
+  Settings, ChevronLeft, ChevronRight, ChevronDown, Activity, UserCog
 } from 'lucide-react';
 import { ownerEvents } from '../../data/ownerData';
 import GlobalNavbar from '../../components/shared/GlobalNavbar';
@@ -21,6 +21,8 @@ const navGroups = [
       { label: 'Profit Analysis', icon: DollarSign, path: '/owner/performance/profit' },
       { label: 'Comparison', icon: Building2, path: '/owner/performance/venues' },
       { label: 'Time Analysis', icon: Clock, path: '/owner/performance/time' },
+      { label: 'Shift vs Operations', icon: Activity, path: '/owner/performance/shift-operations' },
+      { label: 'Staff', icon: UserCog, path: '/owner/performance/staff' },
     ],
   },
   {
@@ -69,6 +71,8 @@ const pageTitles = {
   '/owner/performance/profit': { title: 'Profit Analysis', subtitle: 'Margin intelligence' },
   '/owner/performance/venues': { title: 'Comparison', subtitle: 'Venue benchmarking' },
   '/owner/performance/time': { title: 'Time Analysis', subtitle: 'Peak & dead hours' },
+  '/owner/performance/shift-operations': { title: 'Shift vs Operations', subtitle: 'Operational performance' },
+  '/owner/performance/staff': { title: 'Staff', subtitle: 'Team management' },
   '/owner/customers/intelligence': { title: 'Customer Intelligence', subtitle: 'Guest ranking' },
   '/owner/customers/audience': { title: 'Audience Intelligence', subtitle: 'Demographics & genres' },
   '/owner/customers/segments': { title: 'Segments', subtitle: 'Guest segmentation' },

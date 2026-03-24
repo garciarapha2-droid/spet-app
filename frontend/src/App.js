@@ -147,6 +147,8 @@ function App() {
                 <Route path="performance/profit" element={<ProfitAnalysis />} />
                 <Route path="performance/venues" element={<VenueComparison />} />
                 <Route path="performance/time" element={<TimeAnalysis />} />
+                <Route path="performance/shift-operations" element={<ShiftOperations />} />
+                <Route path="performance/staff" element={<StaffRoles />} />
                 <Route path="customers/intelligence" element={<CustomerIntelligence />} />
                 <Route path="customers/audience" element={<AudienceIntelligence />} />
                 <Route path="customers/audience/:genreSlug" element={<AudienceGenreDetail />} />

@@ -58,6 +58,8 @@ const breadcrumbMap = {
   "/owner/performance/profit": { module: "OWNER", page: "Profit Analysis" },
   "/owner/performance/venues": { module: "OWNER", page: "Comparison" },
   "/owner/performance/time": { module: "OWNER", page: "Time Analysis" },
+  "/owner/performance/shift-operations": { module: "OWNER", page: "Shift vs Operations" },
+  "/owner/performance/staff": { module: "OWNER", page: "Staff" },
   "/owner/customers/intelligence": { module: "OWNER", page: "Customer Intelligence" },
   "/owner/customers/audience": { module: "OWNER", page: "Audience Intelligence" },
   "/owner/customers/segments": { module: "OWNER", page: "Segments" },
