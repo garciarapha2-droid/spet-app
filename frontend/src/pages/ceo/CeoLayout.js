@@ -4,7 +4,7 @@ import {
   ArrowLeft, Moon, Sun, LogOut,
   LayoutDashboard, DollarSign, Users, RefreshCw, Target, Mail,
   BarChart3, TrendingUp, Percent, PieChart, Shield, ClipboardList,
-  Layers, FileBarChart
+  Layers, FileBarChart, Building2
 } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
 import { getRevenueTargets } from '../../services/ceoService';
@@ -32,6 +32,7 @@ const navSections = [
     items: [
       { label: 'Pipeline', icon: Layers, path: '/ceo/pipeline' },
       { label: 'Reports', icon: FileBarChart, path: '/ceo/reports' },
+      { label: 'Customers', icon: Building2, path: '/ceo/customers' },
     ],
   },
   {

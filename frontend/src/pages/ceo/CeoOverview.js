@@ -1,15 +1,23 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { TrendingUp } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as ReTooltip, PieChart, Pie, Cell } from 'recharts';
 import { KpiCard } from '../../components/ceo/KpiCard';
 import { PeriodFilter } from '../../components/ceo/PeriodFilter';
 import { ChartCard, ListCard } from '../../components/ceo/ChartCard';
 import { DrillDownSheet, CompanyListDrillDown, BreakdownDrillDown } from '../../components/ceo/DrillDownSheet';
 import { overviewKpis, growthBanner, mrrGrowthData, customerGrowthData, revenueBreakdown, quickStats, mrrDrillDown, netNewMrrBreakdown, customers } from '../../data/ceoData';
+import { getCustomers } from '../../services/crmService';
 
 export default function CeoOverview() {
   const [period, setPeriod] = useState('month');
   const [drill, setDrill] = useState(null);
+  const navigate = useNavigate();
+  const [activeCustomerCount, setActiveCustomerCount] = useState(null);
+
+  useEffect(() => {
+    getCustomers({ status: 'active' }).then(c => setActiveCustomerCount(c.length)).catch(() => {});
+  }, []);
 
   const handlePeriodChange = (p) => setPeriod(p);
 
@@ -37,11 +45,9 @@ export default function CeoOverview() {
           </DrillDownSheet>
         );
       case 'activeCustomers':
-        return (
-          <DrillDownSheet open title="Active Customers — This Month" subtitle="Full list of active companies with plan, status, signup date" onClose={() => setDrill(null)} count={customers.filter(c => c.status === 'active').length}>
-            <CompanyListDrillDown data={customers.filter(c => c.status === 'active').map(c => ({ company: c.company, plan: c.plan, mrr: c.mrr, status: c.status, since: c.signup }))} />
-          </DrillDownSheet>
-        );
+        navigate('/ceo/customers?status=active');
+        setDrill(null);
+        return null;
       case 'churnRate':
         return (
           <DrillDownSheet open title="Churned Customers — This Month" subtitle="Customers who churned in this period" onClose={() => setDrill(null)} count={0}>
@@ -92,9 +98,15 @@ export default function CeoOverview() {
 
       {/* KPI Cards Row */}
       <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4" data-testid="overview-kpis">
-        {overviewKpis.map(kpi => (
-          <KpiCard key={kpi.key} icon={kpi.icon} color={kpi.color} value={kpi.value} label={kpi.label} description={kpi.description} trend={kpi.trend === 'up' ? 'up' : kpi.trend === 'down' ? 'down' : undefined} trendValue={kpi.trendValue} onClick={() => setDrill(kpi.key)} />
-        ))}
+        {overviewKpis.map(kpi => {
+          // Override Active Customers with real count from DB
+          const value = kpi.key === 'activeCustomers' && activeCustomerCount !== null
+            ? String(activeCustomerCount)
+            : kpi.value;
+          return (
+            <KpiCard key={kpi.key} icon={kpi.icon} color={kpi.color} value={value} label={kpi.label} description={kpi.description} trend={kpi.trend === 'up' ? 'up' : kpi.trend === 'down' ? 'down' : undefined} trendValue={kpi.trendValue} onClick={() => setDrill(kpi.key)} />
+          );
+        })}
       </div>
 
       {/* Growth Banner */}

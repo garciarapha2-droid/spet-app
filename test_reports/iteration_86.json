@@ -1,0 +1,106 @@
+{
+  "summary": "Comprehensive testing of CRM + Pipeline + Customer Base with REAL PostgreSQL persistence. All 24 backend API tests passed. All frontend UI flows tested and working correctly.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_results": {
+    "ceo_login": {
+      "status": "PASS",
+      "details": "CEO user (garcia.rapha2@gmail.com) logs in and redirects to /ceo/overview"
+    },
+    "pipeline_kanban": {
+      "status": "PASS",
+      "details": "6 deal cards displayed across 5 kanban columns (Lead=1, Qualified=1, Proposal=1, Negotiation=1, Closed Won=2). Stage headers show count and total value."
+    },
+    "deal_dialog": {
+      "status": "PASS",
+      "details": "CrmDetailDialog opens with real data (name, email, phone, company, address, plan dropdown, stage dropdown, deal_value, notes). All fields editable."
+    },
+    "deal_save": {
+      "status": "PASS",
+      "details": "Editing deal fields and clicking Save shows 'Saved - Changes saved successfully.' toast. Data persists to PostgreSQL."
+    },
+    "activity_log": {
+      "status": "PASS",
+      "details": "Activity log section shows real activities from DB with dates. Edit and delete icons visible on hover."
+    },
+    "add_activity": {
+      "status": "PASS",
+      "details": "Add Activity button opens form with type dropdown and description input. Saving shows 'Activity added' toast and activity appears in log."
+    },
+    "mark_as_won": {
+      "status": "PASS",
+      "details": "Backend test confirmed: Mark as Won marks deal as closed_won AND creates customer in DB. Toast 'Deal closed!' appears."
+    },
+    "customers_page": {
+      "status": "PASS",
+      "details": "Customer Base page shows 2 customers from PostgreSQL (TEST_Won Company and BrewHouse POA). Table shows company, contact, plan, MRR, status, modules, signup date."
+    },
+    "customer_dialog": {
+      "status": "PASS",
+      "details": "Customer detail dialog shows status dropdown (active/paused/churned) and 8 module toggles (Pulse, Tap, Table, KDS, Bar, Finance, Analytics, AI)."
+    },
+    "customer_search": {
+      "status": "PASS",
+      "details": "Search filters customers by company name in real-time."
+    },
+    "customer_filters": {
+      "status": "PASS",
+      "details": "Plan and Status filter dropdowns work correctly."
+    },
+    "active_customers_kpi": {
+      "status": "PASS",
+      "details": "Active Customers KPI click navigates to /ceo/customers?status=active. Shows real count (2) from DB."
+    },
+    "theme_toggle": {
+      "status": "PASS",
+      "details": "Theme toggle changes between dark and light mode correctly."
+    },
+    "legacy_pages": {
+      "status": "PASS",
+      "details": "All legacy pages accessible: /ceo/revenue, /ceo/security, /ceo/reports, /ceo/mrr-retention"
+    },
+    "non_ceo_access": {
+      "status": "PASS",
+      "details": "Non-CEO user (teste@teste.com) cannot access /ceo routes - redirected to /venue/home"
+    },
+    "pipeline_search": {
+      "status": "PASS",
+      "details": "Pipeline search filters deals by company name. Searching 'Bar' shows 2 results (Bar Noite SP, GastroBar BH)."
+    }
+  },
+  "backend_test_summary": {
+    "total_tests": 24,
+    "passed": 24,
+    "failed": 0,
+    "test_file": "/app/backend/tests/test_iteration86_crm_persistence.py",
+    "junit_report": "/app/test_reports/pytest/iteration86_crm.xml"
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iteration86_crm_persistence.py",
+    "/app/test_reports/pytest/iteration86_crm.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [],
+  "updated_files": ["/app/backend/tests/test_iteration86_crm_persistence.py"],
+  "success_rate": {"backend": "100%", "frontend": "100%"},
+  "test_credentials": {
+    "ceo_user": "garcia.rapha2@gmail.com / 12345",
+    "non_ceo_user": "teste@teste.com / 12345"
+  },
+  "seed_data_creation": "Backend tests created test deals and customers with TEST_ prefix for Mark as Won flow testing",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "CRM + Pipeline + Customer Base fully tested with REAL PostgreSQL persistence. All CRUD operations work. Deal-to-Customer transition (Mark as Won) creates customer automatically. Active Customers KPI shows real count from DB. The old ceoService.js still has mock data for Overview/Revenue/Security/Reports pages, but the CRM (deals, customers, activities) is 100% real via /api/crm/* endpoints.",
+  "data_persistence_verified": {
+    "deals_table": "6+ deals in PostgreSQL (seeded + test-created)",
+    "deal_activities_table": "Activities persisted with CRUD operations",
+    "customers_table": "2+ customers (BrewHouse POA seeded + TEST_Won Company from Mark as Won)"
+  }
+}

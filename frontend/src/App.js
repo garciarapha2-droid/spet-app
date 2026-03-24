@@ -84,6 +84,7 @@ import CeoUsers from './pages/ceo/CeoUsers';
 import CeoSecurity from './pages/ceo/CeoSecurity';
 import CeoPipeline from './pages/ceo/CeoPipeline';
 import CeoReports from './pages/ceo/CeoReports';
+import CustomerBase from './pages/ceo/CustomerBase';
 import CustomerLifecycleDashboard from './components/ceo/CustomerLifecycleDashboard';
 import MrrRetentionDashboard from './components/ceo/MrrRetentionDashboard';
 import CacDashboard from './components/ceo/CacDashboard';
@@ -201,6 +202,7 @@ function App() {
                 <Route path="startup" element={<StartupKpisDashboard />} />
                 <Route path="pipeline" element={<CeoPipeline />} />
                 <Route path="reports" element={<CeoReports />} />
+                <Route path="customers" element={<CustomerBase />} />
               </Route>
 
               {/* /app route — redirects based on user role */}
