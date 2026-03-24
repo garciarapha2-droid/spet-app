@@ -56,6 +56,8 @@ import VenueManagement from './pages/owner/system/VenueManagement';
 import VenueDetail from './pages/owner/system/VenueDetail';
 import EventDetail from './pages/owner/system/EventDetail';
 import OwnerSettings from './pages/owner/system/OwnerSettings';
+import OwnerShiftOperations from './pages/owner/performance/OwnerShiftOperations';
+import OwnerStaff from './pages/owner/performance/OwnerStaff';
 
 // Manager Dashboard Module
 import ManagerLayout from './pages/manager/ManagerLayout';
@@ -147,8 +149,8 @@ function App() {
                 <Route path="performance/profit" element={<ProfitAnalysis />} />
                 <Route path="performance/venues" element={<VenueComparison />} />
                 <Route path="performance/time" element={<TimeAnalysis />} />
-                <Route path="performance/shift-operations" element={<ShiftOperations />} />
-                <Route path="performance/staff" element={<StaffRoles />} />
+                <Route path="performance/shift-operations" element={<OwnerShiftOperations />} />
+                <Route path="performance/staff" element={<OwnerStaff />} />
                 <Route path="customers/intelligence" element={<CustomerIntelligence />} />
                 <Route path="customers/audience" element={<AudienceIntelligence />} />
                 <Route path="customers/audience/:genreSlug" element={<AudienceGenreDetail />} />
