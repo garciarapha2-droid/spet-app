@@ -4,9 +4,11 @@
  */
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, FlatList, TouchableOpacity, RefreshControl, useWindowDimensions } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { colors, spacing, fontSize, radius } from '../../theme/colors';
 import { useVenue } from '../../hooks/useVenue';
+import { ErrorState, EmptyState } from '../../components/ProductionUI';
 import * as kitchenService from '../../services/kitchenService';
 import type { KitchenTicket } from '../../services/kitchenService';
 
@@ -20,8 +22,10 @@ const statusConfig: Record<string, { color: string; bg: string; icon: string; ne
 export default function KitchenScreen() {
   const { venueId } = useVenue();
   const { width } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
   const [tickets, setTickets] = useState<KitchenTicket[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<string>('active');
 
   const numColumns = width > 768 ? 3 : width > 500 ? 2 : 1;
@@ -29,10 +33,14 @@ export default function KitchenScreen() {
   const load = useCallback(async () => {
     if (!venueId) return;
     setLoading(true);
+    setError(null);
     try {
       const data = await kitchenService.getTickets(venueId);
       setTickets(data.tickets || []);
-    } catch { setTickets([]); }
+    } catch (e: any) {
+      setError(e.message || 'Failed to load tickets');
+      setTickets([]);
+    }
     setLoading(false);
   }, [venueId]);
 
@@ -48,7 +56,10 @@ export default function KitchenScreen() {
     try {
       await kitchenService.updateTicketStatus(ticket.id, cfg.next);
       load();
-    } catch {}
+    } catch (e: any) {
+      // Silently refresh to sync state
+      load();
+    }
   };
 
   const renderTicket = ({ item }: { item: KitchenTicket }) => {
@@ -144,13 +155,15 @@ export default function KitchenScreen() {
         keyExtractor={item => item.id}
         numColumns={numColumns}
         key={numColumns}
-        contentContainerStyle={{ padding: spacing.md }}
+        contentContainerStyle={{ padding: spacing.md, paddingBottom: insets.bottom + 20 }}
+        keyboardDismissMode="on-drag"
         refreshControl={<RefreshControl refreshing={loading} onRefresh={load} tintColor={colors.primary} />}
         ListEmptyComponent={
-          <View style={{ padding: spacing.xxxl, alignItems: 'center' }}>
-            <Feather name="check-circle" size={40} color={colors.success} />
-            <Text style={{ fontSize: fontSize.md, color: colors.textMuted, marginTop: spacing.md }}>All caught up!</Text>
-          </View>
+          error ? (
+            <ErrorState message={error} onRetry={load} />
+          ) : loading ? null : (
+            <EmptyState icon="check-circle" title="All Caught Up!" message="No active tickets right now." />
+          )
         }
       />
     </View>

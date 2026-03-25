@@ -1,12 +1,13 @@
 /**
- * Modules Hub — access all dashboards and operational modules.
- * Replaces the web's VenueHomePage module grid.
+ * Modules Hub — Production-ready.
+ * Central navigation to all dashboards and operational modules.
  */
 import React from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
 import { colors, spacing, fontSize, radius } from '../../theme/colors';
+import { ScreenWrapper, ScreenHeader } from '../../components/ProductionUI';
 import { useVenue } from '../../hooks/useVenue';
 import { useAuth } from '../../hooks/useAuth';
 
@@ -41,12 +42,10 @@ export default function ModulesHomeScreen() {
   const { selectedVenue } = useVenue();
   const { logout } = useAuth();
 
-  const handleNav = (screen: string) => {
-    nav.navigate(screen);
-  };
+  const handleNav = (screen: string) => nav.navigate(screen);
 
   const handleLogout = () => {
-    Alert.alert('Logout', 'Are you sure?', [
+    Alert.alert('Logout', 'Are you sure you want to log out?', [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Logout', style: 'destructive', onPress: logout },
     ]);
@@ -54,70 +53,65 @@ export default function ModulesHomeScreen() {
 
   const renderSection = (title: string, items: ModuleItem[]) => (
     <View style={{ marginBottom: spacing.xxl }}>
-      <Text style={{ fontSize: fontSize.xs, fontWeight: '700', color: colors.textMuted, textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: spacing.md, paddingHorizontal: spacing.xxl }}>
+      <Text style={{
+        fontSize: fontSize.xs, fontWeight: '700', color: colors.textMuted,
+        textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: spacing.md,
+      }}>
         {title}
       </Text>
-      <View style={{ paddingHorizontal: spacing.lg }}>
-        {items.map(item => (
-          <TouchableOpacity
-            key={item.key}
-            onPress={() => handleNav(item.screen)}
-            activeOpacity={0.7}
-            style={{
-              flexDirection: 'row', alignItems: 'center', gap: spacing.lg,
-              backgroundColor: colors.bgCard, borderRadius: radius.lg, padding: spacing.lg,
-              marginBottom: spacing.sm, borderWidth: 1, borderColor: colors.border,
-            }}
-            data-testid={`module-${item.key}`}
-          >
-            <View style={{
-              width: 44, height: 44, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center',
-              backgroundColor: item.color + '18',
-            }}>
-              <Feather name={item.icon as any} size={20} color={item.color} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: fontSize.md, fontWeight: '600', color: colors.text }}>{item.label}</Text>
-              <Text style={{ fontSize: fontSize.xs, color: colors.textSecondary, marginTop: 2 }}>{item.subtitle}</Text>
-            </View>
-            <Feather name="chevron-right" size={16} color={colors.textMuted} />
-          </TouchableOpacity>
-        ))}
-      </View>
+      {items.map(item => (
+        <TouchableOpacity
+          key={item.key}
+          onPress={() => handleNav(item.screen)}
+          activeOpacity={0.7}
+          accessibilityRole="button"
+          accessibilityLabel={`Open ${item.label}`}
+          style={{
+            flexDirection: 'row', alignItems: 'center', gap: spacing.lg,
+            backgroundColor: colors.bgCard, borderRadius: radius.lg, padding: spacing.lg,
+            marginBottom: spacing.sm, borderWidth: 1, borderColor: colors.border,
+          }}
+          data-testid={`module-${item.key}`}
+        >
+          <View style={{
+            width: 44, height: 44, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center',
+            backgroundColor: item.color + '18',
+          }}>
+            <Feather name={item.icon as any} size={20} color={item.color} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={{ fontSize: fontSize.md, fontWeight: '600', color: colors.text }}>{item.label}</Text>
+            <Text style={{ fontSize: fontSize.xs, color: colors.textSecondary, marginTop: 2 }}>{item.subtitle}</Text>
+          </View>
+          <Feather name="chevron-right" size={16} color={colors.textMuted} />
+        </TouchableOpacity>
+      ))}
     </View>
   );
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.bg }}>
-      <ScrollView contentContainerStyle={{ paddingTop: spacing.xxl, paddingBottom: 40 }}>
-        {/* Header */}
-        <View style={{ paddingHorizontal: spacing.xxl, marginBottom: spacing.xxxl }}>
-          <Text style={{ fontSize: fontSize.title, fontWeight: '700', color: colors.text }}>Modules</Text>
-          <Text style={{ fontSize: fontSize.sm, color: colors.textSecondary, marginTop: spacing.xs }}>
-            {selectedVenue?.name || 'No venue selected'}
-          </Text>
-        </View>
+    <ScreenWrapper testID="modules-screen">
+      <ScreenHeader title="Modules" subtitle={selectedVenue?.name || 'No venue selected'} />
+      {renderSection('Operations', OPERATIONS)}
+      {renderSection('Dashboards', DASHBOARDS)}
+      {renderSection('System', SYSTEM)}
 
-        {renderSection('Operations', OPERATIONS)}
-        {renderSection('Dashboards', DASHBOARDS)}
-        {renderSection('System', SYSTEM)}
-
-        {/* Logout */}
-        <View style={{ paddingHorizontal: spacing.lg, marginTop: spacing.md }}>
-          <TouchableOpacity
-            onPress={handleLogout}
-            activeOpacity={0.7}
-            style={{
-              flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm,
-              backgroundColor: colors.dangerBg, borderRadius: radius.lg, padding: spacing.lg,
-              borderWidth: 1, borderColor: colors.danger + '30',
-            }}
-          >
-            <Feather name="log-out" size={16} color={colors.danger} />
-            <Text style={{ fontSize: fontSize.md, fontWeight: '600', color: colors.danger }}>Logout</Text>
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
-    </View>
+      {/* Logout */}
+      <TouchableOpacity
+        onPress={handleLogout}
+        activeOpacity={0.7}
+        accessibilityRole="button"
+        accessibilityLabel="Logout"
+        data-testid="logout-button"
+        style={{
+          flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm,
+          backgroundColor: colors.dangerBg, borderRadius: radius.lg, padding: spacing.lg,
+          borderWidth: 1, borderColor: colors.danger + '30', marginTop: spacing.md,
+        }}
+      >
+        <Feather name="log-out" size={16} color={colors.danger} />
+        <Text style={{ fontSize: fontSize.md, fontWeight: '600', color: colors.danger }}>Logout</Text>
+      </TouchableOpacity>
+    </ScreenWrapper>
   );
 }

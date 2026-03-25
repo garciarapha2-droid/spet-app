@@ -5,9 +5,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, FlatList, TouchableOpacity, RefreshControl, useWindowDimensions } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { colors, spacing, fontSize, radius } from '../../theme/colors';
 import { useVenue } from '../../hooks/useVenue';
+import { EmptyState, ErrorState, SkeletonList } from '../../components/ProductionUI';
 import * as tableService from '../../services/tableService';
 import type { Table } from '../../services/tableService';
 
@@ -22,8 +24,10 @@ export default function TablesHomeScreen() {
   const nav = useNavigation<any>();
   const { venueId, selectedVenue } = useVenue();
   const { width } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
   const [tables, setTables] = useState<Table[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<string>('all');
 
   const numColumns = width > 768 ? 3 : 2;
@@ -31,10 +35,14 @@ export default function TablesHomeScreen() {
   const load = useCallback(async () => {
     if (!venueId) return;
     setLoading(true);
+    setError(null);
     try {
       const data = await tableService.listTables(venueId);
       setTables(data.tables || []);
-    } catch { setTables([]); }
+    } catch (e: any) {
+      setError(e.message || 'Failed to load tables');
+      setTables([]);
+    }
     setLoading(false);
   }, [venueId]);
 
@@ -142,13 +150,15 @@ export default function TablesHomeScreen() {
         keyExtractor={item => item.id}
         numColumns={numColumns}
         key={numColumns}
-        contentContainerStyle={{ padding: spacing.md }}
+        contentContainerStyle={{ padding: spacing.md, paddingBottom: insets.bottom + 20 }}
+        keyboardDismissMode="on-drag"
         refreshControl={<RefreshControl refreshing={loading} onRefresh={load} tintColor={colors.primary} />}
         ListEmptyComponent={
-          <View style={{ padding: spacing.xxxl, alignItems: 'center' }}>
-            <Feather name="grid" size={40} color={colors.textMuted} />
-            <Text style={{ fontSize: fontSize.md, color: colors.textMuted, marginTop: spacing.md }}>No tables found</Text>
-          </View>
+          error ? (
+            <ErrorState message={error} onRetry={load} />
+          ) : loading ? null : (
+            <EmptyState icon="grid" title="No Tables" message="Tables will appear here once configured in your venue." />
+          )
         }
       />
     </View>

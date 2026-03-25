@@ -146,23 +146,27 @@ function ModulesStackNavigator() {
 function MainTabs() {
   return (
     <Tab.Navigator
-      screenOptions={{
+      screenOptions={({ route }) => ({
         headerShown: false,
         tabBarStyle: {
           backgroundColor: colors.bgCard,
           borderTopColor: colors.border,
           borderTopWidth: 1,
-          height: 84,
-          paddingTop: 8,
-          paddingBottom: 28,
+          // Let safe-area-context handle bottom padding natively
+          paddingTop: 6,
+          elevation: 0,
         },
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.textMuted,
         tabBarLabelStyle: {
           fontSize: fontSize.xs,
           fontWeight: '600',
+          marginTop: -2,
         },
-      }}
+        tabBarIconStyle: {
+          marginBottom: -2,
+        },
+      })}
     >
       <Tab.Screen
         name="Entry"

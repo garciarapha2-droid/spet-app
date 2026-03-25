@@ -1,13 +1,19 @@
 /**
- * Manager Dashboard — mirrors web ManagerPage.js.
- * Horizontal tab sections: Overview, Staff, Menu, Shifts, Tips, Guests, Reports, Loyalty.
+ * Manager Dashboard — Production-ready.
+ * Features: SafeArea, pull-to-refresh, error states, skeleton loading, accessibility.
  */
-import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, RefreshControl, FlatList, Alert, TextInput, ActivityIndicator } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, TextInput, Platform } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
 import { colors, spacing, fontSize, radius } from '../../theme/colors';
 import { useVenue } from '../../hooks/useVenue';
-import { Card, StatCard } from '../../components/ui';
+import { Card } from '../../components/ui';
+import {
+  ScreenWrapper, ScreenHeader, ErrorState, EmptyState,
+  SkeletonDashboard, SkeletonList, HorizontalTabBar, useAsyncData,
+} from '../../components/ProductionUI';
 import * as managerService from '../../services/managerService';
 
 const TABS = [
@@ -22,41 +28,28 @@ const TABS = [
 ];
 
 export default function ManagerDashboardScreen() {
+  const insets = useSafeAreaInsets();
   const { venueId, selectedVenue } = useVenue();
   const [activeTab, setActiveTab] = useState('overview');
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
-      {/* Header */}
-      <View style={{ paddingHorizontal: spacing.xxl, paddingTop: spacing.xxl, paddingBottom: spacing.md }}>
-        <Text style={{ fontSize: fontSize.title, fontWeight: '700', color: colors.text }}>Manager</Text>
-        <Text style={{ fontSize: fontSize.sm, color: colors.textSecondary, marginTop: spacing.xs }}>
-          {selectedVenue?.name || 'Dashboard'}
-        </Text>
+      {/* Safe Area Header */}
+      <View style={{ paddingTop: Platform.OS === 'ios' ? 0 : insets.top }}>
+        <View style={{ paddingHorizontal: spacing.xxl, paddingTop: spacing.md, paddingBottom: spacing.md }}>
+          <Text
+            style={{ fontSize: fontSize.title, fontWeight: '700', color: colors.text }}
+            accessibilityRole="header"
+          >
+            Manager
+          </Text>
+          <Text style={{ fontSize: fontSize.sm, color: colors.textSecondary, marginTop: spacing.xs }}>
+            {selectedVenue?.name || 'Dashboard'}
+          </Text>
+        </View>
+        <HorizontalTabBar tabs={TABS} activeTab={activeTab} onTabChange={setActiveTab} />
       </View>
 
-      {/* Tab Selector */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: spacing.lg, gap: spacing.sm, paddingBottom: spacing.md }}>
-        {TABS.map(tab => (
-          <TouchableOpacity
-            key={tab.key}
-            onPress={() => setActiveTab(tab.key)}
-            style={{
-              flexDirection: 'row', alignItems: 'center', gap: 6,
-              paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20,
-              backgroundColor: activeTab === tab.key ? colors.primary : colors.bgCard,
-              borderWidth: 1, borderColor: activeTab === tab.key ? colors.primary : colors.border,
-            }}
-          >
-            <Feather name={tab.icon as any} size={14} color={activeTab === tab.key ? '#FFF' : colors.textSecondary} />
-            <Text style={{ fontSize: fontSize.xs, fontWeight: '600', color: activeTab === tab.key ? '#FFF' : colors.textSecondary }}>
-              {tab.label}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
-
-      {/* Content */}
       {activeTab === 'overview' && <OverviewSection venueId={venueId} />}
       {activeTab === 'staff' && <StaffSection venueId={venueId} />}
       {activeTab === 'menu' && <MenuSection venueId={venueId} />}
@@ -69,25 +62,41 @@ export default function ManagerDashboardScreen() {
   );
 }
 
+/* ─── KPI Card ─── */
+function KPICard({ icon, label, value, color }: { icon: string; label: string; value: any; color: string }) {
+  return (
+    <View style={{
+      width: '48%', backgroundColor: colors.bgCard, borderRadius: radius.md, padding: spacing.md,
+      borderWidth: 1, borderColor: colors.border,
+    }}
+      accessibilityLabel={`${label}: ${value}`}
+    >
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.xs }}>
+        <Feather name={icon as any} size={14} color={color} />
+        <Text style={{ fontSize: fontSize.xs, color: colors.textSecondary }}>{label}</Text>
+      </View>
+      <Text style={{ fontSize: fontSize.xl, fontWeight: '700', color, fontVariant: ['tabular-nums'] }}>{value}</Text>
+    </View>
+  );
+}
+
 /* ─── OVERVIEW ─── */
 function OverviewSection({ venueId }: { venueId: string }) {
-  const [data, setData] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const { data, loading, error, refresh } = useAsyncData(
+    () => managerService.getOverview(venueId),
+    [venueId],
+  );
 
-  useEffect(() => {
-    if (!venueId) return;
-    managerService.getOverview(venueId).then(d => setData(d)).catch(() => {}).finally(() => setLoading(false));
-  }, [venueId]);
-
-  if (loading) return <LoadingView />;
+  if (loading) return <SkeletonDashboard />;
+  if (error) return <ErrorState message={error} onRetry={refresh} />;
 
   const kpis = data?.kpis || {};
   const charts = data?.charts || {};
   const alerts = data?.alerts || [];
 
   return (
-    <ScrollView contentContainerStyle={{ padding: spacing.xxl, paddingTop: spacing.md }}>
-      {/* KPI Cards */}
+    <ScreenWrapper onRefresh={refresh} padTop={false}>
+      {/* KPI Grid */}
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginBottom: spacing.xxl }}>
         <KPICard icon="dollar-sign" label="Revenue Today" value={`$${(kpis.revenue_today || 0).toFixed(0)}`} color={colors.success} />
         <KPICard icon="dollar-sign" label="Revenue Week" value={`$${(kpis.revenue_week || 0).toFixed(0)}`} color="#10B981" />
@@ -118,7 +127,7 @@ function OverviewSection({ venueId }: { venueId: string }) {
       {/* Top Items */}
       {charts.top_items?.length > 0 && (
         <Card style={{ marginBottom: spacing.lg }}>
-          <Text style={{ fontSize: fontSize.sm, fontWeight: '600', color: colors.text, marginBottom: spacing.md }}>Top 10 Items</Text>
+          <Text style={{ fontSize: fontSize.sm, fontWeight: '600', color: colors.text, marginBottom: spacing.md }}>Top Items</Text>
           {charts.top_items.slice(0, 10).map((item: any, i: number) => (
             <View key={i} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: spacing.xs }}>
               <Text style={{ fontSize: fontSize.sm, color: colors.text }}>{i + 1}. {item.name}</Text>
@@ -149,12 +158,12 @@ function OverviewSection({ venueId }: { venueId: string }) {
       )}
 
       {/* Alerts */}
-      {alerts.length > 0 && alerts.map((a: any, i: number) => (
+      {alerts.map((a: any, i: number) => (
         <View key={i} style={{
           flexDirection: 'row', alignItems: 'center', gap: spacing.md,
           backgroundColor: a.type === 'warning' ? colors.warningBg : colors.infoBg,
           borderRadius: radius.md, padding: spacing.md, marginBottom: spacing.sm,
-          borderWidth: 1, borderColor: a.type === 'warning' ? colors.warning + '30' : colors.info + '30',
+          borderWidth: 1, borderColor: (a.type === 'warning' ? colors.warning : colors.info) + '30',
         }}>
           <Feather name="alert-triangle" size={16} color={a.type === 'warning' ? colors.warning : colors.info} />
           <View style={{ flex: 1 }}>
@@ -163,73 +172,89 @@ function OverviewSection({ venueId }: { venueId: string }) {
           </View>
         </View>
       ))}
-    </ScrollView>
+    </ScreenWrapper>
   );
 }
 
 /* ─── STAFF ─── */
 function StaffSection({ venueId }: { venueId: string }) {
-  const [staffList, setStaffList] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data, loading, error, refresh } = useAsyncData(
+    () => managerService.getStaff(venueId),
+    [venueId],
+  );
 
-  useEffect(() => {
-    if (!venueId) return;
-    managerService.getStaff(venueId).then(d => setStaffList(d.staff || [])).catch(() => {}).finally(() => setLoading(false));
-  }, [venueId]);
+  if (loading) return <SkeletonList count={6} />;
+  if (error) return <ErrorState message={error} onRetry={refresh} />;
 
-  if (loading) return <LoadingView />;
+  const staffList = data?.staff || [];
+
+  if (staffList.length === 0) {
+    return <EmptyState icon="users" title="No Staff" message="No staff members have been added to this venue yet." />;
+  }
 
   return (
-    <ScrollView contentContainerStyle={{ padding: spacing.xxl, paddingTop: spacing.md }}>
+    <ScreenWrapper onRefresh={refresh} padTop={false}>
       <Text style={{ fontSize: fontSize.xs, fontWeight: '700', color: colors.textMuted, textTransform: 'uppercase', letterSpacing: 1, marginBottom: spacing.md }}>
         Staff ({staffList.length})
       </Text>
       {staffList.map((s: any) => (
         <Card key={s.id} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.sm }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
-            <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: colors.primaryBg, alignItems: 'center', justifyContent: 'center' }}>
-              <Feather name="user" size={16} color={colors.primary} />
+            <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: colors.primaryBg, alignItems: 'center', justifyContent: 'center' }}>
+              <Text style={{ fontSize: fontSize.sm, fontWeight: '700', color: colors.primary }}>
+                {(s.email || '?')[0].toUpperCase()}
+              </Text>
             </View>
             <View>
               <Text style={{ fontSize: fontSize.sm, fontWeight: '500', color: colors.text }}>{s.email}</Text>
               <Text style={{ fontSize: fontSize.xs, color: colors.textSecondary }}>{s.role}</Text>
             </View>
           </View>
-          <View style={{ backgroundColor: s.status === 'active' ? colors.successBg : colors.dangerBg, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6 }}>
-            <Text style={{ fontSize: fontSize.xs, fontWeight: '600', color: s.status === 'active' ? colors.success : colors.danger }}>{s.status}</Text>
+          <View style={{
+            backgroundColor: s.status === 'active' ? colors.successBg : colors.dangerBg,
+            paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6,
+          }}>
+            <Text style={{ fontSize: fontSize.xs, fontWeight: '600', color: s.status === 'active' ? colors.success : colors.danger }}>
+              {s.status}
+            </Text>
           </View>
         </Card>
       ))}
-    </ScrollView>
+    </ScreenWrapper>
   );
 }
 
 /* ─── MENU ─── */
 function MenuSection({ venueId }: { venueId: string }) {
-  const [items, setItems] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const { data, loading, error, refresh } = useAsyncData(
+    async () => {
+      const tapMod = await import('../../services/tapService');
+      return tapMod.getCatalog(venueId);
+    },
+    [venueId],
+  );
 
-  useEffect(() => {
-    if (!venueId) return;
-    // Use tap catalog as menu source
-    import('../services/tapService').then(mod => {
-      mod.getCatalog(venueId).then(d => setItems(d.items || [])).catch(() => {}).finally(() => setLoading(false));
-    });
-  }, [venueId]);
+  if (loading) return <SkeletonList count={8} />;
+  if (error) return <ErrorState message={error} onRetry={refresh} />;
 
-  if (loading) return <LoadingView />;
+  const items = data?.items || [];
+  const filtered = items.filter((i: any) => !search || i.name?.toLowerCase().includes(search.toLowerCase()));
+  const categories = [...new Set(items.map((i: any) => i.category))] as string[];
 
-  const filtered = items.filter(i => !search || i.name?.toLowerCase().includes(search.toLowerCase()));
-  const categories = [...new Set(items.map(i => i.category))];
+  if (items.length === 0) {
+    return <EmptyState icon="coffee" title="No Menu Items" message="The menu catalog is empty. Add items from the web dashboard." />;
+  }
 
   return (
-    <ScrollView contentContainerStyle={{ padding: spacing.xxl, paddingTop: spacing.md }}>
+    <ScreenWrapper onRefresh={refresh} padTop={false}>
       <TextInput
         placeholder="Search menu..."
         placeholderTextColor={colors.textPlaceholder}
         value={search}
         onChangeText={setSearch}
+        returnKeyType="search"
+        accessibilityLabel="Search menu items"
         style={{
           backgroundColor: colors.bgInput, borderRadius: radius.md, padding: spacing.md,
           color: colors.text, fontSize: fontSize.sm, borderWidth: 1, borderColor: colors.border, marginBottom: spacing.lg,
@@ -239,7 +264,7 @@ function MenuSection({ venueId }: { venueId: string }) {
         {items.length} items across {categories.length} categories
       </Text>
       {categories.map(cat => {
-        const catItems = filtered.filter(i => i.category === cat);
+        const catItems = filtered.filter((i: any) => i.category === cat);
         if (catItems.length === 0) return null;
         return (
           <View key={cat} style={{ marginBottom: spacing.xxl }}>
@@ -251,42 +276,45 @@ function MenuSection({ venueId }: { venueId: string }) {
                 flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
                 paddingVertical: spacing.md, borderBottomWidth: 1, borderBottomColor: colors.border + '40',
               }}>
-                <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: fontSize.sm, fontWeight: '500', color: colors.text }}>{item.name}</Text>
-                </View>
+                <Text style={{ fontSize: fontSize.sm, fontWeight: '500', color: colors.text, flex: 1 }}>{item.name}</Text>
                 <Text style={{ fontSize: fontSize.sm, fontWeight: '700', color: colors.primary }}>${(item.price || 0).toFixed(2)}</Text>
               </View>
             ))}
           </View>
         );
       })}
-    </ScrollView>
+    </ScreenWrapper>
   );
 }
 
 /* ─── SHIFTS ─── */
 function ShiftsSection({ venueId }: { venueId: string }) {
-  const [shifts, setShifts] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data, loading, error, refresh } = useAsyncData(
+    () => managerService.getShifts(venueId),
+    [venueId],
+  );
 
-  useEffect(() => {
-    if (!venueId) return;
-    managerService.getShifts(venueId).then(d => setShifts(d.shifts || [])).catch(() => {}).finally(() => setLoading(false));
-  }, [venueId]);
+  if (loading) return <SkeletonList count={4} />;
+  if (error) return <ErrorState message={error} onRetry={refresh} />;
 
-  if (loading) return <LoadingView />;
+  const shifts = data?.shifts || [];
+
+  if (shifts.length === 0) {
+    return <EmptyState icon="clock" title="No Shifts" message="No shifts have been closed yet." />;
+  }
 
   return (
-    <ScrollView contentContainerStyle={{ padding: spacing.xxl, paddingTop: spacing.md }}>
+    <ScreenWrapper onRefresh={refresh} padTop={false}>
       <Text style={{ fontSize: fontSize.xs, fontWeight: '700', color: colors.textMuted, textTransform: 'uppercase', letterSpacing: 1, marginBottom: spacing.md }}>
         Shift History ({shifts.length})
       </Text>
-      {shifts.length === 0 && <EmptyView text="No shifts closed yet" />}
       {shifts.map((s: any) => (
         <Card key={s.id} style={{ marginBottom: spacing.sm }}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: spacing.sm }}>
             <Text style={{ fontSize: fontSize.md, fontWeight: '600', color: colors.text }}>{s.shift_name}</Text>
-            <Text style={{ fontSize: fontSize.xs, color: colors.textMuted }}>{s.created_at ? new Date(s.created_at).toLocaleDateString() : ''}</Text>
+            <Text style={{ fontSize: fontSize.xs, color: colors.textMuted }}>
+              {s.created_at ? new Date(s.created_at).toLocaleDateString() : ''}
+            </Text>
           </View>
           <View style={{ flexDirection: 'row', gap: spacing.lg }}>
             <View>
@@ -304,90 +332,98 @@ function ShiftsSection({ venueId }: { venueId: string }) {
           </View>
         </Card>
       ))}
-    </ScrollView>
+    </ScreenWrapper>
   );
 }
 
 /* ─── TIPS ─── */
 function TipsSection({ venueId }: { venueId: string }) {
-  const [data, setData] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const { data, loading, error, refresh } = useAsyncData(
+    () => managerService.getTipsDetail(venueId),
+    [venueId],
+  );
 
-  useEffect(() => {
-    if (!venueId) return;
-    managerService.getTipsDetail(venueId).then(d => setData(d)).catch(() => {}).finally(() => setLoading(false));
-  }, [venueId]);
+  if (loading) return <SkeletonList count={5} />;
+  if (error) return <ErrorState message={error} onRetry={refresh} />;
 
-  if (loading) return <LoadingView />;
-  if (!data) return <EmptyView text="No tips data" />;
+  const tips = data?.tips || data?.staff_tips || [];
+  const total = data?.total_tips || tips.reduce((s: number, t: any) => s + (t.tips || t.total || 0), 0);
 
-  const tips = data.tips || data.staff_tips || [];
-  const total = data.total_tips || tips.reduce((s: number, t: any) => s + (t.tips || t.total || 0), 0);
+  if (tips.length === 0) {
+    return <EmptyState icon="dollar-sign" title="No Tips Data" message="Tips information will appear here after transactions are processed." />;
+  }
 
   return (
-    <ScrollView contentContainerStyle={{ padding: spacing.xxl, paddingTop: spacing.md }}>
+    <ScreenWrapper onRefresh={refresh} padTop={false}>
       <Card style={{ alignItems: 'center', marginBottom: spacing.xxl }}>
         <Text style={{ fontSize: fontSize.xs, color: colors.textSecondary, textTransform: 'uppercase' }}>Total Tips</Text>
-        <Text style={{ fontSize: 32, fontWeight: '700', color: colors.success, marginTop: spacing.xs }}>${total.toFixed(2)}</Text>
+        <Text style={{ fontSize: 32, fontWeight: '700', color: colors.success, marginTop: spacing.xs, fontVariant: ['tabular-nums'] }}>
+          ${total.toFixed(2)}
+        </Text>
       </Card>
-
       {tips.map((t: any, i: number) => (
         <View key={i} style={{
           flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
           paddingVertical: spacing.md, borderBottomWidth: 1, borderBottomColor: colors.border + '40',
         }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
-            <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: colors.infoBg, alignItems: 'center', justifyContent: 'center' }}>
-              <Text style={{ fontSize: fontSize.xs, fontWeight: '700', color: colors.info }}>{(t.name || t.staff_name)?.[0] || '?'}</Text>
+            <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: colors.infoBg, alignItems: 'center', justifyContent: 'center' }}>
+              <Text style={{ fontSize: fontSize.xs, fontWeight: '700', color: colors.info }}>
+                {(t.name || t.staff_name)?.[0] || '?'}
+              </Text>
             </View>
             <Text style={{ fontSize: fontSize.sm, fontWeight: '500', color: colors.text }}>{t.name || t.staff_name}</Text>
           </View>
-          <Text style={{ fontSize: fontSize.sm, fontWeight: '700', color: colors.success }}>${(t.tips || t.total || 0).toFixed(2)}</Text>
+          <Text style={{ fontSize: fontSize.sm, fontWeight: '700', color: colors.success, fontVariant: ['tabular-nums'] }}>
+            ${(t.tips || t.total || 0).toFixed(2)}
+          </Text>
         </View>
       ))}
-    </ScrollView>
+    </ScreenWrapper>
   );
 }
 
 /* ─── GUESTS ─── */
 function GuestsSection({ venueId }: { venueId: string }) {
-  const [guests, setGuests] = useState<any[]>([]);
-  const [total, setTotal] = useState(0);
-  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const { data, loading, error, refresh } = useAsyncData(
+    () => managerService.getGuests(venueId),
+    [venueId],
+  );
 
-  const load = useCallback((q?: string) => {
-    if (!venueId) return;
-    managerService.getGuests(venueId).then((d: any) => {
-      setGuests(d.guests || []);
-      setTotal(d.total || 0);
-    }).catch(() => {}).finally(() => setLoading(false));
-  }, [venueId]);
+  if (loading) return <SkeletonList count={6} />;
+  if (error) return <ErrorState message={error} onRetry={refresh} />;
 
-  useEffect(() => { load(); }, [load]);
+  const guests = data?.guests || [];
+  const total = data?.total || guests.length;
+  const filtered = guests.filter((g: any) => !search || g.name?.toLowerCase().includes(search.toLowerCase()));
 
-  if (loading) return <LoadingView />;
+  if (guests.length === 0) {
+    return <EmptyState icon="user" title="No Guests" message="Guest data will appear after check-ins." />;
+  }
 
   return (
-    <ScrollView contentContainerStyle={{ padding: spacing.xxl, paddingTop: spacing.md }}>
+    <ScreenWrapper onRefresh={refresh} padTop={false}>
       <TextInput
         placeholder="Search guests..."
         placeholderTextColor={colors.textPlaceholder}
         value={search}
         onChangeText={setSearch}
+        returnKeyType="search"
+        accessibilityLabel="Search guests"
         style={{
           backgroundColor: colors.bgInput, borderRadius: radius.md, padding: spacing.md,
           color: colors.text, fontSize: fontSize.sm, borderWidth: 1, borderColor: colors.border, marginBottom: spacing.lg,
         }}
       />
       <Text style={{ fontSize: fontSize.xs, color: colors.textSecondary, marginBottom: spacing.md }}>{total} guests total</Text>
-      {guests.filter(g => !search || g.name?.toLowerCase().includes(search.toLowerCase())).map((g: any, idx: number) => (
+      {filtered.map((g: any, idx: number) => (
         <View key={g.id || idx} style={{
           flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
           paddingVertical: spacing.md, borderBottomWidth: 1, borderBottomColor: colors.border + '40',
         }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
-            <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: colors.primaryBg, alignItems: 'center', justifyContent: 'center' }}>
+            <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: colors.primaryBg, alignItems: 'center', justifyContent: 'center' }}>
               <Text style={{ fontSize: fontSize.sm, fontWeight: '700', color: colors.primary }}>{g.name?.[0] || '?'}</Text>
             </View>
             <View>
@@ -397,153 +433,80 @@ function GuestsSection({ venueId }: { venueId: string }) {
           </View>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
             {g.tags?.includes('vip') && (
-              <View style={{ backgroundColor: colors.warningBg, paddingHorizontal: 6, paddingVertical: 1, borderRadius: 4 }}>
+              <View style={{ backgroundColor: colors.warningBg, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 }}>
                 <Text style={{ fontSize: 9, fontWeight: '700', color: colors.warning }}>VIP</Text>
               </View>
             )}
-            <Text style={{ fontSize: fontSize.sm, fontWeight: '600', color: colors.success }}>${(g.spend_total || 0).toFixed(0)}</Text>
+            <Text style={{ fontSize: fontSize.sm, fontWeight: '600', color: colors.success, fontVariant: ['tabular-nums'] }}>
+              ${(g.spend_total || 0).toFixed(0)}
+            </Text>
           </View>
         </View>
       ))}
-    </ScrollView>
+    </ScreenWrapper>
   );
 }
 
 /* ─── REPORTS ─── */
 function ReportsSection({ venueId }: { venueId: string }) {
-  const [report, setReport] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const { data, loading, error, refresh } = useAsyncData(
+    () => managerService.getReports(venueId),
+    [venueId],
+  );
 
-  useEffect(() => {
-    if (!venueId) return;
-    setLoading(true);
-    managerService.getReports(venueId).then(d => setReport(d)).catch(() => {}).finally(() => setLoading(false));
-  }, [venueId]);
+  if (loading) return <SkeletonDashboard />;
+  if (error) return <ErrorState message={error} onRetry={refresh} />;
 
-  if (loading) return <LoadingView />;
-  if (!report) return <EmptyView text="No report data" />;
+  const report = data || {};
+  const hasData = (report.by_item?.length > 0) || (report.by_method?.length > 0);
+
+  if (!hasData) {
+    return <EmptyState icon="bar-chart-2" title="No Sales Data" message="Sales data will appear here after orders are processed." />;
+  }
 
   return (
-    <ScrollView contentContainerStyle={{ padding: spacing.xxl, paddingTop: spacing.md }}>
-      {/* Period label */}
-      <View style={{
-        paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16, backgroundColor: colors.bgCard,
-        borderWidth: 1, borderColor: colors.border, alignSelf: 'flex-start', marginBottom: spacing.xxl,
-      }}>
-        <Text style={{ fontSize: fontSize.xs, fontWeight: '600', color: colors.textSecondary, textTransform: 'capitalize' }}>
-          {report.period || 'today'}
-        </Text>
-      </View>
-
-      {/* By Method */}
+    <ScreenWrapper onRefresh={refresh} padTop={false}>
       {report.by_method?.length > 0 && (
         <View style={{ flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.xxl }}>
           {report.by_method.map((m: any) => (
             <Card key={m.method} style={{ flex: 1, alignItems: 'center' }}>
               <Text style={{ fontSize: fontSize.xs, color: colors.textSecondary, textTransform: 'capitalize' }}>{m.method}</Text>
-              <Text style={{ fontSize: fontSize.lg, fontWeight: '700', color: colors.success, marginTop: 4 }}>${(m.total || 0).toFixed(0)}</Text>
+              <Text style={{ fontSize: fontSize.lg, fontWeight: '700', color: colors.success, marginTop: 4, fontVariant: ['tabular-nums'] }}>
+                ${(m.total || 0).toFixed(0)}
+              </Text>
               <Text style={{ fontSize: 9, color: colors.textMuted }}>{m.count} txn</Text>
             </Card>
           ))}
         </View>
       )}
-
-      {/* By Item */}
       {report.by_item?.length > 0 && (
         <>
           <Text style={{ fontSize: fontSize.xs, fontWeight: '700', color: colors.textMuted, textTransform: 'uppercase', letterSpacing: 1, marginBottom: spacing.md }}>
-            Top Items
+            Items Sold
           </Text>
           {report.by_item.slice(0, 15).map((item: any, i: number) => (
             <View key={i} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.border + '30' }}>
-              <Text style={{ fontSize: fontSize.sm, color: colors.text }}>{i + 1}. {item.name} (x{item.qty})</Text>
-              <Text style={{ fontSize: fontSize.sm, fontWeight: '600', color: colors.primary }}>${(item.revenue || 0).toFixed(0)}</Text>
+              <Text style={{ fontSize: fontSize.sm, color: colors.text, flex: 1 }}>{i + 1}. {item.name} (x{item.qty})</Text>
+              <Text style={{ fontSize: fontSize.sm, fontWeight: '600', color: colors.primary, fontVariant: ['tabular-nums'] }}>
+                ${(item.revenue || 0).toFixed(0)}
+              </Text>
             </View>
           ))}
         </>
       )}
-
-      {/* Exceptions / Voids */}
-      {report.exceptions?.length > 0 && (
-        <>
-          <Text style={{ fontSize: fontSize.xs, fontWeight: '700', color: colors.textMuted, textTransform: 'uppercase', letterSpacing: 1, marginTop: spacing.xxl, marginBottom: spacing.md }}>
-            Exceptions
-          </Text>
-          {report.exceptions.map((e: any, i: number) => (
-            <View key={i} style={{
-              flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginBottom: spacing.sm,
-              backgroundColor: colors.dangerBg, borderRadius: radius.md, padding: spacing.md,
-              borderWidth: 1, borderColor: colors.danger + '30',
-            }}>
-              <Feather name="alert-circle" size={14} color={colors.danger} />
-              <Text style={{ fontSize: fontSize.sm, color: colors.text, flex: 1 }}>{e.message || e.type || JSON.stringify(e)}</Text>
-            </View>
-          ))}
-        </>
-      )}
-
-      {report.by_item?.length === 0 && report.by_method?.length === 0 && (
-        <EmptyView text="No sales data for this period" />
-      )}
-    </ScrollView>
+    </ScreenWrapper>
   );
 }
 
 /* ─── LOYALTY ─── */
 function LoyaltySection({ venueId }: { venueId: string }) {
-  const [config, setConfig] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    if (!venueId) return;
-    import('../services/managerService').then(mod => {
-      // loyalty endpoint is similar to getReports but for loyalty
-      mod.getOverview(venueId).then(() => {}).catch(() => {});
-    });
-    setLoading(false);
-  }, [venueId]);
-
   return (
-    <ScrollView contentContainerStyle={{ padding: spacing.xxl, paddingTop: spacing.md }}>
-      <Card style={{ alignItems: 'center', marginBottom: spacing.lg }}>
-        <Feather name="gift" size={32} color={colors.primary} />
-        <Text style={{ fontSize: fontSize.lg, fontWeight: '600', color: colors.text, marginTop: spacing.md }}>Loyalty Program</Text>
-        <Text style={{ fontSize: fontSize.sm, color: colors.textSecondary, marginTop: spacing.xs, textAlign: 'center' }}>
-          Configure rewards, tiers, and points from the Manager dashboard on web.
-        </Text>
-      </Card>
-    </ScrollView>
-  );
-}
-
-/* ─── Shared Components ─── */
-function KPICard({ icon, label, value, color }: { icon: string; label: string; value: any; color: string }) {
-  return (
-    <View style={{
-      width: '48%', backgroundColor: colors.bgCard, borderRadius: radius.md, padding: spacing.md,
-      borderWidth: 1, borderColor: colors.border,
-    }}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.xs }}>
-        <Feather name={icon as any} size={14} color={color} />
-        <Text style={{ fontSize: fontSize.xs, color: colors.textSecondary }}>{label}</Text>
-      </View>
-      <Text style={{ fontSize: fontSize.xl, fontWeight: '700', color }}>{value}</Text>
-    </View>
-  );
-}
-
-function LoadingView() {
-  return (
-    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: spacing.xxxl }}>
-      <ActivityIndicator size="large" color={colors.primary} />
-    </View>
-  );
-}
-
-function EmptyView({ text }: { text: string }) {
-  return (
-    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: spacing.xxxl }}>
-      <Text style={{ fontSize: fontSize.md, color: colors.textMuted }}>{text}</Text>
+    <View style={{ flex: 1, backgroundColor: colors.bg }}>
+      <EmptyState
+        icon="gift"
+        title="Loyalty Program"
+        message="Configure rewards, tiers, and points from the Manager dashboard on web."
+      />
     </View>
   );
 }
