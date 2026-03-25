@@ -42,6 +42,7 @@ Complete redesign of the iPhone app's user experience, navigation structure, and
 - Menu categories with emojis
 - Drink cards grid with one-tap add
 - Order panel: items, quantities, send order
+- Extras/Customization modal for every item
 - Close tab modal: payment method → tip → confirmation
 
 ### 6. Tables Module
@@ -76,12 +77,12 @@ Complete redesign of the iPhone app's user experience, navigation structure, and
 │   │   └── CustomTabBar.tsx          # Spec-aligned tab bar with indicator
 │   ├── screens/
 │   │   ├── entry/                    # EntryHome, NfcScan, GuestSearch, EntryDecision, GuestIntake, NfcRegister
-│   │   ├── tabs/                     # TabsMainScreen (POS ordering)
+│   │   ├── tabs/                     # TabsMainScreen (POS ordering with Extras modal)
 │   │   ├── tables/                   # TablesHome, TableDetail
 │   │   ├── settings/                 # SettingsScreen (theme toggle + logout)
 │   │   ├── auth/                     # LoginScreen
 │   │   └── venue/                    # VenueSelectScreen
-│   ├── services/                     # API clients (tap, pulse, table, nfc, auth, etc.)
+│   ├── services/                     # API clients (tap, pulse, table, nfc, auth, venue)
 │   └── hooks/                        # useAuth, useVenue, useWebSocket
 ```
 
@@ -91,26 +92,28 @@ Complete redesign of the iPhone app's user experience, navigation structure, and
 - React Navigation (native stack + bottom tabs)
 - SecureStore for auth tokens + theme preference
 - NFC via react-native-nfc-manager (lazy-loaded)
+- expo-image-picker for guest photo capture
 
 ## API Endpoints Used
 - `POST /api/auth/login` — Authentication
+- `GET /api/venue/home` — Venues and modules
 - `GET /api/tap/sessions?venue_id=` — Open tabs
-- `GET /api/tap/catalog?venue_id=` — Menu items
-- `POST /api/tap/sessions/{id}/items` — Add order item
-- `POST /api/tap/sessions/{id}/close` — Close tab
-- `GET /api/pulse/entries/today?venue_id=` — Today's entries
+- `GET /api/tap/catalog?venue_id=` — Menu items with categories
+- `POST /api/tap/session/open` — Open new tab (FormData)
+- `POST /api/tap/session/{id}/add` — Add item with modifiers (FormData)
+- `GET /api/tap/session/{id}` — Session detail with items
+- `POST /api/tap/session/{id}/close` — Close tab (FormData)
+- `POST /api/tap/session/{id}/record-tip` — Record tip (FormData)
 - `GET /api/pulse/inside?venue_id=` — Guests inside
-- `POST /api/pulse/guest/search` — Guest search
+- `GET /api/pulse/entries/today?venue_id=` — Today's entries
+- `POST /api/pulse/guest/intake` — Register guest with photo (FormData)
 - `GET /api/table/tables?venue_id=` — Tables list
-- `POST /api/pulse/guest/intake` — Register guest
-- `POST /api/nfc/scan` — NFC tag scan
-- `POST /api/nfc/register` — Bind NFC tag
 
 ## Test Credentials
 - Email: garcia.rapha2@gmail.com / Password: 12345
 - Venue ID: 40a24e04-75b6-435d-bfff-ab0d469ce543
 
-## Completed (Feb 2026)
+## Completed (Mar 2026)
 - [x] Theme system with dark/light/system modes + persistence
 - [x] Navigation restructured to 4 tabs (Entry, Tabs, Tables, More)
 - [x] CEO/Manager/Owner/Kitchen removed from iPhone routes
@@ -118,18 +121,25 @@ Complete redesign of the iPhone app's user experience, navigation structure, and
 - [x] Custom bottom tab bar per spec
 - [x] Entry module redesign (KPIs, scan, guest list)
 - [x] Tabs/Bar module as full POS ordering system
-- [x] Close tab flow with payment + tip modal
+- [x] Extras/Customization modal for drink items
+- [x] Close tab flow with payment location + tip
 - [x] Tables module with grid and filters
 - [x] Settings with theme selector + logout
 - [x] All screens themed (no hardcoded colors)
 - [x] TypeScript clean (zero errors on iPhone screens)
-- [x] Backend API tests: 12/12 passing
+- [x] Backend API tests: 15/15 passing (iteration 94)
+- [x] Full E2E flow validated: login → open tab → add items → close → tip → persistence
+- [x] Bug fix: catalogItemId extraction (was truncating UUID)
+- [x] Bug fix: stale selectedTab state after data refresh
+- [x] Debug logging: URL visibility in api.ts request function
+- [x] Guest registration with photo capture (expo-image-picker)
+- [x] NFC unregistered tag → success flow (not error)
+- [x] FormData used for all POST mutations (not JSON)
 
 ## Backlog
 - (P1) Web App: Migrate CeoOverview & CeoRevenue to real backend API
 - (P1) Web App: Drag-and-drop Pipeline Kanban
 - (P2) Mobile: Re-enable expo-updates in app.json for OTA updates
-- (P2) Mobile: Extras/customization modal for drink items in Bar
 - (P3) Web App: Pricing Cards landing page bug (recurring)
 - (P3) Mobile: Animated tab bar indicator (spring animation)
 - (P3) Mobile: Page transition animations
