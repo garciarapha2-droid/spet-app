@@ -1,129 +1,112 @@
-# SPET — Product Requirements Document
+# SPET - CEO OS Platform
 
 ## Original Problem Statement
-Nightlife management SaaS with modules: Owner, Manager, Pulse, CEO OS.
-The platform includes a web app (React) and a native mobile app (React Native/Expo) for venue operations.
+Build a "CEO OS" module for a web app. This expanded into a full-build mission to transform the existing React Native/Expo mobile app into a true 1:1 operational version of the web platform, achieving complete feature and design parity.
 
-## Architecture Overview
+## User Personas
+- **CEO**: Full platform visibility (revenue, pipeline, users, security)
+- **Owner**: Business intelligence (finance, customers, growth, insights, venues)
+- **Manager**: Operational control (staff, menu, shifts, tips, reports, guests)
+- **Staff/Bartender**: Operational tasks (entry, tabs, tables, kitchen)
+
+## Core Requirements
+1. **Full-stack web application** - React/FastAPI/PostgreSQL ✅
+2. **Mobile app (React Native/Expo)** - 1:1 parity with web ✅ (Wave 1 Complete)
+3. **Real-time operations** - WebSocket for live updates ✅
+4. **NFC integration** - Guest wristband scanning ✅
+5. **Multi-role dashboards** - CEO, Owner, Manager ✅
+
+## Architecture
 ```
 /app
-├── backend/          FastAPI + PostgreSQL + MongoDB
-│   ├── routes/
-│   │   ├── nfc.py              # NFC tag register/scan/unlink/list
-│   │   ├── crm.py              # CRM CRUD (deals, customers)
-│   │   ├── ceo_analytics.py    # Security, Reports, Revenue
-│   │   ├── pulse.py            # Guest intake, entry, search
-│   │   ├── tap.py              # Tabs, catalog, items
-│   │   ├── venue.py            # Venue home, modules
-│   │   └── auth.py             # Login, signup, refresh
-│   ├── migrations/
-│   │   ├── crm_migration.py
-│   │   └── nfc_migration.py
-│   └── ws_manager.py           # WebSocket real-time
-├── frontend/         React (CRA) + Tailwind + Shadcn UI (Web)
-└── mobile/           React Native + Expo (Native App)
-    ├── App.tsx
-    └── src/
-        ├── services/  (6 services — api, auth, venue, nfc, pulse, tap)
-        ├── hooks/     (3 hooks — useAuth, useVenue, useWebSocket)
-        ├── screens/   (11 screens across auth, venue, entry, pulse)
-        ├── navigation/ (RootNavigator with Auth/Venue/MainTabs)
-        ├── components/ (shared UI components)
-        └── theme/     (dark theme, spacing, typography)
+├── backend/          # FastAPI + PostgreSQL
+│   ├── routes/       # 18 route modules
+│   └── server.py     # Main app
+├── frontend/         # React web app
+│   └── src/
+│       ├── pages/    # All web pages
+│       └── components/
+└── mobile/           # React Native / Expo SDK 54
+    ├── src/
+    │   ├── screens/  # 17+ screens
+    │   ├── services/ # 12 API services
+    │   ├── hooks/    # Auth, Venue, WebSocket
+    │   ├── components/
+    │   ├── navigation/
+    │   └── theme/
+    ├── app.json
+    └── eas.json
 ```
 
-## Database Schema
+## What's Been Implemented
 
-### PostgreSQL
-- **nfc_tags**: id, tag_uid, guest_id, venue_id, status, label, assigned_by, created_at, last_scanned
-- **deals**: id, company_name, contact_name, plan_id, stage, deal_value, notes, ...
-- **customers**: id, company_name, contact_name, plan_id, status, mrr, modules_enabled, ...
-- **tap_sessions**: id, venue_id, guest_id, status, total, meta, opened_at, ...
-- **entry_events**: id, venue_id, guest_id, decision, entry_type, ...
+### Web App (Complete)
+- Landing page, Auth, Onboarding
+- All operational modules (Pulse, Tap, Tables, Kitchen)
+- Manager Dashboard (11 tabs)
+- CEO Dashboard (7 pages)
+- Owner Dashboard (7+ sub-modules)
+- Support form with Resend email integration
+- Privacy Policy page
 
-### MongoDB
-- **venue_guests**: PII (name, email, phone, photo, flags, tags, spend_total, visits)
-- **venue_configs**: Venue settings
-- **venue_catalog**: Menu/products
+### Mobile App - Wave 1 COMPLETE (2026-03-25)
+**Navigation**: 5-tab bottom bar (Entry, Tabs, Tables, Kitchen, More)
+**Screens implemented**:
+- Auth: LoginScreen
+- Venue: VenueSelectScreen
+- Entry: EntryHome, NfcScan, GuestSearch, EntryDecision, GuestIntake, NfcRegister
+- Pulse/Tabs: PulseHome (with Inside/Exit/Bar/Rewards quick-nav), TabDetail, AddItem, PulseInside, PulseExit, PulseBar, PulseRewards
+- Tables: TablesHome, TableDetail
+- Kitchen: KitchenScreen
+- Manager Dashboard: 8-tab dashboard (Overview, Staff, Menu, Shifts, Tips, Guests, Reports, Loyalty)
+- CEO Dashboard: 6-tab dashboard (Overview, Revenue, Pipeline, Users, Security, Reports)
+- Owner Dashboard: 7-tab dashboard (Overview, Performance, Finance, Customers, Growth, Insights, System)
+- Modules Hub: Central navigation to all dashboards
+- Settings: User info, venue switch, privacy, support, logout
 
-## Testing History
-- iteration_87: 28/28 (CEO analytics migration)
-- iteration_88: 27/27 (NFC backend + regression)
-
-## What's Complete
-
-### Web App
-- [x] Full CRM backend + frontend (Pipeline, Customers, Analytics)
-- [x] CEO OS pages on real API (Security, Reports, Users, Overview partial)
-- [x] Theme toggle (dark/light)
-- [x] All legacy pages preserved
-
-### Backend for Mobile
-- [x] NFC infrastructure (nfc_tags table + 4 endpoints)
-- [x] CORS configured for mobile (Expo + React Native)
-- [x] JWT auth mobile-ready (SecureStore compatible)
-- [x] API documentation (/app/docs/MOBILE_API_HANDOFF.md)
-
-### Mobile App (React Native / Expo)
-- [x] Project structure (24 TypeScript files)
-- [x] Auth flow (Login → SecureStore → auto-refresh)
-- [x] Venue selection (auto-select single venue)
-- [x] Entry Home (NFC Scan + Search + New Guest)
-- [x] NFC Scan (react-native-nfc-manager integration)
-- [x] Guest Search (debounced, results with VIP/tab badges)
-- [x] Entry Decision (allow/deny with risk/value chips)
-- [x] Guest Intake (create new guest + optional NFC binding)
-- [x] NFC Register (bind tag to guest)
-- [x] Pulse/Tabs (stats, open tabs, items, add item, close tab)
-- [x] WebSocket real-time (auto-reconnect)
-- [x] Dark theme + premium aesthetic
-- [x] Touch targets >= 44px
-- [x] Expo SDK 54 upgrade complete
-- [x] NFC bridge for Expo Go compatibility
-- [x] 0 TypeScript errors
-- [x] API timeout + network error fallback (15s AbortController)
-- [x] WS_BASE_URL derived from API_BASE_URL (single source of truth)
-- [x] EAS project configured (@raphazitto/spet-mobile, ID: 5073c0c3-bea4-43e8-a6f0-c133b29b82ff)
-- [x] app.json production-ready (buildNumber, versionCode, scheme, OTA updates, NFC permissions)
-- [x] eas.json with dev/preview/production profiles + autoIncrement + submit config
-- [x] Build scripts in package.json (build:ios, build:android, build:all, submit:ios, submit:android)
+**Services**: 12 API service files covering all backend endpoints
+**Icons**: All Unicode emojis replaced with Feather vector icons
+**Data mapping**: All dashboard screens verified against real API responses (17/17 tests passed)
 
 ## Prioritized Backlog
 
-### P0 (Blockers para Store Release)
-- [ ] Criar ícone real do app (1024x1024 PNG) — substituir assets/icon.png e adaptive-icon.png
-- [ ] Criar splash screen real — substituir assets/splash.png
-- [ ] Configurar Apple Developer Account + App Store Connect
-- [ ] Configurar Google Play Console + Service Account Key (play-store-key.json)
-- [ ] Criar Privacy Policy e Support URL reais
-- [ ] Definir API URL de produção em src/config/api.ts
-
-### Completed (this session)
-- [x] Privacy Policy page (/privacy) — 8 legal sections, PageNavbar, PageFooter
-- [x] Support page (/support) — contact form, Zod validation, file attachments UI, Resend email integration
-- [x] POST /api/support backend endpoint — Resend SDK, input validation, HTML email to support@spetapp.com
-- [x] Footer links (Privacy Policy + Support) on landing, privacy, and support pages
-- [x] App icons replaced with real SPET icon (1024x1024, no transparency)
-- [x] Splash screen generated with SPET logo
-- [x] Mobile Expo SDK 54 verified — 0 TypeScript errors
-- [x] Mobile API timeout/fallback (15s AbortController)
-- [x] Mobile WS_BASE_URL derived from API_BASE_URL
-- [x] EAS project configured (@raphazitto/spet-mobile, ID: 5073c0c3-bea4-43e8-a6f0-c133b29b82ff)
+### P0 (In Progress)
+- [x] Wave 1: Full operational + dashboard parity foundation
+- [ ] Wave 2: Refinement + performance + UX polish
+  - Animations and transitions
+  - Pull-to-refresh on all screens
+  - Error states and retry UX
+  - Loading skeletons
 
 ### P1
-- CeoOverview/CeoRevenue migration to real API (web)
-- Drag-and-drop Pipeline Kanban (web)
+- [ ] Web: Migrate CeoOverview & CeoRevenue to real backend API
+- [ ] Web: Drag-and-drop for Pipeline Kanban view
+- [ ] Mobile: Tap/Orders dedicated catalog/cart flow
 
 ### P2
-- Push notifications (FCM + APNs)
-- Offline mode / sync
-- Biometric auth (Face ID / fingerprint)
+- [ ] Mobile: Push Notifications
+- [ ] Mobile: Offline synchronization
+- [ ] Mobile: Biometric authentication
 
 ### P3
-- Landing page Pricing Cards fix (recorrente x3)
-- Deep linking / universal links
-- Batch NFC register
+- [ ] Web: Fix recurring Pricing Cards landing page bug
+- [ ] Production hardening (error tracking, analytics)
+
+## API Endpoints (All Verified)
+- Auth: POST /api/auth/login
+- CEO: /api/ceo/health, /revenue, /pipeline, /users, /targets, /companies, /alerts
+- Owner: /api/owner/dashboard, /finance, /venues, /insights, /growth, /people, /system
+- Manager: /api/manager/overview, /staff, /shifts, /reports/sales, /guests, /tips-detail
+- Tap: /api/tap/stats, /sessions, /catalog
+- Table: /api/table/tables
+- Kitchen: /api/kds/tickets
+- Rewards: /api/rewards/config
+- Pulse: /api/pulse/inside, /exits/today, /bar/search
+
+## Test Reports
+- iteration_89.json: Web Support & Privacy (17/17 pass)
+- iteration_90.json: Mobile Dashboard APIs (17/17 pass)
 
 ## Credentials
 - CEO: garcia.rapha2@gmail.com / 12345
-- Venue: 40a24e04-75b6-435d-bfff-ab0d469ce543 (Demo Club)
+- Venue ID: 40a24e04-75b6-435d-bfff-ab0d469ce543
