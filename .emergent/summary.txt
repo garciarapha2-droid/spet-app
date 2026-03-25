@@ -1,72 +1,98 @@
 <analysis>**original_problem_statement**:
-The user's initial goal was to build a CEO OS module for a web app. This has since expanded significantly. The current primary objective is a **P0 full-build mission**: transform the existing React Native/Expo mobile app into a true 1:1 operational version of the web platform, achieving complete feature and design parity.
+The user's initial mission was to build a CEO OS and achieve 1:1 feature parity between a web app and a React Native mobile app. This has now evolved into a new P0 priority: implementing a production-grade access control and billing system.
 
-This includes implementing all missing modules (Tables, Payments, Manager/CEO/Owner Dashboards), ensuring UI consistency with the web app, and maintaining native capabilities like NFC. This mission overrides all previous smaller tasks.
+**PRODUCT REQUIREMENTS:**
+1.  **Separate Authentication from Authorization**: A successful login does not automatically grant access.
+2.  **Enforce Granular Access Control** based on user attributes: , , , , and .
+3.  **Define Access Rules**:
+    *    (CEO/Admin): Full access.
+    *   : Demo-only access.
+    *   : Onboarding flow only.
+    *   Other users: Access determined by payment/subscription status.
+4.  **Implement Stripe Integration**:
+    *   Create a checkout flow.
+    *   Implement a webhook endpoint to handle payment confirmations and failures.
+    *   Update  in the database upon webhook events.
+    *   Grant access only after successful payment confirmation from the backend.
+5.  **Implement Transactional Emails (Resend)** for key events using provided HTML templates:
+    *   Welcome Email
+    *   Payment Confirmed
+    *   Access Granted
+    *   Payment Failed
+    *   Team Invite
+    *   Password Reset (user-initiated and manager-initiated).
+6.  **Secure Password Reset Flow**:
+    *   Must use secure, single-use, expiring tokens.
+    *   Manager-initiated resets must invalidate the old password immediately.
+    *   Log all reset events and invalidate previous sessions.
 
-**User's preferred language**: Portuguese. The next agent **MUST** respond in Portuguese.
+**User's preferred language**: Portuguese. The user also communicates in technical English. The next agent **MUST** respond in Portuguese.
 
 **what currently exists?**
-- A full-stack web application (React/FastAPI/PostgreSQL).
-- A React Native/Expo mobile application project in , upgraded to Expo SDK 54 with compatible dependencies.
-- The mobile app has foundational features: Auth, Venue Select, and a functional Entry/Host flow using real NFC endpoints.
-- The web app has a new  form integrated with the Resend API via a  backend endpoint.
-- The mobile app's icon and splash screen assets have been updated with production-ready versions provided by the user.
-- The agent has performed a detailed gap analysis between the web and mobile apps and has just begun Wave 1 of the feature parity implementation by creating placeholder files for new services and screens (Tables, Kitchen, Manager, Analytics).
+- A full-stack application (React/FastAPI/PostgreSQL).
+- A React Native mobile app refactored to production-ready standards, with a complete UI structure for all modules (Dashboards, Tables, Kitchen, etc.), robust UI components (, ), and proper state handling (loading, empty, error).
+- Backend with existing routes for ,  (with a basic Stripe integration), and various modules. A  endpoint using Resend also exists.
+- The backend APIs required for the mobile app's dashboards and operational screens have been successfully tested (24/24 tests passed).
 
 **Last working item**:
-- **Last item agent was working**: The agent began the P0 Full Execution Mode task to make the mobile app a 1:1 clone of the web app. After a detailed gap analysis, it started Wave 1: Core Operations by creating the initial file structure for the missing modules.
-    - New service files created: , , , .
-    - New screen files created: , , .
-- **Status**: IN PROGRESS
-- **Agent Testing Done**: N
-- **Which testing method agent to use?**: This is a large-scale implementation. The agent should use  to test both frontend (mobile) and backend after completing each major implementation wave (e.g., Wave 1, Wave 2).
+- **Last item agent was working**: The agent received a new P0 directive to implement a production-grade access control and billing system. It had just started the analysis phase by viewing existing backend files (, , , ) to understand the current implementation before architecting the new system.
+- **Status**: NOT STARTED (on the new directive's implementation).
+- **Agent Testing Done**: N/A
+- **Which testing method agent to use?**: both. This is a major backend overhaul. Use  to validate the full end-to-end flow (signup -> checkout -> webhook -> access grant). Individual endpoints, especially the Stripe webhook and password reset flows, will require  for isolated testing.
 - **User Testing Done**: N
 
 **All Pending/In progress Issue list**:
-- There are no pending issues. The entire focus is on the single, massive, in-progress feature parity task.
+- **Issue 1: Implement Production-Grade Access Control, Billing, and Email System (P0, HIGHEST)**
+
+**Issues Detail**:
+- **Issue 1**:
+    - **Attempted fixes**: None. The task has just been assigned. The agent was in the initial analysis phase.
+    - **Next debug checklist**:
+        1.  Propose a detailed plan to the user including:
+            - **Data Model**: New/modified DB schemas for , , , , , , and .
+            - **Auth/Access Flow**: A diagram or description of how a user's request is evaluated against their status and permissions.
+            - **Stripe/Webhook Flow**: A diagram showing the sequence of events from checkout initiation to webhook processing and DB update.
+            - **Email Trigger Map**: A list of events and the corresponding emails to be sent.
+        2.  Upon approval, begin implementation starting with database migrations and backend models.
+        3.  Implement the Stripe checkout and webhook endpoints.
+        4.  Create the Resend email-sending logic and integrate it with the specified triggers.
+        5.  Implement the secure password reset flow.
+        6.  Refactor the frontend to respect the new access rules (e.g., redirecting unpaid users to a billing page).
+    - **Why fix this issue and what will be achieved with the fix?**: This is a critical requirement from the user to transform the application from a feature-complete prototype into a real, monetizable, and secure commercial product ready for the App Store.
+    - **Status**: NOT STARTED
+    - **Is recurring issue?**: N
+    - **Should Test frontend/backend/both after fix?**: Both.
+    - **Blocked on other issue**: None.
 
 **In progress Task List**:
-- **Task 1: Mobile App Feature Parity with Web App (P0)**
-
-**Task Detail**:
-- **Task 1**:
-    - **Where to resume**: The initial files for Wave 1 have been created. The next step is to implement the logic within these new files, starting with the  and  and their corresponding screens. Then, continue implementing all other features identified in the gap analysis for Wave 1 (Tap, enhanced Pulse, icons).
-    - **What will be achieved with this?**: The mobile app will become a faithful, operational clone of the web platform, including all core modules, dashboards, and UI consistency.
-    - **Status**: IN PROGRESS
-    - **Should Test frontend/backend/both after fix?**: Both, after each major wave of implementation.
-    - **Blocked on something**: No.
+- None. The previous task of mobile app hardening was completed.
 
 **Upcoming and Future Tasks**
 **Upcoming Tasks:**
-*   **(P0) Wave 1 Completion**: Fully implement core operational modules on mobile:
-    *   Tap/Orders ( is the reference).
-    *   Tables ( is the reference).
-    *   Kitchen ( is the reference).
-    *   Expand Pulse module to include all 7 web pages.
-    *   Replace all Unicode emoji icons with a proper vector icon library ().
-*   **(P0) Wave 2 Start**: Implement Manager dashboards and modules.
-*   **(P0) Wave 3 Start**: Implement CEO & Owner dashboards.
+*   (P0) Full implementation of the Production Access Control, Billing, and Email system as detailed above.
 
 **Future Tasks:**
-*   **(P1)** Web App: Migrate  &  pages to use the real backend API.
-*   **(P1)** Web App: Implement drag-and-drop functionality for the Pipeline Kanban view.
-*   **(P2)** Mobile App: Implement Push Notifications, offline synchronization, and biometric authentication.
-*   **(P3)** Web App: Address the recurring Pricing Cards on Landing Page bug.
+*   (P1) Web App: Migrate  &  pages to use the real backend API.
+*   (P1) Web App: Implement drag-and-drop functionality for the Pipeline Kanban view.
+*   (P2) Mobile App: Implement Push Notifications, offline synchronization, and biometric authentication.
+*   (P3) Web App: Address the recurring Pricing Cards on Landing Page bug.
+*   (P3) Mobile App: Implement a dark/light mode toggle.
+*   (P3) Mobile App: Add haptic feedback for critical actions ().
+*   (P3) Backend: Integrate a formal error tracking service like Sentry.
 
 **Completed work in this session**
-- **Mobile - Production Readiness**:
-    - Fully configured  and  for production, including version codes, OTA updates, and store metadata placeholders.
-    - Added build/submit scripts to .
-    - Fixed a critical iOS build failure by downgrading the incompatible  package to the correct version for Expo SDK 54.
-    - Successfully logged into the user's EAS account and linked the project, preparing it for builds on the user's machine.
-- **Mobile - Asset Preparation**:
-    - Processed a user-provided image to create production-ready, correctly-sized, and non-transparent icons for the App Store and Google Play (, , ).
-- **Web - New Feature Implementation**:
-    - Created a new backend endpoint  with Resend integration for sending support emails.
-    - Created new static pages  and  on the frontend, with the support form connected to the new backend endpoint.
-    - The entire feature was validated by the testing agent, passing 17/17 tests.
+- **Mobile App - Production Hardening (Major Refactor)**:
+  - Elevated the entire mobile app from a prototype to App Store ready quality.
+  - Implemented a production-grade UI infrastructure:  with a master  (handling , pull-to-refresh), a global , and standardized , , and  components.
+  - Rewrote  to use the  and manage the splash screen ( was installed).
+  - Rewrote  to correctly handle safe areas for a polished UI on all devices.
+  - Completely refactored the , , and  to use the new production components, ensuring proper data fetching, state management (loading/empty/error), and pull-to-refresh functionality.
+  - Refactored all other core screens (, , , , and all Pulse screens) to meet the new production standards.
+- **Backend - API Validation**:
+  - Ran a comprehensive test suite using , which passed 24/24 tests, confirming the health of all backend endpoints required by the mobile app.
 - **Codebase - Maintenance**:
-    - Identified and deleted two conflicting, unused files (, ), resolving a case-sensitivity issue that would block production builds.
+  - Deleted the obsolete  file.
+  - Replaced all remaining Unicode emoji icons with a proper vector icon library ().
 
 **Earlier issues found/mentioned but not fixed**
    - **Issue 1**: Pricing Cards on the landing page (web app). This is a known recurring issue that remains unaddressed.
@@ -80,81 +106,83 @@ This includes implementing all missing modules (Tables, Payments, Manager/CEO/Ow
 
 
 **Key Technical Concepts**
-- **Full-stack Development**: React, FastAPI, PostgreSQL.
-- **Mobile App Development**: React Native, Expo SDK 54.
-- **Deployment**: EAS (Expo Application Services) for builds and submission.
-- **Email Integration**: Resend API for transactional emails.
-- **Dependency Management**: Resolving native dependency conflicts in Expo ().
-- **File System**: Correcting case-sensitivity issues in Git for cross-platform compatibility.
+- **React Native Production Readiness**:  for crash recovery,  for UI consistency, splash screen handling, pull-to-refresh, skeleton/loading patterns.
+- **Backend Development (FastAPI)**: The next task will heavily involve middleware, database models (Pydantic, SQLAlchemy or similar), secure token generation ( module), and integration with external services (Stripe, Resend).
+- **Role-Based Access Control (RBAC)**: The core concept for the next implementation phase.
+- **Transactional Emails**: Using an API service (Resend) for automated, event-driven communication.
+- **Payment Gateway Integration**: Stripe Checkout and, critically, Stripe Webhooks for asynchronous event handling.
 
 **key DB schema**
-  - No changes were made to the database schema in this session.
+  - No changes were made. The next task **requires** a significant overhaul. The agent must propose new models for ,  (tenants), , , , , and .
 
 **changes in tech stack**
-- **Backend**: Added  SDK for email integration.
-- **Mobile**: Added  and  in preparation for dashboard implementation.
+- **Mobile**: Added  and .
 
 **All files of reference**
-- **Web App Parity Source of Truth**: The entire  codebase, especially:
-    -  (all subdirectories like , , , )
-    -  (for Tables/Tap logic)
-- **New Mobile Files (to be implemented)**:
-    - 
-    - 
-    - 
-    - 
-- **Configuration Files (recently updated)**:
-    - 
-    - 
-    - 
+- **Primary Focus for Next Task (Backend)**:
+  - 
+  - 
+  - 
+  - 
+  - 
+- **Key Mobile Files (Recently Completed Work)**:
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
 
 **Areas that need refactoring**:
-- The mobile app uses Unicode emojis for icons. This must be replaced with a proper vector icon library () as part of the P0 task.
--  is obsolete and can be deleted.
+- The entire backend authentication, authorization, and billing logic needs to be re-architected and implemented from a production-first perspective, as per the user's latest P0 request. The current system is a placeholder.
 
 **key api endpoints**
--  (New web endpoint)
-- The mobile app will need to consume many existing backend endpoints for Manager, CEO, and Owner modules.
+- Existing: , , .
+- To Be Created:
+  -  (for Stripe events)
+  - 
+  - 
+  - 
+  - Endpoints for managers to reset user passwords.
 
 **Critical Info for New Agent**
 - **Você DEVE responder em português.**
-- You are in **FULL EXECUTION MODE**. Your P0 mission is to make the mobile app a 1:1 clone of the web app. Do not stop for further planning; the gap analysis is complete.
-- The web app codebase () is the single source of truth for all features, UI logic, and business rules.
-- Your immediate task is to implement the logic for the newly created files for Wave 1: , , , , and then continue with the rest of the core operational modules (Tap, Pulse).
-- **Do NOT attempt to automate Apple login again.** The user has resolved this on their end. Focus on writing code that ensures the EAS build will pass.
+- **Your P0 MISSION has completely changed.** The focus is no longer on the mobile app. You must now implement a full, production-grade access control, billing (Stripe), and transactional email system on the backend.
+- Before writing any code, you **MUST** first present a detailed plan to the user covering: A) data model, B) auth/access flow, C) Stripe/webhook flow, and D) email trigger map.
+- The user has provided very specific requirements and HTML templates for transactional emails. Follow them precisely.
+- The existing backend auth and billing code in  and  should be considered a starting point for analysis, not a foundation to build upon. Expect to replace most of it.
 
 **documents and test reports created in this job**
--  (Support & Privacy Feature Test Report)
--  (updated with latest progress)
+- 
+- 
+-  (updated with the latest progress)
 
 **Last 10 User Messages and any pending HUMAN messages**
-10. **User:** Do a full diagnosis of the mobile apps current state." (DONE)
-9.  **User:** "We are now in FULL EXECUTION mode. Make the mobile app a 1:1 clone of the web app. This is a P0 full-build mission." (IN PROGRESS)
-8.  **User:** (Provides updated password and asks to retry Apple login) "The password was wrong, can we try again?" (DONE, but ultimately failed due to environment limitations)
-7.  **User:** "The Apple auth is done locally. The iOS build is failing in the Install pods phase. Analyze the logs and fix the CocoaPods issue." (DONE)
-6.  **User:** "Fix the critical cross-platform issue caused by case-sensitive file duplication (`CEOPage.js` vs `CeoPage.js`)." (DONE)
-5.  **User:** Provides 2FA code `542628`. (DONE)
-4.  **User:** "I need the 2FA code NOW!" (This was in response to the agent asking for the code)
-3.  **User:** Provides 2FA code `764622`. (DONE)
-2.  **User:** Provides 2FA code `014231` after being asked. (DONE)
-1.  **User:** "When you get to the auth code part, ask me and Ill pass it. (DONE)
+10. **User**: *States that the app must be built to production app standards for the App Store, not as a prototype. Lists requirements like stability, polished UX, and handling of all states (error, empty, loading).* (COMPLETED - Agent refactored the app).
+9. **User**: Pode continuar (You can continue). (HANDLED).
+8. **User**: Provides a very detailed, multi-part request to implement production access-control and billing logic. This includes specific account rules, Stripe integration requirements, email triggers with full HTML/text templates, and a secure password reset flow. Asks for a full plan before implementation. (IN PROGRESS - This is the current P0 task).
 
 **Project Health Check:**
-- **Broken**: No. The web app is stable. The mobile app runs but is functionally incomplete.
-- **Mocked**: The newly created mobile screens are currently placeholder shells. NFC functionality is mocked in Expo Go (by design), but the real implementation exists for dev builds.
+- **Broken**: No. The web app and mobile app are stable and running. The backend APIs passed all tests.
+- **Mocked**: The entire production access control and billing system is non-existent. The current authorization logic is a simple placeholder and must be replaced.
 
 **3rd Party Integrations**
-- **Web**: Framer Motion, Recharts, Shadcn UI, , **Resend (new)**
-- **Mobile**: , , , , , ** (new)**, ** (new)**
+- **Resend**: Used for a support form, will now be expanded for all transactional emails.
+- **Stripe**: A basic checkout is implemented; needs to be expanded with robust webhook handling and subscription management.
+- **Expo**: Core of the mobile application.
 
 **Testing status**
-  - Testing agent used after significant changes: YES (for the web app's new Support feature).
-  - Test files created: None.
+  - Testing agent used after significant changes: YES. The testing agent was used twice to validate backend API integrity, with the last run passing 24/24 tests.
+  - Troubleshoot agent used after agent stuck in loop: NO
+  - Test files created: []
   - Known regressions: None from this session's work.
 
 **Credentials to test flow:**
-- **CEO User**:  / 
-- **Resend API Key**: Available in  as .
+- **CEO/Admin User**:  /  (Should have full access).
+- **Onboarding User**:  (Should be forced into an onboarding flow).
+- **Demo User**:  (Should have limited access to a demo module).
+- **Resend API Key**: Available in 
+- **Stripe Keys**: Available in the environment.
 
 **What agent forgot to execute**
-The agent is on the correct track for the user's primary P0 request and has not overlooked any explicit instructions in the current context.</analysis>
+The agent has followed all user instructions, including the major pivot from mobile UI work to backend architecture. Nothing was forgotten.</analysis>

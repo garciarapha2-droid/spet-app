@@ -37,17 +37,17 @@
     },
     "manager_overview": {
       "status": "PASS",
-      "endpoint": "GET /api/manager/overview?venue_id=40a24e04-75b6-435d-bfff-ab0d469ce543",
+      "endpoint": "GET /api/manager/overview?venue_id=access-payment-hub",
       "details": "Returns kpis (revenue_today, revenue_week, open_tabs, avg_ticket), charts, alerts"
     },
     "manager_staff": {
       "status": "PASS",
-      "endpoint": "GET /api/manager/staff?venue_id=40a24e04-75b6-435d-bfff-ab0d469ce543",
+      "endpoint": "GET /api/manager/staff?venue_id=access-payment-hub",
       "details": "Returns staff array and barmen array"
     },
     "manager_reports_sales": {
       "status": "PASS",
-      "endpoint": "GET /api/manager/reports/sales?venue_id=40a24e04-75b6-435d-bfff-ab0d469ce543",
+      "endpoint": "GET /api/manager/reports/sales?venue_id=access-payment-hub",
       "details": "Returns period, by_item array, by_method array"
     },
     "owner_dashboard_business": {
@@ -62,22 +62,22 @@
     },
     "tap_stats": {
       "status": "PASS",
-      "endpoint": "GET /api/tap/stats?venue_id=40a24e04-75b6-435d-bfff-ab0d469ce543",
+      "endpoint": "GET /api/tap/stats?venue_id=access-payment-hub",
       "details": "Returns open_tabs, running_total, closed_today, revenue_today"
     },
     "table_tables": {
       "status": "PASS",
-      "endpoint": "GET /api/table/tables?venue_id=40a24e04-75b6-435d-bfff-ab0d469ce543",
+      "endpoint": "GET /api/table/tables?venue_id=access-payment-hub",
       "details": "Returns tables array with id, table_number, status, capacity"
     },
     "kds_tickets": {
       "status": "PASS",
-      "endpoint": "GET /api/kds/tickets?venue_id=40a24e04-75b6-435d-bfff-ab0d469ce543",
+      "endpoint": "GET /api/kds/tickets?venue_id=access-payment-hub",
       "details": "Returns tickets array with id, status, destination, items"
     },
     "rewards_config": {
       "status": "PASS",
-      "endpoint": "GET /api/rewards/config?venue_id=40a24e04-75b6-435d-bfff-ab0d469ce543",
+      "endpoint": "GET /api/rewards/config?venue_id=access-payment-hub",
       "details": "Returns venue_id, enabled, tiers array"
     },
     "tap_sessions_open": {

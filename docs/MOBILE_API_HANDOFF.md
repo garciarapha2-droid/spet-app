@@ -2,7 +2,7 @@
 
 ## Base URL
 ```
-https://ops-clone.preview.emergentagent.com
+https://access-payment-hub.preview.emergentagent.com
 ```
 
 All API endpoints are prefixed with `/api`.
