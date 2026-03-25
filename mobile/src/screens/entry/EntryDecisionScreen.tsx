@@ -1,5 +1,6 @@
 /**
  * Entry Decision Screen — themed. Allow or Deny guest entry.
+ * After allowing: opens tab → navigates to Menu directly.
  */
 import React, { useState } from 'react';
 import { View, Text, ScrollView, Alert } from 'react-native';
@@ -9,6 +10,7 @@ import { spacing, fontSize, radius } from '../../theme/themes';
 import { Button, Card, Chip, LoadingOverlay } from '../../components/ui';
 import { useVenue } from '../../hooks/useVenue';
 import * as pulseService from '../../services/pulseService';
+import * as tapService from '../../services/tapService';
 import type { ScanGuest } from '../../services/nfcService';
 
 export default function EntryDecisionScreen() {
@@ -36,12 +38,38 @@ export default function EntryDecisionScreen() {
   const handleDecision = async (decision: 'allowed' | 'denied') => {
     setLoading(true);
     try {
-      const result = await pulseService.recordEntryDecision({
+      await pulseService.recordEntryDecision({
         guest_id: guest.id, venue_id: venueId, decision,
         entry_type: guest.tags?.includes('vip') ? 'vip' : 'consumption_only',
       });
       if (decision === 'allowed') {
-        Alert.alert('Entry Allowed', `${guest.name} is in.${result.tab_number ? ` Tab #${result.tab_number}` : ''}`, [{ text: 'OK', onPress: () => navigation.popToTop() }]);
+        // Auto-open tab and go directly to Menu
+        try {
+          const tabResult = await tapService.openTab({
+            venue_id: venueId,
+            guest_name: guest.name,
+            guest_id: guest.id,
+            session_type: source === 'nfc' ? 'nfc' : 'walk_in',
+          });
+          const sessionId = tabResult.session_id || tabResult.id;
+          const tabNumber = tabResult.tab_number;
+          Alert.alert('Entry Allowed', `${guest.name} is in. Tab #${tabNumber || '?'} opened.`, [{
+            text: 'Go to Menu',
+            onPress: () => {
+              navigation.navigate('Tabs', {
+                screen: 'TabsMain',
+                params: {
+                  activeSessionId: sessionId,
+                  activeGuestName: guest.name,
+                  activeTabNumber: tabNumber,
+                },
+              });
+            },
+          }]);
+        } catch {
+          // Tab creation failed — still allowed entry
+          Alert.alert('Entry Allowed', `${guest.name} is in. (Tab could not be auto-created)`, [{ text: 'OK', onPress: () => navigation.popToTop() }]);
+        }
       } else {
         Alert.alert('Entry Denied', `${guest.name} was denied entry.`, [{ text: 'OK', onPress: () => navigation.popToTop() }]);
       }

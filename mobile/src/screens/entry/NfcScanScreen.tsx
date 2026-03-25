@@ -3,7 +3,7 @@
  * Pulsing NFC animation + search + quick actions.
  */
 import React, { useState, useCallback } from 'react';
-import { View, Text, TouchableOpacity, TextInput, FlatList, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, TextInput, FlatList } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
@@ -38,7 +38,8 @@ export default function NfcScanScreen() {
     if (guests.length > 0) {
       navigation.navigate('NfcResult', { guest: guests[0], source: 'nfc' });
     } else {
-      Alert.alert('No Guests', 'Create a guest first or scan a real NFC tag.');
+      // Simulate unregistered tag
+      navigation.navigate('NfcResult', { unregistered: true, tagUid: 'SIM:00:AA:BB', source: 'nfc' });
     }
   };
 

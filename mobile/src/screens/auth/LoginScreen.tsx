@@ -134,7 +134,7 @@ export default function LoginScreen() {
           <View>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
               <Text style={{ fontSize: fontSize.sm, fontWeight: '500', color: colors.primary }}>Password</Text>
-              <TouchableOpacity onPress={() => Alert.alert('Reset Password', 'Feature coming soon')}>
+              <TouchableOpacity onPress={() => navigation.navigate('ForgotPassword')}>
                 <Text style={{ fontSize: fontSize.tiny, color: colors.primary }}>Forgot password?</Text>
               </TouchableOpacity>
             </View>

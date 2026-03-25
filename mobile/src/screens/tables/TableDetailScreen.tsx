@@ -49,7 +49,7 @@ export default function TableDetailScreen() {
       <View style={{ margin: spacing.lg, backgroundColor: colors.card, borderRadius: radius.lg, padding: spacing.lg, borderWidth: 1, borderColor: colors.border }}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
           <View>
-            <Text style={{ fontSize: fontSize.xl, fontWeight: '700', color: colors.foreground }}>Table #{table.number || table.name}</Text>
+            <Text style={{ fontSize: fontSize.xl, fontWeight: '700', color: colors.foreground }}>Table #{table.table_number || table.number || table.name}</Text>
             {table.server_name && (
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: spacing.xs }}>
                 <Feather name="user" size={12} color={colors.mutedForeground} />

@@ -156,6 +156,7 @@ export default function EntryHomeScreen() {
 
           return (
             <TouchableOpacity
+              onPress={() => navigation.navigate('NfcResult', { guest: { ...item, visits: item.visits || 0, spend_total: item.spend_total || 0, flags: item.flags || [], tags: item.tags || [], risk_chips: [], value_chips: [] }, source: 'guest_list' })}
               activeOpacity={0.7}
               style={{
                 flexDirection: 'row',

@@ -3,6 +3,8 @@
  *
  * Bottom tabs: Entry | Tabs | Tables | More
  *
+ * Flow: Login → NFC Scan → NFC Result → Decision → Menu → Payment → Profile
+ *
  * REMOVED from iPhone: Kitchen/KDS, Manager, CEO, Owner
  */
 import React from 'react';
@@ -16,14 +18,17 @@ import { useVenue } from '../hooks/useVenue';
 import { useTheme } from '../contexts/ThemeContext';
 
 import LoginScreen from '../screens/auth/LoginScreen';
+import ForgotPasswordScreen from '../screens/auth/ForgotPasswordScreen';
 import VenueSelectScreen from '../screens/venue/VenueSelectScreen';
 
 import EntryHomeScreen from '../screens/entry/EntryHomeScreen';
 import NfcScanScreen from '../screens/entry/NfcScanScreen';
+import NfcResultScreen from '../screens/entry/NfcResultScreen';
 import GuestSearchScreen from '../screens/entry/GuestSearchScreen';
 import EntryDecisionScreen from '../screens/entry/EntryDecisionScreen';
 import GuestIntakeScreen from '../screens/entry/GuestIntakeScreen';
 import NfcRegisterScreen from '../screens/entry/NfcRegisterScreen';
+import CustomerProfileScreen from '../screens/entry/CustomerProfileScreen';
 
 import TabsMainScreen from '../screens/tabs/TabsMainScreen';
 import TabDetailScreen from '../screens/pulse/TabDetailScreen';
@@ -56,10 +61,12 @@ function EntryStackNavigator() {
     <EntryStack.Navigator screenOptions={opts}>
       <EntryStack.Screen name="EntryHome" component={EntryHomeScreen} options={{ headerShown: false }} />
       <EntryStack.Screen name="NfcScan" component={NfcScanScreen} options={{ title: 'NFC Scan' }} />
+      <EntryStack.Screen name="NfcResult" component={NfcResultScreen} options={{ headerShown: false }} />
       <EntryStack.Screen name="GuestSearch" component={GuestSearchScreen} options={{ title: 'Search Guest' }} />
       <EntryStack.Screen name="EntryDecision" component={EntryDecisionScreen} options={{ title: 'Entry Decision' }} />
       <EntryStack.Screen name="GuestIntake" component={GuestIntakeScreen} options={{ title: 'New Guest' }} />
       <EntryStack.Screen name="NfcRegister" component={NfcRegisterScreen} options={{ title: 'Register NFC' }} />
+      <EntryStack.Screen name="CustomerProfile" component={CustomerProfileScreen} options={{ headerShown: false }} />
     </EntryStack.Navigator>
   );
 }
@@ -175,7 +182,10 @@ export default function RootNavigator() {
     <NavigationContainer theme={navTheme}>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         {!authenticated ? (
-          <Stack.Screen name="Login" component={LoginScreen} />
+          <Stack.Group>
+            <Stack.Screen name="Login" component={LoginScreen} />
+            <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
+          </Stack.Group>
         ) : !selectedVenue ? (
           <Stack.Screen name="VenueSelect" component={VenueSelectScreen} />
         ) : (

@@ -81,3 +81,8 @@ export async function createGuest(params: {
   if (params.photo) form.append('photo', params.photo);
   return api.postForm<IntakeResult>('/pulse/guest/intake', form);
 }
+
+export async function getGuestsInside(venueId: string): Promise<any[]> {
+  const data = await api.get(`/pulse/inside?venue_id=${venueId}`);
+  return data.guests || data || [];
+}

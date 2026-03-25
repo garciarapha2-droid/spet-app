@@ -5,13 +5,19 @@ import { api } from './api';
 
 export interface Table {
   id: string;
-  number: number;
-  name: string;
+  table_number: string | number;
+  number?: number;
+  name?: string;
+  zone?: string;
   capacity: number;
   status: 'available' | 'occupied' | 'reserved' | 'closed';
   server_id?: string;
   server_name?: string;
   guest_count?: number;
+  session_id?: string;
+  session_total?: number;
+  session_guest?: string;
+  tab_number?: number;
   current_tab_total?: number;
   opened_at?: string;
   meta?: any;

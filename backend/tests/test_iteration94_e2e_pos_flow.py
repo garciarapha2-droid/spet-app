@@ -11,7 +11,7 @@ import requests
 import os
 import json
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', '').rstrip('/')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://iphone-ux-redesign.preview.emergentagent.com').rstrip('/')
 VENUE_ID = "40a24e04-75b6-435d-bfff-ab0d469ce543"
 TEST_EMAIL = "garcia.rapha2@gmail.com"
 TEST_PASSWORD = "12345"

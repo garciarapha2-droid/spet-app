@@ -89,9 +89,9 @@ export default function GuestIntakeScreen() {
       });
       Alert.alert('Guest Created', `${name.trim()} was registered successfully.\n\nWould you like to bind an NFC wristband?`, [
         { text: 'Skip', style: 'cancel', onPress: () => {
-          navigation.navigate('EntryDecision', {
+          navigation.navigate('NfcResult', {
             guest: { id: result.guest_id, name: name.trim(), email: email.trim(), phone: phone.trim(), photo, visits: 0, spend_total: 0, flags: [], tags: [], risk_chips: [], value_chips: [] },
-            tab: { number: null, total: 0, has_open_tab: false }, source: 'intake',
+            source: 'intake',
           });
         }},
         { text: 'Bind NFC', onPress: () => { navigation.navigate('NfcRegister', { guestId: result.guest_id, guestName: name.trim(), tagUid }); }},

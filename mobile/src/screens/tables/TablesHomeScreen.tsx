@@ -63,9 +63,25 @@ export default function TablesHomeScreen() {
 
   const renderTable = ({ item }: { item: Table }) => {
     const s = statusMap(item.status);
+    const tableNum = item.table_number || item.number || item.name || '?';
+    const tabTotal = item.session_total || item.current_tab_total || 0;
     return (
       <TouchableOpacity
-        onPress={() => nav.navigate('TableDetail', { tableId: item.id })}
+        onPress={() => {
+          if (item.status === 'occupied' && item.session_id) {
+            // Occupied table → go directly to Menu with table context
+            nav.navigate('Tabs', {
+              screen: 'TabsMain',
+              params: {
+                activeSessionId: item.session_id,
+                activeGuestName: item.session_guest || `Table #${tableNum}`,
+                activeTabNumber: item.tab_number || tableNum,
+              },
+            });
+          } else {
+            nav.navigate('TableDetail', { tableId: item.id });
+          }
+        }}
         activeOpacity={0.7}
         style={{
           flex: 1, margin: spacing.xs, backgroundColor: colors.card,
@@ -75,7 +91,7 @@ export default function TablesHomeScreen() {
       >
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
           <Text style={{ fontSize: fontSize.xl, fontWeight: '800', color: colors.foreground }}>
-            #{item.number || item.name}
+            #{tableNum}
           </Text>
           <Feather name={s.icon as any} size={16} color={s.text} />
         </View>
@@ -93,13 +109,13 @@ export default function TablesHomeScreen() {
           </View>
         )}
         <View style={{ marginTop: spacing.sm, flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
             <Feather name="users" size={12} color={colors.mutedForeground} />
             <Text style={{ fontSize: fontSize.xs, color: colors.mutedForeground }}>{item.guest_count || 0}/{item.capacity}</Text>
           </View>
-          {item.current_tab_total != null && item.current_tab_total > 0 && (
+          {tabTotal > 0 && (
             <Text style={{ fontSize: fontSize.sm, fontWeight: '600', color: colors.success, fontVariant: ['tabular-nums'] }}>
-              ${item.current_tab_total.toFixed(2)}
+              ${tabTotal.toFixed(2)}
             </Text>
           )}
         </View>

@@ -48,10 +48,11 @@ export default function NfcRegisterScreen() {
       setState('registering');
       const result = await nfcService.registerNfcTag(tagUid, guestId, venueId, label || undefined);
       Alert.alert('NFC Registered', `Tag ${tagUid} bound to ${guestName}.\n${result.message}`, [{
-        text: 'Continue to Entry', onPress: () => {
-          navigation.navigate('EntryDecision', {
+        text: 'Continue', onPress: () => {
+          navigation.navigate('NfcResult', {
             guest: { id: guestId, name: guestName, visits: 0, spend_total: 0, flags: [], tags: [], risk_chips: [], value_chips: [] },
-            tab: { number: null, total: 0, has_open_tab: false }, source: 'nfc_register',
+            source: 'nfc_register',
+            tagUid,
           });
         },
       }]);

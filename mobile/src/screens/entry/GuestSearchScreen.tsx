@@ -46,15 +46,13 @@ export default function GuestSearchScreen() {
     }
     try {
       const profile = await pulseService.getGuestProfile(guest.id, venueId);
-      navigation.navigate('EntryDecision', {
+      navigation.navigate('NfcResult', {
         guest: { ...profile, risk_chips: profile.risk_chips || [], value_chips: profile.value_chips || [] },
-        tab: { number: profile.tab_number || null, total: 0, has_open_tab: !!profile.tab_number },
         source: 'search',
       });
     } catch {
-      navigation.navigate('EntryDecision', {
+      navigation.navigate('NfcResult', {
         guest: { id: guest.id, name: guest.name, email: guest.email, phone: guest.phone, visits: guest.visits, spend_total: guest.spend_total, flags: guest.flags || [], tags: guest.tags || [], risk_chips: [], value_chips: [] },
-        tab: { number: guest.tab_number || null, total: 0, has_open_tab: !!guest.tab_number },
         source: 'search',
       });
     }

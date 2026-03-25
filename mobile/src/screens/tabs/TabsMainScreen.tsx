@@ -9,7 +9,7 @@ import {
   View, Text, TouchableOpacity, TextInput, ScrollView,
   Modal, Alert, RefreshControl, ActivityIndicator, KeyboardAvoidingView, Platform,
 } from 'react-native';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../contexts/ThemeContext';
 import { spacing, fontSize, radius } from '../../theme/themes';
@@ -46,8 +46,14 @@ const COMMON_EXTRAS: tapService.ItemExtra[] = [
 
 export default function TabsMainScreen() {
   const navigation = useNavigation<any>();
+  const route = useRoute<any>();
   const { colors } = useTheme();
   const { venueId } = useVenue();
+
+  // Route params from NFC/Table flow — pre-select a session
+  const activeSessionId: string | undefined = route.params?.activeSessionId;
+  const activeGuestName: string | undefined = route.params?.activeGuestName;
+  const activeTabNumber: number | undefined = route.params?.activeTabNumber;
 
   const [mode, setMode] = useState<'tap' | 'table'>('tap');
   const [search, setSearch] = useState('');
@@ -59,6 +65,7 @@ export default function TabsMainScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [sending, setSending] = useState(false);
+  const [showTabsList, setShowTabsList] = useState(false);
 
   // Extras modal
   const [extrasItem, setExtrasItem] = useState<tapService.CatalogItem | null>(null);
@@ -73,6 +80,9 @@ export default function TabsMainScreen() {
   const [customTipMode, setCustomTipMode] = useState<'percent' | 'dollar'>('percent');
   const [customTipInput, setCustomTipInput] = useState('');
   const [paymentLocation, setPaymentLocation] = useState('pay_here');
+
+  // Track if we already auto-selected from route params
+  const autoSelectedRef = React.useRef(false);
 
   const loadData = useCallback(async () => {
     if (!venueId) return;
@@ -93,14 +103,38 @@ export default function TabsMainScreen() {
 
   useFocusEffect(useCallback(() => { loadData(); }, [loadData]));
 
+  // Auto-select session from route params (NFC / Table flow)
+  useEffect(() => {
+    if (activeSessionId && openTabs.length > 0 && !autoSelectedRef.current) {
+      const match = openTabs.find(t => t.id === activeSessionId || t.session_id === activeSessionId);
+      if (match) {
+        setSelectedTab(match);
+        autoSelectedRef.current = true;
+      } else if (activeGuestName) {
+        // Session just opened — create a virtual tab placeholder
+        setSelectedTab({
+          id: activeSessionId,
+          session_id: activeSessionId,
+          guest_name: activeGuestName,
+          tab_number: activeTabNumber,
+          status: 'open',
+          total: 0,
+          opened_at: new Date().toISOString(),
+        } as tapService.TabSession);
+        autoSelectedRef.current = true;
+      }
+    }
+  }, [activeSessionId, openTabs, activeGuestName, activeTabNumber]);
+
   // Keep selectedTab in sync with fresh data from backend
   useEffect(() => {
     if (selectedTab) {
       const updated = openTabs.find(t => t.id === selectedTab.id);
       if (updated) {
         setSelectedTab(updated);
-      } else if (openTabs.length > 0) {
-        // Tab was closed or removed — deselect
+      } else if (openTabs.length > 0 && autoSelectedRef.current) {
+        // Keep the tab selected even if not yet in list (just opened)
+      } else if (!activeSessionId) {
         setSelectedTab(null);
       }
     }
@@ -270,12 +304,39 @@ export default function TabsMainScreen() {
           </View>
         </View>
 
-        {/* Quick Actions */}
+        {/* Active Tab Banner (when pre-selected from NFC/Table) */}
+        {selectedTab && (
+          <View style={{
+            backgroundColor: colors.primaryBg, borderRadius: radius.xl, padding: spacing.lg,
+            borderWidth: 1, borderColor: colors.primary + '30', marginBottom: spacing.lg,
+            flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+          }} data-testid="active-tab-banner">
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flex: 1 }}>
+              <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: colors.emerald400 }} />
+              <View>
+                <Text style={{ fontSize: fontSize.sm, fontWeight: '700', color: colors.primary }} numberOfLines={1}>
+                  {selectedTab.guest_name || `Tab ${selectedTab.tab_number || '?'}`}
+                </Text>
+                <Text style={{ fontSize: fontSize.xs, color: colors.mutedForeground }}>
+                  Tab #{selectedTab.tab_number || '?'}
+                </Text>
+              </View>
+            </View>
+            <Text style={{ fontSize: fontSize.xl, fontWeight: '800', color: colors.primary, fontVariant: ['tabular-nums'] }}>
+              ${Number(selectedTab.total || 0).toFixed(2)}
+            </Text>
+            <TouchableOpacity onPress={() => { setSelectedTab(null); autoSelectedRef.current = false; }} style={{ marginLeft: spacing.sm, padding: 4 }}>
+              <Feather name="x" size={16} color={colors.mutedForeground} />
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* Quick Actions Row */}
         <View style={{ flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.lg }}>
           {[
             { icon: 'wifi', label: 'Scan NFC', color: colors.primary, bg: colors.primaryBg, border: colors.primary + '30', nav: () => navigation.navigate('Entry', { screen: 'NfcScan' }), testId: 'quick-scan-nfc' },
             { icon: 'search', label: 'Search', color: colors.mutedForeground, bg: colors.card, border: colors.border + '80', nav: () => navigation.navigate('Entry', { screen: 'GuestSearch' }), testId: 'quick-search-guest' },
-            { icon: 'user-plus', label: 'Create', color: colors.mutedForeground, bg: colors.card, border: colors.border + '80', nav: () => navigation.navigate('Entry', { screen: 'GuestIntake' }), testId: 'quick-create-guest' },
+            { icon: 'list', label: `Tabs (${openTabs.length})`, color: colors.mutedForeground, bg: colors.card, border: colors.border + '80', nav: () => setShowTabsList(!showTabsList), testId: 'toggle-tabs-list' },
           ].map(a => (
             <TouchableOpacity key={a.label} onPress={a.nav} data-testid={a.testId} style={{ flex: 1, backgroundColor: a.bg, borderRadius: radius.xl, padding: spacing.md, alignItems: 'center', borderWidth: 1, borderColor: a.border }}>
               <Feather name={a.icon as any} size={18} color={a.color} />
@@ -284,51 +345,45 @@ export default function TabsMainScreen() {
           ))}
         </View>
 
-        {/* Search */}
-        <View style={{ marginBottom: spacing.lg }}>
-          <Text style={{ fontSize: fontSize.tiny, fontWeight: '700', color: colors.mutedForeground, textTransform: 'uppercase', letterSpacing: 1, marginBottom: spacing.xs }}>SCAN / SEARCH</Text>
-          <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: colors.card, borderRadius: radius.xl, borderWidth: 1, borderColor: colors.border + '80', paddingHorizontal: spacing.md, height: 42 }}>
-            <Feather name="search" size={14} color={colors.mutedForeground} />
-            <TextInput placeholder="Name or #tab..." placeholderTextColor={colors.placeholder} value={search} onChangeText={setSearch} style={{ flex: 1, color: colors.foreground, fontSize: fontSize.sm, marginLeft: spacing.sm }} />
-            {search.length > 0 && <TouchableOpacity onPress={() => setSearch('')}><Feather name="x" size={14} color={colors.mutedForeground} /></TouchableOpacity>}
-          </View>
-        </View>
-
-        {/* Open Tabs */}
-        <View style={{ marginBottom: spacing.lg }}>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.sm }}>
-            <Text style={{ fontSize: fontSize.tiny, fontWeight: '700', color: colors.mutedForeground, textTransform: 'uppercase', letterSpacing: 1 }}>OPEN TABS ({filteredTabs.length})</Text>
-            <TouchableOpacity onPress={() => navigation.navigate('Entry', { screen: 'GuestIntake' })} style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: colors.primaryBg, alignItems: 'center', justifyContent: 'center' }}>
-              <Feather name="plus" size={14} color={colors.primary} />
-            </TouchableOpacity>
-          </View>
-          {loading ? <ActivityIndicator color={colors.primary} style={{ marginVertical: spacing.lg }} /> : filteredTabs.length === 0 ? (
-            <View style={{ backgroundColor: colors.card, borderRadius: radius.xl, padding: spacing.xxl, borderWidth: 1, borderColor: colors.border + '80', alignItems: 'center' }}>
-              <Feather name="credit-card" size={24} color={colors.mutedForeground + '40'} />
-              <Text style={{ fontSize: fontSize.sm, fontWeight: '600', color: colors.mutedForeground, marginTop: spacing.sm }}>No open tabs</Text>
-              <Text style={{ fontSize: fontSize.xs, color: colors.mutedForeground, marginTop: 2 }}>Scan NFC or create a guest</Text>
-            </View>
-          ) : filteredTabs.slice(0, 6).map(tab => {
-            const isSelected = selectedTab?.id === tab.id;
-            return (
-              <TouchableOpacity key={tab.id} onPress={() => setSelectedTab(isSelected ? null : tab)} activeOpacity={0.7}
-                style={{ backgroundColor: isSelected ? colors.primaryBg : colors.card, borderRadius: radius.xl, padding: spacing.lg, marginBottom: spacing.sm, borderWidth: 1, borderColor: isSelected ? colors.primary + '40' : colors.border + '80' }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flex: 1 }}>
-                    <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: colors.emerald400 }} />
-                    <Text style={{ fontSize: fontSize.sm, fontWeight: '600', color: colors.foreground }} numberOfLines={1}>{tab.guest_name || `Tab ${tab.tab_number || '?'}`}</Text>
-                    {tab.tab_number != null && <Text style={{ fontSize: fontSize.xs, color: colors.primary, fontFamily: Platform.select({ ios: 'Menlo', default: 'monospace' }) }}>#{tab.tab_number}</Text>}
-                  </View>
-                  <Feather name={isSelected ? 'chevron-up' : 'chevron-down'} size={16} color={colors.mutedForeground} />
-                </View>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: spacing.xs }}>
-                  <Text style={{ fontSize: fontSize.xs, color: colors.mutedForeground }}>Tab #{tab.tab_number || '?'}</Text>
-                  <Text style={{ fontSize: fontSize.xl, fontWeight: '800', color: colors.foreground, fontVariant: ['tabular-nums'] }}>${Number(tab.total || 0).toFixed(2)}</Text>
-                </View>
+        {/* Collapsible Open Tabs (not first thing shown — menu-first) */}
+        {showTabsList && (
+          <View style={{ marginBottom: spacing.lg }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.sm }}>
+              <Text style={{ fontSize: fontSize.tiny, fontWeight: '700', color: colors.mutedForeground, textTransform: 'uppercase', letterSpacing: 1 }}>OPEN TABS ({filteredTabs.length})</Text>
+              <TouchableOpacity onPress={() => navigation.navigate('Entry', { screen: 'GuestIntake' })} style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: colors.primaryBg, alignItems: 'center', justifyContent: 'center' }}>
+                <Feather name="plus" size={14} color={colors.primary} />
               </TouchableOpacity>
-            );
-          })}
-        </View>
+            </View>
+            {/* Search within tabs */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: colors.card, borderRadius: radius.xl, borderWidth: 1, borderColor: colors.border + '80', paddingHorizontal: spacing.md, height: 42, marginBottom: spacing.sm }}>
+              <Feather name="search" size={14} color={colors.mutedForeground} />
+              <TextInput placeholder="Name or #tab..." placeholderTextColor={colors.placeholder} value={search} onChangeText={setSearch} style={{ flex: 1, color: colors.foreground, fontSize: fontSize.sm, marginLeft: spacing.sm }} />
+              {search.length > 0 && <TouchableOpacity onPress={() => setSearch('')}><Feather name="x" size={14} color={colors.mutedForeground} /></TouchableOpacity>}
+            </View>
+            {loading ? <ActivityIndicator color={colors.primary} style={{ marginVertical: spacing.lg }} /> : filteredTabs.length === 0 ? (
+              <View style={{ backgroundColor: colors.card, borderRadius: radius.xl, padding: spacing.xxl, borderWidth: 1, borderColor: colors.border + '80', alignItems: 'center' }}>
+                <Feather name="credit-card" size={24} color={colors.mutedForeground + '40'} />
+                <Text style={{ fontSize: fontSize.sm, fontWeight: '600', color: colors.mutedForeground, marginTop: spacing.sm }}>No open tabs</Text>
+                <Text style={{ fontSize: fontSize.xs, color: colors.mutedForeground, marginTop: 2 }}>Scan NFC or create a guest</Text>
+              </View>
+            ) : filteredTabs.slice(0, 8).map(tab => {
+              const isSelected = selectedTab?.id === tab.id;
+              return (
+                <TouchableOpacity key={tab.id} onPress={() => { setSelectedTab(isSelected ? null : tab); if (!isSelected) setShowTabsList(false); }} activeOpacity={0.7}
+                  style={{ backgroundColor: isSelected ? colors.primaryBg : colors.card, borderRadius: radius.xl, padding: spacing.lg, marginBottom: spacing.sm, borderWidth: 1, borderColor: isSelected ? colors.primary + '40' : colors.border + '80' }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flex: 1 }}>
+                      <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: colors.emerald400 }} />
+                      <Text style={{ fontSize: fontSize.sm, fontWeight: '600', color: colors.foreground }} numberOfLines={1}>{tab.guest_name || `Tab ${tab.tab_number || '?'}`}</Text>
+                      {tab.tab_number != null && <Text style={{ fontSize: fontSize.xs, color: colors.primary, fontFamily: Platform.select({ ios: 'Menlo', default: 'monospace' }) }}>#{tab.tab_number}</Text>}
+                    </View>
+                    <Text style={{ fontSize: fontSize.lg, fontWeight: '800', color: colors.foreground, fontVariant: ['tabular-nums'] }}>${Number(tab.total || 0).toFixed(2)}</Text>
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        )}
 
         {/* Categories */}
         {categories.length > 0 && (
