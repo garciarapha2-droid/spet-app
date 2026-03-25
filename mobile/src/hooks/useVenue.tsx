@@ -14,6 +14,7 @@ interface VenueState {
 interface VenueContextValue extends VenueState {
   loadVenues: () => Promise<void>;
   selectVenue: (venue: venueService.Venue) => void;
+  clearVenue: () => void;
   venueId: string;
 }
 
@@ -24,6 +25,7 @@ const VenueContext = createContext<VenueContextValue>({
   loading: false,
   loadVenues: async () => {},
   selectVenue: () => {},
+  clearVenue: () => {},
   venueId: '',
 });
 
@@ -55,10 +57,14 @@ export function VenueProvider({ children }: { children: React.ReactNode }) {
     setState(s => ({ ...s, selectedVenue: venue }));
   }, []);
 
+  const clearVenue = useCallback(() => {
+    setState(s => ({ ...s, selectedVenue: null }));
+  }, []);
+
   const venueId = state.selectedVenue?.id || '';
 
   return (
-    <VenueContext.Provider value={{ ...state, loadVenues, selectVenue, venueId }}>
+    <VenueContext.Provider value={{ ...state, loadVenues, selectVenue, clearVenue, venueId }}>
       {children}
     </VenueContext.Provider>
   );

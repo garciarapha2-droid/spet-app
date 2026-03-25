@@ -5,6 +5,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, Alert } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import { Feather } from '@expo/vector-icons';
 import { NfcManager, NfcTech, nfcAvailable, isExpoGo } from '../../services/nfcBridge';
 import { colors, spacing, fontSize } from '../../theme/colors';
 import { Button, Input, LoadingOverlay } from '../../components/ui';
@@ -124,7 +125,7 @@ export default function NfcRegisterScreen() {
             borderColor: state === 'scanning' ? colors.info : colors.primary,
           }}
         >
-          <Text style={{ fontSize: 48 }}>{'\u{1F4F6}'}</Text>
+          <Feather name="wifi" size={48} color={state === 'scanning' ? colors.info : colors.primary} />
         </View>
         <Text style={{ fontSize: fontSize.xl, fontWeight: '700', color: colors.text, textAlign: 'center' }}>
           {state === 'scanning' ? 'Tap Wristband...' : 'Register NFC Tag'}

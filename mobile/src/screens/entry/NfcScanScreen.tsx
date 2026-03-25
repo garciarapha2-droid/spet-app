@@ -5,6 +5,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, Platform } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { Feather } from '@expo/vector-icons';
 import { NfcManager, NfcTech, nfcAvailable, isExpoGo } from '../../services/nfcBridge';
 import { colors, spacing, fontSize } from '../../theme/colors';
 import { Button, LoadingOverlay } from '../../components/ui';
@@ -134,7 +135,7 @@ export default function NfcScanScreen() {
               marginBottom: spacing.xxxl, borderWidth: 2, borderColor: colors.primary,
             }}
           >
-            <Text style={{ fontSize: 64 }}>{'\u{1F4F6}'}</Text>
+            <Feather name="wifi" size={64} color={colors.primary} />
           </View>
           <Text style={{ fontSize: fontSize.xl, fontWeight: '700', color: colors.text, textAlign: 'center' }}>
             Ready to Scan
@@ -155,7 +156,7 @@ export default function NfcScanScreen() {
               marginBottom: spacing.xxxl, borderWidth: 2, borderColor: colors.info,
             }}
           >
-            <Text style={{ fontSize: 64 }}>{'\u{1F4F6}'}</Text>
+            <Feather name="wifi" size={64} color={colors.info} />
           </View>
           <Text style={{ fontSize: fontSize.xl, fontWeight: '700', color: colors.info, textAlign: 'center' }}>
             Scanning...

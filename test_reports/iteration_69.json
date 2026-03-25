@@ -1,5 +1,5 @@
 {
-  "summary": "Iteration 69: Emergent-Only Auth Migration Complete. All 12 test scenarios PASSED. Verified the architectural change from Lovable+Emergent to Emergent-only authentication. All redirects now stay within the Emergent domain (https://expo-sdk-upgrade-2.preview.emergentagent.com). No references to spetapp.com or lovable.app found in frontend code.",
+  "summary": "Iteration 69: Emergent-Only Auth Migration Complete. All 12 test scenarios PASSED. Verified the architectural change from Lovable+Emergent to Emergent-only authentication. All redirects now stay within the Emergent domain (https://ops-clone.preview.emergentagent.com). No references to spetapp.com or lovable.app found in frontend code.",
   "backend_issues": {
     "critical": [],
     "minor": []

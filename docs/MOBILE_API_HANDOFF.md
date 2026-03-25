@@ -2,7 +2,7 @@
 
 ## Base URL
 ```
-https://expo-sdk-upgrade-2.preview.emergentagent.com
+https://ops-clone.preview.emergentagent.com
 ```
 
 All API endpoints are prefixed with `/api`.

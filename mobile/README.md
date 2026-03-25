@@ -53,7 +53,7 @@ eas build --profile development --platform android
 
 O app consome o backend real em:
 ```
-https://expo-sdk-upgrade-2.preview.emergentagent.com/api
+https://ops-clone.preview.emergentagent.com/api
 ```
 
 Para alterar, edite `/app/mobile/src/config/api.ts`.

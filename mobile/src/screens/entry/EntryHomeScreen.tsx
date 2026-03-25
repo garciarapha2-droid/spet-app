@@ -5,6 +5,7 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, TouchableOpacity, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { Feather } from '@expo/vector-icons';
 import { colors, spacing, fontSize, radius } from '../../theme/colors';
 import { useVenue } from '../../hooks/useVenue';
 import { useWebSocket } from '../../hooks/useWebSocket';
@@ -80,9 +81,7 @@ export default function EntryHomeScreen() {
             alignItems: 'center',
           }}
         >
-          <Text style={{ fontSize: 40, marginBottom: spacing.md }}>
-            {'\u{1F4F6}'}
-          </Text>
+          <Feather name="wifi" size={40} color={colors.primary} style={{ marginBottom: spacing.md }} />
           <Text style={{ fontSize: fontSize.xl, fontWeight: '700', color: colors.primary }}>
             Scan NFC
           </Text>
@@ -106,9 +105,7 @@ export default function EntryHomeScreen() {
             alignItems: 'center',
           }}
         >
-          <Text style={{ fontSize: 40, marginBottom: spacing.md }}>
-            {'\u{1F50D}'}
-          </Text>
+          <Feather name="search" size={40} color={colors.text} style={{ marginBottom: spacing.md }} />
           <Text style={{ fontSize: fontSize.xl, fontWeight: '700', color: colors.text }}>
             Search Guest
           </Text>
@@ -134,7 +131,7 @@ export default function EntryHomeScreen() {
             minHeight: 56,
           }}
         >
-          <Text style={{ fontSize: fontSize.lg, color: colors.textSecondary }}>+</Text>
+          <Feather name="user-plus" size={18} color={colors.textSecondary} />
           <Text style={{ fontSize: fontSize.md, fontWeight: '600', color: colors.textSecondary }}>
             New Guest
           </Text>

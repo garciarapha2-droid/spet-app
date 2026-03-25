@@ -1,32 +1,64 @@
 /**
- * Root Navigation — Auth stack + Main tab navigator.
+ * Root Navigation — Auth stack + Main tab navigator with all modules.
+ * 5 Bottom Tabs: Entry, Tabs, Tables, Kitchen, Modules
+ * Plus stack navigators for each dashboard.
  */
 import React from 'react';
-import { ActivityIndicator, View } from 'react-native';
+import { ActivityIndicator, View, Text } from 'react-native';
 import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { Feather } from '@expo/vector-icons';
 import { useAuth } from '../hooks/useAuth';
 import { useVenue } from '../hooks/useVenue';
 import { colors, fontSize } from '../theme/colors';
 
-// Screens
+// Auth + Venue
 import LoginScreen from '../screens/auth/LoginScreen';
 import VenueSelectScreen from '../screens/venue/VenueSelectScreen';
+
+// Entry
 import EntryHomeScreen from '../screens/entry/EntryHomeScreen';
 import NfcScanScreen from '../screens/entry/NfcScanScreen';
 import GuestSearchScreen from '../screens/entry/GuestSearchScreen';
 import EntryDecisionScreen from '../screens/entry/EntryDecisionScreen';
 import GuestIntakeScreen from '../screens/entry/GuestIntakeScreen';
 import NfcRegisterScreen from '../screens/entry/NfcRegisterScreen';
+
+// Pulse / Tabs
 import PulseHomeScreen from '../screens/pulse/PulseHomeScreen';
 import TabDetailScreen from '../screens/pulse/TabDetailScreen';
 import AddItemScreen from '../screens/pulse/AddItemScreen';
+import PulseInsideScreen from '../screens/pulse/PulseInsideScreen';
+import PulseExitScreen from '../screens/pulse/PulseExitScreen';
+import PulseBarScreen from '../screens/pulse/PulseBarScreen';
+import PulseRewardsScreen from '../screens/pulse/PulseRewardsScreen';
+
+// Tables
+import TablesHomeScreen from '../screens/tables/TablesHomeScreen';
+import TableDetailScreen from '../screens/tables/TableDetailScreen';
+
+// Kitchen
+import KitchenScreen from '../screens/kitchen/KitchenScreen';
+
+// Modules Hub
+import ModulesHomeScreen from '../screens/modules/ModulesHomeScreen';
+
+// Dashboards
+import ManagerDashboardScreen from '../screens/manager/ManagerDashboardScreen';
+import CeoDashboardScreen from '../screens/ceo/CeoDashboardScreen';
+import OwnerDashboardScreen from '../screens/owner/OwnerDashboardScreen';
+
+// Settings
+import SettingsScreen from '../screens/settings/SettingsScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 const EntryStack = createNativeStackNavigator();
 const PulseStack = createNativeStackNavigator();
+const TablesStack = createNativeStackNavigator();
+const KitchenStack = createNativeStackNavigator();
+const ModulesStack = createNativeStackNavigator();
 
 const darkTheme = {
   ...DefaultTheme,
@@ -49,7 +81,6 @@ const screenOptions = {
 };
 
 // ─── Entry Stack ───
-
 function EntryStackNavigator() {
   return (
     <EntryStack.Navigator screenOptions={screenOptions}>
@@ -64,19 +95,54 @@ function EntryStackNavigator() {
 }
 
 // ─── Pulse Stack ───
-
 function PulseStackNavigator() {
   return (
     <PulseStack.Navigator screenOptions={screenOptions}>
       <PulseStack.Screen name="PulseHome" component={PulseHomeScreen} options={{ headerShown: false }} />
       <PulseStack.Screen name="TabDetail" component={TabDetailScreen} options={{ title: 'Tab Detail' }} />
       <PulseStack.Screen name="AddItem" component={AddItemScreen} options={{ title: 'Add Item' }} />
+      <PulseStack.Screen name="PulseInside" component={PulseInsideScreen} options={{ title: 'Inside' }} />
+      <PulseStack.Screen name="PulseExit" component={PulseExitScreen} options={{ title: 'Exits' }} />
+      <PulseStack.Screen name="PulseBar" component={PulseBarScreen} options={{ title: 'Bar' }} />
+      <PulseStack.Screen name="PulseRewards" component={PulseRewardsScreen} options={{ title: 'Rewards' }} />
     </PulseStack.Navigator>
   );
 }
 
-// ─── Main Tabs ───
+// ─── Tables Stack ───
+function TablesStackNavigator() {
+  return (
+    <TablesStack.Navigator screenOptions={screenOptions}>
+      <TablesStack.Screen name="TablesHome" component={TablesHomeScreen} options={{ headerShown: false }} />
+      <TablesStack.Screen name="TableDetail" component={TableDetailScreen} options={{ title: 'Table Detail' }} />
+      <TablesStack.Screen name="AddItem" component={AddItemScreen} options={{ title: 'Add Item' }} />
+    </TablesStack.Navigator>
+  );
+}
 
+// ─── Kitchen Stack ───
+function KitchenStackNavigator() {
+  return (
+    <KitchenStack.Navigator screenOptions={screenOptions}>
+      <KitchenStack.Screen name="KitchenHome" component={KitchenScreen} options={{ headerShown: false }} />
+    </KitchenStack.Navigator>
+  );
+}
+
+// ─── Modules Stack (Dashboards + Settings) ───
+function ModulesStackNavigator() {
+  return (
+    <ModulesStack.Navigator screenOptions={screenOptions}>
+      <ModulesStack.Screen name="ModulesHome" component={ModulesHomeScreen} options={{ headerShown: false }} />
+      <ModulesStack.Screen name="ManagerDashboard" component={ManagerDashboardScreen} options={{ title: 'Manager' }} />
+      <ModulesStack.Screen name="CeoDashboard" component={CeoDashboardScreen} options={{ title: 'CEO' }} />
+      <ModulesStack.Screen name="OwnerDashboard" component={OwnerDashboardScreen} options={{ title: 'Owner' }} />
+      <ModulesStack.Screen name="SettingsScreen" component={SettingsScreen} options={{ title: 'Settings' }} />
+    </ModulesStack.Navigator>
+  );
+}
+
+// ─── Main Tabs ───
 function MainTabs() {
   return (
     <Tab.Navigator
@@ -103,11 +169,7 @@ function MainTabs() {
         component={EntryStackNavigator}
         options={{
           tabBarLabel: 'Entry',
-          tabBarIcon: ({ color }) => (
-            <View style={{ width: 24, height: 24, justifyContent: 'center', alignItems: 'center' }}>
-              <View style={{ width: 18, height: 18, borderRadius: 4, borderWidth: 2, borderColor: color }} />
-            </View>
-          ),
+          tabBarIcon: ({ color, size }) => <Feather name="log-in" size={20} color={color} />,
         }}
       />
       <Tab.Screen
@@ -115,23 +177,31 @@ function MainTabs() {
         component={PulseStackNavigator}
         options={{
           tabBarLabel: 'Tabs',
-          tabBarIcon: ({ color }) => (
-            <View style={{ width: 24, height: 24, justifyContent: 'center', alignItems: 'center' }}>
-              <View style={{ width: 16, height: 16, borderRadius: 8, backgroundColor: color }} />
-            </View>
-          ),
+          tabBarIcon: ({ color, size }) => <Feather name="credit-card" size={20} color={color} />,
         }}
       />
       <Tab.Screen
-        name="VenueTab"
-        component={VenueSelectScreen}
+        name="TablesStack"
+        component={TablesStackNavigator}
         options={{
-          tabBarLabel: 'Venue',
-          tabBarIcon: ({ color }) => (
-            <View style={{ width: 24, height: 24, justifyContent: 'center', alignItems: 'center' }}>
-              <View style={{ width: 14, height: 14, borderWidth: 2, borderColor: color, transform: [{ rotate: '45deg' }] }} />
-            </View>
-          ),
+          tabBarLabel: 'Tables',
+          tabBarIcon: ({ color, size }) => <Feather name="grid" size={20} color={color} />,
+        }}
+      />
+      <Tab.Screen
+        name="KitchenStack"
+        component={KitchenStackNavigator}
+        options={{
+          tabBarLabel: 'Kitchen',
+          tabBarIcon: ({ color, size }) => <Feather name="coffee" size={20} color={color} />,
+        }}
+      />
+      <Tab.Screen
+        name="Modules"
+        component={ModulesStackNavigator}
+        options={{
+          tabBarLabel: 'More',
+          tabBarIcon: ({ color, size }) => <Feather name="menu" size={20} color={color} />,
         }}
       />
     </Tab.Navigator>
@@ -139,12 +209,10 @@ function MainTabs() {
 }
 
 // ─── Root Navigator ───
-
 export default function RootNavigator() {
   const { authenticated, loading } = useAuth();
   const { selectedVenue, loadVenues } = useVenue();
 
-  // Auto-load venues when authenticated
   React.useEffect(() => {
     if (authenticated) {
       loadVenues();

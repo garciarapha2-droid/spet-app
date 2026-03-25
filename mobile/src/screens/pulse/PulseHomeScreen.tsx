@@ -5,6 +5,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, FlatList, TouchableOpacity, RefreshControl } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { Feather } from '@expo/vector-icons';
 import { colors, spacing, fontSize, radius } from '../../theme/colors';
 import { StatCard, Card, SectionHeader } from '../../components/ui';
 import { useVenue } from '../../hooks/useVenue';
@@ -71,6 +72,30 @@ export default function PulseHomeScreen() {
                   {selectedVenue?.name}
                 </Text>
               </View>
+            </View>
+
+            {/* Quick Nav */}
+            <View style={{ flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.xxl }}>
+              {[
+                { screen: 'PulseInside', icon: 'users', label: 'Inside' },
+                { screen: 'PulseExit', icon: 'log-out', label: 'Exits' },
+                { screen: 'PulseBar', icon: 'search', label: 'Bar' },
+                { screen: 'PulseRewards', icon: 'gift', label: 'Rewards' },
+              ].map(item => (
+                <TouchableOpacity
+                  key={item.screen}
+                  onPress={() => navigation.navigate(item.screen)}
+                  activeOpacity={0.7}
+                  style={{
+                    flex: 1, alignItems: 'center', paddingVertical: spacing.md,
+                    backgroundColor: colors.bgCard, borderRadius: radius.md,
+                    borderWidth: 1, borderColor: colors.border,
+                  }}
+                >
+                  <Feather name={item.icon as any} size={16} color={colors.primary} />
+                  <Text style={{ fontSize: fontSize.xs, color: colors.textSecondary, marginTop: 4 }}>{item.label}</Text>
+                </TouchableOpacity>
+              ))}
             </View>
 
             {/* Stats Row */}

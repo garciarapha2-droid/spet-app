@@ -1,75 +1,79 @@
 <analysis>**original_problem_statement**:
-The user's initial goal was to build a CEO OS module. This evolved through several stages:
-1.  **Web App Migration**: Migrate the , , and  pages from mock data to a real PostgreSQL backend. (This was completed).
-2.  **Mobile App Analysis**: Evaluate the feasibility of converting the web app to a native mobile app. (This was completed, concluding a rewrite was necessary).
-3.  **Backend for Mobile**: Create the necessary backend infrastructure (PostgreSQL table  and API endpoints ) to support a new mobile app with real NFC functionality. (This was completed).
-4.  **Mobile App Scaffolding**: Create the entire project structure for a React Native/Expo mobile app MVP, including all services, screens, hooks, and navigation, based on a detailed handoff document. (This was completed).
-5.  **P0 CRITICAL TASK**: Upgrade the newly created Expo project to SDK 54, fixing all dependency mismatches and native module errors (specifically ) to ensure the app can run correctly in the standard Expo Go client without crashing.
+The user's initial goal was to build a CEO OS module for a web app. This has since expanded significantly. The current primary objective is a **P0 full-build mission**: transform the existing React Native/Expo mobile app into a true 1:1 operational version of the web platform, achieving complete feature and design parity.
+
+This includes implementing all missing modules (Tables, Payments, Manager/CEO/Owner Dashboards), ensuring UI consistency with the web app, and maintaining native capabilities like NFC. This mission overrides all previous smaller tasks.
 
 **User's preferred language**: Portuguese. The next agent **MUST** respond in Portuguese.
 
 **what currently exists?**
-- A full-stack web application (React/FastAPI/PostgreSQL) where the CEO OS module is fully migrated to the real backend.
-- A complete backend infrastructure for real NFC operations, including a  table in PostgreSQL and tested API endpoints (, , ).
-- A comprehensive API handoff document for mobile development at .
-- A newly created React Native/Expo mobile application project in the  directory. This project contains the complete structure for the operational MVP, including services, hooks, navigation, and all required screens.
-- A setup guide for running the mobile app with a custom development build at .
-- The mobile project is in the process of being upgraded to Expo SDK 54.
+- A full-stack web application (React/FastAPI/PostgreSQL).
+- A React Native/Expo mobile application project in , upgraded to Expo SDK 54 with compatible dependencies.
+- The mobile app has foundational features: Auth, Venue Select, and a functional Entry/Host flow using real NFC endpoints.
+- The web app has a new  form integrated with the Resend API via a  backend endpoint.
+- The mobile app's icon and splash screen assets have been updated with production-ready versions provided by the user.
+- The agent has performed a detailed gap analysis between the web and mobile apps and has just begun Wave 1 of the feature parity implementation by creating placeholder files for new services and screens (Tables, Kitchen, Manager, Analytics).
 
 **Last working item**:
-- Last item agent was working: Finalizing the upgrade of the  Expo project to SDK 54. The agent updated  with compatible versions for SDK 54, reinstalled dependencies, and used . The critical part of the fix was to address the  native module, which crashes the standard Expo Go client. The agent created a conditional wrapper () and was in the process of updating the two NFC-related screens ( and ) to use this safe bridge instead of importing the native module directly.
-- Status: IN PROGRESS
-- Agent Testing Done: N
-- Which testing method agent to use? manual testing by . The agent must verify that the app now successfully launches in the Expo Go (web or simulator) environment without crashing, confirming the dependency upgrade and the NFC bridge fix were successful.
-- User Testing Done: N
+- **Last item agent was working**: The agent began the P0 Full Execution Mode task to make the mobile app a 1:1 clone of the web app. After a detailed gap analysis, it started Wave 1: Core Operations by creating the initial file structure for the missing modules.
+    - New service files created: , , , .
+    - New screen files created: , , .
+- **Status**: IN PROGRESS
+- **Agent Testing Done**: N
+- **Which testing method agent to use?**: This is a large-scale implementation. The agent should use  to test both frontend (mobile) and backend after completing each major implementation wave (e.g., Wave 1, Wave 2).
+- **User Testing Done**: N
 
 **All Pending/In progress Issue list**:
-  - Issue 1: Finalize and Verify Expo SDK 54 Upgrade (P0)
-
-  Issues Detail:
-  - Issue 1: 
-     - **Attempted fixes**: The agent has updated all dependencies in  to be compatible with Expo SDK 54 and React Native 0.81. It has created a conditional bridge for the  library to prevent it from being loaded in the Expo Go environment, which would cause a crash. The screens using NFC have been overwritten to use this bridge.
-     - **Next debug checklist**:
-       1. Navigate to the  directory.
-       2. Run .
-       3. Observe the Metro Bundler output for any compilation errors.
-       4. Attempt to load the application in a web browser or simulator using the options provided by Metro.
-       5. Confirm that the application loads successfully and does not crash. Navigate to the Scan NFC screen to ensure the fallback UI (due to the bridge) is displayed correctly.
-     - **Why fix this issue and what will be achieved with the fix?**: The initial project scaffolding had dependency mismatches and used a native module incompatible with the standard Expo Go client. This upgrade makes the project runnable for the user in a standard development environment, aligns it with the latest Expo version, and fulfills the user's direct request.
-     - **Status**:  IN PROGRESS
-     - **Is recurring issue?**: N
-     - **Should Test frontend/backend/both after fix?**: Frontend (the mobile app environment)
-     - **Blocked on other issue**: None
+- There are no pending issues. The entire focus is on the single, massive, in-progress feature parity task.
 
 **In progress Task List**:
-- None, the SDK upgrade is the only in-progress item.
+- **Task 1: Mobile App Feature Parity with Web App (P0)**
+
+**Task Detail**:
+- **Task 1**:
+    - **Where to resume**: The initial files for Wave 1 have been created. The next step is to implement the logic within these new files, starting with the  and  and their corresponding screens. Then, continue implementing all other features identified in the gap analysis for Wave 1 (Tap, enhanced Pulse, icons).
+    - **What will be achieved with this?**: The mobile app will become a faithful, operational clone of the web platform, including all core modules, dashboards, and UI consistency.
+    - **Status**: IN PROGRESS
+    - **Should Test frontend/backend/both after fix?**: Both, after each major wave of implementation.
+    - **Blocked on something**: No.
 
 **Upcoming and Future Tasks**
 **Upcoming Tasks:**
-*   **(P0) User Testing**: The user will test the mobile app on a physical iPhone using a development build to validate real NFC functionality.
-*   **(P1) Web App Enhancements**:
-    *   Migrate the  and  pages on the web app to use the real backend API.
-    *   Implement drag-and-drop functionality for the Pipeline Kanban view on the web app.
+*   **(P0) Wave 1 Completion**: Fully implement core operational modules on mobile:
+    *   Tap/Orders ( is the reference).
+    *   Tables ( is the reference).
+    *   Kitchen ( is the reference).
+    *   Expand Pulse module to include all 7 web pages.
+    *   Replace all Unicode emoji icons with a proper vector icon library ().
+*   **(P0) Wave 2 Start**: Implement Manager dashboards and modules.
+*   **(P0) Wave 3 Start**: Implement CEO & Owner dashboards.
 
 **Future Tasks:**
-*   **(P2) Mobile App Evolution**: Implement Push Notifications, offline synchronization, and biometric authentication.
-*   **(P2) Web App Migration**: Migrate the Owner and Manager modules to a real backend API.
-*   **(P3) Recurring Bug Fix**: Address the Pricing Cards on Landing Page issue on the web app.
+*   **(P1)** Web App: Migrate  &  pages to use the real backend API.
+*   **(P1)** Web App: Implement drag-and-drop functionality for the Pipeline Kanban view.
+*   **(P2)** Mobile App: Implement Push Notifications, offline synchronization, and biometric authentication.
+*   **(P3)** Web App: Address the recurring Pricing Cards on Landing Page bug.
 
 **Completed work in this session**
-- **Web App - CEO OS Migration**: Successfully migrated , , and  pages to use real data from the PostgreSQL backend, eliminating all mock data. Passed 28/28 tests.
-- **Mobile Feasibility Analysis**: Provided a detailed technical analysis concluding the web frontend was not reusable and a rewrite in React Native was necessary.
-- **Backend - NFC Infrastructure**: Built and tested the complete backend support for NFC, including a new  table and API endpoints for registering, scanning, and managing NFC tags. Passed 27/27 tests.
-- **Mobile App - Project Scaffolding**: Created the entire project structure for the SPET Mobile App MVP in React Native/Expo, including 24 TypeScript files for services, hooks, screens, and navigation.
-- **Mobile App - Setup Guide**: Created a comprehensive guide () for the user to run the app on a physical device using a custom development build required for NFC.
-- **Mobile App - SDK 54 Upgrade**: Started and almost completed the upgrade of the Expo project to SDK 54, including fixing native module compatibility for Expo Go.
+- **Mobile - Production Readiness**:
+    - Fully configured  and  for production, including version codes, OTA updates, and store metadata placeholders.
+    - Added build/submit scripts to .
+    - Fixed a critical iOS build failure by downgrading the incompatible  package to the correct version for Expo SDK 54.
+    - Successfully logged into the user's EAS account and linked the project, preparing it for builds on the user's machine.
+- **Mobile - Asset Preparation**:
+    - Processed a user-provided image to create production-ready, correctly-sized, and non-transparent icons for the App Store and Google Play (, , ).
+- **Web - New Feature Implementation**:
+    - Created a new backend endpoint  with Resend integration for sending support emails.
+    - Created new static pages  and  on the frontend, with the support form connected to the new backend endpoint.
+    - The entire feature was validated by the testing agent, passing 17/17 tests.
+- **Codebase - Maintenance**:
+    - Identified and deleted two conflicting, unused files (, ), resolving a case-sensitivity issue that would block production builds.
 
 **Earlier issues found/mentioned but not fixed**
-   - **Issue 1**: Pricing Cards on the landing page. This is a recurring issue from a previous fork that has not been addressed.
+   - **Issue 1**: Pricing Cards on the landing page (web app). This is a known recurring issue that remains unaddressed.
 
 **Known issue recurrence from previous fork**
-  - **Issue recurrence**: Pricing Cards on the landing page.
-  - **Recurrence count**: 3
+  - **Issue recurrence**: Pricing Cards on landing page.
+  - **Recurrence count**: >3
   - **Status**: NOT STARTED
 
 **Code Architecture**
@@ -77,81 +81,80 @@ The user's initial goal was to build a CEO OS module. This evolved through sever
 
 **Key Technical Concepts**
 - **Full-stack Development**: React, FastAPI, PostgreSQL.
-- **React Native/Expo**: Mobile app development framework.
-- **Expo SDK Upgrade**: Migrating an Expo project across major SDK versions (e.g., to SDK 54).
-- **Native Modules in Expo**: Understanding the limitations of Expo Go and the need for development builds or conditional imports () for libraries like .
-- **Backend API for Mobile**: Designing and testing REST APIs (auth, data fetching, NFC) to be consumed by a mobile client.
-- **Database Migrations**: Using Python scripts to manage PostgreSQL schema changes.
+- **Mobile App Development**: React Native, Expo SDK 54.
+- **Deployment**: EAS (Expo Application Services) for builds and submission.
+- **Email Integration**: Resend API for transactional emails.
+- **Dependency Management**: Resolving native dependency conflicts in Expo ().
+- **File System**: Correcting case-sensitivity issues in Git for cross-platform compatibility.
 
 **key DB schema**
-  - **deals**: {id, contact_name, stage, deal_value, ...}
-  - **customers**: {id, company_name, mrr, status, ...}
-  - **nfc_tags**: {id, tag_uid, guest_id, venue_id, status, created_at, last_scanned}
+  - No changes were made to the database schema in this session.
 
 **changes in tech stack**
-- **Addition**: **React Native / Expo** project for mobile app development has been added to the workspace.
+- **Backend**: Added  SDK for email integration.
+- **Mobile**: Added  and  in preparation for dashboard implementation.
 
 **All files of reference**
-- **Mobile Handoff**: 
-- **Mobile Setup Guide**: 
-- **Mobile Project Config**: , 
-- **NFC Bridge Fix**: 
-- **NFC Backend**: , 
+- **Web App Parity Source of Truth**: The entire  codebase, especially:
+    -  (all subdirectories like , , , )
+    -  (for Tables/Tap logic)
+- **New Mobile Files (to be implemented)**:
+    - 
+    - 
+    - 
+    - 
+- **Configuration Files (recently updated)**:
+    - 
+    - 
+    - 
 
 **Areas that need refactoring**:
-- The mock data service  is now completely obsolete and could be deleted.
+- The mobile app uses Unicode emojis for icons. This must be replaced with a proper vector icon library () as part of the P0 task.
+-  is obsolete and can be deleted.
 
 **key api endpoints**
-- 
-- 
-- 
-- 
-- 
-- 
-- 
+-  (New web endpoint)
+- The mobile app will need to consume many existing backend endpoints for Manager, CEO, and Owner modules.
 
 **Critical Info for New Agent**
 - **Você DEVE responder em português.**
-- Your immediate P0 task is to **verify the Expo SDK 54 upgrade**. The code changes are done. You just need to run  in  and confirm the app loads in Expo Go (web/simulator) without crashing. This will prove the dependency fixes and the NFC bridge work as intended.
-- Once verified, you should finish the task, as this completes the user's latest request.
-- The next logical step would be to ask the user if they are ready to proceed with testing on their physical device, based on the instructions in .
-- Do not work on the web application; the priority has fully shifted to the mobile app MVP.
+- You are in **FULL EXECUTION MODE**. Your P0 mission is to make the mobile app a 1:1 clone of the web app. Do not stop for further planning; the gap analysis is complete.
+- The web app codebase () is the single source of truth for all features, UI logic, and business rules.
+- Your immediate task is to implement the logic for the newly created files for Wave 1: , , , , and then continue with the rest of the core operational modules (Tap, Pulse).
+- **Do NOT attempt to automate Apple login again.** The user has resolved this on their end. Focus on writing code that ensures the EAS build will pass.
 
 **documents and test reports created in this job**
--  (CEO OS Web Migration Test)
--  (NFC Backend Infrastructure Test)
-- 
-- 
-- 
--  (Continuously updated)
+-  (Support & Privacy Feature Test Report)
+-  (updated with latest progress)
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  **User**: Instructs agent to upgrade the Expo project to SDK 54 and fix all dependency issues so it can run in Expo Go. (IN PROGRESS)
-2.  **User**: Confirms the agent should prepare the project for a local development build on the user's machine to test real NFC, and asks for a detailed step-by-step guide. (DONE)
-3.  **Assistant**: Asks the user how to proceed with mobile testing (provide instructions vs. call mobile agent).
-4.  **User**: Signals the P0 task is to test the app on a physical device. (DONE)
-5.  **Assistant**: Finishes the mobile app scaffolding task.
-6.  **User**: Confirms Option A: the agent should build the complete React Native/Expo project. (DONE)
-7.  **Assistant**: Asks whether to build the mobile project skeleton or the full project.
-8.  **User**: Provides the complete P1 Critical spec for the mobile app MVP. (DONE)
-9.  **Assistant**: Finishes the NFC backend preparation task.
-10. **User**: Confirms the agent should start Step 1: building the backend NFC infrastructure and preparing for mobile. (DONE)
+10. **User:** Do a full diagnosis of the mobile apps current state." (DONE)
+9.  **User:** "We are now in FULL EXECUTION mode. Make the mobile app a 1:1 clone of the web app. This is a P0 full-build mission." (IN PROGRESS)
+8.  **User:** (Provides updated password and asks to retry Apple login) "The password was wrong, can we try again?" (DONE, but ultimately failed due to environment limitations)
+7.  **User:** "The Apple auth is done locally. The iOS build is failing in the Install pods phase. Analyze the logs and fix the CocoaPods issue." (DONE)
+6.  **User:** "Fix the critical cross-platform issue caused by case-sensitive file duplication (`CEOPage.js` vs `CeoPage.js`)." (DONE)
+5.  **User:** Provides 2FA code `542628`. (DONE)
+4.  **User:** "I need the 2FA code NOW!" (This was in response to the agent asking for the code)
+3.  **User:** Provides 2FA code `764622`. (DONE)
+2.  **User:** Provides 2FA code `014231` after being asked. (DONE)
+1.  **User:** "When you get to the auth code part, ask me and Ill pass it. (DONE)
 
 **Project Health Check:**
-- **Broken**: No.
-- **Mocked**: The mobile app's NFC functionality is mocked *only* when running in Expo Go (by design via ), but the code is implemented to use the real native module in a proper development build.
+- **Broken**: No. The web app is stable. The mobile app runs but is functionally incomplete.
+- **Mocked**: The newly created mobile screens are currently placeholder shells. NFC functionality is mocked in Expo Go (by design), but the real implementation exists for dev builds.
 
 **3rd Party Integrations**
-- **Web**: Framer Motion, Recharts, Shadcn UI, 
-- **Mobile (New)**: , , , , 
+- **Web**: Framer Motion, Recharts, Shadcn UI, , **Resend (new)**
+- **Mobile**: , , , , , ** (new)**, ** (new)**
 
 **Testing status**
-  - Testing agent used after significant changes: YES. The last two major backend tasks (CEO migration, NFC infra) were validated by the testing agent.
-  - Test files created: No persistent test files, but  and  contain the test results.
-  - Known regressions: None. Regression checks were performed after the NFC backend was added.
+  - Testing agent used after significant changes: YES (for the web app's new Support feature).
+  - Test files created: None.
+  - Known regressions: None from this session's work.
 
 **Credentials to test flow:**
 - **CEO User**:  / 
+- **Resend API Key**: Available in  as .
 
 **What agent forgot to execute**
-The agent is on track with the user's latest request and has not forgotten any steps. The implementation is logical and directly addresses the user's problem.</analysis>
+The agent is on the correct track for the user's primary P0 request and has not overlooked any explicit instructions in the current context.</analysis>
