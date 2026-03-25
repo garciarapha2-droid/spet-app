@@ -19,7 +19,7 @@ import requests
 import os
 import time
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://nfc-guest-flow.preview.emergentagent.com')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://iphone-ux-redesign.preview.emergentagent.com')
 
 # Test credentials
 TEST_EMAIL = "teste@teste.com"

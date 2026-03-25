@@ -1,140 +1,158 @@
 /**
- * NFC Scan Screen — themed. Reads real NFC tag.
- * Unregistered tag → success → registration flow.
+ * NFC Scan Screen — Entry home. First screen after login.
+ * Pulsing NFC animation + search + quick actions.
  */
-import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, Platform } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import React, { useState, useCallback } from 'react';
+import { View, Text, TouchableOpacity, TextInput, FlatList, Alert } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
-import { NfcManager, NfcTech, nfcAvailable, isExpoGo } from '../../services/nfcBridge';
 import { useTheme } from '../../contexts/ThemeContext';
 import { spacing, fontSize } from '../../theme/themes';
-import { Button, LoadingOverlay } from '../../components/ui';
 import { useVenue } from '../../hooks/useVenue';
-import * as nfcService from '../../services/nfcService';
-
-type ScanState = 'idle' | 'scanning' | 'processing' | 'unregistered' | 'error';
+import TopNavbar from '../../components/TopNavbar';
+import * as pulseService from '../../services/pulseService';
 
 export default function NfcScanScreen() {
-  const navigation = useNavigation<any>();
   const { colors } = useTheme();
+  const navigation = useNavigation<any>();
   const { venueId } = useVenue();
-  const [state, setState] = useState<ScanState>('idle');
-  const [nfcSupported, setNfcSupported] = useState<boolean | null>(null);
-  const [errorMsg, setErrorMsg] = useState('');
-  const [scannedUid, setScannedUid] = useState<string | null>(null);
+  const insets = useSafeAreaInsets();
+  const [search, setSearch] = useState('');
+  const [guests, setGuests] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    (async () => {
-      if (isExpoGo) { setNfcSupported(false); return; }
-      try {
-        const supported = await NfcManager.isSupported();
-        setNfcSupported(supported);
-        if (supported) await NfcManager.start();
-      } catch { setNfcSupported(false); }
-    })();
-    return () => { if (nfcAvailable) NfcManager.cancelTechnologyRequest().catch(() => {}); };
-  }, []);
+  useFocusEffect(useCallback(() => {
+    loadGuests();
+  }, []));
 
-  const startScan = useCallback(async () => {
-    setState('scanning');
-    setErrorMsg('');
-    setScannedUid(null);
+  const loadGuests = async () => {
     try {
-      await NfcManager.requestTechnology(NfcTech.NfcA);
-      const tag = await NfcManager.getTag();
-      if (!tag?.id) throw new Error('Could not read tag UID');
-      const tagUid = nfcService.normalizeTagUid(tag.id);
-      await NfcManager.cancelTechnologyRequest();
-      setScannedUid(tagUid);
-      setState('processing');
-      const result = await nfcService.scanNfcTag(tagUid, venueId);
-      navigation.navigate('EntryDecision', { guest: result.guest, tab: result.tab, source: 'nfc', tagUid });
-      setState('idle');
-    } catch (err: any) {
-      if (nfcAvailable) await NfcManager.cancelTechnologyRequest().catch(() => {});
-      if (err.message?.includes('cancelled') || err.message?.includes('canceled')) { setState('idle'); return; }
-      if (err.status === 404 || err.code === 'NOT_FOUND') { setState('unregistered'); return; }
-      setErrorMsg(err.message || 'NFC scan failed');
-      setState('error');
-    }
-  }, [venueId, navigation]);
+      const data = await pulseService.getGuestsInside(venueId);
+      setGuests(data || []);
+    } catch {}
+  };
 
-  if (nfcSupported === false) {
-    return (
-      <View style={{ flex: 1, backgroundColor: colors.background, justifyContent: 'center', alignItems: 'center', padding: spacing.xxl }}>
-        <View style={{ width: 120, height: 120, borderRadius: 60, backgroundColor: colors.warningBg, justifyContent: 'center', alignItems: 'center', marginBottom: spacing.xxl, borderWidth: 2, borderColor: colors.warning }}>
-          <Feather name="alert-triangle" size={48} color={colors.warning} />
-        </View>
-        <Text style={{ fontSize: fontSize.xl, fontWeight: '700', color: colors.foreground, textAlign: 'center' }}>NFC Not Available</Text>
-        <Text style={{ fontSize: fontSize.md, color: colors.mutedForeground, textAlign: 'center', marginTop: spacing.md, paddingHorizontal: spacing.lg }}>
-          {isExpoGo ? 'NFC requires a Development Build.\nUse manual search instead.' : Platform.OS === 'ios' ? 'This device does not support NFC.' : 'Enable NFC in device settings.'}
-        </Text>
-        <Button title="Search Manually" variant="ghost" onPress={() => navigation.replace('GuestSearch')} style={{ marginTop: spacing.xxl, width: '100%' }} />
-      </View>
-    );
-  }
+  const handleSimulateNfc = () => {
+    // Simulate an NFC scan — pick first guest or create mock
+    if (guests.length > 0) {
+      navigation.navigate('NfcResult', { guest: guests[0], source: 'nfc' });
+    } else {
+      Alert.alert('No Guests', 'Create a guest first or scan a real NFC tag.');
+    }
+  };
+
+  const filteredGuests = guests.filter(g =>
+    !search || (g.name || '').toLowerCase().includes(search.toLowerCase())
+  );
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.background, justifyContent: 'center', alignItems: 'center', padding: spacing.xxl }}>
-      <LoadingOverlay visible={state === 'processing'} message="Looking up guest..." />
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
+      <TopNavbar title="NFC Scan" />
 
-      {state === 'idle' && (
-        <>
-          <View style={{ width: 160, height: 160, borderRadius: 80, backgroundColor: colors.primaryBg, justifyContent: 'center', alignItems: 'center', marginBottom: spacing.xxxl, borderWidth: 2, borderColor: colors.primary }}>
-            <Feather name="wifi" size={64} color={colors.primary} />
+      <View style={{ flex: 1, paddingHorizontal: spacing.lg }}>
+        {/* NFC Animation */}
+        <View style={{ alignItems: 'center', paddingVertical: 28 }}>
+          <View style={{
+            width: 112, height: 112, borderRadius: 56,
+            backgroundColor: colors.primary + '15', borderWidth: 2, borderColor: colors.primary + '30',
+            alignItems: 'center', justifyContent: 'center',
+          }}>
+            <Feather name="wifi" size={48} color={colors.primary} />
           </View>
-          <Text style={{ fontSize: fontSize.xl, fontWeight: '700', color: colors.foreground, textAlign: 'center' }}>Ready to Scan</Text>
-          <Text style={{ fontSize: fontSize.md, color: colors.mutedForeground, textAlign: 'center', marginTop: spacing.md }}>Hold the device near a guest wristband</Text>
-          <Button title="Start NFC Scan" onPress={startScan} style={{ width: '100%', marginTop: spacing.xxxl }} />
-        </>
-      )}
-
-      {state === 'scanning' && (
-        <>
-          <View style={{ width: 160, height: 160, borderRadius: 80, backgroundColor: colors.infoBg, justifyContent: 'center', alignItems: 'center', marginBottom: spacing.xxxl, borderWidth: 2, borderColor: colors.info }}>
-            <Feather name="wifi" size={64} color={colors.info} />
-          </View>
-          <Text style={{ fontSize: fontSize.xl, fontWeight: '700', color: colors.info, textAlign: 'center' }}>Scanning...</Text>
-          <Text style={{ fontSize: fontSize.md, color: colors.mutedForeground, textAlign: 'center', marginTop: spacing.md }}>
-            {Platform.OS === 'ios' ? 'Hold your iPhone near the NFC tag' : 'Touch the wristband to the back of your phone'}
+          <Text style={{ fontSize: fontSize.sm, fontWeight: '600', color: colors.foreground, marginTop: 12 }}>
+            Ready to scan
           </Text>
-          <Button title="Cancel" variant="ghost" onPress={async () => { await NfcManager.cancelTechnologyRequest().catch(() => {}); setState('idle'); }} style={{ width: '100%', marginTop: spacing.xxxl }} />
-        </>
-      )}
+          <Text style={{ fontSize: fontSize.tiny, color: colors.mutedForeground, marginTop: 4 }}>
+            Hold NFC wristband near device
+          </Text>
+        </View>
 
-      {state === 'unregistered' && (
-        <>
-          <View style={{ width: 160, height: 160, borderRadius: 80, backgroundColor: colors.successBg, justifyContent: 'center', alignItems: 'center', marginBottom: spacing.xxxl, borderWidth: 2, borderColor: colors.success }}>
-            <Feather name="check-circle" size={64} color={colors.success} />
-          </View>
-          <Text style={{ fontSize: fontSize.xl, fontWeight: '700', color: colors.foreground, textAlign: 'center' }}>Tag Detected</Text>
-          <Text style={{ fontSize: fontSize.md, color: colors.mutedForeground, textAlign: 'center', marginTop: spacing.md, paddingHorizontal: spacing.lg }}>This tag is not registered yet</Text>
-          {scannedUid && (
-            <Text style={{ fontSize: fontSize.xs, color: colors.mutedForeground, textAlign: 'center', marginTop: spacing.sm, fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace' }}>UID: {scannedUid}</Text>
+        {/* Search */}
+        <View style={{
+          flexDirection: 'row', alignItems: 'center',
+          height: 52, borderRadius: 16, paddingHorizontal: 16,
+          backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border + '50',
+          marginBottom: 16,
+        }}>
+          <Feather name="search" size={18} color={colors.mutedForeground} />
+          <TextInput
+            placeholder="Name or #tab..."
+            placeholderTextColor={colors.placeholder}
+            value={search}
+            onChangeText={setSearch}
+            style={{ flex: 1, marginLeft: 12, color: colors.foreground, fontSize: fontSize.sm }}
+          />
+        </View>
+
+        {/* Quick Actions */}
+        <View style={{ flexDirection: 'row', gap: 10, marginBottom: 20 }}>
+          <TouchableOpacity
+            onPress={handleSimulateNfc}
+            style={{
+              flex: 1, height: 52, borderRadius: 16,
+              backgroundColor: colors.primary + '10', borderWidth: 1, borderColor: colors.primary + '25',
+              flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+            }}
+          >
+            <Feather name="zap" size={16} color={colors.primary} />
+            <Text style={{ fontSize: fontSize.xs, fontWeight: '600', color: colors.primary }}>Simulate NFC</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => navigation.navigate('GuestIntake')}
+            style={{
+              flex: 1, height: 52, borderRadius: 16,
+              backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border + '50',
+              flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+            }}
+          >
+            <Feather name="user-plus" size={16} color={colors.foreground} />
+            <Text style={{ fontSize: fontSize.xs, fontWeight: '600', color: colors.foreground }}>New Guest</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Guest List */}
+        <Text style={{ fontSize: 10, fontWeight: '700', color: colors.mutedForeground, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>
+          Guests Inside ({filteredGuests.length})
+        </Text>
+        <FlatList
+          data={filteredGuests}
+          keyExtractor={(item) => item.guest_id || item.id || Math.random().toString()}
+          contentContainerStyle={{ paddingBottom: 100 }}
+          renderItem={({ item }) => (
+            <TouchableOpacity
+              onPress={() => navigation.navigate('NfcResult', { guest: item, source: 'search' })}
+              style={{
+                flexDirection: 'row', alignItems: 'center', padding: 14,
+                borderRadius: 16, backgroundColor: colors.card, borderWidth: 1,
+                borderColor: colors.border + '40', marginBottom: 8,
+              }}
+            >
+              <View style={{
+                width: 40, height: 40, borderRadius: 20,
+                backgroundColor: colors.primary + '15',
+                alignItems: 'center', justifyContent: 'center',
+              }}>
+                <Text style={{ fontSize: 14, fontWeight: '700', color: colors.primary }}>
+                  {(item.name || '?').charAt(0).toUpperCase()}
+                </Text>
+              </View>
+              <View style={{ flex: 1, marginLeft: 12 }}>
+                <Text style={{ fontSize: fontSize.sm, fontWeight: '600', color: colors.foreground }}>{item.name}</Text>
+                <Text style={{ fontSize: fontSize.tiny, color: colors.mutedForeground }}>
+                  {item.nfc_id ? `NFC: ${item.nfc_id}` : 'No NFC'}
+                </Text>
+              </View>
+              <Feather name="chevron-right" size={18} color={colors.mutedForeground} />
+            </TouchableOpacity>
           )}
-          <View style={{ width: '100%', gap: spacing.md, marginTop: spacing.xxxl }}>
-            <Button title="Register This Tag" onPress={() => navigation.navigate('NfcRegister', { tagUid: scannedUid })} />
-            <Button title="Assign to Existing Guest" variant="outline" onPress={() => navigation.navigate('GuestSearch', { tagUid: scannedUid, mode: 'assign' })} />
-            <Button title="Create New Guest" variant="outline" onPress={() => navigation.navigate('GuestIntake', { tagUid: scannedUid })} />
-            <Button title="Scan Again" variant="ghost" onPress={() => { setState('idle'); setScannedUid(null); }} />
-          </View>
-        </>
-      )}
-
-      {state === 'error' && (
-        <>
-          <View style={{ width: 160, height: 160, borderRadius: 80, backgroundColor: colors.destructiveBg, justifyContent: 'center', alignItems: 'center', marginBottom: spacing.xxxl, borderWidth: 2, borderColor: colors.destructive }}>
-            <Feather name="x-circle" size={64} color={colors.destructive} />
-          </View>
-          <Text style={{ fontSize: fontSize.xl, fontWeight: '700', color: colors.destructive, textAlign: 'center' }}>Scan Failed</Text>
-          <Text style={{ fontSize: fontSize.md, color: colors.mutedForeground, textAlign: 'center', marginTop: spacing.md, paddingHorizontal: spacing.lg }}>{errorMsg}</Text>
-          <View style={{ width: '100%', gap: spacing.md, marginTop: spacing.xxxl }}>
-            <Button title="Try Again" onPress={startScan} />
-            <Button title="Search Manually" variant="ghost" onPress={() => navigation.replace('GuestSearch')} />
-          </View>
-        </>
-      )}
+          ListEmptyComponent={
+            <Text style={{ textAlign: 'center', color: colors.mutedForeground, fontSize: fontSize.sm, paddingVertical: 24 }}>
+              No guests inside
+            </Text>
+          }
+        />
+      </View>
     </View>
   );
 }

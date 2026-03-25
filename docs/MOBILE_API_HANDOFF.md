@@ -2,7 +2,7 @@
 
 ## Base URL
 ```
-https://nfc-guest-flow.preview.emergentagent.com
+https://iphone-ux-redesign.preview.emergentagent.com
 ```
 
 All API endpoints are prefixed with `/api`.

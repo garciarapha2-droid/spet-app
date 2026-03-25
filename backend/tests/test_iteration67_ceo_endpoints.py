@@ -29,7 +29,7 @@ import os
 
 BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', '').rstrip('/')
 if not BASE_URL:
-    BASE_URL = "https://nfc-guest-flow.preview.emergentagent.com"
+    BASE_URL = "https://iphone-ux-redesign.preview.emergentagent.com"
 
 # Test credentials
 CEO_EMAIL = "garcia.rapha2@gmail.com"

@@ -1,181 +1,147 @@
-<analysis>**original_problem_statement**:
-The user wants a complete redesign of the iPhone application's user experience and navigation, along with the implementation of a full theming system. A detailed designer spec was provided as the source of truth for all visual and structural changes.
+<analysis>**original_problem_statement**: 
+The user wants a complete redesign of the iPhone application's user experience and navigation, along with the implementation of a full theming system. Specifically, the user mandates a strict End-to-End (E2E) operational flow for the bar/venue staff. 
 
 **PRODUCT REQUIREMENTS:**
-1.  **iPhone App Scope**: The application must be simplified to include only four main modules in the bottom tab bar: , , , and . All other modules (, , , ) must be entirely removed from the iPhone build and navigation.
-2.  **Theme System**: A full dark (default) and light theme system must be implemented. It should respect the user's iOS system settings but also allow for a manual override in the app's settings. Theming should only affect colors.
-3.  **Entry Module**: An NFC scan of an unregistered tag should be a successful scan that triggers a guest registration flow, not an error.
-4.  **Tabs (Bar) Module**: This is a high-priority redesign. It must be a premium, real-time ordering system. Key features include a persistent guest header, quick actions (Scan NFC, Search, Create), an immediate list of open tabs, and a fast way to add categorized menu items to an order.
-5.  **Extras/Customization**: This is a critical, non-optional feature. When an item is selected from the bar menu, a modal/sheet must appear to allow for customization of ingredients and extras.
-6.  **Backend Persistence**: All operational actions (adding items, sending orders, closing tabs, adding tips) must be correctly persisted in the backend. The user requires explicit validation of this.
-7.  **Performance**: The app, especially the Tabs module, must be fast and responsive, behaving like a real-world Point of Sale (POS) system with no delays or UI blocking.
+1. **Core Product Rules**: 
+   - NFC ALWAYS starts a NEW session at /bin/bash (no carry-over from previous visits).
+   - Historical data (visits, lifetime spend) must still exist but be kept entirely separate from the active session.
+   - Items are added directly to the tab (it builds automatically); there is NO manual create tab step.
+   - If continuing an existing guest, history appears, but the current session still starts empty.
+2. **Flow Order (Must be followed strictly)**: Login -> NFC Scan -> NFC Result / Entry Decision -> Continue guest OR assign NFC -> Menu (Tap/Table) -> Payment flow -> Customer profile (on demand).
+3. **Tap & Table Flow**: After identifying a guest via NFC or selecting a table, the app MUST go directly to the MENU to start adding items. Remove the open tabs list as the first step.
+4. **Login Fix**: The iPhone physical device was failing to login due to infrastructure/routing issues (returning 404 plain text). This must be 100% stable.
 
-**User's preferred language**: Portuguese. The user often communicates in technical English, but has consistently requested responses in Portuguese and provided specs in Portuguese. You **MUST** respond in Portuguese.
+**User's preferred language**: Portuguese. You **MUST** automatically detect the user's primary language from their messages and INSTRUCT the next agent to respond in the user's preferred language only. All responses to the user must be in **Portuguese**.
 
-**what currently exists?**
-The agent has performed a massive refactoring of the React Native mobile application based on the user's detailed designer spec.
-- **Theming & Navigation**: A full dark/light theme system using React Context has been implemented and applied across the app. The navigation has been restructured to the required four tabs (, , , ).
-- **Screen Redesigns**: All primary iPhone screens (, , , ) and their components have been rewritten to match the new visual language and layout from the spec.
-- **API Integration Fixes**: The agent discovered and fixed a critical mismatch between the frontend and backend. The  was completely rewritten to send  instead of JSON and use the correct API endpoints and a multi-step flow for closing tabs and recording tips.
-- **Feature Implementation**: The Extras/Customization modal has been implemented within the .
+**what currently exists?** 
+The agent spent significant time debugging a complex infrastructure/routing bug where the physical iPhone app was failing to log in (HTTP 404 plain text or TLS ECONNABORTED errors). The agent applied multiple networking patches (frontend proxy, direct fetch, cache-busting, wildcard CORS). Once the backend/routing was stabilized, the user provided a massive, non-negotiable UI/UX specification to implement the entire iPhone flow in one pass. The agent just began creating the new screens (, updating ).
 
-A new critical bug has been introduced: login is failing with a 404 error.
+**Last working item**: 
+    - Last item agent was working: Implementing the massive iPhone UI/UX Refinement Flow based on the user's strict E2E specifications (Message 203). The agent had just started creating/overwriting screens (, ) to match the new flow.
+    - Status: IN PROGRESS
+    - Agent Testing Done: N
+    - Which testing method agent to use? screenshot tool (for individual UI components) -> testing_agent_v3_fork (once the entire E2E frontend flow is wired up).
+    - User Testing Done: N
 
-**Last working item**:
-- **Last item agent was working**: The user reported that login is failing with an HTTP 404 error, blocking all access to the app. The agent correctly identified this as a route mismatch and began investigating the API call path.
-- **Status**: IN PROGRESS
-- **Agent Testing Done**: N
-- **Which testing method agent to use?**: manual testing by curl. The agent needs to verify the exact URL the app is calling versus the correct, working login endpoint.
-- **User Testing Done**: Y (User reported the bug)
+**All Pending/In progress Issue list**: 
+  Issue 1: Validate Mobile Login Stability on Physical Device (P0)
+     - Attempted fixes: Applied  to frontend, changed  to use direct  with  cache-busting, updated backend CORS to , added  to .
+     - Next debug checklist: Ensure the newly built E2E flow doesn't break the auth state. Wait for user to confirm login works on their physical device build.
+     - Why fix this issue and what will be achieved with the fix? It was an absolute blocker; users couldn't log into the app.
+     - Status: USER VERIFICATION PENDING
+     - Is recurring issue? Y (Appeared multiple times due to Cloudflare/Ingress routing).
+     - Should Test frontend/backend/both after fix? Both
+     - Blocked on other issue: None.
 
-**All Pending/In progress Issue list**:
-- **Issue 1: Login Fails with HTTP 404 (P0, HIGHEST)**
-- **Issue 2: Full End-to-End Operational Flow Validation (P0)**
-- **Issue 3: Performance & Speed of Tabs/Bar Module (P0)**
+**In progress Task List**: 
+  Task 1: Complete the full iPhone UI/UX E2E Flow Refinement (P0)
+     - Where to resume: Continue building/refining the screens listed in the user's spec (Message 203): NFC Result / Entry Decision, Post-NFC Decision, Menu Screen, Payment Flow, Full Customer Profile, Tabs, and Tables.
+     - What will be achieved with this? Fulfills the user's strict requirement to deliver a complete, coherent iPhone experience without stopping for partial reviews.
+     - Status: IN PROGRESS
+     - Should Test frontend/backend/both after fix? Frontend (Heavy UI/UX task)
+     - Blocked on something: None.
 
-**Issues Detail**:
-- **Issue 1**: Login Fails with HTTP 404
-    - **Attempted fixes**: None. Investigation just started. The agent viewed , , and .
-    - **Next debug checklist**:
-        1.  Examine . The  function likely constructs the URL incorrectly. It should combine  +  () +  (). The prefix might be missing.
-        2.  Examine  to confirm the path being passed is .
-        3.  Examine  to confirm the values of  and .
-        4.  Use  to confirm the exact, working login endpoint URL. The command should be:
-            {"success": true, "data": {"access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI4ZjU2MmViNy02YmRjLTRhYjAtYjQ1MC02Y2JiNGQ5ODRlMTEiLCJlbWFpbCI6ImdhcmNpYS5yYXBoYTJAZ21haWwuY29tIiwicm9sZSI6IkNFTyIsInJvbGVzIjpbeyJ1c2VyX2lkIjoiOGY1NjJlYjctNmJkYy00YWIwLWI0NTAtNmNiYjRkOTg0ZTExIiwiY29tcGFueV9pZCI6ImMwMDAwMDAxLTAwMDAtMDAwMC0wMDAwLTAwMDAwMDAwMDAwMSIsInZlbnVlX2lkIjoiNDBhMjRlMDQtNzViNi00MzVkLWJmZmYtYWIwZDQ2OWNlNTQzIiwicm9sZSI6InBsYXRmb3JtX2FkbWluIiwicGVybWlzc2lvbnMiOnsiYWkiOnRydWUsImJhciI6dHJ1ZSwiY2VvIjp0cnVlLCJrZHMiOnRydWUsInRhcCI6dHJ1ZSwicHVsc2UiOnRydWUsInRhYmxlIjp0cnVlLCJmaW5hbmNlIjp0cnVlLCJhbmFseXRpY3MiOnRydWV9fV0sInN0YXR1cyI6ImFjdGl2ZSIsImV4cCI6MTc3NDQzMTc3MH0.MZHFwLk4h6iyJqdVeOPA-xrLnapfV-1XAq754GgZfkI", "refresh_token": "plZAOGn5Jo9AkYascdhyFVFryX2_kbQDLgWXRBztujbXywADYorjHoStqd6eE9B7_K6VZinDii7BU2pDliqeWQ", "token_type": "bearer", "user": {"id": "8f562eb7-6bdc-4ab0-b450-6cbb4d984e11", "email": "garcia.rapha2@gmail.com", "name": "Raphael Garcia", "role": "CEO", "status": "active", "onboarding_completed": true, "created_at": "2026-03-19T07:54:53.089010+00:00"}, "next": {"type": "route", "route": "/app"}}, "error": null}
-    - **Why fix this issue and what will be achieved with the fix?**: This is a critical blocker. No one can use the app until login is fixed.
-    - **Status**: IN PROGRESS
-    - **Is recurring issue?**: N
-    - **Should Test frontend/backend/both after fix?**: Both.  to test the backend endpoint, then confirm login works in the app.
-    - **Blocked on other issue**: None. This is the main blocker.
-- **Issue 2**: Full End-to-End Operational Flow Validation
-    - **Next debug checklist**: After fixing the login, perform a complete user flow from the app UI:
-        1.  Log in.
-        2.  Navigate to the  screen.
-        3.  Create a new guest or select an existing open tab.
-        4.  Select a menu item that has extras.
-        5.  Use the new customization modal to add extras.
-        6.  Add the item to the order.
-        7.  Send the order.
-        8.  Initiate the Close Tab flow.
-        9.  Add a tip.
-        10. Finalize payment.
-        11. Verify with  or by checking the UI that the tab is closed and the tip was recorded against the correct operator.
-    - **Why fix this issue and what will be achieved with the fix?**: This will validate that the recent API fixes and feature implementations work correctly in a real-world scenario, fulfilling the user's P0 requirement.
-    - **Status**: BLOCKED
-    - **Is recurring issue?**: N
-    - **Should Test frontend/backend/both after fix?**: Both.
-    - **Blocked on other issue**: Issue 1: Login Fails with HTTP 404.
+**Upcoming and Future Tasks**:
+    Future Tasks:
+    - (P1) Web App: Migrate  &  pages to use the real backend API.
+    - (P1) Web App: Implement drag-and-drop for the Pipeline Kanban view.
+    - (P2) Mobile App: Re-enable  in  for OTA updates.
+    - (P3) Web App: Address the recurring Pricing Cards on Landing Page bug.
 
-**In progress Task List**:
-- None.
+**Completed work in this session**:
+  - Fixed Backend UUID truncation bug in  that caused 404s when adding items to tabs.
+  - Added photo upload support to  via .
+  - Diagnosed and patched severe mobile networking issues:
+    - Added  to  to bypass iOS ATS/QUIC issues.
+    - Added  and  to the React frontend to catch stray  traffic routed to port 3000 by Cloudflare/Ingress and forward it to port 8001.
+    - Rewrote  to use direct  with cache-busting () and  headers.
+    - Updated backend  to use wildcard () for .
+  - Passed 15/15 E2E backend tests via .
+  - Started iPhone UI overhaul: Created  and updated .
 
-**Upcoming and Future Tasks**
-**Future Tasks:**
-*   (P1) Web App: Migrate  &  pages to use the real backend API.
-*   (P1) Web App: Implement drag-and-drop for the Pipeline Kanban view.
-*   (P2) Mobile App: Re-enable  in  for OTA updates.
-*   (P3) Web App: Address the recurring Pricing Cards on Landing Page bug.
+**Earlier issues found/mentioned but not fixed**:
+   Issue 1: Pricing Cards on landing page (Web App)
+   - Debug checklist: Check the responsive layout and CSS grid/flexbox properties for the pricing cards on the web landing page.
+   - Why to solve this issue and what will be achieved with this? Recurring visual bug that affects the marketing/sales site.
+   - Should Test frontend/backend/both after fix: Frontend
+   - Is recurring issue? Y
 
-**Completed work in this session**
-- **Complete iPhone App Redesign**:
-    - **Theming**: Implemented a full Dark/Light theme system via  (, ).
-    - **Navigation**: Restructured app navigation to four tabs (, , , ) in .
-    - **Screen Overhaul**: Rewrote all core screens (, , ) and created the new  to match the designer spec.
-    - **Shared Components**: Created  and  for a consistent UI.
-- **Critical Backend Integration Fixes**:
-    - **FormData Correction**: Rewrote  to use  for  requests, which the backend requires, instead of JSON.
-    - **Endpoint & Flow Correction**: Updated  to use the correct API endpoints and a multi-step process for adding items, closing tabs, and recording tips.
-- **Feature Implementation**:
-    - **Extras/Customization Modal**: Implemented the required modal for item customization within .
-- **Compatibility & Testing**:
-    - Ensured TypeScript compiles for all iPhone-related screens.
-    - Added compatibility stubs to  to prevent build errors from legacy, unused screens (CEO, Manager, etc.).
-    - Ran backend tests via the testing agent, which passed.
+**Known issue recurrence from previous fork**:
+  - Issue recurrence in previous fork: Pricing Cards on landing page (web app).
+  - Recurrence count: >4
+  - Status: NOT STARTED
 
-**Earlier issues found/mentioned but not fixed**
-   - **Issue 1**: A recurring bug with the Pricing Cards on the web app's landing page remains unaddressed.
-
-**Known issue recurrence from previous fork**
-  - **Issue recurrence**: Pricing Cards on landing page (web app).
-  - **Recurrence count**: >3
-  - **Status**: NOT STARTED
-
-**Code Architecture**
+**Code Architecture**:
 
 
-**Key Technical Concepts**
-- **React Native Theming**: A robust system using React Context (), with separate theme definitions () and a persistence mechanism.
-- **API Data Formats**: The backend requires  for / mutations, not JSON. This is a critical pattern to follow. The implementation in  is the correct example.
-- **API Endpoint Discovery**: The agent discovered that frontend assumptions about backend routes were wrong. The correct routes are in .
-- **React Navigation**: The app uses  and  with a custom tab bar component.
+**Key Technical Concepts**:
+- **Mobile Networking Patches**: Because the Emergent Kubernetes ingress sometimes routes traffic inconsistently based on the Cloudflare edge node, the React frontend () now has a proxy () to forward stray  calls to the backend (). 
+- **Aggressive Cache-Busting**:  uses direct fetch with  to force iOS and Cloudflare to bypass cached responses. **Do not remove these hacks unless migrating to a new production host.**
+- **React Native Theming**: Uses React Context ().
+- **Data Mutation**: Backend strictly requires  for / endpoints in the  service.
 
-**key DB schema**
-- No changes made.
+**key DB schema**:
+- Unchanged in this session.
 
-**changes in tech stack**
-- No changes to the libraries/frameworks, but a fundamental change in the frontend-backend communication protocol ( over JSON for mutations).
+**changes in tech stack**:
+- Added  to mobile.
+- Added  to frontend web.
 
-**All files of reference**
-- **Files for current 404 bug**:
-  - 
-  - 
-  - 
-  - 
-- **Key implementation files from this session**:
-  -  (Contains Tabs UI and Extras Modal logic)
-  -  (Correct way to interact with the backend Tap API)
-  -  (New navigation structure)
-  -  (Core of the theme system)
-  -  (Color definitions for light/dark modes)
+**All files of reference**:
+-  &  (Contains the aggressive networking patches for login).
+-  (Critical infrastructure patch, do not delete).
+-  (Created this session).
+-  (Updated this session).
+-  (Core POS screen, earlier bug fixes applied here).
 
 **Areas that need refactoring**:
-- The legacy screens (, , , ) that were not part of the iPhone redesign rely on compatibility shims (,  stubs) in . This is acceptable for now as they are not used on iPhone.
+- Legacy web screens exist in the mobile app but are stubbed out in  since they aren't part of the iPhone build.
 
-**key api endpoints**
-- ****: The endpoint currently failing with 404.
-- ****: Adds an item to a tab (requires ).
-- ****: Closes a tab (requires ).
-- ****: Records a tip after a tab is closed (requires ).
-- ****: Retrieves all open tabs.
-- ****: Retrieves menu items.
-- ****: Retrieves details for a single tab.
+**key api endpoints**:
+-  (Focus of major debugging).
+-  (Requires FormData).
+-  (Requires FormData).
+-  (Now supports photo upload).
 
-**Critical Info for New Agent**
-- **Você DEVE responder em português.**
-- **P0 Blocker**: Login is failing with a 404. Your first task is to fix this. The issue is almost certainly in , where the final request URL is constructed. The  prefix is likely being omitted.
-- **Backend Requires **: For all / operations in the  service, you must send , not JSON. Refer to the rewritten  as the source of truth for this pattern.
-- **Validate The Full Flow**: After fixing the login, the user's top priority is to validate the entire operational flow from the UI: create guest -> add item with extras -> send order -> close tab -> add tip.
-- **Backend API is the Source of Truth**: The agent discovered the backend has a different API structure than initially assumed (e.g., separate tip recording). Trust the backend code in  and the  tests over any outdated frontend code.
+**Critical Info for New Agent**:
+- **VOCÊ DEVE RESPONDER EM PORTUGUÊS.** (You MUST respond in Portuguese).
+- **DO NOT STOP MIDWAY**: The user gave an explicit command in Message 203: *Execute a full fix + refinement pass... Do NOT stop after partial fixes. Do NOT wait for validation between steps. Only return when everything below is completed and coherent.* You must implement the *entire* list of screens and rules provided in that message in one massive pass.
+- **CRITICAL BUSINESS RULES**: 
+  1. NFC ALWAYS starts a new session at /bin/bash.
+  2. Adding items goes *directly* to the tab (no create tab step).
+  3. After NFC or Table selection, navigate *directly* to the Menu (do not show a list of open tabs first).
+  4. Guest Profile is for *historical* data only and must not mix with the active session.
+- **Networking Quirks**: Do not revert  to use  for login, and do not delete . These are holding the mobile app's connection together against ingress routing bugs.
 
-**documents and test reports created in this job**
+**documents and test reports created in this job**:
+-  (100% pass on backend E2E flow)
+-  (Updated)
+
+**Last 10 User Messages and any pending HUMAN messages**:
+- **1. User**: Provided a massive, strict requirement list (Message 203). Demanded the agent implement the entire iPhone E2E flow (Login, NFC, Decision, Menu, Payment, Profile) in one single pass without stopping for validation. Established critical business rules regarding NFC behavior and tabs. **(CURRENT DIRECTIVE)**
+- **2. User**: Pointed out that the previous Server Connected health check worked, but login was returning a 404 HTML/text page, indicating an ingress/proxy routing mismatch.
+- **3. User**: Provided logs showing the app wasn't even attempting the network request or the code wasn't updating.
+- **4. User**: Provided iOS device logs showing  and , proving the issue was TLS/QUIC network failures, not a standard 404. Demanded iOS rebuild.
+- **5. User**: Uploaded screenshots proving the iOS device was still failing on login.
+- **...older messages related to approving backend E2E tests...**
+
+**Project Health Check**:
+- Broken: The UI flow is currently mid-implementation. The agent started replacing screens to match the user's massive spec in the last few messages.
+
+**3rd Party Integrations**:
 - 
--  (Updated with redesign progress)
+-  (Added)
+- Stripe & Resend (Backend)
 
-**Last 10 User Messages and any pending HUMAN messages**
-- **1. User**: Reports login is failing with HTTP 404. Provides screenshot and details, correctly identifying it as a route mismatch, not a credentials issue. Asks for immediate investigation. (CURRENT BLOCKER)
-- **2. User**: Acknowledges previous progress and gives go-ahead ().
-- **3. User**: States the redesign is not done. Lists P0 items: real operational validation, implementing the missing extras/customization modal, and validating backend persistence for the full flow. (Partially addressed by agent, validation still pending).
-- **4. User**: Acknowledged the agent's plan to start the redesign.
-- **5. User**: Provided the complete, detailed designer and theming spec for the iPhone redesign, establishing it as the source of truth. Outlined the product adaptations and priority order. (This message guided the entire redesign effort).
-- **...older messages related to spec details...**
+**Testing status**:
+- Testing agent used after significant changes: YES (For backend E2E operations. Passed 15/15).
+- Troubleshoot agent used after agent stuck in loop: NO
+- Test files created: []
+- Known regressions: UI is in a transitional state mid-overhaul.
 
-**Project Health Check:**
-- **Broken**: Yes. User login is completely broken due to an HTTP 404 error, which blocks all app functionality.
+**Credentials to test flow**:
+- Email: 
+- Password: 
 
-**3rd Party Integrations**
-- ****: Core to NFC functionality.
-- **Stripe & Resend**: Integrated on the backend. No changes in this session.
-
-**Testing status**
-- **Testing agent used after significant changes**: YES, but it was run *before* the critical  rewrite and before the login bug was introduced. The report in  confirmed backend health but is not representative of the current frontend state.
-- **Troubleshoot agent used after agent stuck in loop**: NO
-- **Test files created**: []
-- **Known regressions**: Login functionality is now broken.
-
-**Credentials to test flow:**
-- **CEO/Admin User**:  / 
-- **Venue ID**: 
-
-**What agent forgot to execute**
-- The agent initially missed the critical extras/customization feature from the spec but implemented it after the user pointed it out.
-- The agent introduced a major regression (broken login) during the refactoring, likely by mishandling the API prefix when creating the  service.</analysis>
+**What agent forgot to execute**:
+- The agent was interrupted by the context window limit while executing the user's massive Do not stop until complete directive from Message 203. The next agent must pick up exactly where this left off: building out the remaining UI screens (NFC Result, Post-NFC Decision, Menu, Payment, Profile, Tabs, Tables) and wiring the navigation according to the exact rules in that message.</analysis>

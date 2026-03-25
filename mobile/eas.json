@@ -12,7 +12,7 @@
       },
       "env": {
         "APP_ENV": "development",
-        "EXPO_PUBLIC_API_URL": "https://nfc-guest-flow.preview.emergentagent.com"
+        "EXPO_PUBLIC_API_URL": "https://iphone-ux-redesign.preview.emergentagent.com"
       }
     },
     "preview": {
@@ -22,14 +22,14 @@
       },
       "env": {
         "APP_ENV": "preview",
-        "EXPO_PUBLIC_API_URL": "https://nfc-guest-flow.preview.emergentagent.com"
+        "EXPO_PUBLIC_API_URL": "https://iphone-ux-redesign.preview.emergentagent.com"
       }
     },
     "production": {
       "autoIncrement": true,
       "env": {
         "APP_ENV": "production",
-        "EXPO_PUBLIC_API_URL": "https://nfc-guest-flow.preview.emergentagent.com"
+        "EXPO_PUBLIC_API_URL": "https://iphone-ux-redesign.preview.emergentagent.com"
       }
     }
   },
