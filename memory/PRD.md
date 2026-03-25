@@ -1,150 +1,85 @@
-# SPET — Mobile App Redesign PRD
+# SPET — Mobile Bar/Venue Management App (iPhone Focus)
 
 ## Original Problem Statement
-Complete redesign of the iPhone app's user experience, navigation structure, and theming system. The app must be rebuilt to match a designer-provided mobile spec with premium execution quality and consistent dark/light theming.
+Complete redesign of the iPhone application's UX and navigation with a full theming system. Strict E2E operational flow for bar/venue staff: Login → NFC Scan → NFC Result → Entry Decision → Menu (Tap/Table) → Payment → Customer Profile (on demand).
 
-## Core Requirements
-
-### 1. Theme System (Dark & Light)
-- Dark mode is the default
-- Light mode available
-- Respects iOS system appearance (`useColorScheme`)
-- Manual override in Settings (Dark / Light / System)
-- Persisted via SecureStore
-- Semantic theme tokens only — no hardcoded colors
-- Same layout in both themes; only colors change
-
-### 2. iPhone Navigation (4 Bottom Tabs)
-- **Entry** — Guest check-in, NFC scan, manual entry
-- **Tabs** — Full POS ordering (Bar module)
-- **Tables** — Table management grid
-- **More** — Settings + Logout
-
-### 3. Removed from iPhone
-- CEO module
-- Manager module
-- Owner module
-- Kitchen / KDS module
-- Modules home screen
-- Inside / Exit / Rewards Pulse sub-screens
-
-### 4. Entry Module
-- KPI row: Guests Inside, Total Entries, Denied
-- NFC scan area with search
-- Manual entry button → Guest registration
-- Guest list with tier colors, status pills
-- NFC unregistered tag → registration flow (not an error)
-
-### 5. Tabs / Bar Module
-- Mode toggle: TAP / TABLE
-- Quick actions: Scan NFC, Search, Create guest
-- Open tabs list (tappable, selectable)
-- Menu categories with emojis
-- Drink cards grid with one-tap add
-- Order panel: items, quantities, send order
-- Extras/Customization modal for every item
-- Close tab modal: payment method → tip → confirmation
-
-### 6. Tables Module
-- Grid layout with status cards
-- Filters: all / available / occupied / reserved
-- Color-coded status badges
-
-### 7. Settings (More tab)
-- User info card
-- Theme toggle (Dark/Light/System) with visual selector
-- Active venue with switch option
-- Privacy, Support, About links
-- Logout button with confirmation
+## Core Business Rules
+1. **NFC ALWAYS starts a NEW session at $0** — no carry-over from previous visits
+2. **Historical data** (visits, lifetime spend) exists but is kept entirely separate from active session
+3. **Items are added directly to the tab** — NO manual "create tab" step
+4. **After NFC/Table** → go directly to MENU (no open tabs list as first step)
+5. **Guest Profile** is for historical data only; never mixed with active session
 
 ## Architecture
-
 ```
-/app/mobile/
-├── App.tsx                          # ThemeProvider → AuthProvider → VenueProvider → RootNavigator
-├── src/
-│   ├── theme/
-│   │   ├── themes.ts                # Dark & light token definitions + spacing/radius/fontSize
-│   │   └── colors.ts                # Backward-compat shim (re-exports dark theme)
-│   ├── contexts/
-│   │   └── ThemeContext.tsx          # Theme provider, useTheme() hook, persistence
-│   ├── components/
-│   │   ├── TopNavbar.tsx             # Shared: logo + title + theme toggle
-│   │   ├── ui.tsx                    # Button, Input, Card, Chip, StatCard, etc.
-│   │   └── ProductionUI.tsx          # ScreenWrapper, ErrorState, EmptyState, Skeleton
-│   ├── navigation/
-│   │   ├── RootNavigator.tsx         # 4 bottom tabs + auth/venue gates
-│   │   └── CustomTabBar.tsx          # Spec-aligned tab bar with indicator
-│   ├── screens/
-│   │   ├── entry/                    # EntryHome, NfcScan, GuestSearch, EntryDecision, GuestIntake, NfcRegister
-│   │   ├── tabs/                     # TabsMainScreen (POS ordering with Extras modal)
-│   │   ├── tables/                   # TablesHome, TableDetail
-│   │   ├── settings/                 # SettingsScreen (theme toggle + logout)
-│   │   ├── auth/                     # LoginScreen
-│   │   └── venue/                    # VenueSelectScreen
-│   ├── services/                     # API clients (tap, pulse, table, nfc, auth, venue)
-│   └── hooks/                        # useAuth, useVenue, useWebSocket
+/app
+├── mobile/           # React Native / Expo (iPhone focus)
+│   ├── src/
+│   │   ├── screens/
+│   │   │   ├── auth/ (LoginScreen, ForgotPasswordScreen)
+│   │   │   ├── entry/ (EntryHome, NfcScan, NfcResult, GuestSearch, EntryDecision, GuestIntake, NfcRegister, CustomerProfile)
+│   │   │   ├── tabs/ (TabsMainScreen — Menu-first POS)
+│   │   │   ├── tables/ (TablesHome, TableDetail)
+│   │   │   ├── pulse/ (TabDetail, AddItem)
+│   │   │   ├── settings/ (SettingsScreen)
+│   │   ├── navigation/ (RootNavigator, CustomTabBar)
+│   │   ├── services/ (api, authService, tapService, pulseService, nfcService, tableService)
+│   │   ├── hooks/ (useAuth, useVenue)
+│   │   ├── contexts/ (ThemeContext)
+│   │   ├── theme/ (themes.ts — premium dark/light tokens)
+│   │   ├── components/ (TopNavbar, ui, ProductionUI)
+├── frontend/         # React web (landing + CEO dashboard)
+├── backend/          # FastAPI + MongoDB
+│   ├── routes/ (auth, tap, pulse, table, venue, ceo)
 ```
 
-## Tech Stack
-- React Native + Expo (managed workflow)
-- TypeScript
-- React Navigation (native stack + bottom tabs)
-- SecureStore for auth tokens + theme preference
-- NFC via react-native-nfc-manager (lazy-loaded)
-- expo-image-picker for guest photo capture
+## Navigation Flow (iPhone)
+```
+Login → VenueSelect → MainTabs
+  ├── Entry Tab: EntryHome → NfcScan → NfcResult → [Open Tab → Menu] | [CustomerProfile] | [EntryDecision]
+  ├── Tabs Tab: TabsMainScreen (Menu-first) → Close Tab → Tip
+  ├── Tables Tab: TablesHome → [Occupied → Menu] | [Available → TableDetail]
+  └── More Tab: Settings
+```
 
-## API Endpoints Used
-- `POST /api/auth/login` — Authentication
-- `GET /api/venue/home` — Venues and modules
-- `GET /api/tap/sessions?venue_id=` — Open tabs
-- `GET /api/tap/catalog?venue_id=` — Menu items with categories
-- `POST /api/tap/session/open` — Open new tab (FormData)
-- `POST /api/tap/session/{id}/add` — Add item with modifiers (FormData)
-- `GET /api/tap/session/{id}` — Session detail with items
-- `POST /api/tap/session/{id}/close` — Close tab (FormData)
-- `POST /api/tap/session/{id}/record-tip` — Record tip (FormData)
-- `GET /api/pulse/inside?venue_id=` — Guests inside
-- `GET /api/pulse/entries/today?venue_id=` — Today's entries
-- `POST /api/pulse/guest/intake` — Register guest with photo (FormData)
-- `GET /api/table/tables?venue_id=` — Tables list
+## What's Been Implemented
 
-## Test Credentials
-- Email: garcia.rapha2@gmail.com / Password: 12345
-- Venue ID: 40a24e04-75b6-435d-bfff-ab0d469ce543
+### Session 1-3 (Previous)
+- Full backend API (auth, tap, pulse, table, venue, CEO)
+- Web frontend (landing, login, CEO dashboards)
+- Mobile app scaffolding with theming
+- 28-item drink catalog seeded
+- Backend E2E tests: 15/15 passing
 
-## Completed (Mar 2026 — Session 2)
-- [x] Theme system with dark/light/system modes + persistence
-- [x] Navigation restructured to 4 tabs (Entry, Tabs, Tables, More)
-- [x] CEO/Manager/Owner/Kitchen removed from iPhone routes
-- [x] Shared TopNavbar with theme toggle
-- [x] Custom bottom tab bar per spec
-- [x] Entry module redesign (KPIs, scan, guest list)
-- [x] Tabs/Bar module as full POS ordering system
-- [x] Extras/Customization modal for drink items
-- [x] Close tab flow with payment location + tip
-- [x] Tables module with grid and filters
-- [x] Settings with theme selector + logout
-- [x] All screens themed (no hardcoded colors)
-- [x] TypeScript clean (zero errors on iPhone screens)
-- [x] Backend API tests: 15/15 passing (iteration 94)
-- [x] Full E2E flow validated: login → open tab → add items → close → tip → persistence
-- [x] Bug fix: catalogItemId extraction (was truncating UUID)
-- [x] Bug fix: stale selectedTab state after data refresh
-- [x] Debug logging: URL visibility in api.ts request function
-- [x] Guest registration with photo capture (expo-image-picker)
-- [x] NFC unregistered tag → success flow (not error)
-- [x] FormData used for all POST mutations (not JSON)
-- [x] iOS TLS/QUIC connection fix: ATS exception in app.json for preview domain
-- [x] API URL configurable via .env (EXPO_PUBLIC_API_URL) — no hardcoded fallbacks
-- [x] Automatic retry (3 attempts) for transient network errors (ECONNABORTED, TLS)
-- [x] Login screen shows server URL (tappable debug info) + clear connection error messages
-- [x] config/api.ts simplified to single source of truth
+### Session 4 (Current - Feb 2026)
+- **NfcResultScreen** — Post-scan decision point showing guest info, lifetime stats, new session at $0, and action buttons (Open Tab & Go to Menu, View Profile, Entry Decision)
+- **CustomerProfileScreen** — Historical-only guest profile (visits, spend, tags, flags, NFC info)
+- **TabsMainScreen refactored to menu-first** — Route params from NFC/Table auto-select session; collapsible tabs list; quick action buttons (Scan NFC, Search, Tabs toggle)
+- **Navigation wiring complete** — NfcResult and CustomerProfile added to EntryStack; ForgotPassword added to auth flow
+- **GuestSearch → NfcResult** (instead of EntryDecision)
+- **GuestIntake → NfcResult** after guest creation
+- **NfcRegister → NfcResult** after NFC binding
+- **EntryDecision** now auto-opens tab and navigates to Menu on "Allow"
+- **Tables → Menu directly** for occupied tables with session context
+- **Table schema alignment** — Fixed `table_number` field mapping
+- **EntryHome guest list** → tap guest navigates to NfcResult
+- **NfcScan unregistered tag** → navigates to NfcResult (unregistered mode)
+- Backend tests: 15/15 passing (iteration_95)
 
-## Backlog
-- (P1) Web App: Migrate CeoOverview & CeoRevenue to real backend API
-- (P1) Web App: Drag-and-drop Pipeline Kanban
-- (P2) Mobile: Re-enable expo-updates in app.json for OTA updates
-- (P3) Web App: Pricing Cards landing page bug (recurring)
-- (P3) Mobile: Animated tab bar indicator (spring animation)
-- (P3) Mobile: Page transition animations
+## Key Technical Decisions
+- **Networking patches**: `setupProxy.js` on web frontend and `authService.ts` direct fetch with cache-busting must NOT be removed
+- **FormData**: All TAP POST endpoints require FormData, not JSON
+- **Theme tokens**: Premium dark/light with tier colors (gold/silver/bronze/platinum), status colors, glass-morphism
+
+## P1 Backlog
+- Web App: Migrate CeoOverview & CeoRevenue to real backend API
+- Web App: Drag-and-drop Pipeline Kanban view
+- Mobile: Re-enable expo-updates for OTA
+- Web App: Pricing Cards landing page bug (recurring >4x)
+- Validate mobile login on physical iPhone device
+- Cleanup legacy web screens from mobile app
+
+## P2 Future
+- Page transition animations
+- Push notifications
+- Offline mode for mobile
