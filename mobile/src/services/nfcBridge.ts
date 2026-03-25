@@ -1,11 +1,9 @@
 /**
- * NFC Bridge — Pure stubs for v1.0 release.
+ * NFC Bridge — Safe wrapper around react-native-nfc-manager.
  *
- * NFC native module removed from iOS build to resolve Apple
- * entitlement rejection (NDEF disallowed on SDK 26.0, error 90778).
- *
- * All NFC screens will show "NFC not available" gracefully.
- * NFC will be re-added in a future update with correct entitlement config.
+ * Loads the native module in production builds.
+ * Falls back to stubs in Expo Go or if native module fails to load.
+ * All access is guarded — never crashes the app.
  */
 
 export const NfcTech = {
@@ -22,15 +20,48 @@ export const NfcTech = {
   FelicaIOS: 'FelicaIOS',
 } as const;
 
-export const NfcManager = {
+interface NfcManagerType {
+  isSupported: () => Promise<boolean>;
+  start: () => Promise<void>;
+  requestTechnology: (tech: string) => Promise<void>;
+  getTag: () => Promise<{ id: string } | null>;
+  cancelTechnologyRequest: () => Promise<void>;
+}
+
+const NfcStub: NfcManagerType = {
   isSupported: async () => false,
   start: async () => {},
   requestTechnology: async () => {
-    throw new Error('NFC is not available in this version.');
+    throw new Error('NFC is not available on this device.');
   },
   getTag: async () => null,
   cancelTechnologyRequest: async () => {},
 };
 
-export const nfcAvailable = false;
-export const isExpoGo = false;
+let NfcManagerInstance: NfcManagerType = NfcStub;
+let nfcAvailable = false;
+let isExpoGo = false;
+
+try {
+  const Constants = require('expo-constants');
+  const ownership = Constants?.default?.appOwnership ?? Constants?.appOwnership;
+  isExpoGo = ownership === 'expo';
+
+  if (!isExpoGo) {
+    try {
+      const realModule = require('react-native-nfc-manager');
+      const mgr = realModule?.default ?? realModule;
+      if (mgr && typeof mgr.isSupported === 'function') {
+        NfcManagerInstance = mgr;
+        nfcAvailable = true;
+      }
+    } catch {
+      // Native NFC module not available — stay on stub
+    }
+  }
+} catch {
+  // expo-constants failed — stay on stub
+}
+
+export const NfcManager = NfcManagerInstance;
+export { nfcAvailable, isExpoGo };
