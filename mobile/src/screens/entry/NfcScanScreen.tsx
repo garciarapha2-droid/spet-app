@@ -1,6 +1,11 @@
 /**
  * NFC Scan Screen — reads real NFC tag.
- * Safe for Expo Go: shows fallback when NFC is unavailable.
+ *
+ * Flow:
+ *   scan → tag read → backend lookup
+ *     → found → EntryDecision (existing guest)
+ *     → 404  → "Tag detected, not registered" → registration options
+ *     → error → retry/manual search
  */
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, Platform } from 'react-native';
@@ -12,7 +17,7 @@ import { Button, LoadingOverlay } from '../../components/ui';
 import { useVenue } from '../../hooks/useVenue';
 import * as nfcService from '../../services/nfcService';
 
-type ScanState = 'idle' | 'scanning' | 'processing' | 'error';
+type ScanState = 'idle' | 'scanning' | 'processing' | 'unregistered' | 'error';
 
 export default function NfcScanScreen() {
   const navigation = useNavigation<any>();
@@ -20,6 +25,7 @@ export default function NfcScanScreen() {
   const [state, setState] = useState<ScanState>('idle');
   const [nfcSupported, setNfcSupported] = useState<boolean | null>(null);
   const [errorMsg, setErrorMsg] = useState('');
+  const [scannedUid, setScannedUid] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -48,6 +54,7 @@ export default function NfcScanScreen() {
   const startScan = useCallback(async () => {
     setState('scanning');
     setErrorMsg('');
+    setScannedUid(null);
 
     try {
       await NfcManager.requestTechnology(NfcTech.NfcA);
@@ -59,6 +66,7 @@ export default function NfcScanScreen() {
 
       const tagUid = nfcService.normalizeTagUid(tag.id);
       await NfcManager.cancelTechnologyRequest();
+      setScannedUid(tagUid);
 
       setState('processing');
       const result = await nfcService.scanNfcTag(tagUid, venueId);
@@ -80,11 +88,13 @@ export default function NfcScanScreen() {
         return;
       }
 
-      if (err.status === 404) {
-        setErrorMsg('Tag not registered. Register it first or search manually.');
-      } else {
-        setErrorMsg(err.message || 'NFC scan failed');
+      // Tag read succeeded but not registered in backend
+      if (err.status === 404 || err.code === 'NOT_FOUND') {
+        setState('unregistered');
+        return;
       }
+
+      setErrorMsg(err.message || 'NFC scan failed');
       setState('error');
     }
   }, [venueId, navigation]);
@@ -100,7 +110,7 @@ export default function NfcScanScreen() {
             marginBottom: spacing.xxl, borderWidth: 2, borderColor: colors.warning,
           }}
         >
-          <Text style={{ fontSize: 48 }}>{'\u26A0'}</Text>
+          <Feather name="alert-triangle" size={48} color={colors.warning} />
         </View>
         <Text style={{ fontSize: fontSize.xl, fontWeight: '700', color: colors.text, textAlign: 'center' }}>
           NFC Not Available
@@ -178,6 +188,52 @@ export default function NfcScanScreen() {
         </>
       )}
 
+      {state === 'unregistered' && (
+        <>
+          <View
+            style={{
+              width: 160, height: 160, borderRadius: 80,
+              backgroundColor: colors.successBg, justifyContent: 'center', alignItems: 'center',
+              marginBottom: spacing.xxxl, borderWidth: 2, borderColor: colors.success,
+            }}
+          >
+            <Feather name="check-circle" size={64} color={colors.success} />
+          </View>
+          <Text style={{ fontSize: fontSize.xl, fontWeight: '700', color: colors.text, textAlign: 'center' }}>
+            Tag Detected
+          </Text>
+          <Text style={{ fontSize: fontSize.md, color: colors.textSecondary, textAlign: 'center', marginTop: spacing.md, paddingHorizontal: spacing.lg }}>
+            This tag is not registered yet
+          </Text>
+          {scannedUid && (
+            <Text style={{ fontSize: fontSize.xs, color: colors.textMuted, textAlign: 'center', marginTop: spacing.sm, fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace' }}>
+              UID: {scannedUid}
+            </Text>
+          )}
+          <View style={{ width: '100%', gap: spacing.md, marginTop: spacing.xxxl }}>
+            <Button
+              title="Register This Tag"
+              onPress={() => navigation.navigate('NfcRegister', { tagUid: scannedUid })}
+            />
+            <Button
+              title="Assign to Existing Guest"
+              variant="outline"
+              onPress={() => navigation.navigate('GuestSearch', { tagUid: scannedUid, mode: 'assign' })}
+            />
+            <Button
+              title="Create New Guest"
+              variant="outline"
+              onPress={() => navigation.navigate('GuestIntake', { tagUid: scannedUid })}
+            />
+            <Button
+              title="Scan Again"
+              variant="ghost"
+              onPress={() => { setState('idle'); setScannedUid(null); }}
+            />
+          </View>
+        </>
+      )}
+
       {state === 'error' && (
         <>
           <View
@@ -187,7 +243,7 @@ export default function NfcScanScreen() {
               marginBottom: spacing.xxxl, borderWidth: 2, borderColor: colors.danger,
             }}
           >
-            <Text style={{ fontSize: 64 }}>{'\u2716'}</Text>
+            <Feather name="x-circle" size={64} color={colors.danger} />
           </View>
           <Text style={{ fontSize: fontSize.xl, fontWeight: '700', color: colors.danger, textAlign: 'center' }}>
             Scan Failed
