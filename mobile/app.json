@@ -53,15 +53,15 @@
     },
     "plugins": [
       "expo-updates",
-      "expo-secure-store",
       [
-        "expo-splash-screen",
+        "react-native-nfc-manager",
         {
-          "backgroundColor": "#0A0A0F",
-          "image": "./assets/splash.png",
-          "imageWidth": 200
+          "nfcPermission": "SPET uses NFC to scan guest wristbands for fast venue entry.",
+          "selectIdentifiers": [],
+          "systemCodes": []
         }
-      ]
+      ],
+      "./plugins/withNfcEntitlementFix"
     ],
     "extra": {
       "privacyPolicyUrl": "https://spetapp.com/privacy",

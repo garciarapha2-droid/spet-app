@@ -35,12 +35,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Check existing session on mount
   useEffect(() => {
     (async () => {
-      const hasToken = await isAuthenticated();
-      if (hasToken) {
-        // Try to refresh to validate token
-        const ok = await authService.refreshSession();
-        setState({ user: null, loading: false, authenticated: ok });
-      } else {
+      try {
+        const hasToken = await isAuthenticated();
+        if (hasToken) {
+          const ok = await authService.refreshSession();
+          setState({ user: null, loading: false, authenticated: ok });
+        } else {
+          setState({ user: null, loading: false, authenticated: false });
+        }
+      } catch {
         setState({ user: null, loading: false, authenticated: false });
       }
     })();

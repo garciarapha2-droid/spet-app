@@ -1,14 +1,12 @@
 /**
- * Safe NFC wrapper — prevents crash in Expo Go.
+ * Safe NFC wrapper — prevents crash in any environment.
  *
- * In Expo Go: native NFC module doesn't exist → we export safe stubs.
- * In Dev Build: native module loads normally → full NFC functionality.
+ * In Expo Go: native NFC module doesn't exist → safe stubs.
+ * In Production: loads native module with full crash protection.
  *
- * Detection: expo-constants appOwnership === 'expo' means Expo Go.
+ * CRITICAL: All top-level code is wrapped in try-catch to prevent
+ * startup crashes if the native NFC module fails to initialize.
  */
-import Constants from 'expo-constants';
-
-const isExpoGo = Constants.appOwnership === 'expo';
 
 // NFC tech types (safe to declare, they're just strings)
 export const NfcTech = {
@@ -34,30 +32,41 @@ interface NfcManagerStub {
   cancelTechnologyRequest: () => Promise<void>;
 }
 
-// Stub that returns graceful "not supported" for Expo Go
-const NfcManagerStub: NfcManagerStub = {
+// Stub that returns graceful "not supported"
+const NfcManagerStubImpl: NfcManagerStub = {
   isSupported: async () => false,
   start: async () => {},
   requestTechnology: async () => {
-    throw new Error('NFC is not available in Expo Go. Use a Development Build.');
+    throw new Error('NFC is not available on this device.');
   },
   getTag: async () => null,
   cancelTechnologyRequest: async () => {},
 };
 
-// Dynamically load the real module only in dev builds
-let NfcManagerInstance: NfcManagerStub = NfcManagerStub;
+let NfcManagerInstance: NfcManagerStub = NfcManagerStubImpl;
 let nfcAvailable = false;
+let isExpoGo = false;
 
-if (!isExpoGo) {
-  try {
-    // require() instead of import to avoid bundler trying to resolve in Expo Go
-    const realModule = require('react-native-nfc-manager');
-    NfcManagerInstance = realModule.default || realModule;
-    nfcAvailable = true;
-  } catch {
-    // Module not available — stay on stub
+// Wrapped in top-level try-catch — a crash here must NEVER kill the app
+try {
+  const Constants = require('expo-constants');
+  const ownership = Constants?.default?.appOwnership ?? Constants?.appOwnership;
+  isExpoGo = ownership === 'expo';
+
+  if (!isExpoGo) {
+    try {
+      const realModule = require('react-native-nfc-manager');
+      const mgr = realModule?.default ?? realModule;
+      if (mgr && typeof mgr.isSupported === 'function') {
+        NfcManagerInstance = mgr;
+        nfcAvailable = true;
+      }
+    } catch {
+      // Native NFC module not available — stay on stub
+    }
   }
+} catch {
+  // expo-constants or NFC module failed entirely — stay on stub
 }
 
 export const NfcManager = NfcManagerInstance;

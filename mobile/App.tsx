@@ -13,8 +13,10 @@ import { ErrorBoundary } from './src/components/ProductionUI';
 import RootNavigator from './src/navigation/RootNavigator';
 import { colors } from './src/theme/colors';
 
-// Keep splash visible while we check auth
-SplashScreen.preventAutoHideAsync().catch(() => {});
+// Keep splash visible while we check auth — guarded
+try {
+  SplashScreen.preventAutoHideAsync();
+} catch {}
 
 // Suppress known warnings in production
 LogBox.ignoreLogs([
@@ -25,14 +27,15 @@ export default function App() {
   const [appReady, setAppReady] = useState(false);
 
   useEffect(() => {
-    // Small delay for a smoother transition from splash
     const t = setTimeout(() => setAppReady(true), 200);
     return () => clearTimeout(t);
   }, []);
 
   const onLayoutRootView = useCallback(async () => {
     if (appReady) {
-      await SplashScreen.hideAsync();
+      try {
+        await SplashScreen.hideAsync();
+      } catch {}
     }
   }, [appReady]);
 
