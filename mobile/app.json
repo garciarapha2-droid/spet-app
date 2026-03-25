@@ -34,14 +34,7 @@
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "NSAppTransportSecurity": {
-          "NSAllowsArbitraryLoads": false,
-          "NSExceptionDomains": {
-            "preview.emergentagent.com": {
-              "NSIncludesSubdomains": true,
-              "NSExceptionRequiresForwardSecrecy": false,
-              "NSExceptionMinimumTLSVersion": "TLSv1.2"
-            }
-          }
+          "NSAllowsArbitraryLoads": true
         }
       }
     },
