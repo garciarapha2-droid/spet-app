@@ -14,7 +14,7 @@ import os
 import json
 from datetime import datetime
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://dark-light-theme-5.preview.emergentagent.com')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://nfc-guest-flow.preview.emergentagent.com')
 VENUE_ID = '40a24e04-75b6-435d-bfff-ab0d469ce543'
 TEST_EMAIL = 'teste@teste.com'
 TEST_PASSWORD = '12345'

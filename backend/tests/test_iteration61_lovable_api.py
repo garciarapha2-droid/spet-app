@@ -73,7 +73,7 @@ class TestSignup:
                 "email": unique_email,
                 "password": "testpass123",
                 "plan_id": "starter",
-                "origin_url": "https://dark-light-theme-5.preview.emergentagent.com"
+                "origin_url": "https://nfc-guest-flow.preview.emergentagent.com"
             }
         )
         assert response.status_code == 200
@@ -361,7 +361,7 @@ class TestOnboardingCreateCheckout:
                 "email": unique_email,
                 "password": "testpass123",
                 "plan_id": "starter",
-                "origin_url": "https://dark-light-theme-5.preview.emergentagent.com"
+                "origin_url": "https://nfc-guest-flow.preview.emergentagent.com"
             }
         )
         return response.json()["data"]["access_token"], response.json()["data"]["user"]["id"]
@@ -382,7 +382,7 @@ class TestOnboardingCreateCheckout:
         response = requests.post(
             f"{BASE_URL}/api/onboarding/create-checkout",
             headers={"Authorization": f"Bearer {token}"},
-            json={"origin_url": "https://dark-light-theme-5.preview.emergentagent.com"}
+            json={"origin_url": "https://nfc-guest-flow.preview.emergentagent.com"}
         )
         assert response.status_code == 200
         
@@ -409,7 +409,7 @@ class TestOnboardingFlow:
                 "email": unique_email,
                 "password": "testpass123",
                 "plan_id": "starter",
-                "origin_url": "https://dark-light-theme-5.preview.emergentagent.com"
+                "origin_url": "https://nfc-guest-flow.preview.emergentagent.com"
             }
         )
         return response.json()["data"]["access_token"], response.json()["data"]["user"]["id"]
@@ -618,7 +618,7 @@ class TestValidationErrors:
                 "email": unique_email,
                 "password": "testpass123",
                 "plan_id": "starter",
-                "origin_url": "https://dark-light-theme-5.preview.emergentagent.com"
+                "origin_url": "https://nfc-guest-flow.preview.emergentagent.com"
             }
         )
         token = signup_response.json()["data"]["access_token"]
@@ -657,7 +657,7 @@ class TestUserDeletion:
                 "email": unique_email,
                 "password": "testpass123",
                 "plan_id": "starter",
-                "origin_url": "https://dark-light-theme-5.preview.emergentagent.com"
+                "origin_url": "https://nfc-guest-flow.preview.emergentagent.com"
             }
         )
         user_id = signup_response.json()["data"]["user"]["id"]

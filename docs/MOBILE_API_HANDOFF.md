@@ -2,7 +2,7 @@
 
 ## Base URL
 ```
-https://dark-light-theme-5.preview.emergentagent.com
+https://nfc-guest-flow.preview.emergentagent.com
 ```
 
 All API endpoints are prefixed with `/api`.

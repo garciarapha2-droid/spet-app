@@ -2,7 +2,7 @@
 // Production URL is set via EXPO_PUBLIC_API_URL in eas.json
 // Falls back to preview URL for development
 export const API_BASE_URL =
-  process.env.EXPO_PUBLIC_API_URL || 'https://dark-light-theme-5.preview.emergentagent.com';
+  process.env.EXPO_PUBLIC_API_URL || 'https://nfc-guest-flow.preview.emergentagent.com';
 
 export const API_PREFIX = '/api';
 
