@@ -113,7 +113,7 @@ Complete redesign of the iPhone app's user experience, navigation structure, and
 - Email: garcia.rapha2@gmail.com / Password: 12345
 - Venue ID: 40a24e04-75b6-435d-bfff-ab0d469ce543
 
-## Completed (Mar 2026)
+## Completed (Mar 2026 — Session 2)
 - [x] Theme system with dark/light/system modes + persistence
 - [x] Navigation restructured to 4 tabs (Entry, Tabs, Tables, More)
 - [x] CEO/Manager/Owner/Kitchen removed from iPhone routes
@@ -135,6 +135,11 @@ Complete redesign of the iPhone app's user experience, navigation structure, and
 - [x] Guest registration with photo capture (expo-image-picker)
 - [x] NFC unregistered tag → success flow (not error)
 - [x] FormData used for all POST mutations (not JSON)
+- [x] iOS TLS/QUIC connection fix: ATS exception in app.json for preview domain
+- [x] API URL configurable via .env (EXPO_PUBLIC_API_URL) — no hardcoded fallbacks
+- [x] Automatic retry (3 attempts) for transient network errors (ECONNABORTED, TLS)
+- [x] Login screen shows server URL (tappable debug info) + clear connection error messages
+- [x] config/api.ts simplified to single source of truth
 
 ## Backlog
 - (P1) Web App: Migrate CeoOverview & CeoRevenue to real backend API
