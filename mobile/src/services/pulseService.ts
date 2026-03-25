@@ -71,11 +71,13 @@ export async function createGuest(params: {
   email?: string;
   phone?: string;
   venue_id: string;
+  photo?: string;
 }): Promise<IntakeResult> {
   const form = new FormData();
   form.append('name', params.name);
   form.append('venue_id', params.venue_id);
   if (params.email) form.append('email', params.email);
   if (params.phone) form.append('phone', params.phone);
+  if (params.photo) form.append('photo', params.photo);
   return api.postForm<IntakeResult>('/pulse/guest/intake', form);
 }

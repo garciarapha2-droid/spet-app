@@ -77,6 +77,9 @@ async function request<T = any>(
 ): Promise<T> {
   const url = `${API_BASE_URL}${API_PREFIX}${path}`;
 
+  // Debug: log the final URL for every request
+  console.log(`[API] ${options.method || 'GET'} ${url}`);
+
   const headers: Record<string, string> = {
     ...(options.headers as Record<string, string>),
   };

@@ -4,7 +4,7 @@
  *
  * Flow: Scan/Search → Select Guest Tab → Tap Drink → Customize Extras → Add → Send Order → Close Tab → Tip
  */
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import {
   View, Text, TouchableOpacity, TextInput, ScrollView,
   Modal, Alert, RefreshControl, ActivityIndicator, KeyboardAvoidingView, Platform,
@@ -19,6 +19,7 @@ import * as tapService from '../../services/tapService';
 
 interface OrderItem {
   id: string;
+  catalogItemId: string;
   name: string;
   quantity: number;
   unitPrice: number;
@@ -92,6 +93,19 @@ export default function TabsMainScreen() {
 
   useFocusEffect(useCallback(() => { loadData(); }, [loadData]));
 
+  // Keep selectedTab in sync with fresh data from backend
+  useEffect(() => {
+    if (selectedTab) {
+      const updated = openTabs.find(t => t.id === selectedTab.id);
+      if (updated) {
+        setSelectedTab(updated);
+      } else if (openTabs.length > 0) {
+        // Tab was closed or removed — deselect
+        setSelectedTab(null);
+      }
+    }
+  }, [openTabs]);
+
   const onRefresh = async () => { setRefreshing(true); await loadData(); setRefreshing(false); };
 
   const categories = useMemo(() => [...new Set(catalog.map(i => i.category || 'Other'))], [catalog]);
@@ -150,6 +164,7 @@ export default function TabsMainScreen() {
       }
       return [...prev, {
         id: key,
+        catalogItemId: extrasItem.id,
         name: extrasItem.name,
         quantity: extrasQty,
         unitPrice: extrasItem.price,
@@ -177,9 +192,8 @@ export default function TabsMainScreen() {
     setSending(true);
     try {
       for (const item of orderItems) {
-        const productId = item.id.split('-')[0];
         await tapService.addTabItem(selectedTab.id, {
-          product_id: productId,
+          product_id: item.catalogItemId,
           quantity: item.quantity,
           notes: item.notes,
           modifiers: item.extras.length > 0 ? { extras: item.extras } : undefined,
