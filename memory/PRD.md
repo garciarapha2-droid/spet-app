@@ -27,11 +27,35 @@ Complete redesign of the iPhone application's UX and navigation with a full them
 │   │   ├── hooks/ (useAuth, useVenue)
 │   │   ├── contexts/ (ThemeContext)
 │   │   ├── theme/ (themes.ts — premium dark/light tokens)
+│   │   ├── config/api.ts — API_PREFIX = '/mapi' (CRITICAL - see routing fix)
 │   │   ├── components/ (TopNavbar, ui, ProductionUI)
-├── frontend/         # React web (landing + CEO dashboard)
+├── frontend/
+│   ├── src/setupProxy.js — /mapi → /api proxy (CRITICAL - enables mobile login)
 ├── backend/          # FastAPI + MongoDB
 │   ├── routes/ (auth, tap, pulse, table, venue, ceo)
 ```
+
+## CRITICAL: Mobile API Routing Fix (March 2026)
+
+### Problem
+The Kubernetes ingress routes `/api/*` to port 8001 (backend). This works from browsers and server-side curl. But from iOS devices, the same URL returns plain-text "404 page not found" (from the Go-based ingress/proxy layer). The response is NOT from FastAPI and NOT from React.
+
+### Root Cause
+The Emergent Kubernetes ingress + Cloudflare edge inconsistently handles `/api` path-based routing for external mobile device requests. The "404 page not found" comes from the ingress controller itself, not reaching the backend at all.
+
+### Fix
+- **`/mapi` prefix**: Mobile app uses `/mapi` instead of `/api`
+- **setupProxy.js**: The frontend (port 3000) has a proxy rule that catches `/mapi/*`, rewrites it to `/api/*`, and forwards to port 8001
+- **Request flow**: iPhone → `/mapi/auth/login` → ingress → port 3000 (no `/api` match) → setupProxy → `http://localhost:8001/api/auth/login` → JSON response
+
+### Files changed
+1. `/app/mobile/src/config/api.ts` — `API_PREFIX = '/mapi'`
+2. `/app/frontend/src/setupProxy.js` — Added `/mapi` proxy with `pathRewrite: { '^/mapi': '/api' }`
+
+### DO NOT REVERT
+- `setupProxy.js` — Both `/api` and `/mapi` proxy rules are essential
+- `API_PREFIX = '/mapi'` — This is what makes mobile login work
+- `authService.ts` direct fetch with cache-busting — Still needed for iOS
 
 ## Navigation Flow (iPhone)
 ```
@@ -44,40 +68,26 @@ Login → VenueSelect → MainTabs
 
 ## What's Been Implemented
 
-### Session 1-3 (Previous)
-- Full backend API (auth, tap, pulse, table, venue, CEO)
-- Web frontend (landing, login, CEO dashboards)
-- Mobile app scaffolding with theming
-- 28-item drink catalog seeded
-- Backend E2E tests: 15/15 passing
+### Backend (100% tested - 15/15)
+- Full API: auth, tap, pulse, table, venue, CEO
+- 28-item drink catalog
+- E2E flow: login → open tab → add items → close → tip
 
-### Session 4 (Current - Feb 2026)
-- **NfcResultScreen** — Post-scan decision point showing guest info, lifetime stats, new session at $0, and action buttons (Open Tab & Go to Menu, View Profile, Entry Decision)
-- **CustomerProfileScreen** — Historical-only guest profile (visits, spend, tags, flags, NFC info)
-- **TabsMainScreen refactored to menu-first** — Route params from NFC/Table auto-select session; collapsible tabs list; quick action buttons (Scan NFC, Search, Tabs toggle)
-- **Navigation wiring complete** — NfcResult and CustomerProfile added to EntryStack; ForgotPassword added to auth flow
-- **GuestSearch → NfcResult** (instead of EntryDecision)
-- **GuestIntake → NfcResult** after guest creation
-- **NfcRegister → NfcResult** after NFC binding
-- **EntryDecision** now auto-opens tab and navigates to Menu on "Allow"
-- **Tables → Menu directly** for occupied tables with session context
-- **Table schema alignment** — Fixed `table_number` field mapping
-- **EntryHome guest list** → tap guest navigates to NfcResult
-- **NfcScan unregistered tag** → navigates to NfcResult (unregistered mode)
-- Backend tests: 15/15 passing (iteration_95)
+### Mobile App (iPhone)
+- NfcResultScreen, CustomerProfileScreen (NEW)
+- TabsMainScreen refactored to menu-first with route params
+- Complete navigation wiring
+- /mapi routing fix for iOS login
 
-## Key Technical Decisions
-- **Networking patches**: `setupProxy.js` on web frontend and `authService.ts` direct fetch with cache-busting must NOT be removed
-- **FormData**: All TAP POST endpoints require FormData, not JSON
-- **Theme tokens**: Premium dark/light with tier colors (gold/silver/bronze/platinum), status colors, glass-morphism
+### Web Frontend
+- Landing page, login, CEO dashboards
+- setupProxy.js with /api and /mapi proxy rules
 
 ## P1 Backlog
 - Web App: Migrate CeoOverview & CeoRevenue to real backend API
 - Web App: Drag-and-drop Pipeline Kanban view
 - Mobile: Re-enable expo-updates for OTA
 - Web App: Pricing Cards landing page bug (recurring >4x)
-- Validate mobile login on physical iPhone device
-- Cleanup legacy web screens from mobile app
 
 ## P2 Future
 - Page transition animations
