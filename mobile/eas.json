@@ -12,7 +12,7 @@
       },
       "env": {
         "APP_ENV": "development",
-        "EXPO_PUBLIC_API_URL": "https://access-payment-hub.preview.emergentagent.com"
+        "EXPO_PUBLIC_API_URL": "https://dark-light-theme-5.preview.emergentagent.com"
       }
     },
     "preview": {
@@ -22,14 +22,14 @@
       },
       "env": {
         "APP_ENV": "preview",
-        "EXPO_PUBLIC_API_URL": "https://access-payment-hub.preview.emergentagent.com"
+        "EXPO_PUBLIC_API_URL": "https://dark-light-theme-5.preview.emergentagent.com"
       }
     },
     "production": {
       "autoIncrement": true,
       "env": {
         "APP_ENV": "production",
-        "EXPO_PUBLIC_API_URL": "https://access-payment-hub.preview.emergentagent.com"
+        "EXPO_PUBLIC_API_URL": "https://dark-light-theme-5.preview.emergentagent.com"
       }
     }
   },

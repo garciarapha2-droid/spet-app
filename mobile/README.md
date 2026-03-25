@@ -53,7 +53,7 @@ eas build --profile development --platform android
 
 O app consome o backend real em:
 ```
-https://access-payment-hub.preview.emergentagent.com/api
+https://dark-light-theme-5.preview.emergentagent.com/api
 ```
 
 Para alterar, edite `/app/mobile/src/config/api.ts`.

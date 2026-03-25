@@ -1,32 +1,23 @@
 /**
- * Root Navigation — Auth stack + Main tab navigator with all modules.
+ * Root Navigation — iPhone product scope.
  *
- * Navigation rules:
- *   1. While auth is loading → render nothing (splash is still visible)
- *   2. Auth resolved → hide splash → render correct screen
- *   3. Not authenticated → Login
- *   4. Authenticated, no venue → VenueSelect
- *   5. Authenticated + venue → MainTabs
+ * Bottom tabs: Entry | Tabs | Tables | More
  *
- * GUARANTEE: Splash hides exactly once, after auth resolves.
- *            Navigation NEVER renders before auth state is known.
+ * REMOVED from iPhone: Kitchen/KDS, Manager, CEO, Owner
  */
 import React from 'react';
 import { View } from 'react-native';
-import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
+import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Feather } from '@expo/vector-icons';
 import * as SplashScreen from 'expo-splash-screen';
 import { useAuth } from '../hooks/useAuth';
 import { useVenue } from '../hooks/useVenue';
-import { colors, fontSize } from '../theme/colors';
+import { useTheme } from '../contexts/ThemeContext';
 
-// Auth + Venue
 import LoginScreen from '../screens/auth/LoginScreen';
 import VenueSelectScreen from '../screens/venue/VenueSelectScreen';
 
-// Entry
 import EntryHomeScreen from '../screens/entry/EntryHomeScreen';
 import NfcScanScreen from '../screens/entry/NfcScanScreen';
 import GuestSearchScreen from '../screens/entry/GuestSearchScreen';
@@ -34,65 +25,35 @@ import EntryDecisionScreen from '../screens/entry/EntryDecisionScreen';
 import GuestIntakeScreen from '../screens/entry/GuestIntakeScreen';
 import NfcRegisterScreen from '../screens/entry/NfcRegisterScreen';
 
-// Pulse / Tabs
-import PulseHomeScreen from '../screens/pulse/PulseHomeScreen';
+import TabsMainScreen from '../screens/tabs/TabsMainScreen';
 import TabDetailScreen from '../screens/pulse/TabDetailScreen';
 import AddItemScreen from '../screens/pulse/AddItemScreen';
-import PulseInsideScreen from '../screens/pulse/PulseInsideScreen';
-import PulseExitScreen from '../screens/pulse/PulseExitScreen';
-import PulseBarScreen from '../screens/pulse/PulseBarScreen';
-import PulseRewardsScreen from '../screens/pulse/PulseRewardsScreen';
 
-// Tables
 import TablesHomeScreen from '../screens/tables/TablesHomeScreen';
 import TableDetailScreen from '../screens/tables/TableDetailScreen';
 
-// Kitchen
-import KitchenScreen from '../screens/kitchen/KitchenScreen';
-
-// Modules Hub
-import ModulesHomeScreen from '../screens/modules/ModulesHomeScreen';
-
-// Dashboards
-import ManagerDashboardScreen from '../screens/manager/ManagerDashboardScreen';
-import CeoDashboardScreen from '../screens/ceo/CeoDashboardScreen';
-import OwnerDashboardScreen from '../screens/owner/OwnerDashboardScreen';
-
-// Settings
 import SettingsScreen from '../screens/settings/SettingsScreen';
+
+import CustomTabBar from './CustomTabBar';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 const EntryStack = createNativeStackNavigator();
-const PulseStack = createNativeStackNavigator();
-const TablesStack = createNativeStackNavigator();
-const KitchenStack = createNativeStackNavigator();
-const ModulesStack = createNativeStackNavigator();
+const TabsStack = createNativeStackNavigator();
+const TablesStackNav = createNativeStackNavigator();
+const MoreStack = createNativeStackNavigator();
 
-const darkTheme = {
-  ...DefaultTheme,
-  colors: {
-    ...DefaultTheme.colors,
-    background: colors.bg,
-    card: colors.bgCard,
-    text: colors.text,
-    border: colors.border,
-    primary: colors.primary,
-  },
-};
-
-const screenOptions = {
-  headerStyle: { backgroundColor: colors.bg },
-  headerTintColor: colors.text,
-  headerTitleStyle: { fontWeight: '600' as const, fontSize: fontSize.lg },
-  headerShadowVisible: false,
-  headerBackTitleVisible: false,
-};
-
-// ─── Entry Stack ───
 function EntryStackNavigator() {
+  const { colors } = useTheme();
+  const opts = {
+    headerStyle: { backgroundColor: colors.card },
+    headerTintColor: colors.foreground,
+    headerTitleStyle: { fontWeight: '600' as const, fontSize: 17 },
+    headerShadowVisible: false,
+    headerBackTitleVisible: false,
+  };
   return (
-    <EntryStack.Navigator screenOptions={screenOptions}>
+    <EntryStack.Navigator screenOptions={opts}>
       <EntryStack.Screen name="EntryHome" component={EntryHomeScreen} options={{ headerShown: false }} />
       <EntryStack.Screen name="NfcScan" component={NfcScanScreen} options={{ title: 'NFC Scan' }} />
       <EntryStack.Screen name="GuestSearch" component={GuestSearchScreen} options={{ title: 'Search Guest' }} />
@@ -103,154 +64,115 @@ function EntryStackNavigator() {
   );
 }
 
-// ─── Pulse Stack ───
-function PulseStackNavigator() {
+function TabsStackNavigator() {
+  const { colors } = useTheme();
+  const opts = {
+    headerStyle: { backgroundColor: colors.card },
+    headerTintColor: colors.foreground,
+    headerTitleStyle: { fontWeight: '600' as const, fontSize: 17 },
+    headerShadowVisible: false,
+    headerBackTitleVisible: false,
+  };
   return (
-    <PulseStack.Navigator screenOptions={screenOptions}>
-      <PulseStack.Screen name="PulseHome" component={PulseHomeScreen} options={{ headerShown: false }} />
-      <PulseStack.Screen name="TabDetail" component={TabDetailScreen} options={{ title: 'Tab Detail' }} />
-      <PulseStack.Screen name="AddItem" component={AddItemScreen} options={{ title: 'Add Item' }} />
-      <PulseStack.Screen name="PulseInside" component={PulseInsideScreen} options={{ title: 'Inside' }} />
-      <PulseStack.Screen name="PulseExit" component={PulseExitScreen} options={{ title: 'Exits' }} />
-      <PulseStack.Screen name="PulseBar" component={PulseBarScreen} options={{ title: 'Bar' }} />
-      <PulseStack.Screen name="PulseRewards" component={PulseRewardsScreen} options={{ title: 'Rewards' }} />
-    </PulseStack.Navigator>
+    <TabsStack.Navigator screenOptions={opts}>
+      <TabsStack.Screen name="TabsMain" component={TabsMainScreen} options={{ headerShown: false }} />
+      <TabsStack.Screen name="TabDetail" component={TabDetailScreen} options={{ title: 'Tab Detail' }} />
+      <TabsStack.Screen name="AddItem" component={AddItemScreen} options={{ title: 'Add Item' }} />
+    </TabsStack.Navigator>
   );
 }
 
-// ─── Tables Stack ───
 function TablesStackNavigator() {
+  const { colors } = useTheme();
+  const opts = {
+    headerStyle: { backgroundColor: colors.card },
+    headerTintColor: colors.foreground,
+    headerTitleStyle: { fontWeight: '600' as const, fontSize: 17 },
+    headerShadowVisible: false,
+    headerBackTitleVisible: false,
+  };
   return (
-    <TablesStack.Navigator screenOptions={screenOptions}>
-      <TablesStack.Screen name="TablesHome" component={TablesHomeScreen} options={{ headerShown: false }} />
-      <TablesStack.Screen name="TableDetail" component={TableDetailScreen} options={{ title: 'Table Detail' }} />
-      <TablesStack.Screen name="AddItem" component={AddItemScreen} options={{ title: 'Add Item' }} />
-    </TablesStack.Navigator>
+    <TablesStackNav.Navigator screenOptions={opts}>
+      <TablesStackNav.Screen name="TablesHome" component={TablesHomeScreen} options={{ headerShown: false }} />
+      <TablesStackNav.Screen name="TableDetail" component={TableDetailScreen} options={{ title: 'Table Detail' }} />
+      <TablesStackNav.Screen name="AddItem" component={AddItemScreen} options={{ title: 'Add Item' }} />
+    </TablesStackNav.Navigator>
   );
 }
 
-// ─── Kitchen Stack ───
-function KitchenStackNavigator() {
+function MoreStackNavigator() {
+  const { colors } = useTheme();
+  const opts = {
+    headerStyle: { backgroundColor: colors.card },
+    headerTintColor: colors.foreground,
+    headerTitleStyle: { fontWeight: '600' as const, fontSize: 17 },
+    headerShadowVisible: false,
+    headerBackTitleVisible: false,
+  };
   return (
-    <KitchenStack.Navigator screenOptions={screenOptions}>
-      <KitchenStack.Screen name="KitchenHome" component={KitchenScreen} options={{ headerShown: false }} />
-    </KitchenStack.Navigator>
+    <MoreStack.Navigator screenOptions={opts}>
+      <MoreStack.Screen name="SettingsHome" component={SettingsScreen} options={{ headerShown: false }} />
+    </MoreStack.Navigator>
   );
 }
 
-// ─── Modules Stack (Dashboards + Settings) ───
-function ModulesStackNavigator() {
-  return (
-    <ModulesStack.Navigator screenOptions={screenOptions}>
-      <ModulesStack.Screen name="ModulesHome" component={ModulesHomeScreen} options={{ headerShown: false }} />
-      <ModulesStack.Screen name="ManagerDashboard" component={ManagerDashboardScreen} options={{ title: 'Manager' }} />
-      <ModulesStack.Screen name="CeoDashboard" component={CeoDashboardScreen} options={{ title: 'CEO' }} />
-      <ModulesStack.Screen name="OwnerDashboard" component={OwnerDashboardScreen} options={{ title: 'Owner' }} />
-      <ModulesStack.Screen name="SettingsScreen" component={SettingsScreen} options={{ title: 'Settings' }} />
-    </ModulesStack.Navigator>
-  );
-}
-
-// ─── Main Tabs ───
 function MainTabs() {
   return (
     <Tab.Navigator
-      screenOptions={({ route }) => ({
-        headerShown: false,
-        tabBarStyle: {
-          backgroundColor: colors.bgCard,
-          borderTopColor: colors.border,
-          borderTopWidth: 1,
-          paddingTop: 6,
-          elevation: 0,
-        },
-        tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.textMuted,
-        tabBarLabelStyle: {
-          fontSize: fontSize.xs,
-          fontWeight: '600',
-          marginTop: -2,
-        },
-        tabBarIconStyle: {
-          marginBottom: -2,
-        },
-      })}
+      tabBar={(props) => <CustomTabBar {...props} />}
+      screenOptions={{ headerShown: false }}
     >
-      <Tab.Screen
-        name="Entry"
-        component={EntryStackNavigator}
-        options={{
-          tabBarLabel: 'Entry',
-          tabBarIcon: ({ color, size }) => <Feather name="log-in" size={20} color={color} />,
-        }}
-      />
-      <Tab.Screen
-        name="Pulse"
-        component={PulseStackNavigator}
-        options={{
-          tabBarLabel: 'Tabs',
-          tabBarIcon: ({ color, size }) => <Feather name="credit-card" size={20} color={color} />,
-        }}
-      />
-      <Tab.Screen
-        name="TablesStack"
-        component={TablesStackNavigator}
-        options={{
-          tabBarLabel: 'Tables',
-          tabBarIcon: ({ color, size }) => <Feather name="grid" size={20} color={color} />,
-        }}
-      />
-      <Tab.Screen
-        name="KitchenStack"
-        component={KitchenStackNavigator}
-        options={{
-          tabBarLabel: 'Kitchen',
-          tabBarIcon: ({ color, size }) => <Feather name="coffee" size={20} color={color} />,
-        }}
-      />
-      <Tab.Screen
-        name="Modules"
-        component={ModulesStackNavigator}
-        options={{
-          tabBarLabel: 'More',
-          tabBarIcon: ({ color, size }) => <Feather name="menu" size={20} color={color} />,
-        }}
-      />
+      <Tab.Screen name="Entry" component={EntryStackNavigator} />
+      <Tab.Screen name="Tabs" component={TabsStackNavigator} />
+      <Tab.Screen name="TablesStack" component={TablesStackNavigator} />
+      <Tab.Screen name="More" component={MoreStackNavigator} />
     </Tab.Navigator>
   );
 }
 
-// ─── Root Navigator ───
 export default function RootNavigator() {
   const { authenticated, loading } = useAuth();
   const { selectedVenue, loadVenues } = useVenue();
+  const { colors, isDark } = useTheme();
   const splashHidden = React.useRef(false);
 
-  // Hide splash ONLY when auth state is fully resolved
   React.useEffect(() => {
     if (!loading && !splashHidden.current) {
       splashHidden.current = true;
-      console.log('[NAV] Auth resolved, hiding splash. authenticated:', authenticated);
-      try {
-        SplashScreen.hideAsync();
-      } catch {}
+      try { SplashScreen.hideAsync(); } catch {}
     }
   }, [loading, authenticated]);
 
-  // Load venues after auth succeeds
   React.useEffect(() => {
     if (authenticated) {
       loadVenues().catch(() => {});
     }
   }, [authenticated, loadVenues]);
 
-  // While auth is loading, keep splash visible — render nothing
   if (loading) {
-    return <View style={{ flex: 1, backgroundColor: colors.bg }} />;
+    return <View style={{ flex: 1, backgroundColor: colors.background }} />;
   }
 
+  const navTheme = {
+    dark: isDark,
+    colors: {
+      primary: colors.primary,
+      background: colors.background,
+      card: colors.card,
+      text: colors.foreground,
+      border: colors.border,
+      notification: colors.primary,
+    },
+    fonts: {
+      regular: { fontFamily: 'System', fontWeight: '400' as const },
+      medium: { fontFamily: 'System', fontWeight: '500' as const },
+      bold: { fontFamily: 'System', fontWeight: '700' as const },
+      heavy: { fontFamily: 'System', fontWeight: '800' as const },
+    },
+  };
+
   return (
-    <NavigationContainer theme={darkTheme}>
+    <NavigationContainer theme={navTheme}>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         {!authenticated ? (
           <Stack.Screen name="Login" component={LoginScreen} />

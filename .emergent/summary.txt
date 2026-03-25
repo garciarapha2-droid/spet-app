@@ -1,104 +1,101 @@
 <analysis>**original_problem_statement**:
-The user's initial mission was to build a CEO OS and achieve 1:1 feature parity between a web app and a React Native mobile app. This has now evolved into a new P0 priority: implementing a production-grade access control and billing system.
+The user wants a complete redesign of the iPhone application's user experience and navigation, along with the implementation of a full theming system.
 
 **PRODUCT REQUIREMENTS:**
-1.  **Separate Authentication from Authorization**: A successful login does not automatically grant access.
-2.  **Enforce Granular Access Control** based on user attributes: , , , , and .
-3.  **Define Access Rules**:
-    *    (CEO/Admin): Full access.
-    *   : Demo-only access.
-    *   : Onboarding flow only.
-    *   Other users: Access determined by payment/subscription status.
-4.  **Implement Stripe Integration**:
-    *   Create a checkout flow.
-    *   Implement a webhook endpoint to handle payment confirmations and failures.
-    *   Update  in the database upon webhook events.
-    *   Grant access only after successful payment confirmation from the backend.
-5.  **Implement Transactional Emails (Resend)** for key events using provided HTML templates:
-    *   Welcome Email
-    *   Payment Confirmed
-    *   Access Granted
-    *   Payment Failed
-    *   Team Invite
-    *   Password Reset (user-initiated and manager-initiated).
-6.  **Secure Password Reset Flow**:
-    *   Must use secure, single-use, expiring tokens.
-    *   Manager-initiated resets must invalidate the old password immediately.
-    *   Log all reset events and invalidate previous sessions.
+1.  **Theme System (Dark & Light)**:
+    *   Dark mode must be the default, with an optional light mode.
+    *   The app must respect the user's system-level appearance settings (iOS).
+    *   A manual theme switcher must be available in the app's settings.
+    *   Theming should only affect colors, not layouts or structure.
+2.  **iPhone Navigation Structure**:
+    *   Simplify the bottom tab bar to four items: , , , .
+    *   The  tab will contain  and .
+    *   Remove CEO, Manager, Owner, and Kitchen/KDS modules entirely from the iPhone application build and routes.
+3.  **Entry Module Flow**:
+    *   An NFC scan of an unregistered tag should not be treated as an error.
+    *   It should be considered a successful scan that triggers a registration flow, passing the scanned tag's UID to the next screen.
+4.  **Tabs (Bar) Module Redesign**:
+    *   The module must become a premium, real-time ordering system.
+    *   **Header**: Display a persistent context header showing the currently selected guest's name, tag, and tab status.
+    *   **Quick Actions**: Prominently feature buttons for Scan NFC, Search guest, and Create guest.
+    *   **Active Tabs List**: Upon entry, immediately display a tappable list of all currently open tabs.
+    - **Menu Items**: Display bar menu items (e.g., Cocktails, Beers) grouped by category, allowing for quick, one-tap adding to the current order.
+    *   **Current Tab Panel**: Show the selected tab's items, total, and provide actions like removing items or sending orders.
+5.  **Design Quality**:
+    *   The overall app aesthetic must be elevated to a premium standard, with a focus on improved spacing, visual hierarchy, refined components, and polished interactions.
 
-**User's preferred language**: Portuguese. The user also communicates in technical English. The next agent **MUST** respond in Portuguese.
+**User's preferred language**: Portuguese. The user often communicates in technical English, but has consistently requested responses in Portuguese. You **MUST** respond in Portuguese.
 
 **what currently exists?**
 - A full-stack application (React/FastAPI/PostgreSQL).
-- A React Native mobile app refactored to production-ready standards, with a complete UI structure for all modules (Dashboards, Tables, Kitchen, etc.), robust UI components (, ), and proper state handling (loading, empty, error).
-- Backend with existing routes for ,  (with a basic Stripe integration), and various modules. A  endpoint using Resend also exists.
-- The backend APIs required for the mobile app's dashboards and operational screens have been successfully tested (24/24 tests passed).
+- A mobile app (React Native/Expo) that has been significantly hardened for iOS release. Multiple critical startup crashes, build failures, and App Store submission rejections (related to NFC entitlements) have been identified and resolved.
+- The startup sequence is now stable, with robust authentication state restoration and no top-level native module imports that could cause a crash.
+- A complete backend system is in place for access control, billing (Stripe), team invites, password resets, and transactional emails (Resend).
+- The NFC scan flow was recently updated to handle unregistered tags by redirecting to a registration flow, which aligns with the new requirements.
 
 **Last working item**:
-- **Last item agent was working**: The agent received a new P0 directive to implement a production-grade access control and billing system. It had just started the analysis phase by viewing existing backend files (, , , ) to understand the current implementation before architecting the new system.
-- **Status**: NOT STARTED (on the new directive's implementation).
+- **Last item agent was working**: The agent received the new, extensive requirements for the mobile app redesign. It had just begun the analysis phase by viewing existing theme-related files (), UI components (, ), and relevant screen files (, , ) to understand the scope of the required changes.
+- **Status**: NOT STARTED
 - **Agent Testing Done**: N/A
-- **Which testing method agent to use?**: both. This is a major backend overhaul. Use  to validate the full end-to-end flow (signup -> checkout -> webhook -> access grant). Individual endpoints, especially the Stripe webhook and password reset flows, will require  for isolated testing.
-- **User Testing Done**: N
+- **Which testing method agent to use?**: both. This is a massive frontend refactor. Use the  to validate all new flows, especially the redesigned Tabs module and theme switching. Use the  extensively to visually verify both dark and light themes across all modified screens.
+- **User Testing Done**: N/A
 
 **All Pending/In progress Issue list**:
-- **Issue 1: Implement Production-Grade Access Control, Billing, and Email System (P0, HIGHEST)**
+- **Issue 1: Redesign iPhone App & Implement Theming System (P0, HIGHEST)**
 
 **Issues Detail**:
 - **Issue 1**:
-    - **Attempted fixes**: None. The task has just been assigned. The agent was in the initial analysis phase.
+    - **Attempted fixes**: None. Task is new.
     - **Next debug checklist**:
-        1.  Propose a detailed plan to the user including:
-            - **Data Model**: New/modified DB schemas for , , , , , , and .
-            - **Auth/Access Flow**: A diagram or description of how a user's request is evaluated against their status and permissions.
-            - **Stripe/Webhook Flow**: A diagram showing the sequence of events from checkout initiation to webhook processing and DB update.
-            - **Email Trigger Map**: A list of events and the corresponding emails to be sent.
-        2.  Upon approval, begin implementation starting with database migrations and backend models.
-        3.  Implement the Stripe checkout and webhook endpoints.
-        4.  Create the Resend email-sending logic and integrate it with the specified triggers.
-        5.  Implement the secure password reset flow.
-        6.  Refactor the frontend to respect the new access rules (e.g., redirecting unpaid users to a billing page).
-    - **Why fix this issue and what will be achieved with the fix?**: This is a critical requirement from the user to transform the application from a feature-complete prototype into a real, monetizable, and secure commercial product ready for the App Store.
+        1.  Propose a detailed implementation plan to the user.
+        2.  **Theme System**:
+            - Create a  and provider.
+            - Define light and dark color palettes in .
+            - Refactor all UI components and screens to use theme variables from the context instead of hardcoded colors.
+            - In , add a UI to switch themes and persist the choice. Use React Native's  to detect the system default.
+        3.  **Navigation Restructure**:
+            - In , rewrite the bottom tab navigator to include only , , , and .
+            - Create a new stack navigator for the  tab to house  and the  functionality.
+            - Remove all imports and routes related to the , , , and  screens.
+        4.  **Tabs/Bar Module Redesign**:
+            - Create or heavily refactor a .
+            - Implement the new components: persistent guest header, quick action buttons, active tabs list, and categorized menu items.
+            - Develop the Current Tab panel for managing orders.
+        5.  **Overall Polish**: Apply principles of improved spacing and visual hierarchy throughout the implementation.
+    - **Why fix this issue and what will be achieved with the fix?**: This task will transform the application from a collection of functional modules into a cohesive, polished, and operationally-focused tool for venue staff, significantly improving its commercial viability and user experience.
     - **Status**: NOT STARTED
     - **Is recurring issue?**: N
-    - **Should Test frontend/backend/both after fix?**: Both.
+    - **Should Test frontend/backend/both after fix?**: Both (Frontend is the priority).
     - **Blocked on other issue**: None.
 
 **In progress Task List**:
-- None. The previous task of mobile app hardening was completed.
+- None.
 
 **Upcoming and Future Tasks**
 **Upcoming Tasks:**
-*   (P0) Full implementation of the Production Access Control, Billing, and Email system as detailed above.
+*   (P0) Complete implementation of the iPhone app redesign as detailed in the user's latest request.
 
 **Future Tasks:**
 *   (P1) Web App: Migrate  &  pages to use the real backend API.
-*   (P1) Web App: Implement drag-and-drop functionality for the Pipeline Kanban view.
-*   (P2) Mobile App: Implement Push Notifications, offline synchronization, and biometric authentication.
+*   (P1) Web App: Implement drag-and-drop for the Pipeline Kanban view.
+*   (P2) Mobile App: Re-enable  in  for OTA updates, now that the entry point issue is resolved.
 *   (P3) Web App: Address the recurring Pricing Cards on Landing Page bug.
-*   (P3) Mobile App: Implement a dark/light mode toggle.
-*   (P3) Mobile App: Add haptic feedback for critical actions ().
-*   (P3) Backend: Integrate a formal error tracking service like Sentry.
 
 **Completed work in this session**
-- **Mobile App - Production Hardening (Major Refactor)**:
-  - Elevated the entire mobile app from a prototype to App Store ready quality.
-  - Implemented a production-grade UI infrastructure:  with a master  (handling , pull-to-refresh), a global , and standardized , , and  components.
-  - Rewrote  to use the  and manage the splash screen ( was installed).
-  - Rewrote  to correctly handle safe areas for a polished UI on all devices.
-  - Completely refactored the , , and  to use the new production components, ensuring proper data fetching, state management (loading/empty/error), and pull-to-refresh functionality.
-  - Refactored all other core screens (, , , , and all Pulse screens) to meet the new production standards.
-- **Backend - API Validation**:
-  - Ran a comprehensive test suite using , which passed 24/24 tests, confirming the health of all backend endpoints required by the mobile app.
-- **Codebase - Maintenance**:
-  - Deleted the obsolete  file.
-  - Replaced all remaining Unicode emoji icons with a proper vector icon library ().
+- **iOS Release Hardening (Major Stability Fixes)**:
+    - **Startup Crash (main has not been registered)**: Corrected the  entry point in  to  to ensure the app's root component is properly registered on launch.
+    - **Startup Crash (Native Module Initialization)**: Fixed a critical crash by refactoring  to lazy-load the  module only when an NFC function is called, instead of at app startup.
+    - **App Store Rejection (NFC Entitlement)**: Resolved Apple's  rejection error by correctly configuring the  plugin in  with , which prevents the invalid  entitlement from being added to the build.
+    - **Auth Flow Hardening**: Made the startup authentication flow 100% stable by wrapping all  (keychain) access in  blocks, preventing race conditions with the splash screen, and ensuring the app safely falls back to the login screen on any session restoration error.
+    - **Build Failure ()**: Fixed an EAS build failure by adding the missing  to  in .
+- **NFC Logic**:
+    - Implemented the user's requested logic in  to handle unregistered tags as a successful scan that leads to a registration flow, rather than an error.
 
 **Earlier issues found/mentioned but not fixed**
-   - **Issue 1**: Pricing Cards on the landing page (web app). This is a known recurring issue that remains unaddressed.
+   - **Issue 1**: A recurring bug with the Pricing Cards on the web app's landing page remains unaddressed.
 
 **Known issue recurrence from previous fork**
-  - **Issue recurrence**: Pricing Cards on landing page.
+  - **Issue recurrence**: Pricing Cards on landing page (web app).
   - **Recurrence count**: >3
   - **Status**: NOT STARTED
 
@@ -106,26 +103,25 @@ The user's initial mission was to build a CEO OS and achieve 1:1 feature parity 
 
 
 **Key Technical Concepts**
-- **React Native Production Readiness**:  for crash recovery,  for UI consistency, splash screen handling, pull-to-refresh, skeleton/loading patterns.
-- **Backend Development (FastAPI)**: The next task will heavily involve middleware, database models (Pydantic, SQLAlchemy or similar), secure token generation ( module), and integration with external services (Stripe, Resend).
-- **Role-Based Access Control (RBAC)**: The core concept for the next implementation phase.
-- **Transactional Emails**: Using an API service (Resend) for automated, event-driven communication.
-- **Payment Gateway Integration**: Stripe Checkout and, critically, Stripe Webhooks for asynchronous event handling.
+- **React Native Theming**: The next task requires implementing a robust theming system using React Context, , and AsyncStorage/SecureStore for persistence.
+- **Expo Config ()**: The session involved deep manipulation of , , , and the  entry point to fix critical build and runtime issues. This knowledge is crucial.
+- **Lazy Loading Native Modules**: A key fix was to stop -ing native modules at the top level of a file. The pattern of lazy-loading inside a function call is essential for app stability.
+- **Defensive Programming**: All startup and authentication code was hardened with extensive  blocks and fail-closed logic to prevent crashes.
 
 **key DB schema**
-  - No changes were made. The next task **requires** a significant overhaul. The agent must propose new models for ,  (tenants), , , , , and .
+  - No changes made or expected for the next task.
 
 **changes in tech stack**
-- **Mobile**: Added  and .
+-  was re-added as a dependency and its plugin correctly configured in .
 
 **All files of reference**
-- **Primary Focus for Next Task (Backend)**:
+- **Files for next task (redesign)**:
   - 
   - 
   - 
   - 
-  - 
-- **Key Mobile Files (Recently Completed Work)**:
+  - All other screen files under  will need theme-related refactoring.
+- **Recently stabilized files (good examples of defensive code)**:
   - 
   - 
   - 
@@ -134,55 +130,54 @@ The user's initial mission was to build a CEO OS and achieve 1:1 feature parity 
   - 
 
 **Areas that need refactoring**:
-- The entire backend authentication, authorization, and billing logic needs to be re-architected and implemented from a production-first perspective, as per the user's latest P0 request. The current system is a placeholder.
+- The entire mobile navigation structure ().
+- The  module needs to be completely redesigned into the new  module.
+- All components and screens need to be refactored to consume a new  instead of using hardcoded colors.
 
 **key api endpoints**
-- Existing: , , .
-- To Be Created:
-  -  (for Stripe events)
-  - 
-  - 
-  - 
-  - Endpoints for managers to reset user passwords.
+- No new API endpoints are required for the redesign task.
 
 **Critical Info for New Agent**
 - **Você DEVE responder em português.**
-- **Your P0 MISSION has completely changed.** The focus is no longer on the mobile app. You must now implement a full, production-grade access control, billing (Stripe), and transactional email system on the backend.
-- Before writing any code, you **MUST** first present a detailed plan to the user covering: A) data model, B) auth/access flow, C) Stripe/webhook flow, and D) email trigger map.
-- The user has provided very specific requirements and HTML templates for transactional emails. Follow them precisely.
-- The existing backend auth and billing code in  and  should be considered a starting point for analysis, not a foundation to build upon. Expect to replace most of it.
+- Your new P0 mission is a complete redesign of the iPhone app's UI, UX, and navigation. The user has provided very specific and detailed requirements.
+- The app's stability issues (startup crashes, build failures, App Store rejections) have been resolved. Do not re-introduce the patterns that caused them (e.g., top-level  of native modules, incorrect  config).
+- The NFC module is correctly configured and working. Do not remove it.
+- The startup and authentication flow is now heavily guarded and robust. Use it as a reference for safe async operations.
+- The redesign is not just cosmetic; it involves restructuring the navigation and fundamentally changing how the Tabs/Bar module works.
 
 **documents and test reports created in this job**
 - 
-- 
--  (updated with the latest progress)
 
 **Last 10 User Messages and any pending HUMAN messages**
-10. **User**: *States that the app must be built to production app standards for the App Store, not as a prototype. Lists requirements like stability, polished UX, and handling of all states (error, empty, loading).* (COMPLETED - Agent refactored the app).
-9. **User**: Pode continuar (You can continue). (HANDLED).
-8. **User**: Provides a very detailed, multi-part request to implement production access-control and billing logic. This includes specific account rules, Stripe integration requirements, email triggers with full HTML/text templates, and a secure password reset flow. Asks for a full plan before implementation. (IN PROGRESS - This is the current P0 task).
+- **1. User**: We need to redesign the iPhone app experience and implement full theming support. [Provides detailed specs]. (IN PROGRESS - Current P0 task).
+- **2. User**: NFC reading is confirmed working...If the tag is not found...redirect to registration flow. (COMPLETED).
+- **3. User**: Eu fechei o terminal... qual os primeiros comandos que eu tenho que mandar quando eu abro um novo?. (HANDLED).
+- **4. User**: We now have a critical clue from the device logs...Invariant Violation: main has not been registered. (COMPLETED - Entry point fixed).
+- **5. User**: The app is crashing immediately on launch in TestFlight...crash is happening during app startup. (COMPLETED - Lazy-loaded NFC module).
+- **6. User**: Corrected agent's flawed plan to remove NFC, providing the correct  workaround. (COMPLETED).
+- **7. User**: Asked why the agent was removing NFC, a core feature. (HANDLED).
+- **8. User**: EAS submit fails with Invalid entitlement for core nfc framework. (COMPLETED - Agent first tried removing NFC, then user corrected).
+- **9. User**: Reported a deterministic startup crash in TestFlight after the splash screen. (COMPLETED).
+- **10. User**: Reported iOS build failure due to Cannot find module babel-preset-expo. (COMPLETED).
 
 **Project Health Check:**
-- **Broken**: No. The web app and mobile app are stable and running. The backend APIs passed all tests.
-- **Mocked**: The entire production access control and billing system is non-existent. The current authorization logic is a simple placeholder and must be replaced.
+- **Broken**: No. The mobile app is stable, and the build/submission process is fixed.
+- **Mocked**: The entire new UI/UX for the Tabs module and the light/dark theme system are non-existent and need to be built from scratch.
 
 **3rd Party Integrations**
-- **Resend**: Used for a support form, will now be expanded for all transactional emails.
-- **Stripe**: A basic checkout is implemented; needs to be expanded with robust webhook handling and subscription management.
-- **Expo**: Core of the mobile application.
+- ****: Core to NFC functionality. It is now correctly configured in  to be compatible with App Store submission rules.
+- ****: Currently disabled in  for stability during debugging. This should be re-enabled after the redesign.
+- **Stripe & Resend**: Fully integrated and operational on the backend.
 
 **Testing status**
-  - Testing agent used after significant changes: YES. The testing agent was used twice to validate backend API integrity, with the last run passing 24/24 tests.
-  - Troubleshoot agent used after agent stuck in loop: NO
-  - Test files created: []
-  - Known regressions: None from this session's work.
+- **Testing agent used after significant changes**: YES (for the backend access control system).
+- **Troubleshoot agent used after agent stuck in loop**: NO
+- **Test files created**: []
+- **Known regressions**: None. All recent work has been to improve stability.
 
 **Credentials to test flow:**
-- **CEO/Admin User**:  /  (Should have full access).
-- **Onboarding User**:  (Should be forced into an onboarding flow).
-- **Demo User**:  (Should have limited access to a demo module).
-- **Resend API Key**: Available in 
-- **Stripe Keys**: Available in the environment.
+- **CEO/Admin User**:  / 
+- **Venue ID**: 
 
 **What agent forgot to execute**
-The agent has followed all user instructions, including the major pivot from mobile UI work to backend architecture. Nothing was forgotten.</analysis>
+- The agent initially proposed an incorrect solution to the NFC entitlement problem (removing NFC entirely), demonstrating a knowledge gap regarding OTA update limitations and Expo plugin configurations. The user provided the correct solution, which the agent then successfully implemented. The agent has now learned from this and has a better understanding of the mobile build process.</analysis>

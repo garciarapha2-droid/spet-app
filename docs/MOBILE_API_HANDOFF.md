@@ -2,7 +2,7 @@
 
 ## Base URL
 ```
-https://access-payment-hub.preview.emergentagent.com
+https://dark-light-theme-5.preview.emergentagent.com
 ```
 
 All API endpoints are prefixed with `/api`.

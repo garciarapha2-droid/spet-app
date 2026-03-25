@@ -191,7 +191,7 @@ eas build --profile development --platform ios  # refaça
 ### "Network request failed" ao fazer login
 O iPhone precisa acessar o backend. Verifique:
 - Que está conectado à internet
-- Que `https://access-payment-hub.preview.emergentagent.com` está acessível
+- Que `https://dark-light-theme-5.preview.emergentagent.com` está acessível
 - Tente abrir a URL no Safari do iPhone
 
 ### Tag NFC lida mas "not registered"

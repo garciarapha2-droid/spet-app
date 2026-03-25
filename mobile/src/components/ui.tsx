@@ -1,6 +1,7 @@
 /**
- * Reusable UI components for SPET Mobile.
- * All touch targets >= 44px. Dark theme. Premium feel.
+ * Themed reusable UI components for SPET Mobile.
+ * All components use useTheme() — no hardcoded colors.
+ * Touch targets >= 44px. Premium feel.
  */
 import React from 'react';
 import {
@@ -11,16 +12,16 @@ import {
   ActivityIndicator,
   StyleSheet,
   ViewStyle,
-  TextStyle,
 } from 'react-native';
-import { colors, spacing, radius, fontSize } from '../theme/colors';
+import { useTheme } from '../contexts/ThemeContext';
+import { spacing, radius, fontSize } from '../theme/themes';
 
 // ─── Button ────────────────────────────────────────────
 
 interface ButtonProps {
   title: string;
   onPress: () => void;
-  variant?: 'primary' | 'danger' | 'ghost' | 'success';
+  variant?: 'primary' | 'danger' | 'ghost' | 'success' | 'outline';
   loading?: boolean;
   disabled?: boolean;
   icon?: React.ReactNode;
@@ -29,29 +30,25 @@ interface ButtonProps {
 }
 
 export function Button({
-  title,
-  onPress,
-  variant = 'primary',
-  loading = false,
-  disabled = false,
-  icon,
-  size = 'lg',
-  style,
+  title, onPress, variant = 'primary', loading = false,
+  disabled = false, icon, size = 'lg', style,
 }: ButtonProps) {
+  const { colors } = useTheme();
   const isDisabled = disabled || loading;
 
-  const bgMap = {
+  const bgMap: Record<string, string> = {
     primary: colors.primary,
-    danger: colors.danger,
+    danger: colors.destructive,
     ghost: 'transparent',
-    success: colors.success,
+    success: colors.emerald500,
+    outline: 'transparent',
   };
-
-  const textColorMap = {
-    primary: '#fff',
+  const textColorMap: Record<string, string> = {
+    primary: colors.primaryForeground,
     danger: '#fff',
     ghost: colors.primary,
-    success: '#fff',
+    success: '#000',
+    outline: colors.foreground,
   };
 
   return (
@@ -69,8 +66,8 @@ export function Button({
           flexDirection: 'row',
           gap: spacing.sm,
           opacity: isDisabled ? 0.5 : 1,
-          borderWidth: variant === 'ghost' ? 1 : 0,
-          borderColor: colors.border,
+          borderWidth: variant === 'ghost' || variant === 'outline' ? 1 : 0,
+          borderColor: variant === 'outline' ? colors.border : colors.border,
         },
         style,
       ]}
@@ -80,13 +77,7 @@ export function Button({
       ) : (
         <>
           {icon}
-          <Text
-            style={{
-              color: textColorMap[variant],
-              fontSize: size === 'lg' ? fontSize.lg : fontSize.md,
-              fontWeight: '600',
-            }}
-          >
+          <Text style={{ color: textColorMap[variant], fontSize: size === 'lg' ? fontSize.lg : fontSize.md, fontWeight: '600' }}>
             {title}
           </Text>
         </>
@@ -103,26 +94,24 @@ interface InputProps {
   onChangeText: (text: string) => void;
   secureTextEntry?: boolean;
   autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters';
-  keyboardType?: 'default' | 'email-address' | 'phone-pad';
+  keyboardType?: 'default' | 'email-address' | 'phone-pad' | 'numeric';
   icon?: React.ReactNode;
   style?: ViewStyle;
+  onFocus?: () => void;
+  onBlur?: () => void;
 }
 
 export function Input({
-  placeholder,
-  value,
-  onChangeText,
-  secureTextEntry,
-  autoCapitalize = 'none',
-  keyboardType = 'default',
-  icon,
-  style,
+  placeholder, value, onChangeText, secureTextEntry,
+  autoCapitalize = 'none', keyboardType = 'default', icon, style,
+  onFocus, onBlur,
 }: InputProps) {
+  const { colors } = useTheme();
   return (
     <View
       style={[
         {
-          backgroundColor: colors.bgInput,
+          backgroundColor: colors.card,
           borderRadius: radius.lg,
           height: 56,
           flexDirection: 'row',
@@ -137,17 +126,15 @@ export function Input({
       {icon && <View style={{ marginRight: spacing.md }}>{icon}</View>}
       <TextInput
         placeholder={placeholder}
-        placeholderTextColor={colors.textPlaceholder}
+        placeholderTextColor={colors.placeholder}
         value={value}
         onChangeText={onChangeText}
         secureTextEntry={secureTextEntry}
         autoCapitalize={autoCapitalize}
         keyboardType={keyboardType}
-        style={{
-          flex: 1,
-          color: colors.text,
-          fontSize: fontSize.md,
-        }}
+        onFocus={onFocus}
+        onBlur={onBlur}
+        style={{ flex: 1, color: colors.foreground, fontSize: fontSize.sm }}
       />
     </View>
   );
@@ -162,18 +149,19 @@ interface CardProps {
 }
 
 export function Card({ children, style, onPress }: CardProps) {
-  const Wrapper = onPress ? TouchableOpacity : View;
+  const { colors } = useTheme();
+  const Wrapper: any = onPress ? TouchableOpacity : View;
   return (
     <Wrapper
       onPress={onPress}
       activeOpacity={0.8}
       style={[
         {
-          backgroundColor: colors.bgCard,
+          backgroundColor: colors.card,
           borderRadius: radius.lg,
           padding: spacing.lg,
           borderWidth: 1,
-          borderColor: colors.border,
+          borderColor: colors.border + '80',
         },
         style,
       ]}
@@ -185,23 +173,11 @@ export function Card({ children, style, onPress }: CardProps) {
 
 // ─── Chip ──────────────────────────────────────────────
 
-interface ChipProps {
-  label: string;
-  color?: string;
-  bgColor?: string;
-}
-
-export function Chip({ label, color = colors.text, bgColor = colors.bgElevated }: ChipProps) {
+export function Chip({ label, color, bgColor }: { label: string; color?: string; bgColor?: string }) {
+  const { colors } = useTheme();
   return (
-    <View
-      style={{
-        backgroundColor: bgColor,
-        borderRadius: radius.full,
-        paddingHorizontal: spacing.md,
-        paddingVertical: spacing.xs,
-      }}
-    >
-      <Text style={{ color, fontSize: fontSize.xs, fontWeight: '600' }}>{label}</Text>
+    <View style={{ backgroundColor: bgColor || colors.muted, borderRadius: radius.full, paddingHorizontal: spacing.md, paddingVertical: spacing.xs }}>
+      <Text style={{ color: color || colors.foreground, fontSize: fontSize.tiny, fontWeight: '600' }}>{label}</Text>
     </View>
   );
 }
@@ -209,8 +185,9 @@ export function Chip({ label, color = colors.text, bgColor = colors.bgElevated }
 // ─── StatusBadge ───────────────────────────────────────
 
 export function StatusBadge({ severity }: { severity: 'critical' | 'warning' | 'info' | 'success' }) {
+  const { colors } = useTheme();
   const map = {
-    critical: { bg: colors.dangerBg, color: colors.danger, label: 'Blocked' },
+    critical: { bg: colors.destructiveBg, color: colors.destructive, label: 'Blocked' },
     warning: { bg: colors.warningBg, color: colors.warning, label: 'Flagged' },
     info: { bg: colors.infoBg, color: colors.info, label: 'Info' },
     success: { bg: colors.successBg, color: colors.success, label: 'OK' },
@@ -222,23 +199,12 @@ export function StatusBadge({ severity }: { severity: 'critical' | 'warning' | '
 // ─── Loading Overlay ───────────────────────────────────
 
 export function LoadingOverlay({ visible, message }: { visible: boolean; message?: string }) {
+  const { colors } = useTheme();
   if (!visible) return null;
   return (
-    <View
-      style={{
-        ...StyleSheet.absoluteFillObject,
-        backgroundColor: colors.bgOverlay,
-        justifyContent: 'center',
-        alignItems: 'center',
-        zIndex: 100,
-      }}
-    >
+    <View style={{ ...StyleSheet.absoluteFillObject, backgroundColor: colors.overlay, justifyContent: 'center', alignItems: 'center', zIndex: 100 }}>
       <ActivityIndicator size="large" color={colors.primary} />
-      {message && (
-        <Text style={{ color: colors.text, fontSize: fontSize.md, marginTop: spacing.lg }}>
-          {message}
-        </Text>
-      )}
+      {message && <Text style={{ color: colors.foreground, fontSize: fontSize.md, marginTop: spacing.lg }}>{message}</Text>}
     </View>
   );
 }
@@ -249,24 +215,27 @@ interface StatCardProps {
   label: string;
   value: string | number;
   color?: string;
+  barColor?: string;
+  icon?: React.ReactNode;
 }
 
-export function StatCard({ label, value, color = colors.primary }: StatCardProps) {
+export function StatCard({ label, value, color, barColor, icon }: StatCardProps) {
+  const { colors } = useTheme();
+  const accentColor = color || colors.primary;
   return (
-    <Card style={{ flex: 1, alignItems: 'center', padding: spacing.lg }}>
-      <Text
-        style={{
-          fontSize: fontSize.xxl,
-          fontWeight: '700',
-          color,
-          fontVariant: ['tabular-nums'],
-        }}
-      >
-        {value}
-      </Text>
-      <Text style={{ fontSize: fontSize.xs, color: colors.textSecondary, marginTop: spacing.xs }}>
-        {label}
-      </Text>
+    <Card style={{ flex: 1, flexDirection: 'row', alignItems: 'center', padding: spacing.md }}>
+      <View style={{ width: 3, height: 32, borderRadius: 2, backgroundColor: barColor || accentColor, marginRight: spacing.md }} />
+      <View style={{ flex: 1 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+          {icon}
+          <Text style={{ fontSize: fontSize.micro, fontWeight: '700', color: colors.mutedForeground, textTransform: 'uppercase', letterSpacing: 1 }} numberOfLines={1}>
+            {label}
+          </Text>
+        </View>
+        <Text style={{ fontSize: fontSize['2xl'], fontWeight: '800', color: colors.foreground, fontVariant: ['tabular-nums'], marginTop: 2 }}>
+          {value}
+        </Text>
+      </View>
     </Card>
   );
 }
@@ -274,14 +243,11 @@ export function StatCard({ label, value, color = colors.primary }: StatCardProps
 // ─── Section Header ────────────────────────────────────
 
 export function SectionHeader({ title, subtitle }: { title: string; subtitle?: string }) {
+  const { colors } = useTheme();
   return (
     <View style={{ marginBottom: spacing.lg }}>
-      <Text style={{ fontSize: fontSize.title, fontWeight: '700', color: colors.text }}>{title}</Text>
-      {subtitle && (
-        <Text style={{ fontSize: fontSize.sm, color: colors.textSecondary, marginTop: spacing.xs }}>
-          {subtitle}
-        </Text>
-      )}
+      <Text style={{ fontSize: fontSize.title, fontWeight: '800', color: colors.foreground }}>{title}</Text>
+      {subtitle && <Text style={{ fontSize: fontSize.sm, color: colors.mutedForeground, marginTop: spacing.xs }}>{subtitle}</Text>}
     </View>
   );
 }

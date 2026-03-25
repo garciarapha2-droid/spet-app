@@ -1,27 +1,23 @@
 /**
- * Tables Home — grid of tables with status, capacity, server info.
- * Mirrors web's table management view.
+ * Tables Home — redesigned with spec-quality mobile styling.
+ * Grid of tables with status, capacity, server info.
  */
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { View, Text, FlatList, TouchableOpacity, RefreshControl, useWindowDimensions } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
-import { colors, spacing, fontSize, radius } from '../../theme/colors';
+import { useTheme } from '../../contexts/ThemeContext';
+import { spacing, fontSize, radius } from '../../theme/themes';
+import TopNavbar from '../../components/TopNavbar';
 import { useVenue } from '../../hooks/useVenue';
 import { EmptyState, ErrorState, SkeletonList } from '../../components/ProductionUI';
 import * as tableService from '../../services/tableService';
 import type { Table } from '../../services/tableService';
 
-const statusColors: Record<string, { bg: string; border: string; text: string; icon: string }> = {
-  available: { bg: colors.successBg, border: colors.success, text: colors.success, icon: 'check-circle' },
-  occupied: { bg: colors.primaryBg, border: colors.primary, text: colors.primary, icon: 'users' },
-  reserved: { bg: colors.warningBg, border: colors.warning, text: colors.warning, icon: 'clock' },
-  closed: { bg: colors.dangerBg, border: colors.danger, text: colors.danger, icon: 'x-circle' },
-};
-
 export default function TablesHomeScreen() {
   const nav = useNavigation<any>();
+  const { colors } = useTheme();
   const { venueId, selectedVenue } = useVenue();
   const { width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
@@ -31,6 +27,16 @@ export default function TablesHomeScreen() {
   const [filter, setFilter] = useState<string>('all');
 
   const numColumns = width > 768 ? 3 : 2;
+
+  const statusMap = (status: string) => {
+    switch (status) {
+      case 'available': return { bg: colors.successBg, border: colors.success, text: colors.success, icon: 'check-circle' };
+      case 'occupied': return { bg: colors.primaryBg, border: colors.primary, text: colors.primary, icon: 'users' };
+      case 'reserved': return { bg: colors.warningBg, border: colors.warning, text: colors.warning, icon: 'clock' };
+      case 'closed': return { bg: colors.destructiveBg, border: colors.destructive, text: colors.destructive, icon: 'x-circle' };
+      default: return { bg: colors.successBg, border: colors.success, text: colors.success, icon: 'check-circle' };
+    }
+  };
 
   const load = useCallback(async () => {
     if (!venueId) return;
@@ -56,43 +62,43 @@ export default function TablesHomeScreen() {
   };
 
   const renderTable = ({ item }: { item: Table }) => {
-    const s = statusColors[item.status] || statusColors.available;
+    const s = statusMap(item.status);
     return (
       <TouchableOpacity
         onPress={() => nav.navigate('TableDetail', { tableId: item.id })}
         activeOpacity={0.7}
         style={{
-          flex: 1, margin: spacing.xs, backgroundColor: colors.bgCard,
-          borderRadius: radius.lg, padding: spacing.lg, borderWidth: 1,
+          flex: 1, margin: spacing.xs, backgroundColor: colors.card,
+          borderRadius: radius.xl, padding: spacing.lg, borderWidth: 1,
           borderColor: s.border + '40', minHeight: 130,
         }}
       >
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Text style={{ fontSize: fontSize.xl, fontWeight: '700', color: colors.text }}>
+          <Text style={{ fontSize: fontSize.xl, fontWeight: '800', color: colors.foreground }}>
             #{item.number || item.name}
           </Text>
           <Feather name={s.icon as any} size={16} color={s.text} />
         </View>
-        <View style={{ marginTop: spacing.sm, flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
-          <View style={{ paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6, backgroundColor: s.bg }}>
-            <Text style={{ fontSize: fontSize.xs, fontWeight: '600', color: s.text, textTransform: 'capitalize' }}>
+        <View style={{ marginTop: spacing.sm, flexDirection: 'row', alignItems: 'center' }}>
+          <View style={{ paddingHorizontal: 8, paddingVertical: 3, borderRadius: radius.full, backgroundColor: s.bg }}>
+            <Text style={{ fontSize: fontSize.tiny, fontWeight: '600', color: s.text, textTransform: 'capitalize' }}>
               {item.status}
             </Text>
           </View>
         </View>
         {item.server_name && (
           <View style={{ marginTop: spacing.md, flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
-            <Feather name="user" size={12} color={colors.textMuted} />
-            <Text style={{ fontSize: fontSize.xs, color: colors.textSecondary }}>{item.server_name}</Text>
+            <Feather name="user" size={12} color={colors.mutedForeground} />
+            <Text style={{ fontSize: fontSize.xs, color: colors.mutedForeground }}>{item.server_name}</Text>
           </View>
         )}
         <View style={{ marginTop: spacing.sm, flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-            <Feather name="users" size={12} color={colors.textMuted} />
-            <Text style={{ fontSize: fontSize.xs, color: colors.textMuted }}>{item.guest_count || 0}/{item.capacity}</Text>
+            <Feather name="users" size={12} color={colors.mutedForeground} />
+            <Text style={{ fontSize: fontSize.xs, color: colors.mutedForeground }}>{item.guest_count || 0}/{item.capacity}</Text>
           </View>
           {item.current_tab_total != null && item.current_tab_total > 0 && (
-            <Text style={{ fontSize: fontSize.sm, fontWeight: '600', color: colors.success }}>
+            <Text style={{ fontSize: fontSize.sm, fontWeight: '600', color: colors.success, fontVariant: ['tabular-nums'] }}>
               ${item.current_tab_total.toFixed(2)}
             </Text>
           )}
@@ -102,40 +108,33 @@ export default function TablesHomeScreen() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.bg }}>
-      <View style={{ padding: spacing.xxl, paddingBottom: spacing.md }}>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-          <View>
-            <Text style={{ fontSize: fontSize.title, fontWeight: '700', color: colors.text }}>Tables</Text>
-            <Text style={{ fontSize: fontSize.sm, color: colors.textSecondary, marginTop: spacing.xs }}>
-              {selectedVenue?.name || 'No venue'}
-            </Text>
+    <View style={{ flex: 1, backgroundColor: colors.background }} data-testid="tables-screen">
+      {/* Top Navbar */}
+      <TopNavbar
+        title="Tables"
+        rightContent={
+          <View style={{ backgroundColor: colors.successBg, paddingHorizontal: 8, paddingVertical: 3, borderRadius: radius.full }}>
+            <Text style={{ fontSize: fontSize.tiny, fontWeight: '600', color: colors.success }}>{counts.available} open</Text>
           </View>
-          <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-            <View style={{ backgroundColor: colors.successBg, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 }}>
-              <Text style={{ fontSize: fontSize.xs, fontWeight: '600', color: colors.success }}>{counts.available} open</Text>
-            </View>
-            <View style={{ backgroundColor: colors.primaryBg, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 }}>
-              <Text style={{ fontSize: fontSize.xs, fontWeight: '600', color: colors.primary }}>{counts.occupied} busy</Text>
-            </View>
-          </View>
-        </View>
+        }
+      />
 
+      <View style={{ paddingHorizontal: spacing.lg, paddingTop: spacing.lg, paddingBottom: spacing.sm }}>
         {/* Filters */}
-        <View style={{ flexDirection: 'row', gap: spacing.sm, marginTop: spacing.lg }}>
+        <View style={{ flexDirection: 'row', gap: spacing.sm }}>
           {(['all', 'available', 'occupied', 'reserved'] as const).map(f => (
             <TouchableOpacity
               key={f}
               onPress={() => setFilter(f)}
               style={{
-                paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20,
-                backgroundColor: filter === f ? colors.primary : colors.bgCard,
-                borderWidth: 1, borderColor: filter === f ? colors.primary : colors.border,
+                paddingHorizontal: 14, paddingVertical: 7, borderRadius: radius.full,
+                backgroundColor: filter === f ? colors.primary : colors.card,
+                borderWidth: 1, borderColor: filter === f ? colors.primary : colors.border + '80',
               }}
             >
               <Text style={{
                 fontSize: fontSize.xs, fontWeight: '600',
-                color: filter === f ? '#FFF' : colors.textSecondary, textTransform: 'capitalize',
+                color: filter === f ? colors.primaryForeground : colors.mutedForeground, textTransform: 'capitalize',
               }}>
                 {f} {f === 'all' ? `(${counts.all})` : ''}
               </Text>
@@ -150,14 +149,14 @@ export default function TablesHomeScreen() {
         keyExtractor={item => item.id}
         numColumns={numColumns}
         key={numColumns}
-        contentContainerStyle={{ padding: spacing.md, paddingBottom: insets.bottom + 20 }}
+        contentContainerStyle={{ padding: spacing.sm, paddingBottom: insets.bottom + 96 }}
         keyboardDismissMode="on-drag"
         refreshControl={<RefreshControl refreshing={loading} onRefresh={load} tintColor={colors.primary} />}
         ListEmptyComponent={
           error ? (
             <ErrorState message={error} onRetry={load} />
           ) : loading ? null : (
-            <EmptyState icon="grid" title="No Tables" message="Tables will appear here once configured in your venue." />
+            <EmptyState icon="grid" title="No Tables" message="Tables will appear here once configured." />
           )
         }
       />
