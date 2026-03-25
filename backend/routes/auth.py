@@ -2,9 +2,10 @@ from fastapi import APIRouter, HTTPException, Request, Depends
 from models.requests import LoginRequest, SignupRequest
 from utils.auth import hash_password, verify_password, create_access_token, create_refresh_token, REFRESH_TOKEN_DAYS
 from utils.constants import PLANS, DEMO_EMAILS, resolve_plan_id, get_plan, get_checkout_price
-from middleware.auth_middleware import require_auth
+from middleware.auth_middleware import require_auth, require_active
 from database import get_postgres_pool, get_mongo_db
 from config import get_settings
+from services.email_service import send_welcome, send_password_reset, send_manager_reset
 from emergentintegrations.payments.stripe.checkout import StripeCheckout, CheckoutSessionRequest
 from datetime import datetime, timedelta, timezone
 import json
@@ -15,6 +16,8 @@ import logging
 router = APIRouter()
 logger = logging.getLogger("auth")
 settings = get_settings()
+
+PASSWORD_RESET_TTL_MINUTES = 30
 
 PROTECTED_SYSTEM_ACCOUNTS = {"teste@teste.com", "garcia.rapha2@gmail.com", "teste1@teste.com"}
 
@@ -189,6 +192,17 @@ async def signup(request: SignupRequest):
         )
     except Exception as e:
         logger.error(f"[SIGNUP] Lead capture failed: {e}")
+
+    # Send welcome email
+    try:
+        plan_name = plan["name"] if plan else "Spet Core"
+        await send_welcome(
+            user_name=request.name or request.email.split("@")[0],
+            email=request.email.lower(),
+            plan=plan_name,
+        )
+    except Exception as e:
+        logger.error(f"[SIGNUP] Welcome email failed: {e}")
 
     return await _build_token_and_response(user_row, access_roles, checkout_url)
 
@@ -800,4 +814,233 @@ async def verify_payment(request: Request, user: dict = Depends(require_auth)):
         "status": "active",
         "plan_id": plan_id,
         "plan": plan["name"] if plan else None,
+    }
+
+
+# ─── Password Reset Endpoints ───────────────────────────────────────
+
+
+@router.post("/forgot-password")
+async def forgot_password(request: Request):
+    """Request a password reset link. Sends email with secure token."""
+    body = await request.json()
+    email = (body.get("email") or "").strip().lower()
+    origin_url = body.get("origin_url", "https://app.spetapp.com")
+
+    if not email:
+        raise HTTPException(status_code=400, detail="email is required")
+
+    pool = get_postgres_pool()
+    db = get_mongo_db()
+    now = datetime.now(timezone.utc)
+
+    # Always return success to prevent email enumeration
+    async with pool.acquire() as conn:
+        user_row = await conn.fetchrow(
+            "SELECT id, name, email FROM users WHERE email = $1", email
+        )
+
+    if not user_row:
+        logger.info(f"[FORGOT-PW] No user found for {email} — returning OK to prevent enumeration")
+        return {"message": "If an account with that email exists, a reset link has been sent."}
+
+    # Invalidate any existing tokens for this user
+    await db.password_reset_tokens.update_many(
+        {"user_id": str(user_row["id"]), "used": False},
+        {"$set": {"used": True}},
+    )
+
+    # Generate secure token
+    token = secrets.token_urlsafe(48)
+    await db.password_reset_tokens.insert_one({
+        "token": token,
+        "user_id": str(user_row["id"]),
+        "email": email,
+        "created_at": now.isoformat(),
+        "expires_at": (now + timedelta(minutes=PASSWORD_RESET_TTL_MINUTES)).isoformat(),
+        "used": False,
+        "initiated_by": "user",
+    })
+
+    reset_url = f"{origin_url}/reset-password?token={token}"
+    user_name = user_row["name"] or email.split("@")[0]
+
+    await send_password_reset(user_name, email, reset_url)
+
+    await db.audit_log.insert_one({
+        "event_type": "password_reset_requested",
+        "user_id": str(user_row["id"]),
+        "details": {"initiated_by": "user"},
+        "created_at": now.isoformat(),
+    })
+
+    logger.info(f"[FORGOT-PW] Reset token generated for {email}")
+    return {"message": "If an account with that email exists, a reset link has been sent."}
+
+
+@router.post("/reset-password")
+async def reset_password(request: Request):
+    """Reset password using a valid token. Invalidates all sessions."""
+    body = await request.json()
+    token = (body.get("token") or "").strip()
+    new_password = (body.get("new_password") or "").strip()
+
+    if not token:
+        raise HTTPException(status_code=400, detail="token is required")
+    if not new_password or len(new_password) < 5:
+        raise HTTPException(status_code=400, detail="Password must be at least 5 characters")
+
+    db = get_mongo_db()
+    now = datetime.now(timezone.utc)
+
+    doc = await db.password_reset_tokens.find_one({"token": token, "used": False})
+    if not doc:
+        raise HTTPException(status_code=400, detail="Invalid or expired reset token")
+
+    expires_at = datetime.fromisoformat(doc["expires_at"])
+    if now > expires_at:
+        await db.password_reset_tokens.update_one({"_id": doc["_id"]}, {"$set": {"used": True}})
+        raise HTTPException(status_code=400, detail="Reset token has expired")
+
+    user_id = doc["user_id"]
+
+    # Mark token as used
+    await db.password_reset_tokens.update_one({"_id": doc["_id"]}, {"$set": {"used": True}})
+
+    # Update password
+    pool = get_postgres_pool()
+    hashed = hash_password(new_password)
+    async with pool.acquire() as conn:
+        await conn.execute(
+            "UPDATE users SET password_hash = $1, updated_at = $2 WHERE id = $3::uuid",
+            hashed, now, user_id,
+        )
+
+    # Invalidate all refresh tokens for this user
+    await db.refresh_tokens.update_many(
+        {"user_id": user_id, "revoked": False},
+        {"$set": {"revoked": True}},
+    )
+
+    # Add all current tokens to blacklist (force re-login)
+    await db.token_blacklist.insert_one({
+        "sub": user_id,
+        "reason": "password_reset",
+        "invalidated_at": now.isoformat(),
+    })
+
+    await db.audit_log.insert_one({
+        "event_type": "password_reset_completed",
+        "user_id": user_id,
+        "details": {"initiated_by": doc.get("initiated_by", "user")},
+        "created_at": now.isoformat(),
+    })
+
+    logger.info(f"[RESET-PW] Password reset completed for user {user_id}")
+    return {"message": "Password has been reset successfully. Please log in with your new password."}
+
+
+@router.post("/manager-reset-password")
+async def manager_reset_password(request: Request, user: dict = Depends(require_active)):
+    """Manager-initiated password reset. Invalidates old password immediately."""
+    body = await request.json()
+    target_email = (body.get("email") or "").strip().lower()
+    target_user_id = body.get("user_id")
+    origin_url = body.get("origin_url", "https://app.spetapp.com")
+
+    if not target_email and not target_user_id:
+        raise HTTPException(status_code=400, detail="email or user_id is required")
+
+    # Check requester has management role
+    requester_roles = set()
+    for r in user.get("roles", []):
+        if isinstance(r, dict):
+            requester_roles.add(r.get("role", ""))
+
+    management_roles = {"owner", "manager", "ceo", "platform_admin"}
+    if not requester_roles.intersection(management_roles):
+        raise HTTPException(status_code=403, detail="Only managers/owners can reset other users' passwords")
+
+    pool = get_postgres_pool()
+    db = get_mongo_db()
+    now = datetime.now(timezone.utc)
+
+    async with pool.acquire() as conn:
+        if target_user_id:
+            target = await conn.fetchrow(
+                "SELECT id, name, email, is_system_account FROM users WHERE id = $1::uuid", target_user_id
+            )
+        else:
+            target = await conn.fetchrow(
+                "SELECT id, name, email, is_system_account FROM users WHERE email = $1", target_email
+            )
+
+    if not target:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    if target["is_system_account"]:
+        raise HTTPException(status_code=403, detail="Cannot reset system account passwords")
+
+    target_id = str(target["id"])
+    target_name = target["name"] or target["email"].split("@")[0]
+
+    # Invalidate old password by setting a random hash
+    random_hash = hash_password(secrets.token_urlsafe(32))
+    async with pool.acquire() as conn:
+        await conn.execute(
+            "UPDATE users SET password_hash = $1, updated_at = $2 WHERE id = $3::uuid",
+            random_hash, now, target_id,
+        )
+
+    # Invalidate all sessions
+    await db.refresh_tokens.update_many(
+        {"user_id": target_id, "revoked": False},
+        {"$set": {"revoked": True}},
+    )
+    await db.token_blacklist.insert_one({
+        "sub": target_id,
+        "reason": "manager_password_reset",
+        "invalidated_at": now.isoformat(),
+    })
+
+    # Invalidate any existing reset tokens
+    await db.password_reset_tokens.update_many(
+        {"user_id": target_id, "used": False},
+        {"$set": {"used": True}},
+    )
+
+    # Generate new reset token
+    token = secrets.token_urlsafe(48)
+    await db.password_reset_tokens.insert_one({
+        "token": token,
+        "user_id": target_id,
+        "email": target["email"],
+        "created_at": now.isoformat(),
+        "expires_at": (now + timedelta(minutes=PASSWORD_RESET_TTL_MINUTES)).isoformat(),
+        "used": False,
+        "initiated_by": "manager",
+        "manager_user_id": user["sub"],
+    })
+
+    reset_url = f"{origin_url}/reset-password?token={token}"
+
+    # Get manager name
+    async with pool.acquire() as conn:
+        manager_row = await conn.fetchrow("SELECT name FROM users WHERE id = $1::uuid", user["sub"])
+    manager_name = manager_row["name"] if manager_row else "Your Manager"
+
+    await send_manager_reset(target_name, target["email"], manager_name, reset_url)
+
+    await db.audit_log.insert_one({
+        "event_type": "manager_password_reset",
+        "user_id": user["sub"],
+        "target_user_id": target_id,
+        "details": {"target_email": target["email"], "manager_name": manager_name},
+        "created_at": now.isoformat(),
+    })
+
+    logger.info(f"[MANAGER-RESET] Manager {user['sub']} reset password for {target['email']}")
+    return {
+        "message": f"Password reset initiated for {target['email']}. They will receive an email with instructions.",
+        "target_email": target["email"],
     }

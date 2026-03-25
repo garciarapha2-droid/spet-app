@@ -43,6 +43,20 @@ export const authAPI = {
   signup: (email, password, company_name) => api.post('/auth/signup', { email, password, company_name }),
   getMe: () => api.get('/auth/me'),
   logout: () => api.post('/auth/logout'),
+  forgotPassword: (email, origin_url) => api.post('/auth/forgot-password', { email, origin_url }),
+  resetPassword: (token, new_password) => api.post('/auth/reset-password', { token, new_password }),
+  managerResetPassword: (data) => api.post('/auth/manager-reset-password', data),
+  getPermissions: () => api.get('/auth/permissions'),
+  getPaymentStatus: () => api.get('/auth/payment-status'),
+  verifyPayment: (session_id) => api.post('/auth/verify-payment', { session_id }),
+};
+
+// Team
+export const teamAPI = {
+  sendInvite: (data) => api.post('/team/invite', data),
+  acceptInvite: (data) => api.post('/team/accept-invite', data),
+  listInvites: () => api.get('/team/invites'),
+  cancelInvite: (invite_id) => api.post('/team/cancel-invite', { invite_id }),
 };
 
 // Venue

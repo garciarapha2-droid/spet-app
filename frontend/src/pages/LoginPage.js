@@ -98,14 +98,14 @@ export const LoginPage = () => {
                 >
                   Password
                 </label>
-                <button
-                  type="button"
+                <Link
+                  to="/forgot-password"
                   className="text-[12px] font-medium transition-all hover:brightness-125"
                   style={{ color: 'hsl(var(--primary))' }}
                   data-testid="forgot-password-link"
                 >
                   Forgot password?
-                </button>
+                </Link>
               </div>
               <input
                 id="login-password"

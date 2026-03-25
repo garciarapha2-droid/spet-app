@@ -64,11 +64,12 @@ logger = logging.getLogger(__name__)
 api_router = APIRouter(prefix="/api")
 
 # Import route modules
-from routes import auth, billing, pulse, tap, table, kds, manager, owner, ceo, venue, rewards, barmen, onboarding, leads, crm, ceo_analytics, nfc, support
+from routes import auth, billing, pulse, tap, table, kds, manager, owner, ceo, venue, rewards, barmen, onboarding, leads, crm, ceo_analytics, nfc, support, team
 
 # Include routers
 api_router.include_router(auth.router, prefix="/auth", tags=["auth"])
 api_router.include_router(billing.router, prefix="/billing", tags=["billing"])
+api_router.include_router(team.router, prefix="/team", tags=["team"])
 api_router.include_router(pulse.router, prefix="/pulse", tags=["pulse"])
 api_router.include_router(tap.router, prefix="/tap", tags=["tap"])
 api_router.include_router(table.router, prefix="/table", tags=["table"])
@@ -95,8 +96,17 @@ async def health_check():
 # Stripe webhook handler (no auth required)
 @api_router.post("/webhook/stripe")
 async def stripe_webhook_handler(request: Request):
-    """Handle Stripe webhooks for payment confirmation."""
+    """Handle Stripe webhooks for payment confirmation and failure.
+
+    Processes:
+    - checkout.session.completed → activates user, sends payment_confirmed + access_granted emails
+    - payment_intent.payment_failed → sends payment_failed email
+    Idempotent: skips already-processed events.
+    """
     from emergentintegrations.payments.stripe.checkout import StripeCheckout
+    from services.email_service import send_payment_confirmed, send_access_granted, send_payment_failed
+    from utils.constants import resolve_plan_id, get_plan
+
     body = await request.body()
     stripe_signature = request.headers.get("Stripe-Signature")
 
@@ -108,37 +118,104 @@ async def stripe_webhook_handler(request: Request):
     try:
         webhook_event = await stripe_checkout.handle_webhook(body, stripe_signature)
         db = get_mongo_db()
+        now = datetime.now(timezone.utc)
 
+        # Idempotency check
         existing = await db.webhook_events.find_one({"event_id": webhook_event.event_id})
         if existing:
             return {"status": "already_processed"}
 
+        # Store event
         await db.webhook_events.insert_one({
             "event_id": webhook_event.event_id,
             "event_type": webhook_event.event_type,
             "session_id": webhook_event.session_id,
             "payment_status": webhook_event.payment_status,
             "metadata": webhook_event.metadata,
-            "received_at": datetime.now(timezone.utc).isoformat(),
+            "received_at": now.isoformat(),
         })
 
-        if webhook_event.payment_status == "paid" and webhook_event.metadata:
-            user_id = webhook_event.metadata.get("user_id")
+        metadata = webhook_event.metadata or {}
+        user_id = metadata.get("user_id")
+        plan_id = metadata.get("plan_id")
+
+        if webhook_event.payment_status == "paid" and user_id:
+            # ─── PAYMENT SUCCESS ────────────────────────────────
+            pool = get_postgres_pool()
+
+            resolved_plan_id = resolve_plan_id(plan_id or "core")
+            plan = get_plan(resolved_plan_id)
+
+            async with pool.acquire() as conn:
+                # Activate user
+                await conn.execute(
+                    "UPDATE users SET status = 'active', plan_id = $1, updated_at = $2 WHERE id = $3::uuid AND status = 'pending_payment'",
+                    resolved_plan_id, now, user_id,
+                )
+
+                # Fetch user info for emails
+                user_row = await conn.fetchrow(
+                    "SELECT id, name, email, plan_id FROM users WHERE id = $1::uuid", user_id,
+                )
+
+                # Fetch company name
+                company_name = "Your Venue"
+                access_row = await conn.fetchrow(
+                    "SELECT company_id FROM user_access WHERE user_id = $1::uuid LIMIT 1", user_row["id"] if user_row else None,
+                )
+                if access_row and access_row["company_id"]:
+                    company_row = await conn.fetchrow(
+                        "SELECT name FROM companies WHERE id = $1", access_row["company_id"],
+                    )
+                    if company_row:
+                        company_name = company_row["name"]
+
+            # Update transaction
+            if webhook_event.session_id:
+                await db.payment_transactions.update_one(
+                    {"stripe_session_id": webhook_event.session_id},
+                    {"$set": {"payment_status": "paid", "updated_at": now.isoformat()}},
+                )
+
+            # Send emails (non-blocking)
+            if user_row:
+                user_name = user_row["name"] or user_row["email"].split("@")[0]
+                user_email = user_row["email"]
+                plan_name = plan["name"] if plan else "Spet Core"
+
+                # Get amount from transaction
+                tx = await db.payment_transactions.find_one(
+                    {"stripe_session_id": webhook_event.session_id}, {"_id": 0}
+                )
+                amount = str(tx.get("amount", "0")) if tx else "0"
+                currency = tx.get("currency", "usd") if tx else "usd"
+
+                try:
+                    await send_payment_confirmed(user_name, user_email, plan_name, amount, currency)
+                    await send_access_granted(user_name, user_email, company_name, plan_name)
+                except Exception as e:
+                    logger.error(f"[WEBHOOK] Email sending failed: {e}")
+
+            logger.info(f"[WEBHOOK] User {user_id} activated via webhook (plan: {resolved_plan_id})")
+
+        elif webhook_event.payment_status in ("unpaid", "no_payment_required") or webhook_event.event_type == "payment_intent.payment_failed":
+            # ─── PAYMENT FAILED ─────────────────────────────────
             if user_id:
                 pool = get_postgres_pool()
                 async with pool.acquire() as conn:
-                    await conn.execute(
-                        "UPDATE users SET status = 'active', updated_at = $1 WHERE id = $2::uuid AND status = 'pending_payment'",
-                        datetime.now(timezone.utc), user_id,
+                    user_row = await conn.fetchrow(
+                        "SELECT name, email, plan_id FROM users WHERE id = $1::uuid", user_id,
                     )
+                if user_row:
+                    user_name = user_row["name"] or user_row["email"].split("@")[0]
+                    plan_name = get_plan(resolve_plan_id(user_row.get("plan_id") or "core"))
+                    plan_name = plan_name["name"] if plan_name else "Spet Core"
+                    try:
+                        await send_payment_failed(user_name, user_row["email"], plan_name)
+                    except Exception as e:
+                        logger.error(f"[WEBHOOK] Payment failed email error: {e}")
 
-                if webhook_event.session_id:
-                    await db.payment_transactions.update_one(
-                        {"stripe_session_id": webhook_event.session_id},
-                        {"$set": {"payment_status": "paid", "updated_at": datetime.now(timezone.utc).isoformat()}},
-                    )
-
-                logger.info(f"[WEBHOOK] User {user_id} activated via webhook")
+                logger.info(f"[WEBHOOK] Payment failed for user {user_id}")
 
         return {"status": "success"}
     except Exception as e:
@@ -195,6 +272,20 @@ async def startup_event():
     await db.refresh_tokens.create_index("token", unique=True)
     await db.refresh_tokens.create_index("user_id")
     await db.refresh_tokens.create_index("expires_at")
+    # Indexes for password reset tokens
+    await db.password_reset_tokens.create_index("token", unique=True)
+    await db.password_reset_tokens.create_index("user_id")
+    await db.password_reset_tokens.create_index("expires_at")
+    # Indexes for team invites
+    await db.team_invites.create_index("token", unique=True)
+    await db.team_invites.create_index("email")
+    await db.team_invites.create_index("company_id")
+    # Indexes for webhook events
+    await db.webhook_events.create_index("event_id", unique=True)
+    # Indexes for audit log
+    await db.audit_log.create_index("user_id")
+    await db.audit_log.create_index("event_type")
+    await db.audit_log.create_index("created_at")
     # Cleanup expired/revoked refresh tokens older than 7 days
     from datetime import timedelta
     cutoff = (datetime.now(timezone.utc) - timedelta(days=7)).isoformat()

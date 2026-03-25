@@ -8,6 +8,9 @@ import { PublicOnly, AuthOnly, ActiveOnly, ProtectedRoute, CEORoute } from './co
 // Auth pages
 import { LoginPage } from './pages/LoginPage';
 import { SignupPage } from './pages/SignupPage';
+import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
+import { ResetPasswordPage } from './pages/ResetPasswordPage';
+import { AcceptInvitePage } from './pages/AcceptInvitePage';
 import LandingPage from './pages/landing/LandingPage';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import Support from './pages/Support';
@@ -119,6 +122,9 @@ function App() {
               {/* Public only routes (redirect if authenticated) */}
               <Route path="/login" element={<PublicOnly><LoginPage /></PublicOnly>} />
               <Route path="/signup" element={<PublicOnly><SignupPage /></PublicOnly>} />
+              <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+              <Route path="/reset-password" element={<ResetPasswordPage />} />
+              <Route path="/invite/accept" element={<AcceptInvitePage />} />
 
               {/* Payment routes (require auth, any status) */}
               <Route path="/payment/pending" element={<AuthOnly><PaymentPendingPage /></AuthOnly>} />
