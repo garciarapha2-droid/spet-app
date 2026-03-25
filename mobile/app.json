@@ -31,13 +31,7 @@
         "usesNonExemptEncryption": false
       },
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false,
-        "NFCReaderUsageDescription": "SPET uses NFC to scan guest wristbands for fast venue entry.",
-        "com.apple.developer.nfc.readersession.iso7816.select-identifiers": [],
-        "com.apple.developer.nfc.readersession.felica.systemcodes": []
-      },
-      "entitlements": {
-        "com.apple.developer.nfc.readersession.formats": ["TAG"]
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
@@ -52,16 +46,7 @@
       ]
     },
     "plugins": [
-      "expo-updates",
-      [
-        "react-native-nfc-manager",
-        {
-          "nfcPermission": "SPET uses NFC to scan guest wristbands for fast venue entry.",
-          "selectIdentifiers": [],
-          "systemCodes": []
-        }
-      ],
-      "./plugins/withNfcEntitlementFix"
+      "expo-updates"
     ],
     "extra": {
       "privacyPolicyUrl": "https://spetapp.com/privacy",
