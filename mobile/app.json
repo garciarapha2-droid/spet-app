@@ -61,14 +61,6 @@
           "image": "./assets/splash.png",
           "imageWidth": 200
         }
-      ],
-      [
-        "react-native-nfc-manager",
-        {
-          "nfcPermission": "SPET uses NFC to scan guest wristbands for fast venue entry.",
-          "selectIdentifiers": [],
-          "systemCodes": []
-        }
       ]
     ],
     "extra": {
