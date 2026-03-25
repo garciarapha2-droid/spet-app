@@ -1,5 +1,8 @@
 /**
  * Auth service — login, refresh, logout.
+ *
+ * Every function that touches SecureStore or network is fully guarded.
+ * No function in this file can throw an unhandled exception.
  */
 import { api, setTokens, clearTokens, getRefreshToken, getToken } from './api';
 
@@ -19,19 +22,26 @@ interface LoginResponse {
 }
 
 export async function login(email: string, password: string): Promise<{ user: User }> {
+  // This intentionally throws on failure — LoginScreen shows the error
   const data = await api.postPublic<LoginResponse>('/auth/login', { email, password });
   await setTokens(data.access_token, data.refresh_token);
   return { user: data.user };
 }
 
 export async function refreshSession(): Promise<boolean> {
-  const refreshToken = await getRefreshToken();
-  if (!refreshToken) return false;
-
   try {
+    const refreshToken = await getRefreshToken();
+    if (!refreshToken) return false;
+
     const data = await api.post<LoginResponse>('/auth/refresh', {
       refresh_token: refreshToken,
     });
+
+    if (!data?.access_token || !data?.refresh_token) {
+      await clearTokens();
+      return false;
+    }
+
     await setTokens(data.access_token, data.refresh_token);
     return true;
   } catch {
@@ -47,12 +57,16 @@ export async function logout(): Promise<void> {
       await api.post('/auth/logout', { refresh_token: refreshToken });
     }
   } catch {
-    // Ignore errors on logout
+    // Ignore — we clear tokens regardless
   }
   await clearTokens();
 }
 
 export async function isAuthenticated(): Promise<boolean> {
-  const token = await getToken();
-  return !!token;
+  try {
+    const token = await getToken();
+    return !!token;
+  } catch {
+    return false;
+  }
 }

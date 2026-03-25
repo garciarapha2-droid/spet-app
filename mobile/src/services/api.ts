@@ -1,6 +1,10 @@
 /**
  * Base HTTP client with JWT auth.
  * Handles token injection, response unwrapping, and refresh.
+ *
+ * IMPORTANT: Every SecureStore call is wrapped in try/catch.
+ * If the keychain is locked, corrupted, or unavailable, we treat it
+ * as "no data" rather than crashing the app.
  */
 import * as SecureStore from 'expo-secure-store';
 import { API_BASE_URL, API_PREFIX } from '../config/api';
@@ -8,26 +12,44 @@ import { API_BASE_URL, API_PREFIX } from '../config/api';
 const TOKEN_KEY = 'spet_access_token';
 const REFRESH_KEY = 'spet_refresh_token';
 
-// Token management
+// ─── Token management (all SecureStore calls guarded) ───
+
 export async function getToken(): Promise<string | null> {
-  return SecureStore.getItemAsync(TOKEN_KEY);
+  try {
+    return await SecureStore.getItemAsync(TOKEN_KEY);
+  } catch {
+    return null;
+  }
 }
 
 export async function setTokens(access: string, refresh: string): Promise<void> {
-  await SecureStore.setItemAsync(TOKEN_KEY, access);
-  await SecureStore.setItemAsync(REFRESH_KEY, refresh);
+  try {
+    await SecureStore.setItemAsync(TOKEN_KEY, access);
+  } catch {}
+  try {
+    await SecureStore.setItemAsync(REFRESH_KEY, refresh);
+  } catch {}
 }
 
 export async function clearTokens(): Promise<void> {
-  await SecureStore.deleteItemAsync(TOKEN_KEY);
-  await SecureStore.deleteItemAsync(REFRESH_KEY);
+  try {
+    await SecureStore.deleteItemAsync(TOKEN_KEY);
+  } catch {}
+  try {
+    await SecureStore.deleteItemAsync(REFRESH_KEY);
+  } catch {}
 }
 
 export async function getRefreshToken(): Promise<string | null> {
-  return SecureStore.getItemAsync(REFRESH_KEY);
+  try {
+    return await SecureStore.getItemAsync(REFRESH_KEY);
+  } catch {
+    return null;
+  }
 }
 
-// Response type from backend
+// ─── Types ──────────────────────────────────────────────
+
 interface ApiResponse<T = any> {
   success: boolean;
   data: T;
@@ -46,7 +68,8 @@ export class ApiError extends Error {
 
 const REQUEST_TIMEOUT_MS = 15_000;
 
-// Core request function
+// ─── Core request function ──────────────────────────────
+
 async function request<T = any>(
   path: string,
   options: RequestInit = {},
@@ -58,7 +81,6 @@ async function request<T = any>(
     ...(options.headers as Record<string, string>),
   };
 
-  // Add auth token unless skipped
   if (!skipAuth) {
     const token = await getToken();
     if (token) {
@@ -66,12 +88,10 @@ async function request<T = any>(
     }
   }
 
-  // Add JSON content type unless it's FormData
   if (!(options.body instanceof FormData)) {
     headers['Content-Type'] = 'application/json';
   }
 
-  // Abort controller for timeout
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
@@ -88,7 +108,6 @@ async function request<T = any>(
     clearTimeout(timeoutId);
   }
 
-  // Handle non-JSON responses
   const contentType = response.headers.get('content-type');
   if (!contentType?.includes('application/json')) {
     if (!response.ok) {
@@ -108,7 +127,8 @@ async function request<T = any>(
   return json.data;
 }
 
-// Public API methods
+// ─── Public API methods ─────────────────────────────────
+
 export const api = {
   get: <T = any>(path: string) => request<T>(path),
 
@@ -127,14 +147,12 @@ export const api = {
   delete: <T = any>(path: string) =>
     request<T>(path, { method: 'DELETE' }),
 
-  // POST without auth (for login)
   postPublic: <T = any>(path: string, body: any) =>
     request<T>(path, {
       method: 'POST',
       body: JSON.stringify(body),
     }, true),
 
-  // POST with FormData (for multipart)
   postForm: <T = any>(path: string, formData: FormData) =>
     request<T>(path, {
       method: 'POST',

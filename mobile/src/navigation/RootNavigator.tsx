@@ -1,14 +1,23 @@
 /**
  * Root Navigation — Auth stack + Main tab navigator with all modules.
- * 5 Bottom Tabs: Entry, Tabs, Tables, Kitchen, Modules
- * Plus stack navigators for each dashboard.
+ *
+ * Navigation rules:
+ *   1. While auth is loading → render nothing (splash is still visible)
+ *   2. Auth resolved → hide splash → render correct screen
+ *   3. Not authenticated → Login
+ *   4. Authenticated, no venue → VenueSelect
+ *   5. Authenticated + venue → MainTabs
+ *
+ * GUARANTEE: Splash hides exactly once, after auth resolves.
+ *            Navigation NEVER renders before auth state is known.
  */
 import React from 'react';
-import { ActivityIndicator, View, Text } from 'react-native';
+import { View } from 'react-native';
 import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Feather } from '@expo/vector-icons';
+import * as SplashScreen from 'expo-splash-screen';
 import { useAuth } from '../hooks/useAuth';
 import { useVenue } from '../hooks/useVenue';
 import { colors, fontSize } from '../theme/colors';
@@ -152,7 +161,6 @@ function MainTabs() {
           backgroundColor: colors.bgCard,
           borderTopColor: colors.border,
           borderTopWidth: 1,
-          // Let safe-area-context handle bottom padding natively
           paddingTop: 6,
           elevation: 0,
         },
@@ -216,19 +224,29 @@ function MainTabs() {
 export default function RootNavigator() {
   const { authenticated, loading } = useAuth();
   const { selectedVenue, loadVenues } = useVenue();
+  const splashHidden = React.useRef(false);
 
+  // Hide splash ONLY when auth state is fully resolved
+  React.useEffect(() => {
+    if (!loading && !splashHidden.current) {
+      splashHidden.current = true;
+      console.log('[NAV] Auth resolved, hiding splash. authenticated:', authenticated);
+      try {
+        SplashScreen.hideAsync();
+      } catch {}
+    }
+  }, [loading, authenticated]);
+
+  // Load venues after auth succeeds
   React.useEffect(() => {
     if (authenticated) {
-      loadVenues();
+      loadVenues().catch(() => {});
     }
   }, [authenticated, loadVenues]);
 
+  // While auth is loading, keep splash visible — render nothing
   if (loading) {
-    return (
-      <View style={{ flex: 1, backgroundColor: colors.bg, justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="large" color={colors.primary} />
-      </View>
-    );
+    return <View style={{ flex: 1, backgroundColor: colors.bg }} />;
   }
 
   return (
