@@ -35,7 +35,11 @@
         "ITSAppUsesNonExemptEncryption": false,
         "NSAppTransportSecurity": {
           "NSAllowsArbitraryLoads": true
-        }
+        },
+        "NFCReaderUsageDescription": "SPET uses NFC to scan guest wristbands for fast venue entry and tab management."
+      },
+      "entitlements": {
+        "com.apple.developer.nfc.readersession.formats": ["NDEF", "TAG"]
       }
     },
     "android": {
@@ -54,8 +58,10 @@
       [
         "react-native-nfc-manager",
         {
-          "includeNdefEntitlement": false,
-          "nfcPermission": "SPET uses NFC to scan guest wristbands for fast venue entry."
+          "includeNdefEntitlement": true,
+          "nfcPermission": "SPET uses NFC to scan guest wristbands for fast venue entry.",
+          "selectIdentifiers": [],
+          "systemCodes": []
         }
       ]
     ],

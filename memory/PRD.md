@@ -14,6 +14,7 @@ Complete redesign of the iPhone application's UX and navigation with a full them
 ```
 /app
 ├── mobile/           # React Native / Expo (iPhone focus)
+│   ├── app.json      # NFC entitlements: NDEF+TAG, NFCReaderUsageDescription
 │   ├── src/
 │   │   ├── screens/
 │   │   │   ├── auth/ (LoginScreen, ForgotPasswordScreen)
@@ -24,72 +25,53 @@ Complete redesign of the iPhone application's UX and navigation with a full them
 │   │   │   ├── settings/ (SettingsScreen)
 │   │   ├── navigation/ (RootNavigator, CustomTabBar)
 │   │   ├── services/ (api, authService, tapService, pulseService, nfcService, tableService)
-│   │   ├── hooks/ (useAuth, useVenue)
-│   │   ├── contexts/ (ThemeContext)
-│   │   ├── theme/ (themes.ts — premium dark/light tokens)
-│   │   ├── config/api.ts — API_PREFIX = '/mapi' (CRITICAL - see routing fix)
+│   │   ├── config/api.ts — API_PREFIX = '/mapi' (bypasses broken ingress)
 │   │   ├── components/ (TopNavbar, ui, ProductionUI)
 ├── frontend/
-│   ├── src/setupProxy.js — /mapi → /api proxy (CRITICAL - enables mobile login)
+│   ├── src/setupProxy.js — /mapi → /api proxy (enables mobile API access)
 ├── backend/          # FastAPI + MongoDB
-│   ├── routes/ (auth, tap, pulse, table, venue, ceo)
+│   ├── routes/ (auth, tap, pulse, table, venue, ceo, nfc)
 ```
 
-## CRITICAL: Mobile API Routing Fix (March 2026)
+## CRITICAL: Mobile API Routing Fix
+- **Problem**: Kubernetes ingress routes `/api/*` → backend, but fails from iOS devices (plain-text "404 page not found")
+- **Fix**: Mobile uses `/mapi` prefix → ingress routes to frontend (port 3000) → setupProxy.js rewrites to `/api` → forwards to backend (port 8001)
+- **DO NOT REVERT**: `API_PREFIX = '/mapi'` in config/api.ts, `/mapi` proxy in setupProxy.js
 
-### Problem
-The Kubernetes ingress routes `/api/*` to port 8001 (backend). This works from browsers and server-side curl. But from iOS devices, the same URL returns plain-text "404 page not found" (from the Go-based ingress/proxy layer). The response is NOT from FastAPI and NOT from React.
+## NFC iOS Implementation (March 2026)
+### Changes
+1. **app.json**: Added `NFCReaderUsageDescription`, entitlements `["NDEF", "TAG"]`, `includeNdefEntitlement: true`
+2. **NfcScanScreen.tsx**: Complete rewrite using `react-native-nfc-manager`:
+   - Init NFC on mount (NfcManager.start())
+   - Tap "Scan NFC" → NfcManager.requestTechnology(NfcTech.Ndef) → iOS native popup
+   - Tag detected → extract UID + parse NDEF payload
+   - Call backend /nfc/scan to resolve tag
+   - Navigate to NfcResult (guest found or unregistered)
+   - Debug panel with NFC supported/enabled/status/lastTag/lastError
+3. **nfcService.ts**: Already had scanNfcTag() and normalizeTagUid() — used by new scan screen
 
-### Root Cause
-The Emergent Kubernetes ingress + Cloudflare edge inconsistently handles `/api` path-based routing for external mobile device requests. The "404 page not found" comes from the ingress controller itself, not reaching the backend at all.
-
-### Fix
-- **`/mapi` prefix**: Mobile app uses `/mapi` instead of `/api`
-- **setupProxy.js**: The frontend (port 3000) has a proxy rule that catches `/mapi/*`, rewrites it to `/api/*`, and forwards to port 8001
-- **Request flow**: iPhone → `/mapi/auth/login` → ingress → port 3000 (no `/api` match) → setupProxy → `http://localhost:8001/api/auth/login` → JSON response
-
-### Files changed
-1. `/app/mobile/src/config/api.ts` — `API_PREFIX = '/mapi'`
-2. `/app/frontend/src/setupProxy.js` — Added `/mapi` proxy with `pathRewrite: { '^/mapi': '/api' }`
-
-### DO NOT REVERT
-- `setupProxy.js` — Both `/api` and `/mapi` proxy rules are essential
-- `API_PREFIX = '/mapi'` — This is what makes mobile login work
-- `authService.ts` direct fetch with cache-busting — Still needed for iOS
-
-## Navigation Flow (iPhone)
+### NFC Flow
 ```
-Login → VenueSelect → MainTabs
-  ├── Entry Tab: EntryHome → NfcScan → NfcResult → [Open Tab → Menu] | [CustomerProfile] | [EntryDecision]
-  ├── Tabs Tab: TabsMainScreen (Menu-first) → Close Tab → Tip
-  ├── Tables Tab: TablesHome → [Occupied → Menu] | [Available → TableDetail]
-  └── More Tab: Settings
+NfcScanScreen → startNfcScan() → iOS "Ready to Scan" popup
+  → Tag detected → extractTagUid(tag) → normalizeTagUid()
+  → nfcService.scanNfcTag(uid, venueId)
+  → Guest found → NfcResult (guest mode)
+  → NOT_FOUND → NfcResult (unregistered mode, offer register)
 ```
 
 ## What's Been Implemented
-
-### Backend (100% tested - 15/15)
-- Full API: auth, tap, pulse, table, venue, CEO
-- 28-item drink catalog
-- E2E flow: login → open tab → add items → close → tip
-
-### Mobile App (iPhone)
-- NfcResultScreen, CustomerProfileScreen (NEW)
-- TabsMainScreen refactored to menu-first with route params
-- Complete navigation wiring
+- Full backend API (15/15 tests passing)
+- Complete iPhone E2E flow with navigation wiring
+- NFC reading on iOS with debug panel
 - /mapi routing fix for iOS login
-
-### Web Frontend
-- Landing page, login, CEO dashboards
-- setupProxy.js with /api and /mapi proxy rules
+- Menu-first TabsMainScreen
+- NfcResultScreen, CustomerProfileScreen
 
 ## P1 Backlog
 - Web App: Migrate CeoOverview & CeoRevenue to real backend API
 - Web App: Drag-and-drop Pipeline Kanban view
 - Mobile: Re-enable expo-updates for OTA
-- Web App: Pricing Cards landing page bug (recurring >4x)
+- Web App: Pricing Cards landing page bug (recurring)
 
 ## P2 Future
-- Page transition animations
-- Push notifications
-- Offline mode for mobile
+- Page transition animations, Push notifications, Offline mode
